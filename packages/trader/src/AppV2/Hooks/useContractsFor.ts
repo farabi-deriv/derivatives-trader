@@ -4,6 +4,7 @@ import { useQuery } from '@deriv/api';
 import { cloneObject, getContractCategoriesConfig, getContractTypesConfig, setTradeURLParams } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
 
+import { useMobileBridge } from 'App/Hooks/useMobileBridge';
 import { checkContractTypePrefix } from 'AppV2/Utils/contract-type';
 import { getTradeTypesList } from 'AppV2/Utils/trade-types-utils';
 import { TContractType } from 'Modules/Trading/Components/Form/ContractType/types';
@@ -18,6 +19,7 @@ const useContractsFor = () => {
         useTraderStore();
     const { client } = useStore();
     const { loginid } = client;
+    const { isBridgeAvailable } = useMobileBridge();
 
     // Helper function to get underlying_symbol from active_symbols
     const getUnderlyingSymbol = useCallback(
@@ -80,11 +82,14 @@ const useContractsFor = () => {
         [contract_type]
     );
 
-    const getTradeTypes = useCallback((categories: TContractTypesList) => {
-        return Array.isArray(categories) && categories.length === 0
-            ? []
-            : getTradeTypesList(categories as TContractTypesList);
-    }, []);
+    const getTradeTypes = useCallback(
+        (categories: TContractTypesList) => {
+            return Array.isArray(categories) && categories.length === 0
+                ? []
+                : getTradeTypesList(categories as TContractTypesList, isBridgeAvailable());
+        },
+        [isBridgeAvailable]
+    );
 
     const getNewContractType = useCallback(
         (trade_types: TContractType[]) => {

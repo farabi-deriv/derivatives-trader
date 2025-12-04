@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { useMobileBridge } from 'App/Hooks/useMobileBridge';
 import { getTradeTypesList } from 'AppV2/Utils/trade-types-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
@@ -10,6 +11,7 @@ import { useTraderStore } from 'Stores/useTraderStores';
  */
 const useGuideContractTypes = () => {
     const { contract_types_list_v2, contract_types_list, is_dtrader_v2 } = useTraderStore();
+    const { isBridgeAvailable } = useMobileBridge();
 
     const trade_types = useMemo(() => {
         // Use the appropriate contract types list based on dtrader version
@@ -21,8 +23,8 @@ const useGuideContractTypes = () => {
         }
 
         // Use the same logic as useContractsFor but without API calls
-        return getTradeTypesList(contract_list);
-    }, [contract_types_list_v2, contract_types_list, is_dtrader_v2]);
+        return getTradeTypesList(contract_list, isBridgeAvailable());
+    }, [contract_types_list_v2, contract_types_list, is_dtrader_v2, isBridgeAvailable]);
 
     return { trade_types };
 };
