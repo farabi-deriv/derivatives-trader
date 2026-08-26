@@ -1,25 +1,18 @@
 name: Forge — issue to PR
 
-# Add the `forge` label to an issue and this opens a PR that closes it.
+# Add the `forge` label to an issue and Forge opens a PR that closes it.
 #
-# Engine: deriv-com/spec-to-pr. It classifies the issue (bugfix | feature |
-# refactor) itself, writes a design doc and a plan, implements them, verifies
-# the result, and opens the PR — all committed so the "why" travels with the
-# change.
-#
-# Auth is PAT-free: two GitHub App installation tokens — the *_WRITE app for
-# this repo (labels, branch, PR) and the read-only app for the engine.
-#
-# Verify commands live in spec-to-pr.config.json (not auto-detected: the default
-# `npm test` runs stylelint + eslint + jest across every workspace, which does
-# not fit the token lifetime).
+# The implementation lives in deriv-com/shared-actions so every repo shares one
+# copy. This file owns only what is repo-specific: the triggers, and the
+# toolchain/model settings passed in below.
 #
 # Two ways in, one code path:
-#   • `forge` label on an issue        — the human flow.
-#   • workflow_dispatch                — the Slack flow (deriv-com/forge-agent).
-#     The bot passes the Slack thread so the SHIP/report step can answer there
-#     directly. That handoff is deliberate: a run takes 30-55 minutes and the bot
-#     may restart in that window, so it must not be the thing holding the thread.
+#   • `forge` label on an issue — the human flow.
+#   • workflow_dispatch          — the Slack flow (deriv-com/forge-agent), which
+#     passes the Slack thread so the outcome can be posted back to it.
+#
+# Verify commands are NOT set here: the engine reads them from
+# spec-to-pr.config.json in this repo.
 
 on:
   issues:
@@ -48,372 +41,62 @@ jobs:
     # Label path fires only for `forge`; the dispatch path is always intentional.
     if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'forge'
 
-    # The LiteLLM gateway sits behind a Cloudflare WAF that challenges generic
-    # GitHub-hosted IPs — on ubuntu-latest the agent fails with
-    # "Failed to authenticate. API Error: Attention Required! | Cloudflare"
-    # before the key is even checked. This runner group is the one deriv-com's
-    # claude-pr-review.yml / ai-pr-review.yml use, i.e. the allowlisted path.
+    # Least privilege for the ambient GITHUB_TOKEN, matching every other
+    # reusable-workflow caller in this repo. A caller's grant also caps what the
+    # called workflow can request, so leaving this out would make the job depend
+    # on the repo/org default — broader than needed if that default is
+    # permissive, and silently short of `issues: write` if it is restrictive.
     #
-    # NOTE: spec-to-pr gives the agent unrestricted shell whenever
-    # GITHUB_ACTIONS=true, which assumes a disposable machine. That is fine if
-    # this group is GitHub-hosted (ephemeral). If it is backed by persistent
-    # self-hosted runners, force least-privilege mode instead.
-    runs-on:
-      group: github_claude_code_reviewer
-
-    # App installation tokens expire after 1 hour. Stay inside that window so
-    # the final push and PR creation can still authenticate.
-    timeout-minutes: 55
-
-    concurrency:
-      group: forge-${{ github.event.inputs.issue_number || github.event.issue.number }}
-      cancel-in-progress: false
-
+    # (Forge's own repo writes use minted App tokens, not this token.)
     permissions:
       contents: read
       issues: write
 
-    # Resolved once so every step below is trigger-agnostic. The issue URL is
-    # built from the number rather than read from the event, because
-    # `github.event.issue` does not exist on a workflow_dispatch.
-    env:
-      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
-      ISSUE_URL: ${{ github.server_url }}/${{ github.repository }}/issues/${{ github.event.inputs.issue_number || github.event.issue.number }}
-      SLACK_CHANNEL: ${{ github.event.inputs.slack_channel }}
-      SLACK_THREAD_TS: ${{ github.event.inputs.slack_thread_ts }}
-      REQUESTED_BY: ${{ github.event.inputs.requested_by }}
+    uses: deriv-com/shared-actions/.github/workflows/forge.yml@master
 
-    steps:
-      # ---- token --------------------------------------------------------
-      - name: Mint token for this repo (labels, comments, branch, PR)
-        id: repo-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
-        with:
-          app-id: ${{ secrets.CLIENT_ID_GHAPP_WRITE }}
-          private-key: ${{ secrets.PRIVATE_KEY_GHAPP_WRITE }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
-          permission-issues: write
-          permission-pull-requests: write
+    # Inherited from the reusable workflow and NOT settable here — a job with
+    # `uses:` may not declare `runs-on`, `timeout-minutes` or `steps`. Recorded
+    # so the constraints are reviewable without opening the other repo:
+    #
+    #   timeout-minutes: 55   — App installation tokens expire after 1 hour, so
+    #                           the run must finish inside that window or the
+    #                           final push cannot authenticate.
+    #   concurrency:          — forge-<repo>-<issue_number>, cancel-in-progress
+    #                           false. Per-issue dedupe, so a re-applied label or
+    #                           the Slack path racing the label path queues
+    #                           instead of opening two PRs. Keyed by repo too, so
+    #                           callers cannot collide with each other.
+    with:
+      issue_number: ${{ github.event.inputs.issue_number || github.event.issue.number }}
+      slack_channel: ${{ github.event.inputs.slack_channel }}
+      slack_thread_ts: ${{ github.event.inputs.slack_thread_ts }}
+      requested_by: ${{ github.event.inputs.requested_by }}
 
-      # No authorization gate, by design. Forge only opens a PR — it cannot merge
-      # or edit anything, the repo is private (so anyone who can see the issue
-      # already has repo access), and every result goes through normal review and
-      # CI. A collaborator check would also reject the Slack path outright, since
-      # `sender` there is the Forge App, not the person who asked.
-      #
-      # The real exposure is spend (LLM tokens + CI minutes). If that ever bites,
-      # a rate limit is the right lever, not an allowlist.
+      # Mirrors ./.github/actions/setup_node + npm_install_from_cache, which a
+      # reusable workflow cannot call (a relative `uses:` there resolves against
+      # this repo but would break every other caller), so the behaviour is passed
+      # in instead.
+      node_version: "20.x"
+      install_command: "npm ci && npm run bootstrap:ci"
 
-      - name: Mint token to read the spec-to-pr engine
-        id: engine-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
-        with:
-          app-id: ${{ secrets.CLIENT_ID_GHAPP }}
-          private-key: ${{ secrets.PRIVATE_KEY_GHAPP }}
-          owner: deriv-com
-          repositories: spec-to-pr
-          permission-contents: read
+      # Repository variable (Settings → Secrets and variables → Actions →
+      # Variables), so the model can change without touching this file.
+      model: ${{ vars.FORGE_MODEL || 'claude-haiku-4-5' }}
 
-      # ---- claim the issue ----------------------------------------------
-      - name: Claim the issue
-        id: claim
-        env:
-          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          # Swap the trigger label for the in-flight one. On the dispatch path
-          # `forge` is usually not applied at all — removing a label that exists
-          # in the repo but not on the issue is a no-op, so one command covers
-          # both entry points, and the board still shows `forge:running` either way.
-          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --remove-label "forge" --add-label "forge:running"
+      # Pinned explicitly even though it matches the reusable workflow's default.
+      # The LiteLLM gateway sits behind a Cloudflare WAF that challenges generic
+      # GitHub-hosted IPs — on ubuntu-latest every run dies with
+      # "Failed to authenticate. API Error: Attention Required! | Cloudflare"
+      # before the key is even checked. This group is the allow-listed path (the
+      # same one claude-pr-review.yml uses). Naming it here keeps that hard-won
+      # requirement visible in this repo and immune to an upstream default change.
+      runner_group: github_claude_code_reviewer
 
-          VIA=""
-          if [ "${GITHUB_EVENT_NAME:-}" = "workflow_dispatch" ]; then
-            VIA=" _(requested from Slack)_"
-          fi
-          URL=$(gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --body "🔨 **Forge** picked this up — [watch the run]($RUN_URL).$VIA")
-          # .../issues/12#issuecomment-345 -> 345, so we can edit this comment later.
-          echo "comment_id=${URL##*issuecomment-}" >> "$GITHUB_OUTPUT"
-
-      # ---- workspace -----------------------------------------------------
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          token: ${{ steps.repo-token.outputs.token }}
-          fetch-depth: 0 # spec-to-pr diffs against the base branch
-
-      - name: Setup Node
-        uses: ./.github/actions/setup_node
-
-      - name: Fetch the spec-to-pr engine
-        # Fetched into RUNNER_TEMP, not the workspace, so the agent can never see
-        # or commit the engine's own files.
-        #
-        # ENGINE_REF is an immutable commit SHA, not a branch: this job runs the
-        # engine with a write token in scope, so tracking `master` would let any
-        # push to that repo execute here. Bump this deliberately.
-        env:
-          ENGINE_TOKEN: ${{ steps.engine-token.outputs.token }}
-          ENGINE_REF: a20b48e13b1eab31e2e4a07683d31a4d11ee91fe # deriv-com/spec-to-pr master, 2026-08-12
-        run: |
-          set -euo pipefail
-          DIR="$RUNNER_TEMP/forge-engine"
-          # `git clone --branch` only accepts branch/tag names, so fetch the SHA
-          # explicitly. Works for a tag name too if you switch to releases later.
-          git init -q "$DIR"
-          git -C "$DIR" remote add origin \
-            "https://x-access-token:${ENGINE_TOKEN}@github.com/deriv-com/spec-to-pr.git"
-          git -C "$DIR" fetch -q --depth 1 origin "$ENGINE_REF"
-          git -C "$DIR" checkout -q --detach FETCH_HEAD
-          # Drop the embedded credential; it isn't needed past the fetch.
-          git -C "$DIR" remote set-url origin "https://github.com/deriv-com/spec-to-pr.git"
-          echo "Engine at $(git -C "$DIR" rev-parse HEAD)"
-          # The engine has its own dependency tree; install it in its own dir so
-          # it never mixes with this repo's workspaces. Keep optional deps: the
-          # claude-code native binary ships as a platform-specific optional
-          # dependency (@anthropic-ai/claude-code-linux-x64 on this runner).
-          ( cd "$DIR" && npm ci --omit=dev --include=optional )
-
-          # @anthropic-ai/claude-code ships bin/claude.exe as a small JS placeholder;
-          # its postinstall (`node install.cjs`) copies the real native binary over
-          # it. If the runner disables install scripts (e.g. an org-wide
-          # `ignore-scripts` in .npmrc), that never runs — so the engine ends up
-          # exec'ing a JS stub named `.exe` and Node dies with "Unknown file
-          # extension .exe". Run the installer ourselves (invoking it directly
-          # bypasses ignore-scripts), then fail loudly if the result still isn't a
-          # native binary, instead of the cryptic error surfacing mid-run.
-          ( cd "$DIR" && node node_modules/@anthropic-ai/claude-code/install.cjs )
-          # Resolve the bin path the same way the engine (and the preflight below)
-          # do, so this check can't drift from a future change to the package's
-          # `bin` field/filename.
-          CLAUDE_BIN=$(cd "$DIR" && node -e "
-            const path = require('path');
-            const pkg = require('@anthropic-ai/claude-code/package.json');
-            const dir = path.dirname(require.resolve('@anthropic-ai/claude-code/package.json'));
-            console.log(path.join(dir, typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.claude));
-          ")
-          CLAUDE_FILE=$(file -b "$CLAUDE_BIN")
-          # Match ELF specifically (the runner is ubuntu-latest). NOT 'executable':
-          # `file` labels a shebang'd script "... script text executable, ASCII text",
-          # which would false-pass the very JS placeholder this guard exists to catch.
-          if [[ "$CLAUDE_FILE" != *ELF* ]]; then
-            echo "::error::claude-code native binary was not materialized — $CLAUDE_BIN is not a native executable: $CLAUDE_FILE"
-            exit 1
-          fi
-          echo "claude binary ok: $CLAUDE_FILE"
-
-          echo "FORGE_CLI=$DIR/bin/cli.js" >> "$GITHUB_ENV"
-
-      - name: Resolve the LLM gateway
-        # Deriv serves Claude through a LiteLLM gateway, not a direct Anthropic
-        # key — a raw ANTHROPIC_API_KEY here fails with "Invalid API key".
-        #
-        # The trailing /v1 MUST be stripped: Claude Code appends /v1/messages
-        # itself, so passing .../v1 yields .../v1/v1/messages. deriv-com's
-        # shared ai_review_engine_anthropic action takes the same caller-facing
-        # ".../v1" value and strips it the same way before export.
-        env:
-          RAW_BASE_URL: ${{ secrets.LITELLM_API_URL || 'https://litellmsa.deriv.ai/v1' }}
-          # Repository variable (Settings → Secrets and variables → Actions →
-          # Variables). Change the model without touching this workflow. The
-          # fallback keeps Forge working if the variable is never created — an
-          # undefined `vars.X` is an empty string, so `||` supplies the default.
-          FORGE_MODEL: ${{ vars.FORGE_MODEL || 'claude-haiku-4-5' }}
-        run: |
-          set -euo pipefail
-          BASE="${RAW_BASE_URL%/}"
-          BASE="${BASE%/v1}"
-          echo "ANTHROPIC_BASE_URL=$BASE" >> "$GITHUB_ENV"
-          # Must be an alias this gateway actually fronts — an unavailable alias
-          # surfaces as a LiteLLM 500, not a clear "unknown model". Exported once
-          # so the preflight and the real run can never disagree.
-          MODEL="$FORGE_MODEL"
-          echo "ANTHROPIC_MODEL=$MODEL" >> "$GITHUB_ENV"
-
-          # Claude Code also makes background calls with a small/fast model. The
-          # engine only sets ANTHROPIC_SMALL_FAST_MODEL for the `glm` agent, so on
-          # the default `claude` agent it would ask the gateway for a model the
-          # proxy may not front. deriv-com's ai_review_engine_anthropic sets these
-          # same three flags against this same gateway for that reason.
-          {
-            echo "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"
-            echo "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"
-            echo "DISABLE_NON_ESSENTIAL_MODEL_CALLS=1"
-          } >> "$GITHUB_ENV"
-
-          echo "gateway: $BASE | model: $MODEL"
-
-      - name: Preflight — can the agent reach the API?
-        # `dstp check` is NOT enough here: it only tests that ANTHROPIC_API_KEY is
-        # *present* and that the claude binary resolves (preflight.js) — it never
-        # calls the API, so an invalid key or an inaccessible model still passes.
-        #
-        # And the engine's own classify step runs claude with --output-format text
-        # then DISCARDS stdout on a non-zero exit, so the real error is lost and
-        # you only see "claude exited with code 1".
-        #
-        # So: invoke claude directly and print everything. Runs before the repo's
-        # dependency install so auth failures surface in ~1 min, not ~10.
-        env:
-          # Gateway auth. FORGE_API_KEY is Forge's own LiteLLM SA key, passed as
-          # ANTHROPIC_AUTH_TOKEN (the gateway bearer) and deliberately NOT as
-          # ANTHROPIC_API_KEY — that variable makes Claude Code talk to
-          # api.anthropic.com directly, where a gateway key is rejected as
-          # "Invalid API key". Same key, different variable, different route.
-          ANTHROPIC_AUTH_TOKEN: ${{ secrets.FORGE_API_KEY }}
-        run: |
-          set -uo pipefail
-          echo "base_url: ${ANTHROPIC_BASE_URL:-<unset>} | model: ${ANTHROPIC_MODEL:-<unset>}"
-          cd "$RUNNER_TEMP/forge-engine"
-          BIN=$(node -e "
-            const path = require('path');
-            const pkg = require('@anthropic-ai/claude-code/package.json');
-            const dir = path.dirname(require.resolve('@anthropic-ai/claude-code/package.json'));
-            console.log(path.join(dir, typeof pkg.bin === 'string' ? pkg.bin : pkg.bin.claude));
-          ")
-          echo "claude binary: $BIN"
-          # claude.exe is a native executable — run it DIRECTLY (this is how the
-          # engine spawns it). `node "$BIN"` would fail with ERR_UNKNOWN_FILE_EXTENSION
-          # because Node can't load a native binary (or a .exe-named JS stub) as a module.
-          echo "Reply with exactly: OK" | "$BIN" -p --output-format text \
-            --dangerously-skip-permissions; STATUS=$?
-          echo "claude exit status: ${STATUS:-0}"
-          [ "${STATUS:-0}" -eq 0 ] || echo "::error::claude could not run — see the output above (usually an invalid ANTHROPIC_API_KEY or a model the key cannot access)."
-          exit "${STATUS:-0}"
-
-      - name: Install dependencies
-        # Same path as Test & Validate, so the agent sees the tree CI sees.
-        # After the preflight: this is the slowest step, and there's no point
-        # paying for it if the agent can't authenticate.
-        uses: ./.github/actions/npm_install_from_cache
-
-      # ---- run ------------------------------------------------------------
-      - name: Run Forge
-        id: forge
-        env:
-          # ANTHROPIC_BASE_URL and ANTHROPIC_MODEL come from the "Resolve the LLM
-          # gateway" step via $GITHUB_ENV. Forge's SA key is passed as the gateway
-          # bearer only — see the preflight step for why it must not be exported
-          # as ANTHROPIC_API_KEY.
-          ANTHROPIC_AUTH_TOKEN: ${{ secrets.FORGE_API_KEY }}
-          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
-          GITHUB_TOKEN: ${{ steps.repo-token.outputs.token }}
-          # ISSUE_URL comes from the job env so both triggers resolve identically.
-        run: |
-          set -o pipefail
-          git config --global user.name  "forge[bot]"
-          git config --global user.email "forge@users.noreply.github.com"
-
-          # `|| STATUS=$?` keeps the default `bash -e` from aborting before we
-          # can salvage the result line and surface the log.
-          node "$FORGE_CLI" auto "$ISSUE_URL" --cwd . --unattended --json 2>&1 | tee /tmp/forge.log || STATUS=$?
-          STATUS=${STATUS:-0}
-
-          # --json writes the result as a single JSON line on stdout.
-          RESULT=$(grep -oE '^\{.*\}$' /tmp/forge.log | tail -1 || true)
-          if [ -n "$RESULT" ]; then
-            echo "pr_url=$(printf '%s' "$RESULT" | jq -r '.pr_url // empty')" >> "$GITHUB_OUTPUT"
-          fi
-          exit $STATUS
-
-      # ---- report ---------------------------------------------------------
-      - name: Report outcome
-        if: always()
-        env:
-          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
-          COMMENT_ID: ${{ steps.claim.outputs.comment_id }}
-          PR_URL: ${{ steps.forge.outputs.pr_url }}
-          OUTCOME: ${{ steps.forge.outcome }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          # Forge's Slack bot token — the same `xoxb-` token deriv-com/forge-agent
-          # uses, so the "PR opened" message comes from the same bot that said
-          # "on it" and the thread reads as one conversation.
-          #
-          # Only needed on the Slack path. Absent ⇒ the Slack post is skipped and
-          # the label flow behaves exactly as before.
-          SLACK_BOT_TOKEN: ${{ secrets.FORGE_SLACK_BOT_TOKEN }}
-        run: |
-          set -uo pipefail
-
-          if [ "$OUTCOME" = "success" ] && [ -n "${PR_URL:-}" ]; then
-            BODY=$(printf '🔨 **Forge** opened %s\n\nThe design doc and implementation plan are committed in the PR.' "$PR_URL")
-            LABEL="forge:done"
-          else
-            # The log is the agent's combined stdout/stderr, so scrub anything
-            # token-shaped before it lands in an issue comment. Defence in depth:
-            # Actions already masks registered secrets, but tokens minted at run
-            # time (and anything the agent echoes) are not registered.
-            TAIL=$(tail -c 3000 /tmp/forge.log 2>/dev/null | sed -E \
-              -e 's/gh[pousr]_[A-Za-z0-9]{20,}/***/g' \
-              -e 's/github_pat_[A-Za-z0-9_]{20,}/***/g' \
-              -e 's/sk-ant-[A-Za-z0-9_-]{20,}/***/g' \
-              -e 's#x-access-token:[^@]*@#x-access-token:***@#g' \
-              || echo "no output captured")
-            BODY=$(printf '🔨 **Forge** failed — [full log](%s)\n\n<details><summary>Last output</summary>\n\n```\n%s\n```\n\n</details>\n\nRe-apply the `forge` label to retry.' "$RUN_URL" "$TAIL")
-            LABEL="forge:failed"
-          fi
-
-          # Best-effort: never fail the job on reporting.
-          if [ -n "${COMMENT_ID:-}" ]; then
-            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" \
-              -f body="$BODY" --silent || gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY" || true
-          else
-            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY" || true
-          fi
-
-          # `forge` is also removed here in case we failed before the claim step —
-          # otherwise re-labelling can't retrigger.
-          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
-            --remove-label "forge" --remove-label "forge:running" --add-label "$LABEL" || true
-
-          # ---- answer the Slack thread ------------------------------------
-          # Only the Slack path supplies these. The workflow posts the OUTCOME
-          # only — forge-agent already posted "on it" with the run link, so a
-          # second start message would just be noise.
-          #
-          # The log tail deliberately does NOT go to Slack: it can be 3 KB of
-          # agent output, and the GitHub comment above already carries it behind
-          # a <details> fold in a private repo. Slack gets a link instead.
-          if [ -z "${SLACK_CHANNEL:-}" ] || [ -z "${SLACK_THREAD_TS:-}" ]; then
-            echo "No Slack thread on this run — skipping the Slack post."
-            exit 0
-          fi
-          if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
-            echo "::warning::Slack thread was supplied but SLACK_BOT_TOKEN is not set — the requester will get no reply in Slack."
-            exit 0
-          fi
-
-          # Notify the person who asked, when we know who that was.
-          WHO=""
-          [ -n "${REQUESTED_BY:-}" ] && WHO="<@${REQUESTED_BY}> "
-          ISSUE_LINK="<${ISSUE_URL}|#${ISSUE_NUMBER}>"
-
-          if [ "$OUTCOME" = "success" ] && [ -n "${PR_URL:-}" ]; then
-            SLACK_TEXT="${WHO}✅ *Forge opened a PR* for ${ISSUE_LINK} — <${PR_URL}|review it here>. The design doc and plan are committed in the PR."
-          else
-            SLACK_TEXT="${WHO}❌ *Forge failed* on ${ISSUE_LINK} — <${RUN_URL}|see the run log>. The error is also on the issue. Ask me to retry when you're ready."
-          fi
-
-          # jq builds the JSON so text containing quotes/newlines can't break it.
-          RESPONSE=$(jq -n \
-            --arg channel "$SLACK_CHANNEL" \
-            --arg thread_ts "$SLACK_THREAD_TS" \
-            --arg text "$SLACK_TEXT" \
-            '{channel: $channel, thread_ts: $thread_ts, text: $text}' \
-            | curl -sS -X POST https://slack.com/api/chat.postMessage \
-                -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
-                -H 'Content-type: application/json; charset=utf-8' \
-                --data @- || echo '{"ok":false,"error":"curl_failed"}')
-
-          # Slack answers 200 with {"ok":false,...} on failure, so the HTTP status
-          # alone proves nothing — check the body.
-          if [ "$(printf '%s' "$RESPONSE" | jq -r '.ok')" = "true" ]; then
-            echo "Posted the outcome to Slack."
-          else
-            echo "::warning::Slack post failed: $(printf '%s' "$RESPONSE" | jq -r '.error // "unknown"')"
-          fi
+    secrets:
+      CLIENT_ID_GHAPP_WRITE: ${{ secrets.CLIENT_ID_GHAPP_WRITE }}
+      PRIVATE_KEY_GHAPP_WRITE: ${{ secrets.PRIVATE_KEY_GHAPP_WRITE }}
+      CLIENT_ID_GHAPP: ${{ secrets.CLIENT_ID_GHAPP }}
+      PRIVATE_KEY_GHAPP: ${{ secrets.PRIVATE_KEY_GHAPP }}
+      FORGE_API_KEY: ${{ secrets.FORGE_API_KEY }}
+      LITELLM_API_URL: ${{ secrets.LITELLM_API_URL }}
+      FORGE_SLACK_BOT_TOKEN: ${{ secrets.FORGE_SLACK_BOT_TOKEN }}
