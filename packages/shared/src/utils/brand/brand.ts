@@ -192,8 +192,12 @@ export const getApiBaseUrl = (): string => {
 };
 
 /**
- * Gets the Help Centre URL
- * @returns Help Centre URL (e.g., "https://trade.deriv.com/help-centre/deriv-trader")
+ * Gets the Help Centre URL on the deriv.com content site, which owns the
+ * regional information architecture and routes its own visitors between the
+ * global (/help-centre/) and EU (/eu/helpcentre/) help centres. Linking it
+ * directly — rather than via the former trade.deriv.com hop, which discarded
+ * that decision — keeps EU/non-EU routing delegated to the content site.
+ * @returns Help Centre URL (e.g., "https://deriv.com/helpcentre/deriv-trader")
  */
 export const getHelpCentreUrl = (): string => {
     return substituteDerivDomain(config_data.platform.help_centre_url);

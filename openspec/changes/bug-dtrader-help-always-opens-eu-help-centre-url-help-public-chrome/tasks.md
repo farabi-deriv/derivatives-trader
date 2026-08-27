@@ -1,0 +1,41 @@
+# Tasks: Geo-aware DTrader Help centre routing
+
+## Open Questions
+
+Resolved here as working assumptions (headless planning); none block implementation:
+
+- **Dropping the `trade.deriv.com` hop** — assumed acceptable: issue #1252's _Expected_ names `https://deriv.com/helpcentre/deriv-trader` as the correct non-EU destination, so the plan routes straight to the content site. Surface this explicitly in the PR description for product sign-off.
+- **Logged-in EU (DIEL) accounts overriding geo** — out of scope (design Non-Goals): the public-chrome bug is defined by visitor egress; an account-regulation override can be layered on later without changing this spec.
+- **Exact EU IA path** (`/eu/helpcentre/deriv-trader`) — only pinned in config under the contingency path (group 4); the primary path never hardcodes it.
+
+All work is one independently shippable unit tracked by existing issue deriv-com/derivatives-trader#1252 (no new parent/child issues needed); stable task IDs below.
+
+## 1. Base branch and the verification gate
+
+- [x] 1.1 Create the working branch from `upstream/master` (deriv-com/derivatives-trader), NOT from the local fork lineage (629 commits behind, predates the Sidebar/Menu code): `git fetch upstream master && git checkout -b <branch> upstream/master`. Verify `packages/trader/src/AppV2/Components/Layout/Sidebar/sidebar.tsx` exists and `grep -n "help_centre_url" brand.config.json` prints line 18 with `https://trade.deriv.com/help-centre/deriv-trader`.
+- [x] 1.2 **Gate (needs runtime verification):** from non-EU egress (e.g. Kenya, as in the bug report) and EU egress (e.g. Spain), open `https://deriv.com/helpcentre/deriv-trader` in a browser and record the final rendered URL and page copy for each. PASS = non-EU egress stays on the global help centre (no `/eu/`, no EU CFD risk copy) AND EU egress reaches the EU help centre. On PASS do groups 2–3 and skip group 4; on FAIL do groups 2–4 with task 2.1 replaced by the group 4 config shape. Record both observations (URLs + screenshots) in the PR description.
+
+## 2. Primary implementation (content-site delegation)
+
+- [x] 2.1 In `brand.config.json`, change `platform.help_centre_url` from `https://trade.deriv.com/help-centre/deriv-trader` to `https://deriv.com/helpcentre/deriv-trader`. Verify with `grep -n "help_centre_url" brand.config.json` and by confirming no other file references `trade.deriv.com/help-centre` (`git grep -n "trade.deriv.com/help-centre"` returns nothing outside tests updated in 2.4).
+- [x] 2.2 In `packages/shared/src/utils/brand/brand.ts`, update the `getHelpCentreUrl()` JSDoc (lines ~193-200) to document the new destination and the delegation of EU/non-EU routing to the content site; keep the `substituteDerivDomain()` pass-through untouched. Verify `npx tsc -p packages/shared/tsconfig.json` introduces no new errors (pre-existing master errors excluded).
+- [x] 2.3 Align the unmounted footer component `packages/core/src/App/Components/Layout/Footer/help-centre.jsx` to the shared rule: replace `StaticUrl href='/help-centre/'` (which builds a divergent `deriv.com/{lang}/help-centre/` URL via `getStaticUrl`) with an anchor whose `href={getHelpCentreUrl()}`, keeping `id='dt_help_centre'`, `aria-label`, `target='_blank'`-equivalent behaviour and `rel='noopener noreferrer'`. Verify by a new unit test in `packages/core/src/App/Components/Layout/Footer/__tests__/help-centre.spec.jsx` asserting the href equals the mocked `getHelpCentreUrl()` value and the rel/target/id attributes are present.
+- [x] 2.4 Update `packages/trader/src/AppV2/Components/Layout/Sidebar/__tests__/sidebar.spec.tsx`: change the `getHelpCentreUrl` mock (line 15) to the new URL and keep/extend the assertion that clicking `dt_sidebar_help` calls `window.open(<mocked url>, '_blank', 'noopener,noreferrer')`. Verify `npx jest packages/trader/src/AppV2/Components/Layout/Sidebar --config jest.config.js` passes.
+- [x] 2.5 Confirm `packages/core/src/Modules/Menu/__tests__/menu.spec.tsx` still passes unchanged (it mocks `getHelpCentreUrl` opaquely at line 40 and asserts `window.open(..., '_blank', 'noopener,noreferrer')` at line 272) — this proves the call-site contract survived. Verify `npx jest packages/core/src/Modules/Menu --config jest.config.js` passes.
+- [x] 2.6 Add a unit test for the helper itself (extend or create `packages/shared/src/utils/brand/__tests__/brand.spec.ts`): `getHelpCentreUrl()` returns `https://deriv.com/helpcentre/deriv-trader` on a deriv.com hostname and substitutes the TLD (e.g. `deriv.be`) when the app runs there; assert the value contains no `trade.deriv.com` hop and no `/eu/` segment. Verify the new test passes via `npx jest packages/shared/src/utils/brand --config jest.config.js`.
+
+## 3. Verification, docs, and escalation
+
+- [x] 3.1 Run the touched suites together and confirm green: `npx jest packages/shared/src/utils/brand packages/trader/src/AppV2/Components/Layout/Sidebar packages/core/src/Modules/Menu packages/core/src/App/Components/Layout/Footer --config jest.config.js`.
+- [x] 3.2 Build sanity: `npx tsc -p packages/trader/tsconfig.json` and `npx tsc -p packages/shared/tsconfig.json` show no NEW errors versus master baseline (master has known pre-existing failures; compare against a clean `upstream/master` run).
+- [x] 3.3 Write previous-vs-expected manual test steps into the PR description, one block per surface: (a) desktop ≥1280px sidebar `dt_sidebar_help`, (b) mobile Menu → Help centre, both logged out, from EU and non-EU egress — previous: always `deriv.com/eu/helpcentre/deriv-trader`; expected: global help centre for non-EU / EU help centre for EU, new tab, unchanged label/icon/testids. Verify the PR body contains the steps and the task-1.2 evidence.
+- [x] 3.4 Escalate the root external defect — `trade.deriv.com/help-centre/deriv-trader` forwarding **all** egress to `/eu/` — to the owners of that property (it misroutes anything else that links there), cross-referencing issue #1252. Verify by linking the escalation (issue/ticket URL) in the PR description.
+- [x] 3.5 Docs check (Documentation Is Part of Done): no README/user docs in this repo describe the Help URL; state this explicitly in the PR description ("no doc updates needed — link destination is config-internal"). Verify the statement is present.
+
+## 4. Contingency — in-app market resolver (ONLY if gate 1.2 FAILS)
+
+- [ ] 4.1 In `brand.config.json`, keep `platform.help_centre_url` = `https://deriv.com/helpcentre/deriv-trader` (non-EU/global default) and add `platform.help_centre_url_eu` = `https://deriv.com/eu/helpcentre/deriv-trader`. Verify both keys parse (`node -e "console.log(require('./brand.config.json').platform)"`).
+- [ ] 4.2 Add a market resolver module `packages/shared/src/utils/brand/market.ts`: resolves the visitor's EU/non-EU market once at app bootstrap via a lightweight geo country lookup (timeout-guarded fetch), maps the country against an EU-country set, caches the verdict in module state for synchronous reads, and defaults to non-EU on any error/timeout/not-yet-resolved read (spec: unknown ⇒ non-EU; click path must stay synchronous for `window.open`). Verify with unit tests in `packages/shared/src/utils/brand/__tests__/market.spec.ts` covering EU country, non-EU country, fetch failure, and read-before-resolve — all four scenarios from `specs/help-centre-geo-routing/spec.md`.
+- [ ] 4.3 Wire the bootstrap call from core app init (`packages/core/src/App/app.jsx` or the existing bootstrap path that runs before the trade page renders) so the verdict is cached before a user can click Help; fire-and-forget, no UI dependency. Verify by a test or by asserting in the dev console that the resolver ran once on load without blocking render.
+- [ ] 4.4 Change `getHelpCentreUrl()` in `packages/shared/src/utils/brand/brand.ts` to pick `help_centre_url_eu` when the cached verdict is EU, else `help_centre_url`, both still passed through `substituteDerivDomain()`; signature stays `(): string` so `sidebar.tsx` and `menu.tsx` call sites are untouched. Verify existing suites in 2.4/2.5 plus new helper tests (EU verdict ⇒ `/eu/` URL, non-EU/unknown ⇒ global URL) pass.
+- [ ] 4.5 Re-run group 3 (tests, tsc, manual steps, escalation, docs statement) on top of the contingency implementation.

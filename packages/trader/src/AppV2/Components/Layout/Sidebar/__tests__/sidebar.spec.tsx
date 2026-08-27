@@ -12,7 +12,7 @@ jest.mock('@deriv/shared', () => ({
         send: jest.fn(),
     }),
     getBrandUrl: jest.fn(() => 'https://deriv.com'),
-    getHelpCentreUrl: jest.fn(() => 'https://trade.deriv.com/help-centre/deriv-trader'),
+    getHelpCentreUrl: jest.fn(() => 'https://deriv.com/helpcentre/deriv-trader'),
 }));
 
 jest.mock('@deriv/api', () => ({
@@ -182,7 +182,7 @@ describe('<Sidebar />', () => {
         fireEvent.click(helpButton);
 
         expect(mockWindowOpen).toHaveBeenCalledWith(
-            'https://trade.deriv.com/help-centre/deriv-trader',
+            'https://deriv.com/helpcentre/deriv-trader',
             '_blank',
             'noopener,noreferrer'
         );

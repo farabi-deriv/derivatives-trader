@@ -1,17 +1,20 @@
 import React from 'react';
 
-import { Popover, StaticUrl } from '@deriv/components';
+import { Popover } from '@deriv/components';
 import { LegacyHelpCentreIcon } from '@deriv/quill-icons';
+import { getHelpCentreUrl } from '@deriv/shared';
 import { useTranslations } from '@deriv-com/translations';
 
 export const HelpCentre = ({ showPopover }) => {
     const { localize } = useTranslations();
     return (
-        <StaticUrl
-            href='/help-centre/'
+        <a
+            href={getHelpCentreUrl()}
             id='dt_help_centre'
             aria-label={localize('Help centre')}
             className='footer__link'
+            target='_blank'
+            rel='noopener noreferrer'
         >
             {showPopover ? (
                 <Popover
@@ -25,6 +28,6 @@ export const HelpCentre = ({ showPopover }) => {
             ) : (
                 <LegacyHelpCentreIcon className='footer__icon' iconSize='xs' />
             )}
-        </StaticUrl>
+        </a>
     );
 };
