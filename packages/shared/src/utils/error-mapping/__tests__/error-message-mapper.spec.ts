@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 import { mapErrorMessage } from '../error-message-mapper';
 import { localize } from '@deriv-com/translations';
 
@@ -169,5 +172,115 @@ describe('mapErrorMessage', () => {
         };
         const result = mapErrorMessage(error);
         expect(result.indexOf('AAA')).toBeLessThan(result.indexOf('BBB'));
+    });
+});
+
+describe('mapErrorMessage raw API parameter names', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('names the end time in English for the reported MissingEither rejection', () => {
+        const error = { subcode: 'MissingEither', code_args: ['duration', 'date_expiry'] };
+        const result = mapErrorMessage(error);
+        expect(result).toBe('Please specify either duration or end time.');
+        expect(result).not.toContain('date_expiry');
+    });
+
+    it('humanizes the same parameters for DuplicateExpiry', () => {
+        const error = { subcode: 'DuplicateExpiry', code_args: ['duration', 'date_expiry'] };
+        expect(mapErrorMessage(error)).toBe('Please enter only duration or end time.');
+    });
+
+    it('humanizes every parameter inside a single comma-joined argument', () => {
+        const error = { subcode: 'OrderUpdateNotAllowed', code_args: ['take_profit, stop_loss'] };
+        expect(mapErrorMessage(error)).toBe('Only these parameters can be updated: take profit, stop loss.');
+    });
+
+    it('reads as one sentence when a multi-word label lands in the barrier offset message', () => {
+        const error = { subcode: 'IncorrectBarrierOffsetDecimals', code_args: ['barrier2', '2'] };
+        expect(mapErrorMessage(error)).toBe('The second barrier offset can not have more than 2 decimal places.');
+    });
+
+    it('names the duration and end time in the InvalidExpiry message', () => {
+        const error = { subcode: 'InvalidExpiry', code_args: ['MULTUP'] };
+        const result = mapErrorMessage(error);
+        expect(result).toBe('The duration or end time is not valid for this contract type (MULTUP).');
+        expect(result).not.toContain('date_expiry');
+    });
+
+    it('sanitizes the backend prose of an unmapped subcode', () => {
+        const error = { subcode: 'UnknownSubcode', message: 'Please specify either duration or date_expiry.' };
+        expect(mapErrorMessage(error)).toBe('Please specify either duration or end time.');
+    });
+
+    it('falls back to the generic message when an unmapped prose keeps an unlabelled identifier', () => {
+        const error = { message: 'Invalid trading_period_start supplied.' };
+        expect(mapErrorMessage(error)).toBe('An error occurred. Please try again later.');
+    });
+
+    it('returns a clean unmapped message verbatim', () => {
+        expect(mapErrorMessage({ message: 'Backend error message' })).toBe('Backend error message');
+        expect(mapErrorMessage({ subcode: 'UnknownSubcode', message: 'Backend error message' })).toBe(
+            'Backend error message'
+        );
+    });
+
+    it('quotes barrier bounds byte-for-byte, signs and trailing zeros included', () => {
+        const error = { subcode: 'BarrierNotInRange', code_args: ['+207.90', '-207.60'] };
+        expect(mapErrorMessage(error)).toBe('Barrier is not an integer in range of +207.90 to -207.60.');
+    });
+
+    it('leaves a symbol code and a contract-type code untouched', () => {
+        const error = { subcode: 'InvalidInput', code_args: ['R_100', 'MULTUP'] };
+        expect(mapErrorMessage(error)).toBe('R_100 is not a valid input for contract type MULTUP.');
+    });
+
+    it('passes a numeric argument through without touching it', () => {
+        const error = { subcode: 'DigitOutOfRange', code_args: [0, 9] };
+        expect(mapErrorMessage(error)).toBe('Digit must be in the range of 0 to 9.');
+    });
+});
+
+describe('authored error copy', () => {
+    /**
+     * Guards the class of bug behind #1247: an authored template that hardcodes a raw API
+     * parameter name (the `InvalidExpiry` template used to read `(duration or date_expiry)`).
+     *
+     * Two known limitations, accepted deliberately:
+     * 1. It is coupled to the mapper's file path — a rename fails this test loudly
+     *    (file-not-found) rather than passing silently, and the fix is a one-line path update.
+     * 2. It only sees templates written as a direct `localize('literal')` call; a template
+     *    assembled by concatenation or held in a variable would slip past it.
+     */
+    const MAPPER_SOURCE_PATH = path.join(__dirname, '../error-message-mapper.ts');
+    // Matches a lowercase snake_case wire identifier — the same detector the mapper uses on its
+    // fallback path. Lowercase-anchored so `R_100`, `1HZ100V` and `MULTUP` cannot match.
+    const RAW_API_PARAMETER_NAME = /\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g;
+    const INTERPOLATION_PLACEHOLDER = /^param_\d+$/;
+
+    const getAuthoredTemplates = (): string[] => {
+        const source: string = fs.readFileSync(MAPPER_SOURCE_PATH, 'utf8');
+        const template_literal = /localize\(\s*(['"])((?:\\.|(?!\1).)*)\1/g;
+
+        return Array.from(source.matchAll(template_literal), match => match[2]);
+    };
+
+    it('extracts the mapper templates it is meant to scan', () => {
+        // Sanity check: a silently empty extraction would make the assertion below vacuous.
+        expect(getAuthoredTemplates().length).toBeGreaterThan(100);
+    });
+
+    it('contains no raw API parameter name in any authored template', () => {
+        const offenders = getAuthoredTemplates()
+            .map(template => ({
+                template,
+                identifiers: (template.match(RAW_API_PARAMETER_NAME) ?? []).filter(
+                    (token: string) => !INTERPOLATION_PLACEHOLDER.test(token)
+                ),
+            }))
+            .filter(({ identifiers }) => identifiers.length > 0);
+
+        expect(offenders).toEqual([]);
     });
 });

@@ -1,6 +1,25 @@
 import { localize } from '@deriv-com/translations';
 
+import { hasRawApiParameterName, humanizeApiParameterNames } from './api-parameter-labels';
 import type { ErrorObject } from './types';
+
+/**
+ * The message shown when a subcode carries no authored template, or carries none at all.
+ *
+ * The backend message is prose written for API consumers, so it can name request fields by their
+ * wire identifiers. Humanize the ones we have labels for; if an unlabelled identifier survives,
+ * prefer the generic message over leaking it to a user (issue #1247). The raw message stays on the
+ * error object for logging.
+ */
+const getFallbackMessage = (message?: string): string => {
+    if (!message) {
+        return localize('An error occurred. Please try again later.');
+    }
+
+    const humanized = humanizeApiParameterNames(message);
+
+    return hasRawApiParameterName(humanized) ? localize('An error occurred. Please try again later.') : humanized;
+};
 
 /**
  * Maps error subcodes to user-friendly, localized error messages
@@ -15,13 +34,13 @@ export const mapErrorMessage = (error: ErrorObject): string => {
         return localize('An error occurred. Please try again later.');
     }
 
-    // If subcode doesn't exist, return the backend message or default
+    // If subcode doesn't exist, return the sanitized backend message or default
     if (!error.subcode) {
-        return error.message || localize('An error occurred. Please try again later.');
+        return getFallbackMessage(error.message);
     }
 
-    // Get parameters from code_args array
-    const params = error.code_args || [];
+    // Get parameters from code_args array, with any API parameter name replaced by its label
+    const params = (error.code_args || []).map(arg => (typeof arg === 'string' ? humanizeApiParameterNames(arg) : arg));
 
     // Map subcode to localized message with parameter substitution
     switch (error.subcode) {
@@ -162,7 +181,7 @@ export const mapErrorMessage = (error: ErrorObject): string => {
                 param_1: params[0],
             });
         case 'IncorrectBarrierOffsetDecimals':
-            return localize('{{param_1}} barrier offset can not have more than {{param_2}} decimal places.', {
+            return localize('The {{param_1}} offset can not have more than {{param_2}} decimal places.', {
                 param_1: params[0],
                 param_2: params[1],
             });
@@ -215,7 +234,7 @@ export const mapErrorMessage = (error: ErrorObject): string => {
         case 'InvalidDealCancellation':
             return localize('Deal cancellation is not offered at this duration.');
         case 'InvalidExpiry':
-            return localize('Invalid input (duration or date_expiry) for this contract type ({{param_1}}).', {
+            return localize('The duration or end time is not valid for this contract type ({{param_1}}).', {
                 param_1: params[0],
             });
         case 'InvalidExpiryTime':
@@ -394,7 +413,7 @@ export const mapErrorMessage = (error: ErrorObject): string => {
                 }
             );
         case 'OrderUpdateNotAllowed':
-            return localize('Only updates to these parameters are allowed {{param_1}}.', {
+            return localize('Only these parameters can be updated: {{param_1}}.', {
                 param_1: params[0],
             });
         case 'OutdatedVolatilityData':
@@ -579,8 +598,8 @@ export const mapErrorMessage = (error: ErrorObject): string => {
         case 'ZeroAbsoluteBarrier':
             return localize('Barrier cannot be zero.');
 
-        // If subcode is not mapped, return the backend message or default
+        // If subcode is not mapped, return the sanitized backend message or default
         default:
-            return error.message || localize('An error occurred. Please try again later.');
+            return getFallbackMessage(error.message);
     }
 };
