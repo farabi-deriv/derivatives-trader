@@ -416,6 +416,8 @@ const mock = (): TStores & { is_mock: boolean } => {
                 setV2ParamsInitialValues: jest.fn(),
                 setPayoutPerPoint: jest.fn(),
                 setDefaultStake: jest.fn(),
+                // Defaulted so component tests render chips, not the loading skeleton.
+                stake_preset_limits: { floor: 1, max: 5000 },
                 stake_boundary: {},
                 start_date: 0,
                 stop_loss: 0,

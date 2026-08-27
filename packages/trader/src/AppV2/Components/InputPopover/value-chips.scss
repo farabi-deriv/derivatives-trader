@@ -35,6 +35,13 @@
         }
     }
 
+    // Placeholder block standing in for a chip while its value is still being derived: chip-sized, so
+    // the row holds its height and the real chips land in the same place.
+    &__skeleton-chip {
+        height: 4.8rem;
+        border-radius: var(--core-borderRadius-400);
+    }
+
     // Pill variant used by the mobile trade-parameter sheets (Stake, automation Stake multiplier):
     // three outlined pills per row instead of two filled blocks. Selected reads as a bordered light
     // surface (matching the market-selection category chips), not a solid fill — the base already has
@@ -54,6 +61,10 @@
                 border-color: var(--semantic-color-slate-solid-border-inverse-lowest, #000);
                 color: var(--component-textIcon-normal-prominent, #181c25);
             }
+        }
+
+        .value-chips__skeleton-chip {
+            border-radius: 10rem;
         }
     }
 }

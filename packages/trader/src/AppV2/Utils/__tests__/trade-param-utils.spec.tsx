@@ -5,6 +5,7 @@ import { mockStore } from '@deriv/stores';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { TRADE_PARAMETER_PRESETS } from 'AppV2/Config/trade-parameter-presets';
 import { getProposalInfo } from 'Stores/Modules/Trading/Helpers/proposal';
 
 import {
@@ -20,7 +21,6 @@ import {
     getProposalRequestObject,
     getSmallestDuration,
     getSnackBarText,
-    getStakePresetValues,
     getTicksWheelOptions,
     getTickWheelRange,
     getTimeWheelColumnRange,
@@ -28,8 +28,11 @@ import {
     getTimeWheelVisibleUnits,
     getTradeParams,
     getTradeTypeTabsList,
+    getDerivedDefaultStake,
+    getStakeLadderValues,
     isDigitContractWinning,
     isSmallScreen,
+    roundUpToRoundStake,
 } from '../trade-params-utils';
 
 describe('getTradeParams', () => {
@@ -919,36 +922,168 @@ describe('getTimeWheelSelectionFromDuration', () => {
     });
 });
 
-describe('getStakePresetValues', () => {
-    const base = [1, 5, 10, 20, 50, 100];
-
-    it('should return base presets unchanged when limits are missing', () => {
-        expect(getStakePresetValues(base)).toEqual(base);
-        expect(getStakePresetValues(base, 0, 0)).toEqual(base);
-        expect(getStakePresetValues(base, '1', undefined)).toEqual(base);
+describe('roundUpToRoundStake', () => {
+    it('should round a market minimum up to the next value on the 1-2-5 decade ladder', () => {
+        expect(roundUpToRoundStake(8)).toBe(8);
+        expect(roundUpToRoundStake(6.5)).toBe(8);
+        expect(roundUpToRoundStake(11)).toBe(15);
+        expect(roundUpToRoundStake(34.06)).toBe(40);
     });
 
-    it('should keep all base presets when they fit the limits', () => {
-        expect(getStakePresetValues(base, 1, 50000)).toEqual(base);
+    it('should leave a minimum that already sits on the ladder unchanged', () => {
+        expect(roundUpToRoundStake(1)).toBe(1);
+        expect(roundUpToRoundStake(2)).toBe(2);
+        expect(roundUpToRoundStake(5)).toBe(5);
+        expect(roundUpToRoundStake(10)).toBe(10);
+        expect(roundUpToRoundStake(100)).toBe(100);
     });
 
-    it('should drop presets below the market minimum', () => {
-        expect(getStakePresetValues(base, 5, 50000)).toEqual([5, 10, 20, 50, 100]);
+    it('should scale below 1 for low-unit currencies', () => {
+        expect(roundUpToRoundStake(0.35)).toBe(0.4);
+        expect(roundUpToRoundStake(0.05)).toBe(0.05);
+        expect(roundUpToRoundStake(0.6)).toBeCloseTo(0.6);
     });
 
-    it('should prepend the market minimum when it invalidates the lower presets without matching one', () => {
-        expect(getStakePresetValues(base, 3, 50000)).toEqual([3, 5, 10, 20, 50, 100]);
+    it('should scale above one decade without a per-magnitude table', () => {
+        expect(roundUpToRoundStake(120)).toBe(150);
+        expect(roundUpToRoundStake(3400)).toBe(4000);
     });
 
-    it('should drop presets above the market maximum', () => {
-        expect(getStakePresetValues(base, 1, 25)).toEqual([1, 5, 10, 20]);
+    it('should never return a value below the minimum it was given', () => {
+        const inputs = [0.01, 0.07, 0.35, 0.99, 1, 1.01, 2, 3, 6.5, 8, 10, 11, 34.06, 99, 120, 501, 3400, 12345];
+        inputs.forEach(min => {
+            expect(roundUpToRoundStake(min)).toBeGreaterThanOrEqual(min);
+        });
     });
 
-    it('should derive presets from the minimum when limits invalidate most of the base', () => {
-        expect(getStakePresetValues(base, 200, 50000)).toEqual([200, 400, 1000, 2000, 3000, 5000]);
+    it('should return non-finite or non-positive input unchanged', () => {
+        expect(roundUpToRoundStake(0)).toBe(0);
+        expect(roundUpToRoundStake(-5)).toBe(-5);
+        expect(roundUpToRoundStake(NaN)).toBeNaN();
+        expect(roundUpToRoundStake(Infinity)).toBe(Infinity);
+    });
+});
+
+describe('getDerivedDefaultStake', () => {
+    it('should keep the contracts_for default when it is already at or above the minimum', () => {
+        expect(getDerivedDefaultStake(2, 1)).toBe(2);
+        expect(getDerivedDefaultStake(2, 2)).toBe(2);
     });
 
-    it('should fall back to the minimum alone for extremely tight limits', () => {
-        expect(getStakePresetValues(base, 200, 250)).toEqual([200]);
+    it('should raise the default to the rounded minimum when the minimum exceeds it', () => {
+        expect(getDerivedDefaultStake(2, 8)).toBe(8);
+        expect(getDerivedDefaultStake(2, 34.06)).toBe(40);
+        expect(getDerivedDefaultStake(2, 11)).toBe(15);
+    });
+
+    it('should never return a value below the minimum', () => {
+        [1, 2, 6.5, 8, 11, 34.06, 120].forEach(min_stake => {
+            expect(getDerivedDefaultStake(2, min_stake)).toBeGreaterThanOrEqual(min_stake);
+        });
+    });
+
+    it('should fall back to the API default alone when the minimum is unusable', () => {
+        expect(getDerivedDefaultStake(2, undefined)).toBeUndefined();
+        expect(getDerivedDefaultStake(2, NaN)).toBeUndefined();
+        expect(getDerivedDefaultStake(undefined, undefined)).toBeUndefined();
+    });
+
+    it('should still derive a stake when the API default is missing', () => {
+        expect(getDerivedDefaultStake(undefined, 8)).toBe(8);
+    });
+
+    it('should fall back to the raw minimum when rounding up would exceed the maximum', () => {
+        // 11 rounds up to 15, which a maximum of 12 cannot accommodate — so the raw minimum, the
+        // only value guaranteed to sit inside the band, is used instead.
+        expect(getDerivedDefaultStake(2, 11, 12)).toBe(11);
+        expect(getDerivedDefaultStake(2, 11, 15)).toBe(15);
+        expect(getDerivedDefaultStake(2, 11, 5000)).toBe(15);
+    });
+
+    it('should ignore an unusable maximum', () => {
+        expect(getDerivedDefaultStake(2, 8, NaN)).toBe(8);
+        expect(getDerivedDefaultStake(2, 8, undefined)).toBe(8);
+    });
+});
+
+describe('getStakeLadderValues', () => {
+    const vanillas_base = TRADE_PARAMETER_PRESETS.stake.vanillas;
+
+    it('should start the quick picks at the derived default on a high-minimum market', () => {
+        const derived_default = getDerivedDefaultStake(2, 8);
+        const presets = getStakeLadderValues(vanillas_base, derived_default, 5000);
+
+        expect(presets[0]).toBe(8);
+        expect(presets).toEqual([8, 10, 20, 50, 75, 80]);
+        expect(presets.every(value => value >= 8)).toBe(true);
+    });
+
+    it('should only move the leading chip on an ordinary minimum-2 market', () => {
+        const derived_default = getDerivedDefaultStake(2, 2);
+
+        expect(getStakeLadderValues(vanillas_base, derived_default, 5000)).toEqual([2, 5, 10, 20, 50, 75]);
+    });
+
+    it('should top up with multiples of the derived floor when the minimum invalidates most of the base', () => {
+        const derived_default = getDerivedDefaultStake(2, 34.06);
+        const presets = getStakeLadderValues(vanillas_base, derived_default, 5000);
+
+        expect(derived_default).toBe(40);
+        expect(presets).toEqual([40, 50, 75, 80, 100, 150]);
+        expect(presets.every(value => value >= 34.06 && value <= 5000)).toBe(true);
+    });
+
+    it('should always offer a full row of six quick picks', () => {
+        // A row that is 6 wide on one market and 3 wide on the next reads as chips being missing.
+        // Whatever the floor, the base presets above it are topped up from multiples of the floor
+        // until the row is full, so the surface always offers the same number of quick picks.
+        // Every minimum a Vanillas market reports today is covered here.
+        const max_stake = 5000;
+        [0.35, 0.5, 1, 2, 3, 6.5, 8, 10, 11, 20, 34.06, 80, 120, 200].forEach(min_stake => {
+            const derived_default = getDerivedDefaultStake(2, min_stake, max_stake);
+            const presets = getStakeLadderValues(vanillas_base, derived_default, max_stake);
+
+            expect(presets).toHaveLength(6);
+            // Strictly ascending, so the top-up never repeats or undercuts a value already offered.
+            expect(presets.every((value, index) => index === 0 || value > presets[index - 1])).toBe(true);
+        });
+    });
+
+    it('should never offer a quick pick above the maximum', () => {
+        // The maximum outranks the full row: a band with no room for six ascending values offers the
+        // ones that fit rather than a value the market would reject.
+        expect(getStakeLadderValues(vanillas_base, 10, 60)).toEqual([10, 20, 50, 60]);
+        // The tighter top-up rungs reach 250 here, which the maximum allows — a band that fits two
+        // ascending values offers both rather than stopping at the floor.
+        expect(getStakeLadderValues(vanillas_base, 200, 250)).toEqual([200, 250]);
+    });
+
+    it('should offer no quick pick at all until a floor is available', () => {
+        // Every value on the ladder is derived from the floor, so before the active market's limits
+        // are known there is nothing to offer. Falling back to the unfiltered base put a lower first
+        // chip on screen and replaced the whole row a moment later — the flicker QA saw on mobile.
+        expect(getStakeLadderValues(vanillas_base, undefined, 5000)).toEqual([]);
+        expect(getStakeLadderValues(vanillas_base, NaN, 5000)).toEqual([]);
+        expect(getStakeLadderValues(vanillas_base, 0, 5000)).toEqual([]);
+    });
+
+    it('should still lead with the floor and fill the row when the maximum is not known yet', () => {
+        expect(getStakeLadderValues(vanillas_base, 10)).toEqual([10, 20, 50, 75, 80, 100]);
+        expect(getStakeLadderValues(vanillas_base, 50)[0]).toBe(50);
+        expect(getStakeLadderValues(vanillas_base, 50)).toHaveLength(6);
+    });
+
+    it('should offer the derived default as the first quick pick for every minimum', () => {
+        // The one invariant the two stake surfaces and the store's default all rest on: whatever the
+        // market minimum is, the stake the platform applies is the lowest quick pick it offers. A
+        // starting stake above the first chip is what the user reports as "it picked a larger amount".
+        const max_stake = 5000;
+        [0.35, 0.5, 1, 2, 3, 6.5, 8, 10, 11, 20, 34.06, 80, 120, 400].forEach(min_stake => {
+            const derived_default = getDerivedDefaultStake(2, min_stake, max_stake);
+            const presets = getStakeLadderValues(vanillas_base, derived_default, max_stake);
+
+            expect(presets[0]).toBe(derived_default);
+            expect(presets.every(value => value >= min_stake && value <= max_stake)).toBe(true);
+        });
     });
 });

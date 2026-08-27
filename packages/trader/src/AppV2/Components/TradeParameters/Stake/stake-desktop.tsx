@@ -14,6 +14,7 @@ import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import useTradeError from 'AppV2/Hooks/useTradeError';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { mapContractTypeToStakePresetKey } from 'AppV2/Utils/trade-params-preset-utils';
+import { getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { AutomationStoreContext } from 'Stores/useAutomationStore';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -29,8 +30,12 @@ const StakePopoverContent: React.FC<{
     is_open: boolean;
     contract_type: string;
     symbol: string;
+    /** Lowest stake to offer as a quick pick — the store's derived Vanillas floor. */
+    min_stake?: string | number;
+    /** Highest stake to offer as a quick pick, from the same store limits as the floor. */
+    max_stake?: string | number;
     onChipSelect: (amount: number) => void;
-}> = ({ active_tab, amount, currency, is_open, contract_type, symbol, onChipSelect }) => {
+}> = ({ active_tab, amount, currency, is_open, contract_type, symbol, min_stake, max_stake, onChipSelect }) => {
     const { closePopover } = useTradeParameterPopover();
 
     const handleChipSelectAndClose = useCallback(
@@ -49,19 +54,27 @@ const StakePopoverContent: React.FC<{
 
     // Map contract_type to the preset key and get the appropriate stake presets
     const presetKey = mapContractTypeToStakePresetKey(contract_type);
-    const chipValues = presetKey ? getStakePresets(presetKey, symbol) : undefined;
 
     // Fallback to a default set if no presets found (backward compatibility)
     const defaultChipValues = [1, 5, 10, 20, 50, 100];
 
+    const basePresets = (presetKey ? getStakePresets(presetKey) : undefined) ?? defaultChipValues;
+
+    // Same helper and store limits as the mobile sheet, so both surfaces offer identical chips;
+    // no chips until this market's limits are known (skeleton holds the row).
+    const chipValues = getStakeLadderValues(basePresets, min_stake, max_stake);
+
+    const is_awaiting_limits = !chipValues.length;
+
     return (
         <ChipsWithInputToggle
             activeTab={active_tab}
-            chipValues={chipValues || defaultChipValues}
+            chipValues={chipValues}
             selectedValue={amount}
             onSelect={handleChipSelectAndClose}
             formatValue={(val: number) => `${getCurrencySymbol(currency)}${val}`}
             inputComponent={<StakeInputDesktop onClose={closePopover} is_open={is_open} />}
+            isLoading={is_awaiting_limits}
         />
     );
 };
@@ -79,6 +92,7 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
         trade_types,
         trade_type_tab,
         proposal_info,
+        stake_preset_limits,
         onChange,
         is_automation_tab,
     } = useTraderStore();
@@ -145,6 +159,8 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
                 is_open={is_open}
                 contract_type={contract_type}
                 symbol={symbol}
+                min_stake={stake_preset_limits?.floor}
+                max_stake={stake_preset_limits?.max}
                 onChipSelect={handleChipSelect}
             />
         </TradeParameterPopover>

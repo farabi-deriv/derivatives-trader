@@ -81,6 +81,32 @@ export const getProposalErrorField = (response: TPriceProposalResponse) => {
     return el_error && isVisible(el_error) ? error_id : null;
 };
 
+/**
+ * The stake band a response reports, read from every place the API puts it (verified live):
+ * the proposal payload, `error.details`, and — for InvalidMinStake, whose details carry no
+ * min_stake — the message's `code_args` (["8.00"]). Read per field, not per source: a rejection
+ * can carry a limit-less `proposal` object beside its error. `code_args` is trusted only for
+ * that subcode; elsewhere it holds message fill-ins (e.g. the barrier list).
+ */
+export const getStakeLimitsFromResponse = (
+    response: TPriceProposalResponse & { error?: TSocketError<'proposal'>['error'] }
+): { min_stake?: number; max_stake?: number } => {
+    type TStakeLimits = { min_stake?: number; max_stake?: number };
+    const proposal_limits: TStakeLimits = response.proposal ?? {};
+    const error_limits = (response.error?.details ?? {}) as TStakeLimits;
+
+    const { subcode, code_args } = (response.error ?? {}) as { subcode?: string; code_args?: string[] };
+    const code_args_min = subcode === 'InvalidMinStake' ? Number(code_args?.[0]) : NaN;
+
+    const min_stake =
+        proposal_limits.min_stake ??
+        error_limits.min_stake ??
+        (Number.isFinite(code_args_min) && code_args_min > 0 ? code_args_min : undefined);
+    const max_stake = proposal_limits.max_stake ?? error_limits.max_stake;
+
+    return { min_stake, max_stake };
+};
+
 export const getProposalInfo = (
     store: TTradeStore,
     response: TPriceProposalResponse & { error?: TSocketError<'proposal'>['error'] }

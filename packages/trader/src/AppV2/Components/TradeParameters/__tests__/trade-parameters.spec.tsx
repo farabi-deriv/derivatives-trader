@@ -26,6 +26,7 @@ const TRADE_PARAMS = {
     LAST_DIGIT_PREDICTION: 'LastDigitPrediction',
 };
 const data_test = 'dt_trade_param';
+const skeleton_test_id = 'dt_trade_param_skeleton';
 
 jest.mock('../AllowEquals', () => jest.fn(() => <div data-testid={data_test}>{TRADE_PARAMS.ALLOW_EQUALS}</div>));
 jest.mock('../Duration', () => jest.fn(() => <div data-testid={data_test}>{TRADE_PARAMS.DURATION}</div>));
@@ -200,6 +201,108 @@ describe('TradeParameters', () => {
         expect(screen.getByText(TRADE_PARAMS.DURATION)).toBeInTheDocument();
         expect(screen.getByText(TRADE_PARAMS.STAKE)).toBeInTheDocument();
         expect(screen.getAllByTestId(data_test)).toHaveLength(4);
+    });
+
+    describe('while the newly opened tab is still waiting on its first proposal', () => {
+        beforeEach(() => {
+            default_mock_store.modules.trade.is_awaiting_contracts_for = true;
+        });
+
+        // The minimized row resets its scroll on mount, which jsdom doesn't implement.
+        beforeEach(() => {
+            HTMLDivElement.prototype.scrollTo = jest.fn();
+        });
+        afterEach(() => {
+            delete (HTMLDivElement.prototype as Partial<HTMLDivElement>).scrollTo;
+        });
+
+        const renderMinimized = () =>
+            render(
+                <TraderProviders store={default_mock_store}>
+                    <ReportsStoreProvider>
+                        <ModulesProvider store={default_mock_store}>
+                            <TradeParameters is_minimized />
+                        </ModulesProvider>
+                    </ReportsStoreProvider>
+                </TraderProviders>
+            );
+
+        it('stands a skeleton in for every param chip of the trade type, whatever the trade type is', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.TURBOS.LONG;
+            render(mockTradeParameters());
+
+            // Duration, Payout per point, Stake and Take profit — none of them showing a value
+            // carried over from the tab the user just left.
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(4);
+            expect(screen.queryByText(TRADE_PARAMS.DURATION)).not.toBeInTheDocument();
+            expect(screen.queryByText(TRADE_PARAMS.PAYOUT_PER_POINT)).not.toBeInTheDocument();
+            expect(screen.queryByText(TRADE_PARAMS.STAKE)).not.toBeInTheDocument();
+            expect(screen.queryByText(TRADE_PARAMS.TAKE_PROFIT)).not.toBeInTheDocument();
+        });
+
+        it('matches the skeleton count to the params the trade type actually shows', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.ACCUMULATOR;
+            render(mockTradeParameters());
+
+            // Growth rate, Stake and Take profit — Accumulators has no duration or barrier.
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(3);
+        });
+
+        it('keeps the trade type tabs live so the sub-type can still be switched', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.RISE_FALL;
+            render(mockTradeParameters());
+
+            expect(screen.getByText(TRADE_PARAMS.TRADE_TYPE_TABS)).toBeInTheDocument();
+        });
+
+        it('leaves the information rows to their own loading states', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.MULTIPLIER;
+            default_mock_store.modules.trade.has_cancellation = true;
+            render(mockTradeParameters());
+
+            expect(screen.getByText(TRADE_PARAMS.MULTIPLIERS_CANCELLATION_INFO)).toBeInTheDocument();
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(3);
+        });
+
+        it('skeletons only the chips for Rise/Fall, leaving the Allow equals toggle live', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.RISE_FALL;
+            render(mockTradeParameters());
+
+            // Duration and Stake only. Allow equals is a toggle row rather than a chip here, and
+            // drops out entirely for durations that don't offer it — a third skeleton would be
+            // standing in for something the real row is not going to show.
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(2);
+            expect(screen.getByText(TRADE_PARAMS.ALLOW_EQUALS)).toBeInTheDocument();
+        });
+
+        it('keeps the inline digit grid live and skeletons only the chips beside it', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.MATCH_DIFF;
+            render(mockTradeParameters());
+
+            // Duration and Stake only: the digit grid is not a chip in the params sheet, and its
+            // values come from ticks rather than the proposal.
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(2);
+            expect(screen.getByText(TRADE_PARAMS.LAST_DIGIT_PREDICTION)).toBeInTheDocument();
+        });
+
+        it('skeletons the last digit prediction where it renders as a chip', () => {
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.MATCH_DIFF;
+            renderMinimized();
+
+            // Minimized, the digit grid collapses into a field, so it is a chip like the rest:
+            // Last digit prediction, Duration and Stake.
+            expect(screen.getAllByTestId(skeleton_test_id)).toHaveLength(3);
+            expect(screen.queryByText(TRADE_PARAMS.LAST_DIGIT_PREDICTION)).not.toBeInTheDocument();
+        });
+
+        it('restores the params once the proposal has been answered', () => {
+            default_mock_store.modules.trade.is_awaiting_contracts_for = false;
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.TURBOS.LONG;
+            render(mockTradeParameters());
+
+            expect(screen.queryByTestId(skeleton_test_id)).not.toBeInTheDocument();
+            expect(screen.getByText(TRADE_PARAMS.STAKE)).toBeInTheDocument();
+        });
     });
 
     it('should reset scroll position to start when contract type changes in minimized mode', () => {

@@ -133,9 +133,14 @@
                 }
 
                 .trade-params__option--minimized {
-                    // Halved from quill's `size--lg` 16px. (0,2,0) beats quill's (0,1,0) whatever
-                    // the stylesheet order.
-                    padding-inline: var(--core-spacing-400);
+                    // Halved from quill's `size--lg` 16px. (0,3,0) beats quill's (0,1,0) whatever
+                    // the stylesheet order. Skeletons are excluded: their pulse block fills the
+                    // content box, so any inline padding here shows up as an unmasked white gutter
+                    // inside the chip — and, with `flex-basis: 0`, floors the skeleton's basis at
+                    // padding+border, making it wider than the live chips sharing the row.
+                    &:not(.trade-params__skeleton) {
+                        padding-inline: var(--core-spacing-400);
+                    }
 
                     // Quill leaves `min-width` at `auto` on its internals, so their automatic
                     // minimum size is min-content — which the `<input>`'s intrinsic width
@@ -166,9 +171,9 @@
                 // `.quill-input__wrapper .peer:not(placeholder-shown) + .label` (0,3,1) even after a
                 // Reports visit re-injects quill's base2.css after the trader CSS (see
                 // purchase-button.scss). Scoped to `--has-value` because the offset assumes quill's
-                // 12px `--has-value` padding-top; Barrier has no skeleton guard and legitimately
-                // renders an empty value before the first proposal, where quill's centred resting
-                // label must be left alone.
+                // 12px `--has-value` padding-top; Barrier has no skeleton guard of its own and
+                // legitimately renders an empty value while a re-price is in flight, where quill's
+                // centred resting label must be left alone.
                 .trade-params__option.trade-params__option--minimized .quill-input-label__wrapper--has-value > .label {
                     display: block;
                     height: var(--core-lineHeight-100);
@@ -206,6 +211,21 @@
             }
         }
     }
+    // Loading placeholder standing in for one param chip. Fixes the chip's own height — 56px is
+    // quill's `--component-field-height-md` — with `border-box` so the `&__option` border below is
+    // counted inside it rather than added to it: a skeleton 2px taller than the chip it replaces is
+    // exactly what makes the row shrink when the real values land.
+    &__skeleton {
+        box-sizing: border-box;
+        height: var(--core-size-2800);
+        // Quill's own field radius, inherited by the inner block — the placeholder keeps the
+        // chip's exact shape.
+        border-radius: var(--component-field-border-radius-md);
+
+        &-block {
+            border-radius: inherit;
+        }
+    }
     &__option {
         border: 1px solid var(--color-surface-border);
         touch-action: manipulation; // Prevent hover states on touch devices
@@ -222,9 +242,10 @@
         // Width comes from the equal flex share the row hands out, not from this chip — see
         // `.trade-params__options-wrapper--horizontal`.
         &--minimized {
-            // The loading fallbacks render `<Skeleton />` (`width: 100%; height: 100%`) inside a
-            // bare div, where `height: 100%` resolves to 0 and the chip collapses to its border.
-            // 56px is quill's own `--component-field-height-md`, so this is a no-op for real chips.
+            // Floor for a chip with no intrinsic height of its own — a `<Skeleton />`
+            // (`width: 100%; height: 100%`) in a bare div would otherwise collapse to its border.
+            // 56px is quill's own `--component-field-height-md`, so this is a no-op for real chips
+            // and for `&__skeleton` above, which sets that height outright.
             min-height: var(--core-size-2800);
         }
         @include mobile-screen {

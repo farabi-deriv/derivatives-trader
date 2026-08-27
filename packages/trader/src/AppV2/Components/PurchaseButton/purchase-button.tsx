@@ -320,7 +320,10 @@ const PurchaseButton = observer(() => {
                         const is_disabled =
                             !is_trade_enabled_v2 ||
                             (info.has_error && !is_insufficient_balance) ||
-                            is_switching_account;
+                            is_switching_account ||
+                            // No price yet — nothing to buy. An error also has no id but sets
+                            // has_error, keeping insufficient-balance's inform-don't-disable intact.
+                            (!info.id && !info.has_error);
                         // Driven straight off the store flag, which the store sets for the whole
                         // attempt and clears on every exit. Mirroring it into local state and
                         // resetting on an is_purchase_enabled transition left the spinner stuck

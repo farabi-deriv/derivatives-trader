@@ -1,6 +1,6 @@
 import { CONTRACT_TYPES, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import ModulesProvider from 'Stores/Providers/modules-providers';
@@ -356,6 +356,10 @@ describe('StakeInput', () => {
             [CONTRACT_TYPES.CALL]: { stake: { max: '50000.00', min: '5.00' } },
             [CONTRACT_TYPES.PUT]: { stake: { max: '50000.00', min: '5.00' } },
         };
+        // The ladder is built from the store's derived floor, not from validation_params directly —
+        // the mock store is a plain object, so the computed that reads the params above is supplied
+        // here as its result.
+        default_mock_store.modules.trade.stake_preset_limits = { floor: 5, max: 50000 };
         renderStakeInput();
 
         expect(screen.queryByRole('button', { name: 'Select value $1' })).not.toBeInTheDocument();
@@ -928,12 +932,307 @@ describe('Stake - Mobile header actions', () => {
                 return error_by_amount.get(key);
             }
         );
+        const settle = () => new Promise(resolve => setTimeout(resolve, 400));
         const user = userEvent.setup();
         renderMobileStake();
 
         await openSheet(user);
         await user.click(screen.getByRole('button', { name: 'Select value $20' }));
+        // Past the validation debounce, so the assertion lands on the settled state rather than on
+        // whatever the click happened to flush — the sibling test above owns the no-flash case.
+        await settle();
 
         expect(screen.getByRole('button', { name: /Save/i })).toBeDisabled();
+    });
+});
+
+describe('Vanillas stake presets', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useProposal } = require('AppV2/Hooks/useProposal');
+    let vanillas_mock_store: ReturnType<typeof mockStore>;
+
+    beforeEach(() => {
+        useProposal.mockReturnValue({ data: mockProposalData, error: null, isFetching: false });
+        vanillas_mock_store = mockStore({
+            modules: {
+                trade: {
+                    ...mockStore({}).modules.trade,
+                    amount: 10,
+                    basis: 'stake',
+                    contract_type: TRADE_TYPES.VANILLA.CALL,
+                    currency: 'USD',
+                    default_stake: 2,
+                    is_vanilla: true,
+                    symbol: '1HZ25V',
+                    // The store derives these from validation_params below (min 8 rounds up to 10);
+                    // mockStore's trade is a plain object, so the computed value is supplied directly
+                    // here. The derivation itself is covered by the TradeStore spec.
+                    stake_preset_limits: { floor: 10, max: 5000 },
+                    trade_types: {
+                        [CONTRACT_TYPES.VANILLA.CALL]: 'Call',
+                    },
+                    trade_type_tab: '',
+                    validation_params: {
+                        [CONTRACT_TYPES.VANILLA.CALL]: { stake: { max: '5000.00', min: '8.00' } },
+                    },
+                },
+            },
+        });
+    });
+
+    const chipLabels = () => screen.getAllByRole('button', { name: /^Select value/ }).map(chip => chip.textContent);
+
+    const renderDesktopPopover = async () => {
+        vanillas_mock_store.ui.is_mobile = false;
+        render(
+            <TraderProviders store={vanillas_mock_store}>
+                <ModulesProvider store={vanillas_mock_store}>
+                    <Stake is_minimized />
+                </ModulesProvider>
+            </TraderProviders>
+        );
+        await userEvent.click(screen.getByText(stake_param_label));
+    };
+
+    const mobileSheet = () => (
+        <TraderProviders store={vanillas_mock_store}>
+            <ModulesProvider store={vanillas_mock_store}>
+                <StakeInput onClose={jest.fn()} is_open />
+            </ModulesProvider>
+        </TraderProviders>
+    );
+
+    const renderMobileSheet = () => render(mobileSheet());
+
+    // A full row of six on every market: the shared presets the minimum invalidates are dropped and
+    // the row is topped up from above, so raising the floor never leaves a short row of chips.
+    const full_row = ['$10', '$20', '$50', '$75', '$80', '$100'];
+
+    it('offers no quick pick below the market minimum on desktop', async () => {
+        await renderDesktopPopover();
+
+        expect(chipLabels()).toEqual(full_row);
+    });
+
+    it('offers no quick pick below the market minimum on mobile', () => {
+        renderMobileSheet();
+
+        expect(chipLabels()).toEqual(full_row);
+    });
+
+    it('shows the quick picks, not the skeleton, once the limits are known', () => {
+        renderMobileSheet();
+
+        expect(screen.queryByTestId('dt_value_chips_skeleton')).not.toBeInTheDocument();
+    });
+
+    it('offers the identical ordered quick picks on both surfaces for the same store state', async () => {
+        await renderDesktopPopover();
+        const desktop_chips = chipLabels();
+
+        cleanup();
+        renderMobileSheet();
+
+        expect(chipLabels()).toEqual(desktop_chips);
+    });
+
+    // The limits the ladder is derived from arrive with the market's first pricing result, so a
+    // surface opened right after a market switch has nothing to derive from. It must offer no quick
+    // pick at all until they land: a provisional ladder off the shared presets puts a lower first
+    // chip on screen and then replaces the whole row — the flicker QA saw on mobile. The row's own
+    // space is held by a skeleton, so the wait reads as loading rather than as chips gone missing.
+    describe('before the active market limits are known', () => {
+        beforeEach(() => {
+            const { trade } = vanillas_mock_store.modules;
+            trade.symbol = '1HZ75V';
+            trade.stake_preset_limits = undefined;
+            trade.validation_params = {};
+        });
+
+        const chipCount = () => screen.queryAllByRole('button', { name: /^Select value/ }).length;
+
+        it('shows the skeleton in place of the quick picks on mobile', () => {
+            renderMobileSheet();
+
+            expect(screen.getByTestId('dt_value_chips_skeleton')).toBeInTheDocument();
+            expect(chipCount()).toBe(0);
+        });
+
+        it('shows the skeleton in place of the quick picks on desktop', async () => {
+            await renderDesktopPopover();
+
+            expect(screen.getByTestId('dt_value_chips_skeleton')).toBeInTheDocument();
+            expect(chipCount()).toBe(0);
+        });
+
+        it('offers the whole full-width ladder in one step once the limits arrive', () => {
+            const { rerender } = renderMobileSheet();
+            expect(chipCount()).toBe(0);
+
+            vanillas_mock_store.modules.trade.stake_preset_limits = { floor: 20, max: 5000 };
+            rerender(mobileSheet());
+
+            expect(chipLabels()).toEqual(['$20', '$50', '$75', '$80', '$100', '$150']);
+            expect(screen.queryByTestId('dt_value_chips_skeleton')).not.toBeInTheDocument();
+        });
+
+        it('disables the stake text box while the limits are loading, and enables it once they arrive', () => {
+            const { rerender } = renderMobileSheet();
+
+            // No editable stake before the market's limits exist: a value typed now would be
+            // validated against a band that has not arrived.
+            expect(screen.getByTestId('dt_stake_input')).toBeDisabled();
+
+            vanillas_mock_store.modules.trade.stake_preset_limits = { floor: 20, max: 5000 };
+            rerender(mobileSheet());
+
+            expect(screen.getByTestId('dt_stake_input')).toBeEnabled();
+        });
+
+        it('defaults the stake text box to the minimum quick pick when the limits arrive', () => {
+            const { rerender } = renderMobileSheet();
+
+            vanillas_mock_store.modules.trade.stake_preset_limits = { floor: 20, max: 5000 };
+            rerender(mobileSheet());
+
+            // The first quick pick is the stake the platform settles on — the draft mirrors it the
+            // moment the ladder lands, so the text box never contradicts the chips beside it.
+            expect(screen.getByTestId('dt_stake_input')).toHaveValue('20');
+        });
+
+        it('never offers the raw market minimum as a quick pick', async () => {
+            // The market being left behind is still the one described by validation_params when the
+            // switch starts. 8.00 is the minimum it reported; 10 is the stake derived from it and the
+            // only one the platform ever applies, so 8 must never appear as a tappable chip.
+            vanillas_mock_store.modules.trade.validation_params = {
+                [CONTRACT_TYPES.VANILLA.CALL]: { stake: { max: '5000.00', min: '8.00' } },
+            };
+
+            await renderDesktopPopover();
+
+            expect(screen.queryByRole('button', { name: 'Select value $8' })).not.toBeInTheDocument();
+            expect(chipCount()).toBe(0);
+        });
+    });
+
+    // A fast market switch can open the sheet seeded with the previous market's stake while this
+    // market's limits are already known (or land before the store's own correction settles) — the
+    // untouched draft then sits below the floor with a stale "at least X" error and nothing to
+    // clear it. The sheet heals that seed to the minimum quick pick; a deliberate value never moves.
+    describe('a sheet opened with a stale seed from the previous market', () => {
+        it('heals an untouched draft below the floor to the minimum quick pick', () => {
+            vanillas_mock_store.modules.trade.amount = 2;
+
+            renderMobileSheet();
+
+            expect(screen.getByTestId('dt_stake_input')).toHaveValue('10');
+        });
+
+        it('leaves an untouched draft at or above the floor alone', () => {
+            vanillas_mock_store.modules.trade.amount = 25;
+
+            renderMobileSheet();
+
+            expect(screen.getByTestId('dt_stake_input')).toHaveValue('25');
+        });
+
+        it('never rewrites a value the user typed, even below the floor', async () => {
+            const user = userEvent.setup();
+            renderMobileSheet();
+
+            const input = screen.getByTestId('dt_stake_input');
+            await user.clear(input);
+            await user.type(input, '2');
+            // Past the typing debounce, so the healing effect has had every chance to fire.
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            expect(input).toHaveValue('2');
+        });
+    });
+
+    describe('a floor below the lowest shared preset', () => {
+        // The stake the store applies has to be the first quick pick on both surfaces even when it
+        // sits under the whole shared Vanillas set — otherwise the starting stake is a value the
+        // chips never offer, and the lowest chip is a different (larger) number.
+        beforeEach(() => {
+            const { trade } = vanillas_mock_store.modules;
+            trade.amount = 0.5;
+            trade.stake_preset_limits = { floor: 0.5, max: 5000 };
+            trade.validation_params = {
+                [CONTRACT_TYPES.VANILLA.CALL]: { stake: { max: '5000.00', min: '0.35' } },
+            };
+        });
+
+        it('leads the desktop quick picks with the applied stake', async () => {
+            await renderDesktopPopover();
+
+            expect(chipLabels()).toEqual(['$0.5', '$1', '$5', '$10', '$20', '$50']);
+        });
+
+        it('leads the mobile quick picks with the applied stake', () => {
+            renderMobileSheet();
+
+            expect(chipLabels()[0]).toBe('$0.5');
+        });
+    });
+});
+
+// Characterization: the Vanillas floor/limit filtering above must not reach any other trade type's
+// desktop chips. Turbos on a symbol with no curated override reports a minimum above two of its
+// curated presets, so a filter applied here would show [3, 5, 10, 15, 25] instead of the curated set.
+describe('Non-Vanillas desktop stake presets (same ladder rules as Vanillas)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useProposal } = require('AppV2/Hooks/useProposal');
+
+    it('drops curated Turbos presets the market minimum invalidates', async () => {
+        useProposal.mockReturnValue({ data: mockProposalData, error: null, isFetching: false });
+        const turbos_mock_store = mockStore({
+            modules: {
+                trade: {
+                    ...mockStore({}).modules.trade,
+                    amount: 10,
+                    basis: 'stake',
+                    contract_type: TRADE_TYPES.TURBOS.LONG,
+                    currency: 'USD',
+                    symbol: 'R_100',
+                    trade_types: {
+                        [CONTRACT_TYPES.TURBOS.LONG]: 'Up',
+                    },
+                    trade_type_tab: '',
+                    validation_params: {
+                        [CONTRACT_TYPES.TURBOS.LONG]: { stake: { max: '5000.00', min: '3.00' } },
+                    },
+                    // What the store's computed derives from the validation_params above: min 3
+                    // rounds up to a floor of 5. The mock store is a plain object, so the computed
+                    // does not run and the value both stake surfaces read is supplied directly.
+                    stake_preset_limits: { floor: 5, max: 5000 },
+                },
+            },
+        });
+        turbos_mock_store.ui.is_mobile = false;
+
+        render(
+            <TraderProviders store={turbos_mock_store}>
+                <ModulesProvider store={turbos_mock_store}>
+                    <Stake is_minimized />
+                </ModulesProvider>
+            </TraderProviders>
+        );
+        await userEvent.click(screen.getByText(stake_param_label));
+
+        // The market minimum is 3, so the curated $1 and $2 are values this market would reject and
+        // are no longer offered: the ladder leads with the derived default (3 rounds up to 5) and is
+        // topped up to a full row. Turbos gets the same treatment as Vanillas — a curated set is not
+        // a licence to offer an invalid stake.
+        expect(screen.getAllByRole('button', { name: /^Select value/ }).map(chip => chip.textContent)).toEqual([
+            '$5',
+            '$10',
+            '$15',
+            '$25',
+            '$30',
+            '$40',
+        ]);
+        // The limits are known from validation_params, so the row is chips, not the skeleton.
+        expect(screen.queryByTestId('dt_value_chips_skeleton')).not.toBeInTheDocument();
     });
 });

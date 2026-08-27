@@ -1,11 +1,13 @@
-import { configure } from 'mobx';
+import { configure, reaction } from 'mobx';
 
 import { TActiveSymbolsResponse } from '@deriv/api';
-import { dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
+import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 
 import { TRADE_PANEL_TABS } from 'AppV2/Components/AutomationPanel/automation-config';
+import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import { OPEN_MARKETS_STORAGE_KEYS, TOpenMarket } from 'AppV2/Utils/open-markets-utils';
+import { getDerivedDefaultStake, getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { TRootStore } from 'Types';
 
 import { processPurchase as buyContract } from '../Actions/purchase';
@@ -162,6 +164,25 @@ describe('TradeStore', () => {
         }) as unknown as TRootStore;
 
         tradeStore = new TradeStore({ root_store: mockRootStore });
+        // onProposalResponse drops any response whose contract type has no outstanding request —
+        // the trade-type staleness guard. Tests inject responses directly rather than through
+        // requestProposal, so every contract type the suite prices is registered as outstanding;
+        // staleness-guard tests override this with a narrower map.
+        tradeStore.proposal_requests = Object.fromEntries(
+            [
+                'CALL',
+                'PUT',
+                'CALLE',
+                'PUTE',
+                'VANILLALONGCALL',
+                'VANILLALONGPUT',
+                'TURBOSLONG',
+                'TURBOSSHORT',
+                'MULTUP',
+                'MULTDOWN',
+                'ACCU',
+            ].map(type => [type, {}])
+        ) as typeof tradeStore.proposal_requests;
     });
 
     describe('Initialization', () => {
@@ -1677,6 +1698,1022 @@ describe('TradeStore', () => {
             tradeStore.requestProposal();
             expect(subscribe_mock).not.toHaveBeenCalled();
             values_spy.mockRestore();
+        });
+    });
+
+    describe('stake minimum reconciliation', () => {
+        // min/max stake are absent from contracts_for and arrive only on a proposal, so the first
+        // proposal for a (symbol, contract type) is what reveals a minimum above the default stake.
+        const setVanillasState = (symbol = '1HZ25V', contract_type: string = TRADE_TYPES.VANILLA.CALL) => {
+            tradeStore.symbol = symbol;
+            tradeStore.currency = 'USD';
+            tradeStore.contract_type = contract_type;
+            tradeStore.trade_types = { VANILLALONGCALL: 'Call' } as unknown as typeof tradeStore.trade_types;
+            tradeStore.default_stake = 2;
+            tradeStore.amount = 2;
+        };
+
+        type TResponseOverrides = {
+            contract_type?: string;
+            underlying_symbol?: string;
+            amount?: number;
+            min_stake?: number;
+            max_stake?: number;
+            details?: { field: string; min_stake?: number; max_stake?: number };
+        };
+
+        const stakeErrorResponse = ({
+            contract_type = CONTRACT_TYPES.VANILLA.CALL,
+            underlying_symbol = '1HZ25V',
+            amount = 2,
+            details = { field: 'amount', min_stake: 9, max_stake: 5000 },
+        }: TResponseOverrides = {}) =>
+            ({
+                echo_req: { contract_type, underlying_symbol, amount },
+                error: {
+                    code: 'ContractCreationFailure',
+                    message: 'Invalid stake.',
+                    details,
+                },
+            }) as unknown as Parameters<typeof tradeStore.onProposalResponse>[0];
+
+        const successResponse = ({
+            contract_type = CONTRACT_TYPES.VANILLA.CALL,
+            underlying_symbol = '1HZ25V',
+            amount = 2,
+            min_stake = 1,
+            max_stake = 5000,
+        }: TResponseOverrides = {}) =>
+            ({
+                echo_req: { contract_type, underlying_symbol, amount },
+                proposal: { id: 'proposal-id', ask_price: amount, payout: 0, min_stake, max_stake },
+            }) as unknown as Parameters<typeof tradeStore.onProposalResponse>[0];
+
+        beforeEach(() => {
+            jest.spyOn(tradeStore, 'validateAllProperties').mockImplementation(() => undefined);
+        });
+
+        it('raises the stake to the derived default and surfaces no error when the market minimum exceeds it', async () => {
+            setVanillasState();
+
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+
+            expect(tradeStore.amount).toBe(10);
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBeFalsy();
+            expect(tradeStore.validation_errors.amount ?? []).toEqual([]);
+        });
+
+        it('re-prices the corrected stake so the panel does not sit without a price', async () => {
+            // processNewValuesAsync with is_changed_by_user=false does not reach its own
+            // debouncedProposal() call (its key-regex gate only matches symbol/contract_types_list),
+            // so absorbing the probe must request the proposal explicitly — otherwise the corrected
+            // stake is never priced and Buy stays disabled with no error to explain why.
+            setVanillasState();
+            const proposal_spy = jest.spyOn(tradeStore, 'debouncedProposal').mockImplementation(() => undefined);
+
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+
+            expect(tradeStore.amount).toBe(10);
+            expect(proposal_spy).toHaveBeenCalled();
+        });
+
+        it('INTEGRATION: the corrected Turbos stake reaches the wire with real validation', async () => {
+            // No validateAllProperties mock: this is the end-to-end shape of the reported stall —
+            // probe rejected, correction applied, and the re-price must actually SEND. If any
+            // validation error survives the correction, requestProposal sends forget_all and bails,
+            // which is exactly the trace QA captured (probe, forget_all, silence).
+            (tradeStore.validateAllProperties as jest.Mock).mockRestore();
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            tradeStore.is_awaiting_contracts_for = false;
+            tradeStore.duration = 10;
+            tradeStore.duration_unit = 't';
+            // The app initialises the declarative validation rules at boot (core/app.jsx); without
+            // this, validateAllProperties throws instead of validating and the test proves nothing.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+            const { initFormErrorMessages } = jest.requireActual('@deriv/shared');
+            // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+            const { FORM_ERROR_MESSAGES } = require('@deriv/core/src/Constants/form-error-messages');
+            initFormErrorMessages(FORM_ERROR_MESSAGES);
+            // The store validated the entry stake against the market's rules at some point before
+            // the probe answered — the real-world state the mocked tests never reproduced.
+            tradeStore.validateAllProperties();
+
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: CONTRACT_TYPES.TURBOS.LONG, underlying_symbol: '1HZ50V', amount: 2 },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: {
+                        field: 'amount',
+                        min_stake: 25,
+                        max_stake: 5000,
+                        payout_per_point_choices: [0.05, 0.06, 0.07],
+                    },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.amount).toBe(25);
+
+            const subscribe_mock = WS.subscribeProposal as jest.Mock;
+            subscribe_mock.mockClear();
+            // Bypass the 500ms debounce: this is what debouncedProposal invokes.
+            tradeStore.requestProposal();
+
+            const standing_errors = Object.entries(tradeStore.validation_errors)
+                .filter(([, errors]) => (errors as string[]).length)
+                .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`);
+            expect(standing_errors).toEqual([]);
+            expect(subscribe_mock).toHaveBeenCalled();
+        });
+
+        it('clears a stale stake error so the corrected stake is actually re-priced', async () => {
+            // The Network trace for a stalled Turbos market shows the probe going out at amount:2, a
+            // forget_all, and then NO second proposal. requestProposal bails while validation_errors
+            // holds anything, and processNewValuesAsync only re-validates on contract_type/currency
+            // — so the error left by the rejected $2 survives the corrected write and blocks the
+            // re-price that would have priced the market.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            (tradeStore.validateAllProperties as jest.Mock).mockRestore?.();
+            tradeStore.validation_errors.amount = ['Minimum stake is 25.00'];
+
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: CONTRACT_TYPES.TURBOS.LONG, underlying_symbol: '1HZ50V', amount: 2 },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: { field: 'amount', min_stake: 25, max_stake: 5000 },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.amount).toBe(25);
+            // Nothing may be left standing that would make requestProposal bail before sending.
+            expect(tradeStore.validation_errors.amount ?? []).toHaveLength(0);
+        });
+
+        it('keeps the limits resolvable for a tab after another tab is opened and priced', async () => {
+            // The probe fence and the boundary are per-market, while the store is one.
+            // Opening a second tab moves the fence to it, so returning to the first finds the fence
+            // naming a different market and rejects its boundary — the quick picks fall back to a
+            // skeleton on a tab that was working a moment ago.
+            setVanillasState('R_100', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: CONTRACT_TYPES.TURBOS.LONG, underlying_symbol: 'R_100', amount: 2 },
+                error: { code: 'ContractCreationFailure', details: { field: 'amount', min_stake: 3, max_stake: 5000 } },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 3, max: 5000 });
+
+            // Second tab, different market — prices and takes the fence.
+            tradeStore.symbol = '1HZ50V';
+            tradeStore.validation_params = {};
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: CONTRACT_TYPES.TURBOS.LONG, underlying_symbol: '1HZ50V', amount: 2 },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: { field: 'amount', min_stake: 25, max_stake: 5000 },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 25, max: 5000 });
+
+            // Back to the first tab. Its boundary is still recorded, and validation_params is empty
+            // until it re-prices — the quick picks must not vanish in the meantime.
+            tradeStore.symbol = 'R_100';
+            tradeStore.validation_params = {};
+
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 3, max: 5000 });
+        });
+
+        it('does not read a previous market boundary after a new tab clears validation_params', async () => {
+            // A new tab commits a new (symbol, trade type). validation_params is cleared by that
+            // commit, so the computed falls through to stake_boundary — which is never cleared. The
+            // fence must reject the entry left by the market being left behind, or the new tab shows
+            // the PREVIOUS market's ladder.
+            setVanillasState('R_100', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.LONG,
+                    underlying_symbol: 'R_100',
+                    amount: 2,
+                },
+                error: { code: 'ContractCreationFailure', details: { field: 'amount', min_stake: 3, max_stake: 5000 } },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 3, max: 5000 });
+
+            // New tab on a different market, same trade type. Nothing has priced it yet.
+            tradeStore.symbol = '1HZ50V';
+            tradeStore.validation_params = {};
+
+            expect(tradeStore.stake_preset_limits).toBeUndefined();
+        });
+
+        it('resolves the limits when Turbos prices both sub-types and the OTHER one answers first', async () => {
+            // Turbos subscribes a proposal per displayed sub-type, so with Up selected the store
+            // receives responses for BOTH TURBOSLONG and TURBOSSHORT. The fence is written from the
+            // responding echo_req contract type, but the computed reads the key of the SELECTED
+            // sub-type — so a response for the other one arriving first sets the fence to a key the
+            // computed never reads, and the quick picks stay empty.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = {
+                TURBOSLONG: 'Up',
+                TURBOSSHORT: 'Down',
+            } as unknown as typeof tradeStore.trade_types;
+
+            // The Down proposal answers first.
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.SHORT,
+                    underlying_symbol: '1HZ50V',
+                    amount: 2,
+                },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: { field: 'amount', min_stake: 25, max_stake: 5000 },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            // Up is the selected sub-type, and it is what the quick picks are read for.
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 25, max: 5000 });
+        });
+
+        it('resolves stake_preset_limits for Turbos Down, not only Turbos Up', async () => {
+            // stake_boundary is keyed by the echo_req contract type (TURBOSSHORT), while the
+            // computed derives its key from contract_type via getInitialTradeTypeTab. If those two
+            // disagree for a sub-type, the limits are recorded under one key and read from another
+            // — quick picks stay empty forever even though the boundary is populated.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.SHORT);
+            tradeStore.trade_types = { TURBOSSHORT: 'Down' } as unknown as typeof tradeStore.trade_types;
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.SHORT,
+                    underlying_symbol: '1HZ50V',
+                    amount: 2,
+                },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: { field: 'amount', min_stake: 25, max_stake: 5000 },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_boundary[`1HZ50V:${CONTRACT_TYPES.TURBOS.SHORT}`]).toEqual({
+                min_stake: 25,
+                max_stake: 5000,
+            });
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 25, max: 5000 });
+        });
+
+        it('re-prices after absorbing a Turbos rejection instead of leaving the panel unpriced', async () => {
+            // End-to-end shape of the reported Turbos stall: the corrected stake must actually go
+            // back out. If validateAllProperties leaves a stake error standing, requestProposal
+            // bails before sending anything and the panel never prices.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            const proposal_spy = jest.spyOn(tradeStore, 'debouncedProposal').mockImplementation(() => undefined);
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.LONG,
+                    underlying_symbol: '1HZ50V',
+                    amount: 2,
+                },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: {
+                        field: 'amount',
+                        min_stake: 25,
+                        max_stake: 5000,
+                        payout_per_point_choices: [0.05, 0.06, 0.07],
+                    },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.amount).toBe(25);
+            expect(proposal_spy).toHaveBeenCalled();
+            // The corrected stake is valid for the recorded band, so nothing may be left blocking
+            // the re-price.
+            expect(tradeStore.validation_errors.amount ?? []).toHaveLength(0);
+            proposal_spy.mockRestore();
+        });
+
+        it('still applies the Turbos payout choices carried on the absorbed response', async () => {
+            // A Turbos stake rejection carries payout_per_point_choices on the SAME payload as the
+            // limits. The absorb block returns early, so the branch that would apply those choices
+            // never runs — leaving payout_per_point unset and the panel unable to price, which is
+            // the stalled Turbos state.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            tradeStore.payout_per_point = '';
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.LONG,
+                    underlying_symbol: '1HZ50V',
+                    amount: 2,
+                },
+                error: {
+                    code: 'ContractCreationFailure',
+                    details: {
+                        field: 'amount',
+                        min_stake: 25,
+                        max_stake: 5000,
+                        payout_per_point_choices: [0.05, 0.06, 0.07],
+                    },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_boundary[`1HZ50V:${CONTRACT_TYPES.TURBOS.LONG}`]).toEqual({
+                min_stake: 25,
+                max_stake: 5000,
+            });
+            // The choices on that same payload must not be lost to the early return.
+            expect(tradeStore.payout_choices).toEqual(['0.05', '0.06', '0.07']);
+            expect(tradeStore.payout_per_point).toBe('0.06');
+        });
+
+        it('reads the limits from the error when a rejection also carries a proposal object', async () => {
+            // Turbos prices the contract and rejects the stake in the same payload, so the response
+            // has BOTH a proposal object and an error. `proposal ?? error.details` resolved to the
+            // proposal — which carries no limits — so the minimum was never read and the market
+            // stalled exactly as a min-only response did.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    contract_type: CONTRACT_TYPES.TURBOS.LONG,
+                    underlying_symbol: '1HZ50V',
+                    amount: 2,
+                },
+                proposal: { id: 'proposal-id', ask_price: 2, payout: 0 },
+                error: { code: 'ContractCreationFailure', details: { field: 'amount', min_stake: 25 } },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_boundary[`1HZ50V:${CONTRACT_TYPES.TURBOS.LONG}`]).toEqual({
+                min_stake: 25,
+                max_stake: undefined,
+            });
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 25, max: undefined });
+            expect(tradeStore.amount).toBe(25);
+        });
+
+        it('reads the minimum from code_args when InvalidMinStake carries it nowhere else', async () => {
+            // The InvalidMinStake payload as the live API actually sends it (captured by QA):
+            // details is `{ field: "amount" }` with NO min_stake key — the number exists only in
+            // code_args and the human message. This is the rejection a request valid in every other
+            // field earns, on any trade type, and it was invisible to the whole recovery machinery:
+            // the stake stayed on the rejected value and the quick picks never updated.
+            setVanillasState('R_75');
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    amount: 2,
+                    barrier: '+0.0250',
+                    basis: 'stake',
+                    contract_type: CONTRACT_TYPES.VANILLA.CALL,
+                    underlying_symbol: 'R_75',
+                },
+                error: {
+                    code: 'ContractBuyValidationError',
+                    code_args: ['8.00'],
+                    details: { field: 'amount' },
+                    message: "Please enter a stake amount that's at least 8.00.",
+                    subcode: 'InvalidMinStake',
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_boundary[`R_75:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 8,
+                max_stake: undefined,
+            });
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: undefined });
+            expect(tradeStore.amount).toBe(8);
+            // Absorbed, so the platform's own rejected stake never surfaces as the user's error.
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBeFalsy();
+        });
+
+        it('ignores code_args on rejections that are not InvalidMinStake', async () => {
+            // code_args is just the message's fill-in values — on other subcodes it can hold
+            // anything (the barrier rejection carries the barrier list there), so it must never be
+            // mistaken for a stake limit.
+            setVanillasState('R_75');
+
+            await tradeStore.onProposalResponse({
+                echo_req: {
+                    amount: 2,
+                    barrier: '+0.10',
+                    basis: 'stake',
+                    contract_type: CONTRACT_TYPES.VANILLA.CALL,
+                    underlying_symbol: 'R_75',
+                },
+                error: {
+                    code: 'ContractBuyValidationError',
+                    code_args: ['+63.9380, +33.6530, +0.0250, -33.5790, -63.8040'],
+                    details: { barrier_choices: ['+63.9380', '+0.0250'], field: 'barrier' },
+                    message: 'Barriers available are +63.9380, +33.6530, +0.0250, -33.5790, -63.8040.',
+                    subcode: 'InvalidBarrierPredefined',
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_boundary[`R_75:${CONTRACT_TYPES.VANILLA.CALL}`]).toBeUndefined();
+            expect(tradeStore.amount).toBe(2);
+        });
+
+        it('resolves the limits for a trade type without sub-type tabs (Accumulators)', async () => {
+            // stake_preset_limits derives its key from the trade-type tabs, and Accumulators is the
+            // one trade type with none — getInitialTradeTypeTab returns '' for it. The limits were
+            // recorded under `symbol:ACCU` by the probe but read under a key nothing ever wrote, so
+            // the quick picks stayed in their skeleton forever on Accumulators.
+            tradeStore.symbol = '1HZ100V';
+            tradeStore.currency = 'USD';
+            tradeStore.contract_type = TRADE_TYPES.ACCUMULATOR;
+            tradeStore.trade_types = { ACCU: 'Accumulators' } as unknown as typeof tradeStore.trade_types;
+            tradeStore.default_stake = 2;
+            tradeStore.amount = 2;
+
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: 'ACCU', underlying_symbol: '1HZ100V', amount: 2 },
+                proposal: { id: 'proposal-id', ask_price: 2, payout: 0, min_stake: 1, max_stake: 2000 },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 2, max: 2000 });
+        });
+
+        it('drops a straggling response for a trade type the user has left (same symbol)', async () => {
+            // Subscriptions are forgotten on a trade-type switch, but a response already in flight
+            // still lands. proposal_requests holds the open tab's own contract types, so a response
+            // for anything else is a straggler and must not settle the stake or snap choices for a
+            // contract shape no longer on screen.
+            setVanillasState('1HZ50V', TRADE_TYPES.TURBOS.LONG);
+            tradeStore.trade_types = { TURBOSLONG: 'Up' } as unknown as typeof tradeStore.trade_types;
+            // The open tab prices Turbos only; the arriving response is for Vanillas, just left.
+            tradeStore.proposal_requests = { TURBOSLONG: {} } as typeof tradeStore.proposal_requests;
+
+            await tradeStore.onProposalResponse(
+                stakeErrorResponse({
+                    contract_type: CONTRACT_TYPES.VANILLA.CALL,
+                    underlying_symbol: '1HZ50V',
+                    details: { field: 'amount', min_stake: 25, max_stake: 5000 },
+                })
+            );
+
+            expect(tradeStore.amount).toBe(2);
+            expect(tradeStore.stake_boundary[`1HZ50V:${CONTRACT_TYPES.VANILLA.CALL}`]).toBeUndefined();
+            expect(tradeStore.probed_stake_keys.size).toBe(0);
+        });
+
+        it('swallows a probe rejection answering a stake the user replaced, without side effects', async () => {
+            // The user edits the stake while the first response for a fresh key is in flight. That
+            // response answers a stake no longer held: their own value has its own proposal coming,
+            // so this one is dropped — but its choices were priced against the OLD stake and any
+            // standing validation error belongs to the NEW draft, so neither may be touched.
+            setVanillasState('R_75');
+            tradeStore.barrier_1 = '+0.10';
+            tradeStore.validation_errors.amount = ['Minimum stake is 8.00'];
+            tradeStore.amount = 500; // the user's edit, in flight with its own proposal
+
+            await tradeStore.onProposalResponse(
+                stakeErrorResponse({
+                    underlying_symbol: 'R_75',
+                    // Priced against the platform's 2, not the user's 500.
+                    amount: 2,
+                    details: {
+                        field: 'amount',
+                        min_stake: 8,
+                        max_stake: 5000,
+                        barrier_choices: ['+63.9380', '+0.0250'],
+                    } as unknown as { field: string },
+                })
+            );
+
+            // Limits recorded and the fence closed (the user's stake is theirs now)…
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: 5000 });
+            expect(tradeStore.probed_stake_keys.has(`R_75:${CONTRACT_TYPES.VANILLA.CALL}`)).toBe(true);
+            // …but nothing else was touched: no stake overwrite, no barrier snap from a stale
+            // response, no clearing of an error that belongs to the new draft.
+            expect(tradeStore.amount).toBe(500);
+            expect(tradeStore.barrier_1).toBe('+0.10');
+            expect(tradeStore.validation_errors.amount).toEqual(['Minimum stake is 8.00']);
+            // Swallowed: the stale rejection never becomes user-visible state.
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBeFalsy();
+        });
+
+        it('records a minimum reported without a maximum, and resolves the limits from it', async () => {
+            // The reported Volatility 75 failure. A stake rejection carries the minimum that
+            // rejected it and no maximum at all; requiring both dropped the whole payload, so the
+            // limits never resolved — quick picks stuck in their skeleton, the stake stuck on the
+            // rejected default in an error state, and the per-key fence blocking any retry.
+            setVanillasState('R_75');
+
+            await tradeStore.onProposalResponse(
+                stakeErrorResponse({
+                    underlying_symbol: 'R_75',
+                    details: { field: 'amount', min_stake: 6.5 },
+                })
+            );
+
+            expect(tradeStore.stake_boundary[`R_75:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 6.5,
+                max_stake: undefined,
+            });
+            // 6.5 rounds up to 8, so the quick picks have a floor to build from.
+            expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: undefined });
+            expect(tradeStore.amount).toBe(8);
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBeFalsy();
+        });
+
+        it('keeps a maximum already known when a later response reports only a minimum', async () => {
+            setVanillasState();
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+
+            tradeStore.setStakeBoundary(CONTRACT_TYPES.VANILLA.CALL, 12, undefined);
+
+            // A band learned in full is never narrowed back to a half by a later rejection.
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 12,
+                max_stake: 5000,
+            });
+        });
+
+        it('does not reconcile twice for the same symbol and contract type (re-entrancy fence)', async () => {
+            setVanillasState();
+
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+            expect(tradeStore.amount).toBe(10);
+
+            // The corrected stake re-prices, so a second response for the same key arrives; it must
+            // not be absorbed again or the reconciliation would loop.
+            await tradeStore.onProposalResponse(stakeErrorResponse({ amount: 10 }));
+
+            expect(tradeStore.amount).toBe(10);
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBe(true);
+        });
+
+        it('keeps the contracts_for default when the market minimum is already below it', async () => {
+            setVanillasState();
+
+            await tradeStore.onProposalResponse(successResponse({ min_stake: 1 }));
+
+            expect(tradeStore.amount).toBe(2);
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 1,
+                max_stake: 5000,
+            });
+        });
+
+        it('re-arms the probe on a Vanilla Call to Vanilla Put flip and keeps a boundary per sub-type', async () => {
+            setVanillasState();
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+            expect(tradeStore.amount).toBe(10);
+
+            // A within-group flip does not reset the stake, so the probe is the only thing that can
+            // raise it to the Put sub-type's higher minimum.
+            tradeStore.contract_type = TRADE_TYPES.VANILLA.PUT;
+            tradeStore.trade_types = { VANILLALONGPUT: 'Put' } as unknown as typeof tradeStore.trade_types;
+
+            await tradeStore.onProposalResponse(
+                stakeErrorResponse({
+                    contract_type: CONTRACT_TYPES.VANILLA.PUT,
+                    amount: 10,
+                    details: { field: 'amount', min_stake: 34.06, max_stake: 5000 },
+                })
+            );
+
+            expect(tradeStore.amount).toBe(40);
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.PUT}`]).toEqual({
+                min_stake: 34.06,
+                max_stake: 5000,
+            });
+        });
+
+        it('re-arms the probe on a symbol switch within Vanillas and does not retain the previous market stake', async () => {
+            setVanillasState('1HZ25V');
+            await tradeStore.onProposalResponse(stakeErrorResponse({ underlying_symbol: '1HZ25V' }));
+            expect(tradeStore.amount).toBe(10);
+
+            tradeStore.symbol = '1HZ50V';
+
+            await tradeStore.onProposalResponse(
+                stakeErrorResponse({
+                    underlying_symbol: '1HZ50V',
+                    amount: 10,
+                    details: { field: 'amount', min_stake: 20, max_stake: 5000 },
+                })
+            );
+
+            expect(tradeStore.amount).toBe(20);
+        });
+
+        it('applies the strike choices carried on the absorbed response and snaps the barrier', async () => {
+            // The limits and the barrier reconciliation arrive on the same payload. Absorbing the
+            // response returns before the error branch that normally applies the choices, so the
+            // probe has to apply them itself — otherwise barrier_1 stays on a strike the market has
+            // already rejected and the re-priced (visible) response errors on the barrier instead.
+            setVanillasState();
+            tradeStore.barrier_1 = '+0.1';
+            jest.spyOn(tradeStore, 'debouncedProposal').mockImplementation(() => undefined);
+
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: CONTRACT_TYPES.VANILLA.CALL, underlying_symbol: '1HZ25V', amount: 2 },
+                error: {
+                    code: 'ContractCreationFailure',
+                    message: 'Invalid stake.',
+                    details: {
+                        field: 'amount',
+                        min_stake: 9,
+                        max_stake: 5000,
+                        barrier_choices: ['+1.0', '+2.0', '+3.0'],
+                    },
+                },
+            } as unknown as Parameters<typeof tradeStore.onProposalResponse>[0]);
+
+            expect(tradeStore.amount).toBe(10);
+            expect(tradeStore.barrier_choices).toEqual(['+1.0', '+2.0', '+3.0']);
+            expect(tradeStore.barrier_1).toBe('+1.0');
+        });
+
+        it('leaves the stake and the error untouched when a Vanillas error carries no minimum', async () => {
+            setVanillasState();
+
+            await tradeStore.onProposalResponse(stakeErrorResponse({ details: { field: 'amount' } }));
+
+            expect(tradeStore.amount).toBe(2);
+            expect(tradeStore.probed_stake_keys.size).toBe(0);
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBe(true);
+        });
+
+        it('does not overwrite a stake the user set above the minimum while the same market stays active', async () => {
+            setVanillasState();
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+            expect(tradeStore.amount).toBe(10);
+
+            // Reconciliation happens once per (symbol, sub-type); a stake set afterwards on the same
+            // market is the user's own and is priced as they typed it.
+            tradeStore.amount = 50;
+            await tradeStore.onProposalResponse(successResponse({ amount: 50, min_stake: 9 }));
+
+            expect(tradeStore.amount).toBe(50);
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+        });
+
+        describe('entering a market always lands on its first quick pick', () => {
+            // The derived default IS the first quick pick (getStakeLadderValues leads with it),
+            // so "the stake on entry equals the derived default" and "the stake on entry equals the
+            // lowest quick pick offered" are the same assertion.
+            const firstQuickPick = (min_stake: number, max_stake = 5000) => {
+                const derived_default = getDerivedDefaultStake(tradeStore.default_stake, min_stake, max_stake);
+                return getStakeLadderValues(getStakePresets('vanillas') as number[], derived_default, max_stake)[0];
+            };
+
+            it('lowers a stake carried in from a higher-minimum market to the entered market’s first quick pick', async () => {
+                setVanillasState('1HZ25V');
+                await tradeStore.onProposalResponse(
+                    stakeErrorResponse({
+                        underlying_symbol: '1HZ25V',
+                        details: { field: 'amount', min_stake: 34.06, max_stake: 5000 },
+                    })
+                );
+                expect(tradeStore.amount).toBe(40);
+
+                // R_100 accepts 40, so nothing about it is invalid — but 40 is not this market's
+                // first quick pick, which is what the user is shown as the starting stake. The
+                // priced amount has to be the one the store is actually holding, or the staleness
+                // check treats the response as answering a stake the user has since changed.
+                tradeStore.symbol = 'R_100';
+                await tradeStore.onProposalResponse(
+                    successResponse({ underlying_symbol: 'R_100', amount: 40, min_stake: 1 })
+                );
+
+                expect(tradeStore.amount).toBe(firstQuickPick(1));
+                expect(tradeStore.amount).toBe(2);
+            });
+
+            it('does not carry a quick pick the user tapped on one market into the next one', async () => {
+                setVanillasState('1HZ25V');
+                await tradeStore.onProposalResponse(
+                    stakeErrorResponse({
+                        underlying_symbol: '1HZ25V',
+                        details: { field: 'amount', min_stake: 34.06, max_stake: 5000 },
+                    })
+                );
+                // 500 is one of the quick picks offered on a market with a minimum of 34.06.
+                tradeStore.amount = 500;
+
+                tradeStore.symbol = 'R_100';
+                await tradeStore.onProposalResponse(
+                    successResponse({ underlying_symbol: 'R_100', amount: 500, min_stake: 1 })
+                );
+
+                expect(tradeStore.amount).toBe(firstQuickPick(1));
+            });
+
+            it('lowers the stake on a Vanilla Call to Vanilla Put flip when the Put minimum is lower', async () => {
+                setVanillasState();
+                await tradeStore.onProposalResponse(
+                    stakeErrorResponse({ details: { field: 'amount', min_stake: 34.06, max_stake: 5000 } })
+                );
+                expect(tradeStore.amount).toBe(40);
+
+                // A within-group flip does not reset the stake, so the probe is the only thing that
+                // can bring it back down to the Put sub-type's own first quick pick.
+                tradeStore.contract_type = TRADE_TYPES.VANILLA.PUT;
+                tradeStore.trade_types = { VANILLALONGPUT: 'Put' } as unknown as typeof tradeStore.trade_types;
+
+                await tradeStore.onProposalResponse(
+                    successResponse({ contract_type: CONTRACT_TYPES.VANILLA.PUT, amount: 40, min_stake: 9 })
+                );
+
+                expect(tradeStore.amount).toBe(firstQuickPick(9));
+                expect(tradeStore.amount).toBe(10);
+            });
+
+            it('does not retain a user-customised stake across a Vanillas symbol switch', async () => {
+                setVanillasState('1HZ25V');
+                tradeStore.amount = 500; // customised away from the account default
+
+                await tradeStore.processNewValuesAsync({ symbol: 'R_100' }, false, {
+                    contract_type: TRADE_TYPES.VANILLA.CALL,
+                });
+
+                // The switch itself drops back to the account default; the first proposal for R_100
+                // then reconciles it against that market's own minimum.
+                expect(tradeStore.amount).toBe(2);
+            });
+        });
+
+        it('leaves a stake the user typed while the first response was in flight alone', async () => {
+            // The fence on its own cannot tell the platform's entry stake from a value the user
+            // typed in the window before the first response for a fresh key landed. echo_req.amount
+            // can: a response priced against a stake that is no longer the one in the store was
+            // priced against the entry stake, not against what the user has since typed.
+            setVanillasState();
+            tradeStore.amount = 3; // typed before the response for the entry stake (2) arrived
+
+            await tradeStore.onProposalResponse(stakeErrorResponse({ amount: 2 }));
+
+            expect(tradeStore.amount).toBe(3);
+            // The boundary is still recorded — only the overwrite is withheld.
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+
+            // The response for the stake the user typed then errors as their own.
+            await tradeStore.onProposalResponse(stakeErrorResponse({ amount: 3 }));
+
+            expect(tradeStore.amount).toBe(3);
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBe(true);
+        });
+
+        it('surfaces a below-minimum stake the user typed themselves as their own error', async () => {
+            // Only the first response per (symbol, sub-type) — the platform's own default on load —
+            // may be absorbed. Once that fence is burned, a stake the user types below the minimum
+            // must reach proposal_info as an error rather than being silently rewritten.
+            setVanillasState();
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+            expect(tradeStore.amount).toBe(10);
+
+            tradeStore.amount = 3; // typed by the user, still below the market minimum of 8
+            await tradeStore.onProposalResponse(stakeErrorResponse({ amount: 3 }));
+
+            expect(tradeStore.amount).toBe(3);
+            expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBe(true);
+        });
+
+        describe('stake_preset_limits (the limits both stake surfaces read)', () => {
+            // The limits come from the priced proposal's validation_params, so the settled state is
+            // an error response (absorbed, stake corrected) followed by the successful re-price.
+            const pricedResponse = (contract_type: string, min: string, max = '5000.00') =>
+                ({
+                    echo_req: { contract_type, underlying_symbol: '1HZ25V', amount: 10 },
+                    proposal: {
+                        id: 'proposal-id',
+                        ask_price: 10,
+                        payout: 0,
+                        validation_params: { stake: { min, max } },
+                    },
+                }) as unknown as Parameters<typeof tradeStore.onProposalResponse>[0];
+
+            it('is the derived floor and the market maximum, resolved per Call and Put', async () => {
+                setVanillasState();
+                await tradeStore.onProposalResponse(stakeErrorResponse());
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.VANILLA.CALL, '8.00'));
+
+                expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: 5000 });
+
+                // The key is derived from contract_type alone, so the Put floor is the Put minimum
+                // even while the Call entry is still present.
+                tradeStore.contract_type = TRADE_TYPES.VANILLA.PUT;
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.VANILLA.PUT, '34.06'));
+
+                expect(tradeStore.stake_preset_limits).toEqual({ floor: 40, max: 5000 });
+            });
+
+            it('resolves from the absorbed response, before validation_params repopulates', async () => {
+                // The response that first reveals a market's minimum is absorbed to correct the
+                // stake, so validation_params stays empty for the whole round trip the re-price
+                // takes. The limits that response carried are already recorded, and they are this
+                // market's own — so the quick picks resolve now rather than a round trip later.
+                setVanillasState();
+
+                await tradeStore.onProposalResponse(stakeErrorResponse());
+
+                expect(tradeStore.validation_params[CONTRACT_TYPES.VANILLA.CALL]).toBeUndefined();
+                expect(tradeStore.stake_preset_limits).toEqual({ floor: 10, max: 5000 });
+            });
+
+            it('is undefined on a market the recorded limits do not belong to', async () => {
+                setVanillasState();
+                await tradeStore.onProposalResponse(stakeErrorResponse());
+
+                // The boundary is keyed by contract type alone and is never cleared, so switching
+                // market leaves 1HZ25V's minimum behind under the same key. Only the (symbol,
+                // sub-type) whose proposal wrote it may read it.
+                tradeStore.symbol = '1HZ75V';
+
+                expect(tradeStore.stake_preset_limits).toBeUndefined();
+            });
+
+            it('is undefined before any response for the market, and resolves for non-Vanillas too', async () => {
+                setVanillasState();
+                expect(tradeStore.stake_preset_limits).toBeUndefined();
+
+                // Turbos resolves its limits the same way Vanillas does: the ladder is derived per
+                // trade type, so both stake surfaces get a floor here rather than only on Vanillas.
+                tradeStore.contract_type = TRADE_TYPES.TURBOS.LONG;
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.TURBOS.LONG, '8.00'));
+
+                expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: 5000 });
+            });
+
+            it('falls back to the raw minimum when the rounded floor would exceed the maximum', async () => {
+                setVanillasState();
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.VANILLA.CALL, '8.00', '9.00'));
+
+                expect(tradeStore.stake_preset_limits).toEqual({ floor: 8, max: 9 });
+            });
+
+            it('does not re-publish the same limits on every proposal tick', async () => {
+                // validation_params is reassigned by each streaming response, so a fresh object per
+                // tick would re-render both stake surfaces for an identical ladder.
+                setVanillasState();
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.VANILLA.CALL, '8.00'));
+
+                const published: unknown[] = [];
+                const dispose = reaction(
+                    () => tradeStore.stake_preset_limits,
+                    limits => published.push(limits)
+                );
+                await tradeStore.onProposalResponse(pricedResponse(CONTRACT_TYPES.VANILLA.CALL, '8.00'));
+                dispose();
+
+                expect(published).toHaveLength(0);
+            });
+        });
+
+        describe('entering Vanillas from another trade type', () => {
+            // The stake reset runs before any proposal for the market being entered, so it can only
+            // use a boundary recorded earlier. stake_boundary is keyed by contract type alone and is
+            // never cleared, so which market that boundary belongs to has to be checked.
+            const leaveVanillasForTurbos = () => {
+                tradeStore.contract_type = TRADE_TYPES.TURBOS.LONG;
+                tradeStore.trade_types = { TURBOSLONG: 'Long' } as unknown as typeof tradeStore.trade_types;
+                tradeStore.amount = 2; // the reset on the way out restores the account default
+            };
+
+            const returnToVanillas = () =>
+                tradeStore.processNewValuesAsync({ contract_type: TRADE_TYPES.VANILLA.CALL }, false, {
+                    contract_type: TRADE_TYPES.TURBOS.LONG,
+                });
+
+            it('re-applies the derived default on the market the boundary was recorded for', async () => {
+                setVanillasState('1HZ25V');
+                await tradeStore.onProposalResponse(stakeErrorResponse({ underlying_symbol: '1HZ25V' }));
+                expect(tradeStore.amount).toBe(10);
+
+                leaveVanillasForTurbos();
+                await returnToVanillas();
+
+                // The probe is fenced off for a key it has already reconciled, so on the way back
+                // this reset is the only thing that can lift the stake off the account default of 2,
+                // which sits below this market's minimum of 8.
+                expect(tradeStore.amount).toBe(10);
+            });
+
+            it('does not apply another market’s minimum when the boundary is not the entered market’s', async () => {
+                setVanillasState('1HZ25V');
+                await tradeStore.onProposalResponse(stakeErrorResponse({ underlying_symbol: '1HZ25V' }));
+                expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                    min_stake: 9,
+                    max_stake: 5000,
+                });
+
+                leaveVanillasForTurbos();
+                // Move to a market whose Vanillas minimum is below the account default while off
+                // Vanillas, so nothing re-prices Vanillas and the 1HZ25V boundary is still the only
+                // one recorded under VANILLALONGCALL.
+                tradeStore.symbol = 'R_100';
+
+                await returnToVanillas();
+
+                // R_100 accepts the account default, so raising it to 1HZ25V's derived 10 would hand
+                // the user a 5x stake the market never asked for — and the probe cannot undo it,
+                // since it only ever raises a stake that is below the minimum.
+                expect(tradeStore.amount).toBe(2);
+            });
+        });
+
+        describe('every trade type reconciles the stake, not only Vanillas', () => {
+            it.each<[string, string, string, Record<string, string>]>([
+                ['Turbos', TRADE_TYPES.TURBOS.LONG, CONTRACT_TYPES.TURBOS.LONG, { TURBOSLONG: 'Long' }],
+                ['Rise/Fall', TRADE_TYPES.RISE_FALL, CONTRACT_TYPES.CALL, { CALL: 'Rise', PUT: 'Fall' }],
+                ['Multipliers', TRADE_TYPES.MULTIPLIER, CONTRACT_TYPES.MULTIPLIER.UP, { MULTUP: 'Up' }],
+            ])(
+                'settles the stake on the derived default for %s instead of surfacing the error',
+                async (_label, trade_type, contract_type, trade_types) => {
+                    setVanillasState('1HZ25V', trade_type);
+                    tradeStore.trade_types = trade_types as unknown as typeof tradeStore.trade_types;
+
+                    // The response reports a minimum of 8 against a stake of 2: the platform picked
+                    // that stake on entry, so it is corrected to the derived default (8 -> 10) and
+                    // re-priced rather than shown to the user as their own error.
+                    await tradeStore.onProposalResponse(stakeErrorResponse({ contract_type }));
+
+                    expect(tradeStore.amount).toBe(10);
+                    expect(tradeStore.probed_stake_keys.has(`1HZ25V:${contract_type}`)).toBe(true);
+                    // The probe is absorbed, so the rejection never reaches proposal_info.
+                    expect(tradeStore.proposal_info[contract_type]?.has_error).toBeFalsy();
+                }
+            );
+
+            it('does not derive the Vanillas default from another trade type’s minimum', async () => {
+                // On a Turbos -> Vanillas switch the store still holds the Turbos trade_types/tab when
+                // the stake is reset, so resolving the boundary from those would read the Turbos
+                // minimum and start Vanillas far above its own default.
+                tradeStore.currency = 'USD';
+                tradeStore.symbol = '1HZ25V';
+                tradeStore.contract_type = TRADE_TYPES.TURBOS.LONG;
+                tradeStore.trade_types = { TURBOSLONG: 'Long' } as unknown as typeof tradeStore.trade_types;
+                tradeStore.trade_type_tab = CONTRACT_TYPES.TURBOS.LONG;
+                tradeStore.default_stake = 2;
+                tradeStore.amount = 2;
+                tradeStore.setStakeBoundary(CONTRACT_TYPES.TURBOS.LONG, 34.06, 5000);
+
+                await tradeStore.processNewValuesAsync({ contract_type: TRADE_TYPES.VANILLA.CALL }, false, {
+                    contract_type: TRADE_TYPES.TURBOS.LONG,
+                });
+
+                expect(tradeStore.amount).toBe(2);
+            });
+
+            it('derives a high-minimum Turbos symbol from its own limits, with no curated table', async () => {
+                // 1HZ25V (min 34.06) used to be served by a hand-written [35, 40, 45, 50, 55, 60]
+                // table. That table is gone: the switch itself lands on the contracts_for default,
+                // and the market's own first proposal is what reconciles it — the same path every
+                // other market takes.
+                tradeStore.currency = 'USD';
+                tradeStore.symbol = '1HZ100V';
+                tradeStore.contract_type = TRADE_TYPES.TURBOS.LONG;
+                tradeStore.default_stake = 2;
+                tradeStore.amount = 2;
+
+                await tradeStore.processNewValuesAsync({ symbol: '1HZ25V' }, false, {
+                    contract_type: TRADE_TYPES.TURBOS.LONG,
+                });
+
+                expect(tradeStore.amount).toBe(2);
+
+                // The switch cleanup cleared the outstanding-request map; a real response is always
+                // preceded by its own subscribe, which repopulates it.
+                tradeStore.proposal_requests = { TURBOSLONG: {} } as typeof tradeStore.proposal_requests;
+
+                // The proposal for 1HZ25V reports the real minimum, which settles the stake on the
+                // derived default — 40, against the 35 the deleted table opened with.
+                await tradeStore.onProposalResponse(
+                    stakeErrorResponse({
+                        contract_type: CONTRACT_TYPES.TURBOS.LONG,
+                        underlying_symbol: '1HZ25V',
+                        details: { field: 'amount', min_stake: 34.06, max_stake: 5000 },
+                    })
+                );
+
+                expect(tradeStore.amount).toBe(40);
+            });
         });
     });
 

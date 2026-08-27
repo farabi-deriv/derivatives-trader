@@ -22,6 +22,7 @@ const useContractsFor = () => {
         resolveContractTypeAvailability,
         setContractTypesListV2,
         setDefaultStake,
+        setPayoutChoices,
         setIsAwaitingContractsFor,
         symbol,
         active_symbols,
@@ -169,7 +170,16 @@ const useContractsFor = () => {
                     }
                     const config: TConfig = available_contract_types[type].config || {};
                     config.default_stake = contract.default_stake;
-                    if (type === contract_type) setDefaultStake(contract.default_stake);
+                    // A later per-expiry row without choices must not wipe an earlier row's.
+                    if (contract.payout_choices?.length) config.payout_choices = contract.payout_choices;
+                    if (type === contract_type) {
+                        setDefaultStake(contract.default_stake);
+                        // Turbos: without these choices the first proposal goes out with no
+                        // payout_per_point, and that rejection carries nothing recoverable.
+                        if (contract.payout_choices?.length) {
+                            setPayoutChoices(contract.payout_choices.map(choice => String(choice)));
+                        }
+                    }
                     available_contract_types[type].config = config;
                 });
 
@@ -230,6 +240,20 @@ const useContractsFor = () => {
     const resetTradeTypes = () => {
         setTradeTypes([]);
     };
+
+    // contracts_for is per symbol, so a trade-type switch within a symbol reuses the cached
+    // response and the effect above does not re-run — re-push the active type's stake config here,
+    // or a switch into Turbos sends its first proposal without a payout_per_point (unrecoverable).
+    useEffect(() => {
+        const config: TConfig | undefined = contract_type
+            ? available_contract_types?.[contract_type]?.config
+            : undefined;
+        if (!config) return;
+        // A type without its own default keeps the store's current one.
+        if (config.default_stake !== undefined) setDefaultStake(config.default_stake);
+        if (config.payout_choices?.length) setPayoutChoices(config.payout_choices.map(choice => String(choice)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [available_contract_types, contract_type]);
 
     return { trade_types, contract_types_list, available_contract_types, is_fetching_ref, resetTradeTypes };
 };

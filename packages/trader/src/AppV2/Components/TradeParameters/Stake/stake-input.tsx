@@ -8,7 +8,7 @@ import { useStore } from '@deriv/stores';
 import { ActionSheet, TextField } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 
-import { ValueChips } from 'AppV2/Components/InputPopover';
+import { ValueChips, ValueChipsSkeleton } from 'AppV2/Components/InputPopover';
 import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import useIsVirtualKeyboardOpen from 'AppV2/Hooks/useIsVirtualKeyboardOpen';
 import { useProposal } from 'AppV2/Hooks/useProposal';
@@ -16,7 +16,7 @@ import { formatAmountWithSymbol, getCurrencySymbol } from 'AppV2/Utils/currency-
 import { createDecimalInputGuard, getDecimalInputMaxLength } from 'AppV2/Utils/decimal-input';
 import { getInsufficientBalanceMessage, parseAmount } from 'AppV2/Utils/insufficient-balance-utils';
 import { mapContractTypeToStakePresetKey } from 'AppV2/Utils/trade-params-preset-utils';
-import { getPayoutInfo, getStakePresetValues } from 'AppV2/Utils/trade-params-utils';
+import { getPayoutInfo, getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { ExpandedProposal, getProposalInfo } from 'Stores/Modules/Trading/Helpers/proposal';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -172,6 +172,7 @@ const StakeInput = observer(
             onChange,
             trade_type_tab,
             trade_types,
+            stake_preset_limits,
         } = trade_store;
 
         const decimals = getDecimalPlaces(currency);
@@ -371,13 +372,22 @@ const StakeInput = observer(
         // preset selection ('preset' + value) from a typed amount ('custom')
         const preset_source = React.useRef<number | null>(null);
 
-        // Presets valid for the current contract; limits update from validation_params/proposal errors
+        // Whether the user has edited the draft in this sheet (typed or tapped a preset) — the
+        // auto-defaulting below must never clobber a deliberate value.
+        const has_user_edited = React.useRef(false);
+
+        // Floor and cap both come from the store, so mobile matches desktop and the ladder appears
+        // only once this market's own limits are known — never a row that is about to be replaced.
         const preset_key = mapContractTypeToStakePresetKey(contract_type);
-        const preset_values = getStakePresetValues(
-            (preset_key ? getStakePresets(preset_key, symbol) : undefined) ?? DEFAULT_PRESET_VALUES,
-            details.min_stake,
-            details.max_stake
+        const base_preset_values = (preset_key ? getStakePresets(preset_key) : undefined) ?? DEFAULT_PRESET_VALUES;
+        const preset_values = getStakeLadderValues(
+            base_preset_values,
+            stake_preset_limits?.floor,
+            stake_preset_limits?.max
         );
+
+        // No ladder until the limits arrive; the skeleton holds the row.
+        const is_awaiting_stake_limits = !preset_values.length;
 
         // Sync display amount when proposal_request_values changes externally (e.g. on init)
         React.useEffect(() => {
@@ -400,6 +410,7 @@ const StakeInput = observer(
         // Preset tap fills the input and validates immediately (no typing debounce); Save commits
         const onPresetSelect = (value: number) => {
             preset_source.current = value;
+            has_user_edited.current = true;
             debouncedUpdateProposal.cancel();
             setDisplayAmount(String(value));
             dispatch({ type: 'RESET_ERRORS' });
@@ -407,9 +418,34 @@ const StakeInput = observer(
             dispatch({ type: 'SET_PROPOSAL_VALUES', payload: { amount: value } });
         };
 
+        // Default the draft to the minimum quick pick (the stake the store settles on) when the
+        // limits land while the sheet is open — and heal a stale seed: on a fast market switch the
+        // sheet can open already seeded with the previous market's stake before the store's own
+        // correction round trip settles, leaving an untouched draft below the new floor with a
+        // stale error. A user-edited draft is never clobbered (`has_user_edited`; on the arrival
+        // transition the input was disabled, so no edit can precede it), and an untouched draft at
+        // or above the floor (a stake customised on this market earlier) is left alone.
+        const was_awaiting_limits = React.useRef(is_awaiting_stake_limits);
+        React.useEffect(() => {
+            const was_awaiting = was_awaiting_limits.current;
+            was_awaiting_limits.current = is_awaiting_stake_limits;
+            const min_quick_pick = preset_values[0];
+            if (is_awaiting_stake_limits || !min_quick_pick) return;
+            const is_stale_seed = !has_user_edited.current && Number(displayAmount) < Number(min_quick_pick);
+            if (!was_awaiting && !is_stale_seed) return;
+
+            debouncedUpdateProposal.cancel();
+            setDisplayAmount(String(min_quick_pick));
+            dispatch({ type: 'RESET_ERRORS' });
+            dispatch({ type: 'SET_MAX_LENGTH', payload: getDecimalInputMaxLength(String(min_quick_pick), decimals) });
+            dispatch({ type: 'SET_PROPOSAL_VALUES', payload: { amount: min_quick_pick } });
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [is_awaiting_stake_limits, preset_values[0], amount, displayAmount]);
+
         const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const new_value = String(e.target.value);
             preset_source.current = null; // typing overrides a previous preset tap
+            has_user_edited.current = true;
             setDisplayAmount(new_value); // Immediate display update
             dispatch({
                 type: 'SET_MAX_LENGTH',
@@ -577,6 +613,9 @@ const StakeInput = observer(
                         customType='commaRemoval'
                         data-testid='dt_stake_input'
                         decimals={decimals}
+                        // Not editable before the limits exist — the draft is validated against
+                        // a band that has not arrived and replaced when the ladder lands.
+                        disabled={is_awaiting_stake_limits}
                         inputMode='decimal'
                         id={input_id}
                         label={localize('Stake ({{currency}})', { currency: currency_symbol })}
@@ -602,13 +641,17 @@ const StakeInput = observer(
                         value={displayAmount}
                         variant='fill'
                     />
-                    <ValueChips
-                        className='value-chips--pills'
-                        values={preset_values}
-                        selectedValue={Number(displayAmount)}
-                        onSelect={onPresetSelect}
-                        formatValue={value => `${currency_symbol}${value}`}
-                    />
+                    {is_awaiting_stake_limits ? (
+                        <ValueChipsSkeleton className='value-chips--pills' />
+                    ) : (
+                        <ValueChips
+                            className='value-chips--pills'
+                            values={preset_values}
+                            selectedValue={Number(displayAmount)}
+                            onSelect={onPresetSelect}
+                            formatValue={value => `${currency_symbol}${value}`}
+                        />
+                    )}
                     <StakeDetails
                         contract_type={contract_type}
                         contract_types={contract_types}

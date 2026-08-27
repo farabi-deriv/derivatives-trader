@@ -491,31 +491,81 @@ export const getTimeWheelSelectionFromDuration = (duration: number, duration_uni
     return [0, 0, 0];
 };
 
+/** Floor multiples used to top a short quick-pick row up to STAKE_PRESET_COUNT. Each rung is
+ * rounded onto ROUND_STAKE_LADDER, so the list runs long to survive de-duplication. */
+const STAKE_LADDER_MULTIPLIERS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20];
+
+/** Round stake values per decade; dense so a rounded minimum stays near the raw one (34.06 -> 40). */
+const ROUND_STAKE_LADDER = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+
+/** Rounds a market minimum UP to the nearest round stake (6.5 -> 8); never below the input. */
+export const roundUpToRoundStake = (min: number): number => {
+    if (!Number.isFinite(min) || min <= 0) return min;
+
+    const step = 10 ** Math.floor(Math.log10(min));
+    // The fallback only guards against log10 float dust putting the step a decade too low.
+    return ROUND_STAKE_LADDER.map(multiplier => step * multiplier).find(value => value >= min) ?? min;
+};
+
 /**
- * Stake presets shown in the Stake sheet: the trade type's base presets filtered to the
- * contract's [min, max] stake limits so only valid values are offered. When the market minimum
- * invalidates the lower presets, the minimum itself becomes the first preset (a valid one-tap
- * floor always exists); if filtering leaves fewer than 3 options, presets are derived from
- * multiples of the minimum. Missing limits (first proposal still in flight) return the base
- * presets unchanged, matching current production behavior.
+ * Default stake for a market: max(contracts_for default, rounded minimum) — valid markets keep
+ * their default; a narrow [min, max] band the rounded value overshoots falls back to the raw min.
+ * Returns undefined without a usable minimum. Also the quick-pick floor, so the default is always
+ * the lowest chip offered.
  */
-export const getStakePresetValues = (
+export const getDerivedDefaultStake = (
+    api_default_stake?: number,
+    min_stake?: number,
+    max_stake?: number
+): number | undefined => {
+    if (!min_stake || !Number.isFinite(min_stake)) return undefined;
+
+    const derived = Math.max(api_default_stake ?? 0, roundUpToRoundStake(min_stake));
+
+    // A narrow min/max band can put the rounded value above the maximum, in which case the raw
+    // minimum is the only value guaranteed to sit inside the band.
+    if (max_stake && Number.isFinite(max_stake) && derived > max_stake) return min_stake;
+
+    return derived;
+};
+
+/** Quick picks per row, on every market. */
+export const STAKE_PRESET_COUNT = 6;
+
+/**
+ * Quick picks for a market: led by the derived-default floor, shared presets above it, capped at
+ * the maximum, topped up with rounded floor multiples to STAKE_PRESET_COUNT. Ascending, no
+ * repeats; the cap outranks the width. No floor -> no chips (callers hold the row with a
+ * skeleton) — showing unfiltered presets first would rebuild the row when the limits land.
+ */
+export const getStakeLadderValues = (
     base_presets: number[],
-    min_stake?: string | number,
+    floor?: string | number,
     max_stake?: string | number
 ): number[] => {
-    const min = Number(min_stake);
+    const min = Number(floor);
+    if (!floor || !Number.isFinite(min) || min <= 0) return [];
+
     const max = Number(max_stake);
-    if (!min_stake || !max_stake || !Number.isFinite(min) || !Number.isFinite(max)) return base_presets;
+    const has_max = !!max_stake && Number.isFinite(max);
+    const is_within_max = (value: number) => !has_max || value <= max;
 
-    const in_range = base_presets.filter(preset => preset >= min && preset <= max);
-    const with_floor =
-        in_range.length && Math.min(...base_presets) < min && !in_range.includes(min) ? [min, ...in_range] : in_range;
+    // Strictly above the floor, so a floor that is itself a preset is not offered twice.
+    const with_floor = [min, ...base_presets.filter(preset => preset > min && is_within_max(preset))];
 
-    if (with_floor.length >= 3) return with_floor.slice(0, 6);
+    // Top up from above with the spaced multiples of the floor, so the row keeps its width without
+    // reordering or repeating any value the base presets already contributed. Each multiple is
+    // rounded onto the round-stake ladder first — a raw multiple of an already-rounded floor is not
+    // itself round (1.25 x 25 is 31.25), and a quick pick has to be a value a person would pick.
+    const topped_up = STAKE_LADDER_MULTIPLIERS.reduce((ladder, multiplier) => {
+        if (ladder.length >= STAKE_PRESET_COUNT) return ladder;
 
-    const from_minimum = [1, 2, 5, 10, 15, 25].map(multiplier => min * multiplier).filter(value => value <= max);
-    return (from_minimum.length ? from_minimum : [min]).slice(0, 6);
+        const value = roundUpToRoundStake(min * multiplier);
+        const is_above_offered = value > ladder[ladder.length - 1];
+        return is_above_offered && is_within_max(value) ? [...ladder, value] : ladder;
+    }, with_floor);
+
+    return topped_up.slice(0, STAKE_PRESET_COUNT);
 };
 
 export const getSmallestDuration = (

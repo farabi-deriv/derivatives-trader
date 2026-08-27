@@ -64,7 +64,6 @@ import { safeParse } from '@deriv/utils';
 import { localize } from '@deriv-com/translations';
 
 import { TRADE_PANEL_TABS, type TTradePanelTab } from 'AppV2/Components/AutomationPanel/automation-config';
-import { getStakePresetOverride } from 'AppV2/Config/trade-parameter-presets';
 import { checkContractTypePrefix } from 'AppV2/Utils/contract-type';
 import { isDigitContractType, isDigitTradeType } from 'AppV2/Utils/digits';
 import {
@@ -77,11 +76,17 @@ import {
     writeOpenMarkets,
 } from 'AppV2/Utils/open-markets-utils';
 import { isMultiplierOnlySymbol } from 'AppV2/Utils/symbol-categories-utils';
+import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import {
     mapContractTypeToDurationPresetKey,
     mapContractTypeToStakePresetKey,
 } from 'AppV2/Utils/trade-params-preset-utils';
-import { getDefaultDuration, isValidPersistedDuration } from 'AppV2/Utils/trade-params-utils';
+import {
+    getDefaultDuration,
+    getInitialTradeTypeTab,
+    getDerivedDefaultStake,
+    isValidPersistedDuration,
+} from 'AppV2/Utils/trade-params-utils';
 import { getMultiplierValidationRules, getValidationRules } from 'Stores/Modules/Trading/Constants/validation-rules';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { TContractTypesList, TRootStore, TTextValueNumber, TTextValueStrings } from 'Types';
@@ -92,7 +97,12 @@ import { processPurchase } from './Actions/purchase';
 import { getUpdatedTicksHistoryStats } from './Helpers/accumulator';
 import { getChartAnalyticsData, STATE_TYPES, TPayload } from './Helpers/chart';
 import { processTradeParams } from './Helpers/process';
-import { createProposalRequests, getProposalErrorField, getProposalInfo } from './Helpers/proposal';
+import {
+    createProposalRequests,
+    getProposalErrorField,
+    getProposalInfo,
+    getStakeLimitsFromResponse,
+} from './Helpers/proposal';
 
 import ServerTime from '_common/base/server_time';
 
@@ -341,7 +351,13 @@ export default class TradeStore extends BaseStore {
     basis_list: Array<TTextValueStrings> = [];
     currency = '';
     default_stake: number | undefined;
+    // Stake bands from pricing responses, keyed `${symbol}:${contract_type}` — per sub-type
+    // (separate minimums) and per market (tabs must not overwrite each other). Never cleared;
+    // provenance comes from probed_stake_keys.
     stake_boundary: Partial<TStakeBoundary> = {};
+    // Keys whose own proposal reported a band. Doubles as the once-per-key probe fence: after it,
+    // a stake set on that key is the user's. A set, so one tab cannot un-fence another.
+    probed_stake_keys = new Set<string>();
 
     // Duration
     duration = 5;
@@ -606,6 +622,11 @@ export default class TradeStore extends BaseStore {
             should_show_active_symbols_loading: observable,
             should_skip_prepost_lifecycle: observable,
             stake_boundary: observable.ref, // Object - use ref
+            probed_stake_keys: observable.shallow,
+            // struct: the limits are recomputed on every proposal response (validation_params is
+            // reassigned each tick) but only change when the market does, and a fresh object each
+            // tick would re-render both stake surfaces for an identical ladder.
+            stake_preset_limits: computed.struct,
             start_date: observable,
             start_dates_list: observable.ref, // Array of objects - use ref
             start_time: observable,
@@ -699,6 +720,7 @@ export default class TradeStore extends BaseStore {
             resetAccumulatorData: action.bound,
             resetErrorServices: action.bound,
             setActiveSymbolsV2: action.bound,
+            applyVanillaBarrierChoices: action.bound,
             setBarrierChoices: action.bound,
             setPayoutChoices: action.bound,
             setChartModeFromURL: action.bound,
@@ -1032,9 +1054,13 @@ export default class TradeStore extends BaseStore {
                 this.changeDurationValidationRules();
             }
         }
-        // For Turbo contracts, initialize payout_per_point from contracts_for payout_choices
-        // before the first proposal to avoid sending an invalid fallback value.
-        if (this.is_turbos && this.payout_choices.length && !this.payout_per_point) {
+        // Turbos: seed payout_per_point from contracts_for choices before the first proposal, and
+        // replace a value not in this market's own list — a request priced against it is rejected.
+        if (
+            this.is_turbos &&
+            this.payout_choices.length &&
+            (!this.payout_per_point || !this.payout_choices.includes(String(this.payout_per_point)))
+        ) {
             this.payout_per_point = String(this.payout_choices[Math.floor(this.payout_choices.length / 2)]);
         }
         // Release the hold — unless the symbol changed mid-flight (the new symbol's
@@ -1965,23 +1991,24 @@ export default class TradeStore extends BaseStore {
             if (has_symbol_changed || has_contract_type_changed) {
                 const is_crypto = isCryptocurrency(this.currency ?? '');
                 const default_crypto_value = getMinPayout(this.currency ?? '') ?? '';
-                // On symbol switch, only reset stake if the user hasn't customised it away from the
-                // default. On contract type switch (or crypto accounts) always reset.
-                const user_amount_is_default = this.amount === this.default_stake;
-                const should_reset_amount = has_contract_type_changed || is_crypto || user_amount_is_default;
-                // High-min Turbos symbols (curated overrides) start from their first preset whenever you
-                // switch to them — symbol or contract-type change — since the current stake is otherwise
-                // below their minimum. Non-crypto only (crypto stakes are a different scale).
-                const preset_key = mapContractTypeToStakePresetKey(obj_new_values.contract_type ?? this.contract_type);
-                const stake_override =
-                    !is_crypto && preset_key
-                        ? getStakePresetOverride(preset_key, obj_new_values.symbol ?? this.symbol)
-                        : undefined;
-                if (stake_override) {
-                    obj_new_values.amount = stake_override[0];
-                } else if (should_reset_amount) {
-                    obj_new_values.amount = is_crypto ? default_crypto_value : this.default_stake;
-                }
+                // Every switch starts from the entered market's own derived default (its first
+                // quick pick) — a customised stake is not carried across, on any trade type. The
+                // boundary is read only when probed_stake_keys proves it came from this market;
+                // otherwise the contracts_for default stands and the probe corrects it.
+                // Key: tabs first (no mid-switch lag), displayed type for tab-less Accumulators.
+                const boundary_key =
+                    getInitialTradeTypeTab(obj_new_values.contract_type ?? this.contract_type) ||
+                    getDisplayedContractTypes(this.trade_types, this.contract_type, this.trade_type_tab)[0];
+                const target_stake_key = `${obj_new_values.symbol ?? this.symbol}:${boundary_key}`;
+                const known_boundary = this.probed_stake_keys.has(target_stake_key)
+                    ? this.stake_boundary[target_stake_key]
+                    : undefined;
+                const derived_default = getDerivedDefaultStake(
+                    this.default_stake,
+                    known_boundary?.min_stake,
+                    known_boundary?.max_stake
+                );
+                obj_new_values.amount = is_crypto ? default_crypto_value : (derived_default ?? this.default_stake);
             }
             if (has_contract_type_changed) {
                 obj_new_values.has_take_profit = false;
@@ -2180,7 +2207,83 @@ export default class TradeStore extends BaseStore {
         );
     }
 
-    onProposalResponse(response: TResponse<TPriceProposalRequest, TProposalResponse, 'proposal'>) {
+    /**
+     * Records the reported stake band and, once per (symbol, contract type), settles the
+     * platform-chosen entry stake on the derived default. Returns true when absorbed — the caller
+     * must return before proposal_info, so the platform's own rejected stake never surfaces as the
+     * user's error. The fence closes before any await: a stake set after it is the user's.
+     */
+    private async absorbStakeLimitsProbe(
+        response: TResponse<TPriceProposalRequest, TProposalResponse, 'proposal'>,
+        contract_type: string
+    ): Promise<boolean> {
+        const { min_stake, max_stake } = getStakeLimitsFromResponse(response);
+        if (!min_stake) return false;
+
+        // Recorded from every response, fenced or not, so the boundary tracks the market priced.
+        this.setStakeBoundary(contract_type, min_stake, max_stake);
+
+        const stake_key = `${this.symbol}:${contract_type}`;
+        if (this.probed_stake_keys.has(stake_key)) return false;
+        this.probed_stake_keys.add(stake_key);
+
+        const derived_default = getDerivedDefaultStake(this.default_stake, Number(min_stake), Number(max_stake));
+
+        // Only the stake this response was priced against can be settled; a mismatch means the
+        // user changed it mid-flight and their value has its own proposal coming.
+        const is_stake_in_play = Number(response.echo_req.amount) === Number(this.amount);
+
+        // Any difference from the derived default is settled, not only below-minimum: a valid stake
+        // carried in from a higher-minimum market still isn't this market's first quick pick.
+        const needs_correction = !!derived_default && is_stake_in_play && Number(this.amount) !== derived_default;
+
+        // Clean success at the settled stake: fall through, the price becomes visible. A rejection
+        // is absorbed even without a correction — the fence means nothing would ever re-price it.
+        if (!needs_correction && !response.error) return false;
+
+        // A rejection answering a stake the user replaced mid-flight: swallow WITHOUT side effects.
+        // Its choices were priced against the old stake and any standing error belongs to the new
+        // draft; the user's own proposal is already in flight and delivers their state.
+        if (!needs_correction && !is_stake_in_play) return true;
+
+        if (needs_correction) await this.processNewValuesAsync({ amount: derived_default }, false, null, false);
+        this.clearAbsorbedStakeError();
+        this.applyAbsorbedContractChoices(response);
+        this.debouncedProposal();
+        return true;
+    }
+
+    // Drops the stake error a rejected probe left standing — requestProposal bails while any
+    // validation error stands, which would block the re-price meant to replace it.
+    private clearAbsorbedStakeError() {
+        if (this.validation_errors.amount?.length) this.validation_errors.amount = [];
+    }
+
+    /**
+     * Applies the contract values riding the same payload as the limits, for an absorbed response
+     * — the early return skips the branches that normally apply them. Vanillas: barrier_choices.
+     * Turbos: payout_per_point_choices (without them the re-price is unpriceable).
+     */
+    private applyAbsorbedContractChoices(response: TResponse<TPriceProposalRequest, TProposalResponse, 'proposal'>) {
+        if (this.is_vanilla) {
+            this.applyVanillaBarrierChoices(
+                (response.proposal?.barrier_choices ?? response.error?.details?.barrier_choices) as string[] | undefined
+            );
+            return;
+        }
+
+        if (!this.is_turbos) return;
+
+        const payout_per_point_choices = (response.proposal?.payout_choices ??
+            response.error?.details?.payout_per_point_choices) as number[] | undefined;
+        if (!payout_per_point_choices?.length) return;
+
+        this.setPayoutChoices(payout_per_point_choices.map(choice => String(choice)));
+        // Mid-list, matching the choice the visible error branch makes.
+        this.payout_per_point = String(payout_per_point_choices[Math.floor(payout_per_point_choices.length / 2)]);
+    }
+
+    async onProposalResponse(response: TResponse<TPriceProposalRequest, TProposalResponse, 'proposal'>) {
         const { contract_type, underlying_symbol } = response.echo_req;
 
         // Ignore stale proposal responses from a previously selected symbol.
@@ -2189,11 +2292,20 @@ export default class TradeStore extends BaseStore {
         if (underlying_symbol && underlying_symbol !== this.symbol) {
             return;
         }
+        // Same staleness rule on the trade-type dimension: a type with no outstanding request is a
+        // straggler from a tab the user left (forgotten subscription, response already in flight)
+        // and must not settle stake or choices for a contract no longer on screen.
+        if (contract_type && !(contract_type in this.proposal_requests)) {
+            return;
+        }
         // Ignore MarketIsClosed errors - the closed market state is already handled by
         // is_market_closed flag and the ClosedMarketMessage component in the UI.
         if (response.error?.code === 'MarketIsClosed') {
             return;
         }
+
+        // Limits probe — absorbed responses never reach proposal_info (see its doc).
+        if (await this.absorbStakeLimitsProbe(response, contract_type)) return;
 
         // add/update expiration or date_expiry for crypto indices from proposal
         const date_expiry = response.proposal?.date_expiry;
@@ -2298,26 +2410,16 @@ export default class TradeStore extends BaseStore {
                 return;
             }
 
-            // Sometimes the initial barrier doesn't match with current barrier choices received from API.
-            // When this happens we want to populate the list of barrier choices to choose from since the value cannot be specified manually
-            if (this.is_vanilla && response.error.details?.barrier_choices) {
-                const { barrier_choices, max_stake, min_stake } = response.error.details;
+            if (this.is_vanilla) {
+                const { barrier_choices } = response.error.details ?? {};
 
-                // Store the current barrier value before updating choices
-                const previous_barrier = this.barrier_1;
+                // The limits carried on this error were already recorded at the top of the handler,
+                // which reads error.details for every Vanillas response — a plain stake rejection is
+                // exactly where the market minimum shows up, so nothing is left to record here.
 
-                this.setStakeBoundary(contract_type, min_stake, max_stake);
-                this.setBarrierChoices(barrier_choices as string[]);
-                if (!this.barrier_choices.includes(previous_barrier)) {
-                    // Find the closest value instead of defaulting to median
-                    this.barrier_1 = this.findClosestBarrierValue(previous_barrier, this.barrier_choices);
-                    this.onChange({
-                        target: {
-                            name: 'barrier_1',
-                            value: this.barrier_1,
-                        },
-                    });
-                }
+                // Sometimes the initial barrier doesn't match with current barrier choices received from API.
+                // When this happens we want to populate the list of barrier choices to choose from since the value cannot be specified manually
+                this.applyVanillaBarrierChoices(barrier_choices as string[] | undefined);
             }
             if (this.is_turbos && response.error.details?.payout_per_point_choices) {
                 // Ignore stale error responses just as we do for success responses.
@@ -2809,13 +2911,52 @@ export default class TradeStore extends BaseStore {
         return findFirstOpenMarket(this.active_symbols, markets_to_search);
     }
 
+    /**
+     * Quick-pick limits for the active (symbol, contract type): floor = derived default (the
+     * lowest chip IS the applied stake) and the market cap. Derived once so both stake surfaces
+     * agree; undefined until this market's own limits are known (surfaces show a skeleton).
+     * validation_params first (cleared on switch, never another market's); the market-qualified
+     * boundary covers the absorb round trip and tab re-entry, when validation_params is empty.
+     */
+    get stake_preset_limits() {
+        // Tabs first (no mid-switch lag); displayed type covers tab-less Accumulators.
+        const key =
+            getInitialTradeTypeTab(this.contract_type) ||
+            getDisplayedContractTypes(this.trade_types, this.contract_type, this.trade_type_tab)[0];
+        if (!key) return undefined;
+
+        const { stake } = this.validation_params[key] ?? {};
+        // Own sub-type first, then any probed sibling of this market — Turbos prices Up and Down
+        // together and either can answer first; the band belongs to the market, not the direction.
+        const probed_sibling = [...this.probed_stake_keys]
+            .filter(probed_key => probed_key.startsWith(`${this.symbol}:`))
+            .map(probed_key => this.stake_boundary[probed_key])
+            .find(Boolean);
+        const boundary = this.stake_boundary[`${this.symbol}:${key}`] ?? probed_sibling;
+
+        const max = Number(stake?.max ?? boundary?.max_stake);
+        const floor = getDerivedDefaultStake(this.default_stake, Number(stake?.min ?? boundary?.min_stake), max);
+
+        return floor ? { floor, max: Number.isFinite(max) ? max : undefined } : undefined;
+    }
+
+    /**
+     * Records a reported band under `${symbol}:${type}`. min alone is enough (rejections often
+     * carry no max, and everything derives from the min); a known value survives a later partial
+     * report.
+     */
     setStakeBoundary(type: string, min_stake?: number, max_stake?: number) {
-        if (min_stake && max_stake) {
-            this.stake_boundary = {
-                ...this.stake_boundary,
-                [type]: { min_stake, max_stake },
-            };
-        }
+        if (!min_stake && !max_stake) return;
+
+        const key = `${this.symbol}:${type}`;
+        const existing = this.stake_boundary[key];
+        this.stake_boundary = {
+            ...this.stake_boundary,
+            [key]: {
+                min_stake: min_stake ?? existing?.min_stake,
+                max_stake: max_stake ?? existing?.max_stake,
+            },
+        };
     }
 
     setActiveSymbolsV2(active_symbols: ActiveSymbols) {
@@ -2860,6 +3001,33 @@ export default class TradeStore extends BaseStore {
             },
             barrier_choices[Math.floor(barrier_choices.length / 2)]
         ); // Default to median if comparison fails
+    }
+
+    /**
+     * Applies the Vanillas strike choices carried on a proposal response and snaps barrier_1 to the
+     * closest offered strike when the current one is not among them. Extracted from the error branch
+     * of onProposalResponse so the limits probe can run it on the response it absorbs: the limits and
+     * the strike reconciliation arrive on the same payload, and returning early to re-price the stake
+     * without applying the choices would leave barrier_1 on a strike the market already rejected.
+     * A response with no barrier_choices is a no-op, matching the previous guard.
+     */
+    applyVanillaBarrierChoices(barrier_choices?: string[]) {
+        if (!barrier_choices) return;
+
+        // Store the current barrier value before updating choices
+        const previous_barrier = this.barrier_1;
+
+        this.setBarrierChoices(barrier_choices);
+        if (!this.barrier_choices.includes(previous_barrier)) {
+            // Find the closest value instead of defaulting to median
+            this.barrier_1 = this.findClosestBarrierValue(previous_barrier, this.barrier_choices);
+            this.onChange({
+                target: {
+                    name: 'barrier_1',
+                    value: this.barrier_1,
+                },
+            });
+        }
     }
 
     setBarrierChoices(barrier_choices: string[]) {

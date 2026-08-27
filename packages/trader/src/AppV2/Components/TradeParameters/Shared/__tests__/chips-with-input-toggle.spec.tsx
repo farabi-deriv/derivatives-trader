@@ -24,6 +24,9 @@ jest.mock('AppV2/Components/InputPopover', () => ({
             ))}
         </div>
     ),
+    ValueChipsSkeleton: ({ className }: { className?: string }) => (
+        <div data-testid='value-chips-skeleton' className={className} />
+    ),
 }));
 
 describe('ChipsWithInputToggle', () => {
@@ -78,6 +81,39 @@ describe('ChipsWithInputToggle', () => {
 
             expect(screen.getByTestId('value-chips')).toBeInTheDocument();
             expect(screen.queryByTestId('input-component')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Loading state', () => {
+        it('renders the skeleton row instead of chips while the values are still being derived', () => {
+            render(<ChipsWithInputToggle {...defaultProps} activeTab='chips' isLoading />);
+
+            expect(screen.getByTestId('value-chips-skeleton')).toBeInTheDocument();
+            expect(screen.queryByTestId('value-chips')).not.toBeInTheDocument();
+        });
+
+        it('passes the variant className to the skeleton, so the placeholder matches the real row', () => {
+            render(<ChipsWithInputToggle {...defaultProps} activeTab='chips' isLoading className='custom-class' />);
+
+            expect(screen.getByTestId('value-chips-skeleton')).toHaveClass('custom-class');
+        });
+
+        it('keeps the input tab reachable while the values are still being derived', () => {
+            render(<ChipsWithInputToggle {...defaultProps} activeTab='input' isLoading />);
+
+            expect(screen.getByTestId('input-component')).toBeInTheDocument();
+            expect(screen.queryByTestId('value-chips-skeleton')).not.toBeInTheDocument();
+        });
+
+        it('swaps the skeleton for the chips once the values arrive', () => {
+            const { rerender } = render(<ChipsWithInputToggle {...defaultProps} activeTab='chips' isLoading />);
+
+            expect(screen.getByTestId('value-chips-skeleton')).toBeInTheDocument();
+
+            rerender(<ChipsWithInputToggle {...defaultProps} activeTab='chips' isLoading={false} />);
+
+            expect(screen.getByTestId('value-chips')).toBeInTheDocument();
+            expect(screen.queryByTestId('value-chips-skeleton')).not.toBeInTheDocument();
         });
     });
 

@@ -77,6 +77,32 @@ const StakeChips = ({ currency, amount, onChange }) => {
 
 ---
 
+### ValueChipsSkeleton
+
+Placeholder for a row of `ValueChips` whose values are still being derived — the Vanillas stake quick
+picks wait on the market's own stake limits. Holds the row's grid and a full row of chip-sized
+blocks, so the wait reads as loading rather than as chips having gone missing, and the real chips land
+in the same place.
+
+**Props:**
+
+- `className` (string, optional): Variant class of the row it stands in for, e.g. `value-chips--pills`
+
+**Example:**
+
+```tsx
+import { ValueChips, ValueChipsSkeleton } from 'AppV2/Components/InputPopover';
+
+const StakeChips = ({ values, ...rest }) =>
+    values.length ? (
+        <ValueChips className='value-chips--pills' values={values} {...rest} />
+    ) : (
+        <ValueChipsSkeleton className='value-chips--pills' />
+    );
+```
+
+---
+
 ### usePopoverPosition Hook
 
 Custom hook for calculating popover position relative to trigger element.
@@ -124,6 +150,7 @@ The components come with base styles that use CSS variables for theming:
 - `.value-chips__grid`: 2-column grid layout
 - `.value-chips__chip`: Individual chip button
 - `.value-chips__chip--selected`: Selected chip state
+- `.value-chips__skeleton-chip`: Chip-sized placeholder block (`ValueChipsSkeleton`)
 
 ### Extending Styles
 

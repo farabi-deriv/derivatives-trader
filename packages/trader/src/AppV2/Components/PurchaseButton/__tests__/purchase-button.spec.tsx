@@ -314,6 +314,34 @@ describe('PositionsContent', () => {
         expect(purchase_button).toBeEnabled();
     });
 
+    it('should disable the button while the contract has no price yet', async () => {
+        // A proposal still in flight (or absorbed to correct the stake) leaves the contract's info
+        // with neither an id nor an error — there is nothing to buy yet.
+        default_mock_store.client.is_logged_in = true;
+        default_mock_store.modules.trade.proposal_info = {
+            PUT: { id: '', has_error: false },
+            CALL: { id: '', has_error: false },
+        } as unknown as typeof default_mock_store.modules.trade.proposal_info;
+        mockPurchaseButton();
+
+        const purchase_button = screen.getAllByRole('button')[0];
+        expect(purchase_button).toBeDisabled();
+
+        await userEvent.click(purchase_button);
+        expect(default_mock_store.modules.trade.onPurchaseV2).not.toBeCalled();
+    });
+
+    it('should enable the button once the contract has a price', async () => {
+        default_mock_store.client.is_logged_in = true;
+        mockPurchaseButton();
+
+        const purchase_button = screen.getAllByRole('button')[0];
+        expect(purchase_button).toBeEnabled();
+
+        await userEvent.click(purchase_button);
+        expect(default_mock_store.modules.trade.onPurchaseV2).toBeCalled();
+    });
+
     it('should render only one button if trade_types have only one field and there are no trade type tabs', () => {
         default_mock_store.modules.trade.contract_type = TRADE_TYPES.ACCUMULATOR;
         default_mock_store.modules.trade.trade_types = {
@@ -403,6 +431,11 @@ describe('PositionsContent', () => {
         default_mock_store.modules.trade.trade_types = {
             [CONTRACT_TYPES.ACCUMULATOR]: 'Accumulator Up',
         };
+        // The button needs a price for the contract it displays: without an id (and no error) it
+        // reads as "proposal still in flight" and stays disabled.
+        default_mock_store.modules.trade.proposal_info = {
+            [CONTRACT_TYPES.ACCUMULATOR]: { id: 5678, has_error: false },
+        } as unknown as typeof default_mock_store.modules.trade.proposal_info;
     };
 
     it('should show a loading Buy button and not call onPurchaseV2 while an Accumulators contract is expired but not sold yet', async () => {

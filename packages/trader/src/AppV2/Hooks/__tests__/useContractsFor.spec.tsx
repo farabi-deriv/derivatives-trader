@@ -63,6 +63,7 @@ describe('useContractsFor', () => {
                     processContractsForV2: jest.fn(),
                     resolveContractTypeAvailability: jest.fn(),
                     setDefaultStake: jest.fn(),
+                    setPayoutChoices: jest.fn(),
                     contract_type: 'type_1',
                     symbol: 'R_50',
                 },
@@ -115,6 +116,85 @@ describe('useContractsFor', () => {
                 category_1: { categories: [{ value: 'type_1', text: 'Type 1' }] },
                 category_2: { categories: [{ value: 'type_2', text: 'Type 2' }] },
             });
+        });
+    });
+
+    it('re-pushes the newly active type stake config on a same-symbol trade-type switch', async () => {
+        // contracts_for is fetched per symbol, so switching trade type within a symbol re-renders
+        // with the SAME cached response — the main processing effect does not re-run. Without a
+        // contract_type-keyed push, the store keeps the previous type's default_stake and payout
+        // choices, and a switch into Turbos can send its first proposal without a payout_per_point.
+        (useQuery as jest.Mock).mockReturnValue({
+            data: {
+                contracts_for: {
+                    available: [
+                        { contract_type: 'type_1', underlying_symbol: 'EURUSD', default_stake: 10 },
+                        {
+                            contract_type: 'type_2',
+                            underlying_symbol: 'GBPUSD',
+                            default_stake: 20,
+                            payout_choices: [7, 8, 9],
+                        },
+                    ],
+                    hit_count: 2,
+                },
+            },
+            error: null,
+            isLoading: false,
+        });
+
+        const { rerender } = renderHook(() => useContractsFor(), { wrapper });
+        await waitFor(() => {
+            expect(mocked_store.modules.trade.setDefaultStake).toHaveBeenCalledWith(10);
+        });
+
+        (mocked_store.modules.trade.setDefaultStake as jest.Mock).mockClear();
+        (mocked_store.modules.trade.setPayoutChoices as jest.Mock).mockClear();
+        mocked_store.modules.trade.contract_type = 'type_2';
+        rerender();
+
+        await waitFor(() => {
+            expect(mocked_store.modules.trade.setDefaultStake).toHaveBeenCalledWith(20);
+            expect(mocked_store.modules.trade.setPayoutChoices).toHaveBeenCalledWith(['7', '8', '9']);
+        });
+    });
+
+    it('pushes the active contract payout choices into the store, so the first Turbos proposal is never sent without one', async () => {
+        // A Turbos proposal with neither a payout_per_point nor choices to fall back on is rejected
+        // with an error carrying no limits and no choices (verified against the live API) — nothing
+        // downstream recovers, and the market never prices. contracts_for is the only source that
+        // exists BEFORE the first proposal, so the hook must wire it into the store.
+        (useQuery as jest.Mock).mockReturnValue({
+            data: {
+                contracts_for: {
+                    available: [
+                        {
+                            contract_type: 'type_1',
+                            underlying_symbol: 'EURUSD',
+                            default_stake: 10,
+                            payout_choices: [1, 2, 3],
+                        },
+                        {
+                            contract_type: 'type_2',
+                            underlying_symbol: 'GBPUSD',
+                            default_stake: 20,
+                            payout_choices: [7, 8, 9],
+                        },
+                    ],
+                    hit_count: 2,
+                },
+            },
+            error: null,
+            isLoading: false,
+        });
+
+        renderHook(() => useContractsFor(), { wrapper });
+
+        await waitFor(() => {
+            // Strings, as the store's payout_choices are stored — and only the ACTIVE contract
+            // type's choices, exactly as setDefaultStake is scoped.
+            expect(mocked_store.modules.trade.setPayoutChoices).toHaveBeenCalledWith(['1', '2', '3']);
+            expect(mocked_store.modules.trade.setPayoutChoices).not.toHaveBeenCalledWith(['7', '8', '9']);
         });
     });
 

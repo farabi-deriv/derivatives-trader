@@ -405,42 +405,24 @@ export const DEFAULT_DURATION: Record<keyof DurationPresets, { value: number; un
 };
 
 /**
- * Symbol-specific stake preset overrides.
+ * Stake presets for a trade type: the shared base set every market starts from.
  *
- * A few symbols have a minimum stake above every shared preset for the trade type — e.g. Turbos on
- * Volatility 25 (1s) `1HZ25V` (min ≈ 34.06) and Volatility 50 (1s) `1HZ50V` — so the shared presets
- * would all be invalid. These curated sets sit above those minimums.
- */
-export const STAKE_PRESET_SYMBOL_OVERRIDES: Partial<Record<keyof StakePresets, Record<string, number[]>>> = {
-    turbos: {
-        '1HZ25V': [35, 40, 45, 50, 55, 60], // Volatility 25 (1s) Index — min ≈ 34.06
-        '1HZ50V': [25, 30, 35, 40, 45, 50], // Volatility 50 (1s) Index
-        R_75: [10, 15, 20, 25, 30, 35], // Volatility 75 Index — min 6.5
-    },
-};
-
-/**
- * Returns the curated stake presets for a trade type + symbol, if an override exists.
- */
-export const getStakePresetOverride = (tradeType: keyof StakePresets, symbol?: string): number[] | undefined =>
-    symbol ? STAKE_PRESET_SYMBOL_OVERRIDES[tradeType]?.[symbol] : undefined;
-
-/**
- * Helper function to get stake presets for a trade type, applying any symbol-specific override.
+ * There is deliberately no per-symbol override table. High-minimum markets (Turbos on the 1s
+ * volatility indices, Vanillas on Volatility 75) used to be served by hand-written stake lists here,
+ * which is what this change replaces: the ladder is now derived from the market's own reported
+ * minimum, so a market whose minimum sits above these values gets a valid ladder without anyone
+ * curating one for it. See `getStakeLadderValues` in `AppV2/Utils/trade-params-utils.tsx`.
  *
  * @param tradeType - The trade type identifier
- * @param symbol - Optional symbol; when it has a curated override (e.g. high-min Turbos indices)
- *                 that override is returned instead of the shared presets
  * @returns Array of stake preset values, or undefined if not found
  *
  * @example
  * ```typescript
- * getStakePresets('turbos');           // [1, 2, 5, 10, 15, 25]
- * getStakePresets('turbos', '1HZ25V'); // [35, 40, 45, 50, 55, 60]
+ * getStakePresets('turbos'); // [1, 2, 5, 10, 15, 25]
  * ```
  */
-export const getStakePresets = (tradeType: keyof StakePresets, symbol?: string): number[] | undefined =>
-    getStakePresetOverride(tradeType, symbol) ?? TRADE_PARAMETER_PRESETS.stake[tradeType];
+export const getStakePresets = (tradeType: keyof StakePresets): number[] | undefined =>
+    TRADE_PARAMETER_PRESETS.stake[tradeType];
 
 /**
  * Helper function to get duration presets for a specific trade type, market, and unit
