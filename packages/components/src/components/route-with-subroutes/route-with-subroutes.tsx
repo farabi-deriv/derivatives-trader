@@ -1,7 +1,9 @@
 import React from 'react';
 import { Redirect, RedirectProps, Route, RouteComponentProps, RouteProps } from 'react-router-dom';
 
-import { getBrandName, redirectToLogin, removeBranchName, routes as shared_routes } from '@deriv/shared';
+import { redirectToLogin, removeBranchName, routes as shared_routes } from '@deriv/shared';
+
+import { useDocumentTitle } from '../../hooks/use-document-title';
 
 type TRoute = RouteProps & { default: boolean };
 
@@ -34,6 +36,8 @@ const RouteWithSubRoutes = ({
     Component404,
     should_redirect_login,
 }: TRoutesWithSubRoutesProps) => {
+    useDocumentTitle(getTitle);
+
     const validateRoute = (pathname: string) => {
         if (pathname === '') return true;
 
@@ -84,9 +88,6 @@ const RouteWithSubRoutes = ({
                 </React.Fragment>
             );
         }
-
-        const title = getTitle?.();
-        if (title) document.title = `${title} | ${getBrandName()}`;
 
         return result;
     };

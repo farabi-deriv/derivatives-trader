@@ -6,10 +6,16 @@ import { trackAnalyticsEvent } from '@deriv/shared';
 import { mockStore, StoreProvider } from '@deriv/stores';
 import { TStores } from '@deriv/stores/types';
 import { useDevice } from '@deriv-com/ui';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import Reports from '../reports';
+
+// `requireActual` resolves through moduleNameMapper to __mocks__/translation.mock.js — the very
+// module `useDocumentTitle` consumes — whereas `requireMock` would auto-mock it away.
+const { fireLanguageChanged } = jest.requireActual('@deriv-com/translations') as {
+    fireLanguageChanged: (lang?: string) => void;
+};
 
 jest.mock('@deriv-com/ui', () => ({
     useDevice: jest.fn(),
@@ -121,15 +127,14 @@ describe('Reports', () => {
         });
     });
 
-    const renderReports = (store: TStores, history: History) => {
+    const renderReports = (store: TStores, history: History, custom_routes = routes) =>
         render(
             <StoreProvider store={store}>
                 <Router history={history}>
-                    <Reports history={history} location={history.location} routes={routes} />
+                    <Reports history={history} location={history.location} routes={custom_routes} />
                 </Router>
             </StoreProvider>
         );
-    };
     test('renders Reports component', () => {
         const history = createMemoryHistory();
         renderReports(store, history);
@@ -232,6 +237,62 @@ describe('Reports', () => {
                 ]),
             })
         );
+    });
+
+    // The reports sub-pages render through `VerticalTab is_routed` (desktop) or directly from
+    // `selected_route.component` (mobile), never through `RouteWithSubRoutes`, so this container
+    // is the only writer that knows the innermost matched route.
+    describe('Document title', () => {
+        const title_routes = [
+            { path: route1, component: () => <div>{report1Text}</div>, getTitle: jest.fn(), default: true },
+            { path: route2, component: () => <div>{report2Text}</div>, getTitle: jest.fn() },
+        ];
+
+        beforeEach(() => {
+            document.title = '';
+            title_routes[0].getTitle.mockReturnValue('Open positions');
+            title_routes[1].getTitle.mockReturnValue('Trade table');
+        });
+
+        test('uses the innermost matched sub-route title, not the parent section title', () => {
+            const history = createMemoryHistory();
+            history.push(route2);
+            renderReports(store, history, title_routes);
+
+            expect(document.title).toBe('Trade table | Deriv');
+        });
+
+        test('changes the title when moving between reports sub-pages', () => {
+            const history = createMemoryHistory();
+            history.push(route1);
+            const { rerender } = renderReports(store, history, title_routes);
+
+            expect(document.title).toBe('Open positions | Deriv');
+
+            history.push(route2);
+            rerender(
+                <StoreProvider store={store}>
+                    <Router history={history}>
+                        <Reports history={history} location={history.location} routes={title_routes} />
+                    </Router>
+                </StoreProvider>
+            );
+
+            expect(document.title).toBe('Trade table | Deriv');
+        });
+
+        test('re-derives the sub-page title once a language change completes', () => {
+            const history = createMemoryHistory();
+            history.push(route2);
+            renderReports(store, history, title_routes);
+
+            expect(document.title).toBe('Trade table | Deriv');
+
+            title_routes[1].getTitle.mockReturnValue('Tableau des transactions');
+            act(() => fireLanguageChanged('FR'));
+
+            expect(document.title).toBe('Tableau des transactions | Deriv');
+        });
     });
 
     describe('Redirect functionality', () => {

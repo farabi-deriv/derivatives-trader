@@ -2,9 +2,15 @@ import React from 'react';
 import { Redirect } from 'react-router-dom';
 
 import { mockStore, StoreProvider } from '@deriv/stores';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 import RouteWithSubRoutes from '../route-with-sub-routes';
+
+// `requireActual` resolves through moduleNameMapper to __mocks__/translation.mock.js — the very
+// module the component under test consumes — whereas `requireMock` would auto-mock it away.
+const { fireLanguageChanged } = jest.requireActual('@deriv-com/translations') as {
+    fireLanguageChanged: (lang?: string) => void;
+};
 
 type TMockFunction = {
     path: string;
@@ -97,6 +103,32 @@ describe('RouteWithSubRoutes component', () => {
         const exact_param = screen.getByText(/exact param: true/i);
         expect(path_param).toBeInTheDocument();
         expect(exact_param).toBeInTheDocument();
+    });
+
+    describe('Document title', () => {
+        it('should re-derive the document title once a language change completes', () => {
+            const getTitle = jest.fn(() => 'Trade');
+            const route = {
+                getTitle,
+                component: MockComponent,
+                exact: true,
+                path: '/test-path',
+            };
+            const store = createMockStore({ is_logged_in: true, is_logging_in: false });
+
+            render(
+                <StoreProvider store={store}>
+                    <RouteWithSubRoutes {...route} />
+                </StoreProvider>
+            );
+
+            expect(document.title).toBe('Trade | Deriv');
+
+            getTitle.mockReturnValue('Échanger');
+            act(() => fireLanguageChanged('FR'));
+
+            expect(document.title).toBe('Échanger | Deriv');
+        });
     });
 
     describe('Authentication tests', () => {

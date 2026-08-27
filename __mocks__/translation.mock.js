@@ -80,10 +80,51 @@ const mockFn = jest.fn((text, args) => {
     return text.replace(/{{(.*?)}}/g, (_, match) => args[match.trim()]);
 });
 
+// Registered i18next event listeners, keyed by event name, so specs can fire them.
+const i18n_listeners = {};
+
+// Minimal i18next-shaped stub returned as `instance` by the mocked useTranslations hook.
+const instance = {
+    language: 'EN',
+    t: mockFn,
+    on: jest.fn((event, listener) => {
+        i18n_listeners[event] = [...(i18n_listeners[event] || []), listener];
+    }),
+    off: jest.fn((event, listener) => {
+        i18n_listeners[event] = (i18n_listeners[event] || []).filter(l => l !== listener);
+    }),
+};
+
+/**
+ * Fires the i18next `languageChanged` event on the stubbed `instance`, the same way
+ * i18next does once a translation bundle has finished loading. Use it in specs to
+ * assert what happens after a language switch completes.
+ */
+const fireLanguageChanged = (lang = instance.language) => {
+    instance.language = lang;
+    (i18n_listeners.languageChanged || []).forEach(listener => listener(lang));
+};
+
+/**
+ * Drops every registered listener and restores the default language. `instance` is a module-level
+ * singleton shared by all tests in a spec file, so without this the isolation between them rests
+ * entirely on RTL's unmount cleanup calling the hook's `instance.off()`. Wired into a global
+ * `afterEach` in `setupTests.js`.
+ */
+const resetTranslationMock = () => {
+    Object.keys(i18n_listeners).forEach(event => delete i18n_listeners[event]);
+    instance.language = 'EN';
+};
+
+const switchLanguage = jest.fn();
+
 // Mock for useTranslations hook
 const useTranslations = () => ({
     localize: mockFn,
     currentLang: 'EN',
+    instance,
+    switchLanguage,
+    ready: true,
 });
 
 const localize = mockFn;
@@ -94,4 +135,13 @@ const getAllowedLanguages = jest.fn(() => {
 
 const getInitialLanguage = jest.fn(() => 'EN');
 
-export { Localize, localize, useTranslations, getAllowedLanguages, getInitialLanguage };
+export {
+    Localize,
+    localize,
+    useTranslations,
+    getAllowedLanguages,
+    getInitialLanguage,
+    fireLanguageChanged,
+    resetTranslationMock,
+    switchLanguage,
+};

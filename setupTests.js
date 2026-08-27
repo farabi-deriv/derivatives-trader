@@ -22,3 +22,13 @@ import 'jest-chain';
  * Setup Global mocks
  */
 import './__mocks__/globals';
+
+/**
+ * `__mocks__/translation.mock.js` (mapped onto `@deriv-com/translations` for every package by
+ * `jest.config.base.js`) keeps its i18next stub — and the listeners registered on it — in
+ * module-level state that outlives a single test. Reset it between tests so a listener left behind
+ * by a component that was never unmounted cannot fire in the next test.
+ */
+import { resetTranslationMock } from './__mocks__/translation.mock';
+
+afterEach(() => resetTranslationMock());

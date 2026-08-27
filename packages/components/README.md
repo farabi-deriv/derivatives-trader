@@ -127,6 +127,7 @@ The package also provides a collection of custom React hooks:
 - **useDebounce** - Debounce values
 - **useDeepEffect** - Deep comparison useEffect
 - **useDevice** - Device detection
+- **useDocumentTitle** - Browser tab label, kept in sync with the active language
 - **useEventListener** - Event listener management
 - **useHover** - Hover state detection
 - **useInterval** - Interval management

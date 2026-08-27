@@ -1,12 +1,17 @@
 import React from 'react';
-import { Redirect, Route } from 'react-router-dom';
 import { RouteComponentProps } from 'react-router';
-import { isEmptyObject, routes, removeBranchName, getBrandName } from '@deriv/shared';
+import { Redirect, Route } from 'react-router-dom';
+
+import { useDocumentTitle } from '@deriv/components';
+import { isEmptyObject, removeBranchName, routes } from '@deriv/shared';
+
 import type { TBinaryRoutes, TRoute } from 'Types';
 
 type TRouteWithSubRoutes = TRoute & TBinaryRoutes;
 
 const RouteWithSubRoutes = (route: TRouteWithSubRoutes) => {
+    useDocumentTitle(route.getTitle);
+
     const renderFactory = (props: RouteComponentProps) => {
         let result = null;
         if (route.component === Redirect) {
@@ -33,8 +38,6 @@ const RouteWithSubRoutes = (route: TRouteWithSubRoutes) => {
             );
         }
 
-        const title = route.getTitle?.() || '';
-        document.title = title ? `${title} | ${getBrandName()}` : getBrandName();
         return result;
     };
 

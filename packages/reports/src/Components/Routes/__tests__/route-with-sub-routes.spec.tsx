@@ -1,7 +1,15 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+
+import { act, render, screen } from '@testing-library/react';
+
 import RouteWithSubRoutes from '../route-with-sub-routes';
+
+// `requireActual` resolves through moduleNameMapper to __mocks__/translation.mock.js — the very
+// module the component under test consumes — whereas `requireMock` would auto-mock it away.
+const { fireLanguageChanged } = jest.requireActual('@deriv-com/translations') as {
+    fireLanguageChanged: (lang?: string) => void;
+};
 
 type TRenderProps = {
     location: {
@@ -28,7 +36,11 @@ jest.mock('react-router-dom', () => ({
 
 const mockRedirectToLogin = jest.fn();
 
+// Spread over the real module rather than replacing it: the component reaches `useDocumentTitle`
+// through the `@deriv/components` barrel, which pulls in components that call into `@deriv/shared`
+// at module scope, so a stub of only the keys used here breaks the import graph.
 jest.mock('@deriv/shared', () => ({
+    ...jest.requireActual('@deriv/shared'),
     redirectToLogin: jest.fn(),
     isEmptyObject: (obj: Record<string, any>) => Object.keys(obj).length === 0,
     routes: { index: '/index', is_logged_in: '/login' },
@@ -86,6 +98,16 @@ describe('<RouteWithSubRoutes />', () => {
         route.getTitle.mockReturnValue(title);
         render(<MockRouteWithSubRoutes />);
         expect(document.title).toBe(`Test Title | Default Title`);
+    });
+    it('should re-derive the document title once a language change completes', () => {
+        route.getTitle.mockReturnValue('Statement');
+        render(<MockRouteWithSubRoutes />);
+        expect(document.title).toBe('Statement | Default Title');
+
+        route.getTitle.mockReturnValue('Relevé de compte');
+        act(() => fireLanguageChanged('FR'));
+
+        expect(document.title).toBe('Relevé de compte | Default Title');
     });
     it('should redirect to default subroute if pathname matches route path', () => {
         const default_subroute = {

@@ -1,7 +1,15 @@
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 
-import { Div100vhContainer, FadeWrapper, Loading, PageOverlay, SelectNative, VerticalTab } from '@deriv/components';
+import {
+    Div100vhContainer,
+    FadeWrapper,
+    Loading,
+    PageOverlay,
+    SelectNative,
+    useDocumentTitle,
+    VerticalTab,
+} from '@deriv/components';
 import { getSelectedRoute, routes as appRoutes, trackAnalyticsEvent } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { isAllowedRedirectDomain } from '@deriv/utils';
@@ -191,6 +199,13 @@ const Reports = observer(({ history, location, routes }: TReports) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const selected_route = getSelectedRoute({ routes: visible_routes as any, pathname: location.pathname });
+
+    // The reports sub-pages are not rendered through `RouteWithSubRoutes` — desktop resolves them
+    // via `VerticalTab is_routed` and mobile renders `selected_route.component` directly — so this
+    // is the only place that knows the innermost matched route. Without it the tab would keep the
+    // parent "Reports" title on /reports/statement and friends. Runs after both routers have
+    // written their own title, so this innermost write wins (see `useDocumentTitle`'s TSDoc).
+    useDocumentTitle(selected_route?.getTitle);
 
     if (!is_logged_in && is_logging_in) {
         return <Loading is_fullscreen />;

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Redirect, Route } from 'react-router-dom';
 
-import { getBrandName, isEmptyObject, removeBranchName, routes } from '@deriv/shared';
+import { useDocumentTitle } from '@deriv/components';
+import { isEmptyObject, removeBranchName, routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 
 import Page404 from 'Modules/Page404';
@@ -9,6 +10,8 @@ import Page404 from 'Modules/Page404';
 const RouteWithSubRoutes = observer(route => {
     const { client } = useStore();
     const { is_logged_in, is_logging_in } = client;
+
+    useDocumentTitle(route.getTitle);
 
     const validateRoute = () => {
         // Check if route requires authentication
@@ -56,9 +59,6 @@ const RouteWithSubRoutes = observer(route => {
                 </React.Fragment>
             );
         }
-
-        const title = route.getTitle?.();
-        if (title) document.title = `${title} | ${getBrandName()}`;
 
         return result;
     };
