@@ -122,6 +122,16 @@ const RiskManagementItem = observer(
 
         const error_message = showError ? getErrorMessage() : '';
 
+        // A total profit/loss of exactly 0 is a real figure, not a missing one. The live value ticks
+        // through zero, and dropping the row on that tick made it blink in and out of the sheet on
+        // mobile. Only an absent or non-numeric figure hides the row — e.g. a multiplier contract
+        // whose bid price has not arrived yet, where the profit computes to NaN.
+        const has_total_profit =
+            total_profit !== '' &&
+            total_profit !== null &&
+            total_profit !== undefined &&
+            Number.isFinite(Number(total_profit));
+
         // Header save stays disabled until the drafted amount differs from the committed value
         // (and while it is empty). Existing validation still runs on save via `onSave`.
         const is_save_disabled =
@@ -235,7 +245,7 @@ const RiskManagementItem = observer(
                                     variant='fill'
                                 />
                             )}
-                            {!!total_profit && (
+                            {has_total_profit && (
                                 <TotalProfitLoss
                                     currency={getCurrencyDisplayCode(currency)}
                                     is_bold={false}

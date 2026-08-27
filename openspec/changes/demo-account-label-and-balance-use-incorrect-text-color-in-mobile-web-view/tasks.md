@@ -125,7 +125,7 @@ not presented as red→green.
       touched files.
       Run scoped to the touched files, since the repo-wide gate belongs to the verification stage:
       `npx eslint` on both spec files, `npx stylelint` on `account-switcher.scss`, and `npx prettier
-  --check` on every file in the diff — all clean. (`docs/git/README.md` and `docs/JavaScript/README.md`
+--check` on every file in the diff — all clean. (`docs/git/README.md` and `docs/JavaScript/README.md`
       fail Prettier, but pre-date this change and are not touched by it.)
       Tasks 5.4-5.7 are in-browser visual checks needing an authenticated demo session, so they were not run
       in the unattended implementation pass — they are the release gate for this change and stay unchecked

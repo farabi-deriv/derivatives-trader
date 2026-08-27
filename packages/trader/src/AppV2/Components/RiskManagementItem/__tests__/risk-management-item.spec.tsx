@@ -10,6 +10,7 @@ import RiskManagementItem from '../risk-management-item';
 
 jest.mock('@deriv-com/translations', () => ({
     Localize: ({ i18n_default_text }: { i18n_default_text: string }) => <span>{i18n_default_text}</span>,
+    localize: (text: string) => text,
     useTranslations: () => ({
         localize: (text: string) => text,
     }),
@@ -150,8 +151,16 @@ describe('RiskManagementItem component', () => {
         });
     });
 
-    const renderComponent = (props = {}) => {
+    const renderComponent = (props = {}) =>
         render(<RiskManagementItem label='Test Label' modal_body_content={<p>Modal content</p>} {...props} />);
+
+    /** The mocked contract is a multiplier, so its total profit/loss is `bid_price - buy_price`. */
+    const mockProfit = ({ bid_price, buy_price }: { bid_price?: string; buy_price?: string }) => {
+        const details = mockUseContractDetails();
+        mockUseContractDetails.mockReturnValue({
+            ...details,
+            contract_info: { ...details.contract_info, bid_price, buy_price },
+        });
     };
 
     it('renders the label', () => {
@@ -205,5 +214,40 @@ describe('RiskManagementItem component', () => {
         fireEvent.change(screen.getByPlaceholderText('Amount'), { target: { value: '50' } });
         await userEvent.click(screen.getByRole('button', { name: 'Close' }));
         expect(mockUseContractDetails().contract.updateLimitOrder).not.toHaveBeenCalled();
+    });
+
+    describe('Total profit/loss row in the editor sheet', () => {
+        const sheet_props = { value: 10, type: 'take_profit' as const };
+        const element = (
+            <RiskManagementItem label='Test Label' modal_body_content={<p>Modal content</p>} {...sheet_props} />
+        );
+
+        it('shows the row when the total profit/loss is exactly zero', () => {
+            mockProfit({ bid_price: '10', buy_price: '10' });
+            renderComponent(sheet_props);
+
+            expect(screen.getByTestId('dt_total_profit_loss')).toHaveTextContent('0.00');
+        });
+
+        it('keeps the row mounted as the live profit/loss ticks through zero', () => {
+            // Zero is one tick on the way from profit to loss. Hiding the row on that tick removed a
+            // row from the sheet and put it straight back, which read as a flicker on mobile.
+            mockProfit({ bid_price: '15', buy_price: '10' });
+            const { rerender } = renderComponent(sheet_props);
+            expect(screen.getByTestId('dt_total_profit_loss')).toBeInTheDocument();
+
+            ['10', '5'].forEach(bid_price => {
+                mockProfit({ bid_price, buy_price: '10' });
+                rerender(element);
+                expect(screen.getByTestId('dt_total_profit_loss')).toBeInTheDocument();
+            });
+        });
+
+        it('omits the row while no profit/loss figure is available', () => {
+            // No bid price yet, so the multiplier profit computes to NaN rather than to a real zero.
+            renderComponent(sheet_props);
+
+            expect(screen.queryByTestId('dt_total_profit_loss')).not.toBeInTheDocument();
+        });
     });
 });

@@ -26,12 +26,20 @@
             font-size: var(--core-fontSize-50);
         }
     }
+    // No fixed height belongs here: quill's `.quill-action-sheet--root` has none of its own, so this
+    // box sets the sheet height. The footer Save button the old 23.6rem left room for was removed in
+    // #1169 (the commit action moved to `ActionSheet.Header`), so any reserved height is dead space —
+    // see issue #1226.
     &__action-sheet-content {
-        height: 23.6rem;
-        padding: var(--component-actionSheet-spacing-padding-sm) var(--component-actionSheet-spacing-padding-md) 0;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        // Rows flow top-down with one standard gap, matching `.risk-management__tp-sl__wrapper` on
+        // the trade page. `space-between` pushed Total profit/loss to the bottom of the over-tall
+        // box, which was the visible gap.
+        gap: var(--core-spacing-800);
+        // Top only: quill's `.action-sheet--content` pads all four sides and the bottom one is wanted
+        // now that no footer sits below the content.
+        padding-block-start: 0;
 
         .total-profit-loss {
             position: relative;
