@@ -33,6 +33,7 @@ jobs:
         POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
         POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
         REF_NAME: ${{ github.ref_name }}
+        APP_VERSION: staging_${{ github.sha }}
         R2_PROJECT_NAME: ${{ vars.R2_PROJECT_NAME }}
         CROWDIN_BRANCH_NAME: ${{ vars.CROWDIN_BRANCH_NAME }}
         REMOTE_CONFIG_URL: ${{ vars.REMOTE_CONFIG_URL }}
@@ -46,7 +47,7 @@ jobs:
     - name: Generate app-info.json
       uses: "deriv-com/shared-actions/.github/actions/generate_app_info@master"
       with:
-        version: ${{ github.ref_name }} # the production_* tag that triggered the workflow
+        version: staging_${{ github.sha }} # per-deploy staging identity: the commit SHA that triggered the workflow
         output_dir: packages/core/dist
     - name: Publish to Cloudflare Pages Staging
       uses: "./.github/actions/publish_to_pages_staging"

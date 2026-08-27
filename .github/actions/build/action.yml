@@ -5,6 +5,9 @@ inputs:
     description: 'Git ref name'
     required: true
     default: 'test'
+  APP_VERSION:
+    description: 'Deployed build version stamped onto analytics events and /app-info.json'
+    required: false
   NODE_ENV:
     description: 'Node environment'
     required: false
@@ -35,6 +38,7 @@ runs:
       POSTHOG_KEY: ${{ inputs.POSTHOG_KEY }}
       POSTHOG_HOST: ${{ inputs.POSTHOG_HOST }}
       REF_NAME: ${{ inputs.REF_NAME }}
+      APP_VERSION: ${{ inputs.APP_VERSION }}
       REMOTE_CONFIG_URL: ${{ inputs.REMOTE_CONFIG_URL }}
       # TRUSTPILOT_API_KEY: ${{ inputs.TRUSTPILOT_API_KEY }}
       R2_PROJECT_NAME: ${{ inputs.R2_PROJECT_NAME }}

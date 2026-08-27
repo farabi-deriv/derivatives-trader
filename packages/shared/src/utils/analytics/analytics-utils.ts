@@ -2,6 +2,10 @@ import { Analytics } from '@deriv-com/analytics';
 
 import { isMobile } from '../screen';
 
+// Resolved once at module load. `||` not `??`: an unset build variable arrives at
+// runtime as an empty string, so both an absent value and '' fall back to '0.0.0'.
+const APP_VERSION = process.env.APP_VERSION || '0.0.0';
+
 type ClientStore = {
     is_logged_in: boolean;
     is_virtual: boolean;
@@ -95,6 +99,7 @@ export const trackAnalyticsEvent = (
 
     const eventProperties = {
         ...commonData,
+        app_version: APP_VERSION,
         ...properties,
     };
 

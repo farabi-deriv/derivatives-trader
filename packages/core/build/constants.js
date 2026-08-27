@@ -131,6 +131,7 @@ const plugins = ({ base, is_test_env }) => {
         new Dotenv({ systemvars: true }),
         new DefinePlugin({
             'process.env.REF_NAME': JSON.stringify(process.env.REF_NAME),
+            'process.env.APP_VERSION': JSON.stringify(process.env.APP_VERSION),
             'process.env.RUDDERSTACK_KEY': JSON.stringify(process.env.RUDDERSTACK_KEY),
             'process.env.POSTHOG_KEY': JSON.stringify(process.env.POSTHOG_KEY),
             'process.env.POSTHOG_HOST': JSON.stringify(process.env.POSTHOG_HOST),
