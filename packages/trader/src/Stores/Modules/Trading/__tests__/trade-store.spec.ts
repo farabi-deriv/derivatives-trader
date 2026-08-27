@@ -1908,6 +1908,103 @@ describe('TradeStore', () => {
         });
     });
 
+    describe('selectMarketAndTradeType replace-flow (already-open-market de-duplication, #1240)', () => {
+        const gold_market = { symbol: 'GDAXI', contract_type: 'rise_fall' };
+        const vol_market = { symbol: '1HZ100V', contract_type: 'rise_fall' };
+
+        beforeEach(() => {
+            // Force manual mode (see the supersession describe above for why).
+            (tradeStore.root_store.ui as unknown as { is_mobile: boolean }).is_mobile = false;
+            tradeStore.is_automation_page = false;
+            tradeStore.active_trade_panel_tab = TRADE_PANEL_TABS.TRADE;
+            jest.spyOn(tradeStore, 'validateAllProperties').mockImplementation(() => undefined);
+            // Two tabs open; tab 2 (vol_market) is the active one about to be tapped.
+            tradeStore.open_markets_manual = [gold_market, vol_market];
+            tradeStore.symbol = vol_market.symbol;
+            tradeStore.contract_type = vol_market.contract_type;
+        });
+
+        afterEach(() => {
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            localStorage.removeItem('active_trade_panel_tab');
+        });
+
+        it('keeps both tabs when the tap-to-replace target is already open as another tab', async () => {
+            tradeStore.setReplacingMarket(vol_market); // tapped the active tab (tab 2)
+
+            await tradeStore.selectMarketAndTradeType(gold_market.symbol, gold_market.contract_type);
+
+            expect(tradeStore.open_markets).toHaveLength(2);
+            expect(tradeStore.open_markets).toEqual(expect.arrayContaining([gold_market, vol_market]));
+        });
+
+        it('activates the pre-existing tab in place and clears the replace intent', async () => {
+            tradeStore.setReplacingMarket(vol_market);
+
+            await tradeStore.selectMarketAndTradeType(gold_market.symbol, gold_market.contract_type);
+
+            expect(tradeStore.symbol).toBe(gold_market.symbol);
+            expect(tradeStore.contract_type).toBe(gold_market.contract_type);
+            expect(tradeStore.replacing_market).toBeNull();
+        });
+
+        it('preserves every other tab and its position, regardless of which tab was tapped', async () => {
+            const jpy_market = { symbol: 'frxUSDJPY', contract_type: 'rise_fall' };
+            tradeStore.open_markets_manual = [gold_market, jpy_market, vol_market];
+            tradeStore.setReplacingMarket(vol_market);
+
+            await tradeStore.selectMarketAndTradeType(gold_market.symbol, gold_market.contract_type);
+
+            expect(tradeStore.open_markets).toHaveLength(3);
+            expect(tradeStore.open_markets).toEqual([gold_market, jpy_market, vol_market]);
+        });
+
+        it('still swaps the tapped tab in place for a target that is not already open elsewhere', async () => {
+            tradeStore.setReplacingMarket(vol_market);
+
+            await tradeStore.selectMarketAndTradeType('R_50', 'multiplier');
+
+            expect(tradeStore.open_markets).toEqual([gold_market, { symbol: 'R_50', contract_type: 'multiplier' }]);
+            expect(tradeStore.symbol).toBe('R_50');
+            expect(tradeStore.contract_type).toBe('multiplier');
+        });
+
+        it('a same-category sibling commit (Allow equals) still updates the tapped tab itself in place', async () => {
+            tradeStore.setReplacingMarket(vol_market);
+
+            await tradeStore.selectMarketAndTradeType(vol_market.symbol, 'rise_fall_equal');
+
+            expect(tradeStore.open_markets).toEqual([
+                gold_market,
+                { symbol: vol_market.symbol, contract_type: 'rise_fall_equal' },
+            ]);
+        });
+
+        it('a failed commit whose replace was skipped leaves the strip untouched', async () => {
+            const { processTradeParams } = jest.requireMock('../Helpers/process');
+            (processTradeParams as jest.Mock).mockRejectedValueOnce(new Error('socket dropped'));
+            tradeStore.setReplacingMarket(vol_market);
+
+            await expect(
+                tradeStore.selectMarketAndTradeType(gold_market.symbol, gold_market.contract_type)
+            ).rejects.toThrow('socket dropped');
+
+            // Nothing was added, removed, or replaced — the strip is exactly as before the attempt.
+            expect(tradeStore.open_markets).toEqual([gold_market, vol_market]);
+        });
+
+        it('a failed genuine in-place replace restores the tapped tab at its original position', async () => {
+            const { processTradeParams } = jest.requireMock('../Helpers/process');
+            (processTradeParams as jest.Mock).mockRejectedValueOnce(new Error('socket dropped'));
+            tradeStore.setReplacingMarket(vol_market);
+
+            await expect(tradeStore.selectMarketAndTradeType('R_50', 'multiplier')).rejects.toThrow('socket dropped');
+
+            // The optimistic replace is reversed; the attempted new pair is not present.
+            expect(tradeStore.open_markets).toEqual([gold_market, vol_market]);
+        });
+    });
+
     describe('resolveContractTypeAvailability', () => {
         const flushAsync = () => new Promise(resolve => setTimeout(resolve, 0));
 

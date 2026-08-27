@@ -464,4 +464,16 @@ describe('MarketTabs', () => {
         expect(mockSelect).not.toHaveBeenCalled();
         expect(screen.queryByTestId('market-selection-open')).not.toBeInTheDocument();
     });
+
+    it('clears a pending replace intent when the "+" control opens the selector', () => {
+        mockOpenMarkets = [rise_market, turbos_market];
+        render(<MarketTabs />);
+        // Tap the active tab first, setting a pending "replace this tab" intent...
+        fireEvent.click(screen.getByTestId('tab-frxEURUSD__rise_fall'));
+        expect(mockSetReplacing).toHaveBeenCalledWith(rise_market);
+        // ...then open the selector via "+" instead of completing the replace.
+        fireEvent.click(screen.getByRole('button', { name: 'Add market' }));
+        expect(mockSetReplacing).toHaveBeenLastCalledWith(null);
+        expect(mockSetMarketSelectorOpen).toHaveBeenCalledWith(true);
+    });
 });

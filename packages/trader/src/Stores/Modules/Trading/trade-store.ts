@@ -1109,10 +1109,18 @@ export default class TradeStore extends BaseStore {
             market =>
                 market.symbol === underlying_symbol && this.isSameTradeTypeGroup(market.contract_type, contract_type)
         );
+        // Set only when replaceOpenMarket actually runs below, so the failure-path rollback reverses
+        // a replace that actually happened rather than assuming one did whenever `replaced_market` was set.
+        let did_replace = false;
         if (replaced_market) {
-            // Long-press "replace this tab" flow: swap the long-pressed tab in place instead of
-            // appending a new one.
-            this.replaceOpenMarket(replaced_market, next_market);
+            // Long-press "replace this tab" flow: swap the long-pressed tab in place — unless the
+            // target is already open as a DIFFERENT tab (category_sibling_tab isn't the tapped tab
+            // itself), in which case this is really a switch to that existing tab. Skip the mutation
+            // so the symbol/contract_type commit below activates it without touching the strip.
+            if (!category_sibling_tab || isSameMarket(category_sibling_tab, replaced_market)) {
+                this.replaceOpenMarket(replaced_market, next_market);
+                did_replace = true;
+            }
             this.setReplacingMarket(null);
         } else if (!category_sibling_tab) {
             this.addOpenMarket(next_market);
@@ -1139,7 +1147,7 @@ export default class TradeStore extends BaseStore {
             // (commitAndClose) keeps the selector open for retry. Skipped when superseded (a newer
             // selection owns the strip) and when nothing was added (a pre-existing tab must survive).
             if (this.selection_seq === epoch) {
-                if (replaced_market) this.replaceOpenMarket(next_market, replaced_market);
+                if (did_replace && replaced_market) this.replaceOpenMarket(next_market, replaced_market);
                 else if (!category_sibling_tab) this.removeOpenMarket(next_market);
             }
             throw error;
