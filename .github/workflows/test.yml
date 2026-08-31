@@ -24,6 +24,10 @@ jobs:
     - name: Build
       uses: "./.github/actions/build"
 
+    # Structural safety net — full chunk-name assertion runs here because dist/ exists after Build.
+    - name: Run baseline check (chunks)
+      run: npm run baseline:check
+
   validate:
     name: TypeScript & Linting
     runs-on: runner_8cores_derivatives_trader
@@ -52,7 +56,21 @@ jobs:
     # Import checking
     - name: Check imports
       run: npm run check-imports
-    
+
+    # Dead-code safety net — fails only on findings new versus the committed knip baseline.
+    - name: Run knip check
+      run: npm run knip:check
+
+    # The safety-net scripts' own unit tests (scripts/__tests__/) — outside the root jest
+    # project glob (packages/*), so they need an explicit step.
+    - name: Run safety-net script tests
+      run: npm run test:scripts
+
+    # Structural safety net — route-map + alias-root assertions (chunk assertion auto-skips
+    # without dist/ here; the build job runs the full chunk assertion against its dist/).
+    - name: Run baseline check
+      run: npm run baseline:check
+
     # Test structure checking
     - name: Check tests for @deriv/utils
       run: bash ./scripts/check-tests.sh packages/utils/src

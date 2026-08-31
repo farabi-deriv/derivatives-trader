@@ -1,0 +1,56 @@
+{
+    "$schema": "https://unpkg.com/knip@5/schema.json",
+    "workspaces": {
+        ".": {
+            "entry": ["scripts/*.js", "playwright.config.ts"],
+            "project": ["scripts/*.js", "playwright.config.ts"],
+            "playwright": false
+        },
+        "packages/trader": {
+            "entry": ["src/index.tsx", "build/webpack.config.js", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/reports": {
+            "entry": ["src/index.tsx", "build/webpack.config.js", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"],
+            "paths": {
+                "Sass/*": ["src/sass/*"]
+            }
+        },
+        "packages/core": {
+            "entry": ["src/index.tsx", "build/webpack.config.js", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"],
+            "paths": {
+                "Fonts/*": ["src/public/fonts/*"],
+                "Images": ["src/public/images"],
+                "Images/*": ["src/public/images/*"],
+                "Sass/*": ["src/sass/*"],
+                "Translations/*": ["src/public/translations/*"]
+            }
+        },
+        "packages/components": {
+            "entry": ["src/index.ts", "webpack.config.js", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/api": {
+            "entry": ["src/index.ts", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/api-v2": {
+            "entry": ["src/index.ts", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/shared": {
+            "entry": ["src/index.ts", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/stores": {
+            "entry": ["src/index.ts", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        },
+        "packages/utils": {
+            "entry": ["src/index.ts", "jest.config.js"],
+            "project": ["src/**/*.{ts,tsx,js,jsx}"]
+        }
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "roots": {
+        "trader": [
+            "AppV2",
+            "Assets",
+            "Constants",
+            "Fonts",
+            "Images",
+            "Modules",
+            "Sass",
+            "Services",
+            "Stores",
+            "Translations",
+            "Types",
+            "Utils",
+            "_common"
+        ],
+        "core": [
+            "App",
+            "Assets",
+            "Constants",
+            "Fonts",
+            "Images",
+            "Modules",
+            "Sass",
+            "Services",
+            "Stores",
+            "Translations",
+            "Utils",
+            "_common"
+        ],
+        "reports": [
+            "Components",
+            "Constants",
+            "Containers",
+            "Modules",
+            "Sass",
+            "Stores",
+            "Types",
+            "_common"
+        ]
+    },
+    "counts": {
+        "trader": 342,
+        "core": 32,
+        "reports": 30
+    }
+}

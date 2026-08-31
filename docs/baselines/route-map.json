@@ -1,0 +1,28 @@
+{
+    "packages/core/src/App/Constants/routes-config.js": [
+        "routes.archived_statement",
+        "routes.contract",
+        "routes.endpoint",
+        "routes.index",
+        "routes.menu",
+        "routes.positions",
+        "routes.profit",
+        "routes.reports",
+        "routes.statement",
+        "routes.unavailable"
+    ],
+    "packages/reports/src/Constants/routes-config.tsx": [
+        "routes.archived_statement",
+        "routes.positions",
+        "routes.profit",
+        "routes.reports",
+        "routes.statement"
+    ],
+    "packages/trader/src/AppV2/Routes/routes.tsx": [
+        "/*",
+        "routes.contract",
+        "routes.index",
+        "routes.trader_automate",
+        "routes.trader_positions"
+    ]
+}
