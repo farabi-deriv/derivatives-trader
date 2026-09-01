@@ -90,6 +90,7 @@ jobs:
       cron_env: ${{ steps.resolve-cron.outputs.cron_env }}
       cron_suite: ${{ steps.resolve-cron.outputs.cron_suite }}
       matrix: ${{ steps.resolve-matrix.outputs.matrix }}
+      max_parallel: ${{ steps.resolve-matrix.outputs.max_parallel }}
     steps:
       - name: Checkout
         if: ${{ (github.event.inputs.spec_file || inputs.spec_file) != '' }}
@@ -160,12 +161,25 @@ jobs:
           fi
           echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
 
+          # Cap parallelism at 2 to avoid shared-account login races (see strategy.max-parallel below).
+          MATRIX_COUNT=$(echo "$MATRIX" | jq 'length')
+          if [ "$MATRIX_COUNT" -le 1 ]; then
+            MAX_PARALLEL=1
+          elif [ "$MATRIX_COUNT" -le 2 ]; then
+            MAX_PARALLEL="$MATRIX_COUNT"
+          else
+            MAX_PARALLEL=2
+          fi
+          echo "max_parallel=${MAX_PARALLEL}" >> "$GITHUB_OUTPUT"
+
   playwright-tests:
     name: Playwright Tests - ${{ matrix.name }} (${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
     needs: validate-inputs
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      # Matrix platforms share the same test account, so cap concurrency at 2 to avoid concurrent-login races.
+      max-parallel: ${{ fromJSON(needs.validate-inputs.outputs.max_parallel) }}
       matrix:
         include: ${{ fromJSON(needs.validate-inputs.outputs.matrix) }}
     runs-on: github-hosted-playwright01

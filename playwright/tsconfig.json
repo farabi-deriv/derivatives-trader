@@ -1,9 +1,23 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "module": "ES2022",
+    "target": "ES2022",
+    "jsx": "react-jsx",
     "moduleResolution": "bundler",
-    "noEmit": true,
-    "ignoreDeprecations": "5.0"
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true
   },
   "include": [
     "**/*.ts",
