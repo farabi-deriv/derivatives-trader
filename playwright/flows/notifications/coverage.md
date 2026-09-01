@@ -16,7 +16,7 @@
 | Flow 6 | Notification centre lists items and Clear All enabled | ❌      | ❌     | Requires account with notifications                       |
 | Flow 7 | Clear All removes all notifications                   | ❌      | ❌     | Requires account with notifications                       |
 | G1     | Bell icon absent from DTrader trade page              | ❌      | ❌     | Negative assertion — confirms no bell on `/`              |
-| G2     | Trade banner uses CSS class locator (no testid)       | N/A     | ❌     | Verifies CSS fallback works; mobile only                  |
+| G2     | Trade banner uses CSS class locator (no testid)       | N/A     | ✅     | Verifies CSS fallback works; mobile only                  |
 
 ---
 
