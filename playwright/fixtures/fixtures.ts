@@ -14,7 +14,7 @@ import { TradeMultipliersPage } from '../pages/TradeMultipliersPage';
 import { TradeAccumulatorsPage } from '../pages/TradeAccumulatorsPage';
 import { TradeTurbosPage } from '../pages/TradeTurbosPage';
 import { TradeVanillasPage } from '../pages/TradeVanillasPage';
-import { TradeAutomationPage } from '../pages/TradeAutomationPage';
+import { TradeAutomatePage } from '../pages/TradeAutomatePage';
 import { PositionsPage } from '../pages/PositionsPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { ContractDetailsPage } from '../pages/ContractDetailsPage';
@@ -81,7 +81,7 @@ export const test = base.extend<{
     tradeAccumulatorsPage: TradeAccumulatorsPage;
     tradeTurbosPage: TradeTurbosPage;
     tradeVanillasPage: TradeVanillasPage;
-    tradeAutomationPage: TradeAutomationPage;
+    tradeAutomatePage: TradeAutomatePage;
     positionsPage: PositionsPage;
     reportsPage: ReportsPage;
     contractDetailsPage: ContractDetailsPage;
@@ -201,10 +201,10 @@ export const test = base.extend<{
     },
 
     /**
-     * Trade Automation page fixture — provides initialized TradeAutomationPage instance
+     * Trade Automate page fixture — provides initialized TradeAutomatePage instance
      */
-    tradeAutomationPage: async ({ page }, use) => {
-        await use(new TradeAutomationPage(page));
+    tradeAutomatePage: async ({ page }, use) => {
+        await use(new TradeAutomatePage(page));
     },
 
     /**

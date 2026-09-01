@@ -55,14 +55,15 @@ All custom skills live under `.claude/skills/`. When a skill is referenced via `
 
 When creating a **new test folder** under `playwright/tests/`, the folder name **MUST mirror the corresponding feature area** in the app.
 
-| Feature area                  | `playwright/tests/` folder        |
-| ----------------------------- | --------------------------------- |
-| Login / authentication        | `playwright/tests/auth/`          |
-| Trade form + contract details | `playwright/tests/trade/`         |
-| Live price feed               | `playwright/tests/feed/`          |
-| Open positions                | `playwright/tests/positions/`     |
-| Reports (P&L, statement)      | `playwright/tests/reports/`       |
-| Notifications                 | `playwright/tests/notifications/` |
+| Feature area                  | `playwright/tests/` folder                                              |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| Login / authentication        | `playwright/tests/auth/`                                                |
+| Trade form + contract details | `playwright/tests/trade/`                                               |
+| Live price feed               | `playwright/tests/feed/`                                                |
+| Open positions                | `playwright/tests/positions/`                                           |
+| Reports (P&L, statement)      | `playwright/tests/reports/`                                             |
+| Notifications                 | `playwright/tests/notifications/`                                       |
+| Automated trading (Automate)  | `playwright/tests/trade-automate/` · `playwright/flows/trade-automate/` |
 
 **Rule**: Before creating a new folder, confirm the matching feature module exists in `packages/trader/src/` or `packages/core/src/`. Never invent a folder name with no app counterpart.
 

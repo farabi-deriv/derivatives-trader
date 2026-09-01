@@ -334,6 +334,18 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
+     * Clicks a duration unit tab when the sidebar is rendered.
+     * Tick-only trade types (Even/Odd, Matches/Differs, Over/Under) expose a single unit, so
+     * duration-desktop.tsx omits the sidebar and shows Quick picks chips directly.
+     */
+    private async selectDurationUnitTabIfVisible(unit: string): Promise<void> {
+        const unitTab = this.durationUnitTab(unit);
+        if (await unitTab.isVisible().catch(() => false)) {
+            await unitTab.click();
+        }
+    }
+
+    /**
      * Duration preset chip button — rendered by value-chips.tsx.
      * aria-label pattern: "Select value X ticks" / "Select value X sec" / "Select value X min"
      *
@@ -684,18 +696,23 @@ export class TradeParametersPage extends TradeBasePage {
      * @param tradeType - Visible trade-type label as rendered (e.g. 'Rise/Fall', 'Multipliers')
      * @param options.openInNewTab - Open via "Add market" (new tab) instead of replacing the
      *   active tab. Defaults to `false`.
+     * @param options.mode - `'manual'` (default) asserts Buy button and manual-only UI;
+     *   `'automate'` skips Buy and asserts the Run control instead.
      *
      * @example
      * ```typescript
      * await tradeParametersPage.selectMarketAndTradeType('Volatility 100 Index', 'Multipliers');
+     * await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Accumulators', {
+     *     mode: 'automate',
+     * });
      * ```
      */
     async selectMarketAndTradeType(
         market: string,
         tradeType: string,
-        options: { openInNewTab?: boolean } = {}
+        options: { openInNewTab?: boolean; mode?: 'manual' | 'automate' } = {}
     ): Promise<void> {
-        const { openInNewTab = false } = options;
+        const { openInNewTab = false, mode = 'manual' } = options;
 
         const activeTabText = await this.activeMarketTab.textContent();
         const isAlreadySelected =
@@ -753,7 +770,7 @@ export class TradeParametersPage extends TradeBasePage {
             ).toContainText(market);
         }
 
-        await this.verifyParamsForTradeType(tradeType);
+        await this.verifyParamsForTradeType(tradeType, mode);
     }
 
     /**
@@ -790,7 +807,7 @@ export class TradeParametersPage extends TradeBasePage {
                 return;
             }
             await this.durationField.click();
-            await this.durationUnitTab(unit).click();
+            await this.selectDurationUnitTabIfVisible(unit);
 
             // formattedValue format: "DD Mon YYYY HH:mm" (e.g. "25 Jun 2026 14:30")
             const endTimeMatch = formattedValue.match(/^(\d{1,2}) (\w+ \d{4}) (\d{2}):(\d{2})$/);
@@ -837,7 +854,7 @@ export class TradeParametersPage extends TradeBasePage {
         }
 
         await this.durationField.click();
-        await this.durationUnitTab(unit).click();
+        await this.selectDurationUnitTabIfVisible(unit);
 
         if (this.isMobile) {
             if (unitLower === 'ticks') {
@@ -1015,6 +1032,12 @@ export class TradeParametersPage extends TradeBasePage {
      * ```
      */
     async setStake(amount: string): Promise<void> {
+        const expectedStake = parseFloat(amount);
+        const currentStake = parseFloat((await this.stakeField.inputValue()).replace(/[^\d.]/g, ''));
+        if (!Number.isNaN(currentStake) && currentStake === expectedStake) {
+            return;
+        }
+
         await this.stakeField.click();
 
         const chip = this.stakeChip(amount);
@@ -1061,7 +1084,6 @@ export class TradeParametersPage extends TradeBasePage {
         // ("10.0 USD" after saving "10.00"). parseFloat still matches, and "25.00" cannot pass for "5.00".
         // Strip non-numerics first — the trigger is "10.0 USD" on desktop but "$10.0" on mobile, and
         // parseFloat('$10.0') is NaN.
-        const expectedStake = parseFloat(amount);
         await expect
             .poll(async () => parseFloat((await this.stakeField.inputValue()).replace(/[^\d.]/g, '')), {
                 message: `Stake field should show ${amount} after saving`,
@@ -1365,45 +1387,63 @@ export class TradeParametersPage extends TradeBasePage {
      * Add a case here for each new trade type as it is implemented.
      *
      * @param tradeType - The trade type that was just selected
+     * @param mode - `'manual'` asserts Buy button; `'automate'` asserts Run instead
      */
-    private async verifyParamsForTradeType(tradeType: string): Promise<void> {
+    private async verifyParamsForTradeType(tradeType: string, mode: 'manual' | 'automate' = 'manual'): Promise<void> {
+        const isAutomate = mode === 'automate';
+
         switch (tradeType) {
             case 'Rise/Fall':
                 await expect(this.riseButton, 'Rise button should be visible for Rise/Fall').toBeVisible();
                 await expect(this.fallButton, 'Fall button should be visible for Rise/Fall').toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Rise/Fall').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Rise/Fall').toBeVisible();
-                await expect(this.allowEqualsText, 'Allow equals should be visible for Rise/Fall').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Rise/Fall').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Rise/Fall');
+                if (!isAutomate) {
+                    await expect(this.allowEqualsText, 'Allow equals should be visible for Rise/Fall').toBeVisible();
+                    await expect(this.purchaseButton, 'Buy button should be visible for Rise/Fall').toBeVisible();
+                }
                 break;
             case 'Accumulators':
                 await expect(
                     this.growthRateLabel,
                     'Growth rate param should be visible for Accumulators'
                 ).toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Accumulators').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Accumulators');
                 await expect(
                     this.takeProfitLabel,
                     'Take profit param should be visible for Accumulators'
                 ).toBeVisible();
-                await expect(
-                    this.accumulatorsStats,
-                    'Accumulators stats panel should be visible for Accumulators'
-                ).toBeVisible();
-                // Accumulators render a single buy button with no payout content wrapper.
-                await expect(this.singlePurchaseButton, 'Buy button should be visible for Accumulators').toBeVisible();
+                if (!isAutomate) {
+                    await expect(
+                        this.accumulatorsStats,
+                        'Accumulators stats panel should be visible for Accumulators'
+                    ).toBeVisible();
+                    await expect(
+                        this.singlePurchaseButton,
+                        'Buy button should be visible for Accumulators'
+                    ).toBeVisible();
+                } else if (!this.isMobile) {
+                    await expect(
+                        this.accumulatorsStats,
+                        'Accumulators stats panel should be visible for Accumulators on desktop automate'
+                    ).toBeVisible();
+                }
                 break;
             case 'Higher/Lower':
                 await expect(this.barrierLabel, 'Barrier param should be visible for Higher/Lower').toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Higher/Lower').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Higher/Lower').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Higher/Lower').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Higher/Lower');
+                if (!isAutomate) {
+                    await expect(this.purchaseButton, 'Buy button should be visible for Higher/Lower').toBeVisible();
+                }
                 break;
             case 'Touch/No Touch':
                 await expect(this.barrierLabel, 'Barrier param should be visible for Touch/No Touch').toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Touch/No Touch').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Touch/No Touch').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Touch/No Touch').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Touch/No Touch');
+                if (!isAutomate) {
+                    await expect(this.purchaseButton, 'Buy button should be visible for Touch/No Touch').toBeVisible();
+                }
                 break;
             case 'Matches/Differs':
                 await expect(
@@ -1411,8 +1451,10 @@ export class TradeParametersPage extends TradeBasePage {
                     'Last digit prediction should be visible for Matches/Differs'
                 ).toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Matches/Differs').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Matches/Differs').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Matches/Differs').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Matches/Differs');
+                if (!isAutomate) {
+                    await expect(this.purchaseButton, 'Buy button should be visible for Matches/Differs').toBeVisible();
+                }
                 break;
             case 'Over/Under':
                 await expect(
@@ -1420,8 +1462,10 @@ export class TradeParametersPage extends TradeBasePage {
                     'Last digit prediction should be visible for Over/Under'
                 ).toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Over/Under').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Over/Under').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Over/Under').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Over/Under');
+                if (!isAutomate) {
+                    await expect(this.purchaseButton, 'Buy button should be visible for Over/Under').toBeVisible();
+                }
                 break;
             case 'Even/Odd':
                 // Even/Odd has no last-digit prediction selector — the outcome is even vs odd.
@@ -1430,8 +1474,10 @@ export class TradeParametersPage extends TradeBasePage {
                     'Last digit prediction should NOT be visible for Even/Odd'
                 ).not.toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Even/Odd').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Even/Odd').toBeVisible();
-                await expect(this.purchaseButton, 'Buy button should be visible for Even/Odd').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Even/Odd');
+                if (!isAutomate) {
+                    await expect(this.purchaseButton, 'Buy button should be visible for Even/Odd').toBeVisible();
+                }
                 break;
             case 'Turbos':
                 await expect(this.durationLabel, 'Duration param should be visible for Turbos').toBeVisible();
@@ -1439,25 +1485,30 @@ export class TradeParametersPage extends TradeBasePage {
                     this.payoutPerPointParam,
                     'Payout per point param should be visible for Turbos'
                 ).toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Turbos').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Turbos');
                 await expect(this.takeProfitLabel, 'Take profit param should be visible for Turbos').toBeVisible();
-                // Turbos render a single buy button with no payout content wrapper.
-                await expect(this.singlePurchaseButton, 'Buy button should be visible for Turbos').toBeVisible();
+                if (!isAutomate) {
+                    await expect(this.singlePurchaseButton, 'Buy button should be visible for Turbos').toBeVisible();
+                }
                 break;
             case 'Multipliers':
                 await expect(this.multiplierLabel, 'Multiplier param should be visible for Multipliers').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Multipliers').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Multipliers');
                 await expect(
                     this.riskManagementLabel,
                     'Risk management param should be visible for Multipliers'
                 ).toBeVisible();
-                // Multipliers render a single buy button with no payout content wrapper (no fixed payout).
-                await expect(this.singlePurchaseButton, 'Buy button should be visible for Multipliers').toBeVisible();
+                if (!isAutomate) {
+                    await expect(
+                        this.singlePurchaseButton,
+                        'Buy button should be visible for Multipliers'
+                    ).toBeVisible();
+                }
                 break;
             case 'Vanillas':
                 await expect(this.strikePriceLabel, 'Strike price param should be visible for Vanillas').toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Vanillas').toBeVisible();
-                await expect(this.stakeLabel, 'Stake param should be visible for Vanillas').toBeVisible();
+                await this.assertStakeParamVisible(isAutomate, 'Vanillas');
                 // Payout per point info is a below-params row on desktop only — mobile drops it
                 // (trade-parameters.tsx `{!isMobile && ...}`) and surfaces the value inside the
                 // Strike action sheet instead. TradeVanillasPage.verifyPayoutPerPointInfo() covers both.
@@ -1467,8 +1518,9 @@ export class TradeParametersPage extends TradeBasePage {
                         'Payout per point info panel should be visible for Vanillas on desktop'
                     ).toBeVisible();
                 }
-                // Vanillas render a single buy button with no payout content wrapper.
-                await expect(this.singlePurchaseButton, 'Buy button should be visible for Vanillas').toBeVisible();
+                if (!isAutomate) {
+                    await expect(this.singlePurchaseButton, 'Buy button should be visible for Vanillas').toBeVisible();
+                }
                 break;
             default:
                 throw new Error(
@@ -1476,6 +1528,23 @@ export class TradeParametersPage extends TradeBasePage {
                         `Add a case to this switch before using selectMarketAndTradeType() with this type.`
                 );
         }
+
+        if (isAutomate) {
+            await this.assertAutomateRunControl();
+        }
+    }
+
+    /** Stake label — desktop automate tab reads "Initial stake"; mobile /automate keeps "Stake". */
+    private async assertStakeParamVisible(isAutomate: boolean, tradeType: string): Promise<void> {
+        const label = isAutomate && !this.isMobile ? this.page.getByLabel('Initial stake').first() : this.stakeLabel;
+        await expect(label, `Stake param should be visible for ${tradeType}`).toBeVisible();
+    }
+
+    /** Run button replaces Buy in automation mode (AutomationActions). */
+    private async assertAutomateRunControl(): Promise<void> {
+        const runButton = this.page.getByRole('button', { name: 'Run', exact: true });
+        await expect(runButton, 'Run button should be visible in automate mode').toBeVisible();
+        await expect(runButton, 'Run button should be enabled in automate mode').toBeEnabled();
     }
 
     /**

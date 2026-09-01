@@ -96,6 +96,17 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
+     * Automation trading icon on the first contract card — rendered when `auto_run_id` is set.
+     * Source: contract-card.tsx — `IcAutomationTrading` (20×16 svg beside the market name).
+     */
+    get contractCardAutomationIcon(): Locator {
+        return this.firstContractCard
+            .locator('.contract-card__details')
+            .first()
+            .locator('svg[width="20"][height="16"]');
+    }
+
+    /**
      * Remaining time display on the contract card.
      * Source: .timer.tag > dc-remaining-time
      * Text format: "00:04:50" — live value, assert non-empty only.
@@ -121,6 +132,14 @@ export class PositionsPage extends TradeBasePage {
      */
     get contractCardProfit(): Locator {
         return this.firstContractCard.locator('p.profit');
+    }
+
+    /**
+     * Status timer tag on the first contract card — tick progress (e.g. "19 ticks") or remaining time.
+     * Source: ContractCardStatusTimer inside `.timer.tag`.
+     */
+    get contractCardStatusTimer(): Locator {
+        return this.firstContractCard.locator('.timer.tag');
     }
 
     /**
@@ -175,6 +194,14 @@ export class PositionsPage extends TradeBasePage {
      */
     get firstMobileClosedCard(): Locator {
         return this.page.getByRole('tabpanel', { name: 'Closed' }).getByRole('link').first();
+    }
+
+    /**
+     * Trade type label on the first mobile closed card (e.g. "Even", "Rise").
+     * Source: p.trade-type inside the Closed tabpanel link card — same class as desktop dt_contract_card.
+     */
+    get mobileClosedCardTradeType(): Locator {
+        return this.firstMobileClosedCard.locator('.trade-type');
     }
 
     /**
@@ -248,6 +275,35 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
+     * Close every contract still open in the Positions Open tab.
+     * Accumulators keep Initial stake / Growth rate disabled while an open contract exists on the symbol.
+     */
+    async closeAllOpenContracts(): Promise<void> {
+        await this.goToPositions();
+
+        if (!this.isMobile) {
+            await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+        }
+
+        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
+        if ((await this.positionsOpenTab.getAttribute('aria-selected')) !== 'true') {
+            await this.positionsOpenTab.click();
+        }
+
+        for (let attempt = 0; attempt < 5; attempt++) {
+            if (!(await this.firstContractCard.isVisible().catch(() => false))) {
+                return;
+            }
+            await this.closeFirstContract();
+        }
+
+        await expect(
+            this.noOpenPositionsText,
+            'Open tab should show the empty state after closing all contracts'
+        ).toBeVisible({ timeout: 60_000 });
+    }
+
+    /**
      * Click the "Closed" tab to switch to the closed positions list.
      */
     async clickClosedTab(): Promise<void> {
@@ -272,6 +328,29 @@ export class PositionsPage extends TradeBasePage {
                 { timeout: 3_000 }
             );
         }).toPass({ timeout: 30_000 });
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /**
+     * Open the first contract on the Closed tab.
+     * Desktop uses `dt_contract_card`; mobile Closed tab renders link cards instead.
+     */
+    async openFirstClosedContract(): Promise<void> {
+        if (this.isMobile) {
+            await expect(
+                this.firstMobileClosedCard,
+                'At least one closed contract card should be visible in Positions'
+            ).toBeVisible();
+            await expect(async () => {
+                await this.firstMobileClosedCard.click({ timeout: 3_000 }).catch(() => {});
+                await expect(
+                    this.page,
+                    'Should navigate to /contract/ after opening the first closed position'
+                ).toHaveURL(/\/contract\//, { timeout: 3_000 });
+            }).toPass({ timeout: 30_000 });
+        } else {
+            await this.openFirstContract();
+        }
         await NavigationUtils.waitForDerivApiSettled(this.page);
     }
 
@@ -467,7 +546,7 @@ export class PositionsPage extends TradeBasePage {
                 market,
                 { timeout: 60_000 }
             );
-            await expect(this.firstMobileClosedCard, `Closed card should show trade type "${tradeType}"`).toContainText(
+            await expect(this.mobileClosedCardTradeType, `Closed card trade type should be "${tradeType}"`).toHaveText(
                 tradeType,
                 { timeout: 60_000 }
             );
@@ -504,6 +583,243 @@ export class PositionsPage extends TradeBasePage {
         ).not.toBeEmpty();
 
         return profitLoss;
+    }
+
+    /**
+     * Verify the first open automation contract card — market, automation icon, trade type,
+     * stake, live timer/profit, and Positions summary (footer on desktop, total P/L on mobile).
+     *
+     * @param market            - Market name as shown on the card, e.g. "Volatility 15 (1s) Index"
+     * @param tradeTypeCategory - Automate trade-type category, e.g. "Accumulators" or "Rise/Fall"
+     * @param currency          - Currency code, e.g. "USD"
+     * @param stake             - Initial stake amount, e.g. "1" or "2.00" (formatted to two decimals on the card)
+     */
+    async verifyAutomationContractCardDetails(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string
+    ): Promise<void> {
+        const formattedStake = Number(stake).toFixed(2);
+
+        await expect(this.contractCardMarket, `Contract card symbol should be "${market}"`).toHaveText(market);
+        await expect(
+            this.contractCardAutomationIcon,
+            'Automation contract card should show the automation trading icon'
+        ).toBeVisible();
+        await expect(
+            this.contractCardType,
+            `Contract card type should match the ${tradeTypeCategory} automation trade type`
+        ).toHaveText(this.automationCardTradeTypeMatcher(tradeTypeCategory));
+        await expect(this.contractCardStake, `Stake should show "${formattedStake} ${currency}"`).toHaveText(
+            `${formattedStake} ${currency}`
+        );
+        await expect(
+            this.contractCardStatusTimer,
+            'Status timer should show remaining time or tick progress'
+        ).toBeVisible();
+        await expect(this.contractCardStatusTimer, 'Status timer should have a value').not.toBeEmpty();
+        await expect(this.contractCardProfit, 'Profit/loss should have a live value').not.toBeEmpty();
+
+        if (this.isMobile) {
+            await expect(
+                this.mobileTotalProfitLoss,
+                'Mobile total profit/loss summary should be visible'
+            ).toBeVisible();
+        } else {
+            await expect(
+                this.contractCardCloseButton,
+                'Close button should be visible on the automation contract card'
+            ).toBeVisible();
+            await this.verifyPositionsFooter();
+        }
+    }
+
+    private automationCardTradeTypeMatcher(tradeTypeCategory: string): string | RegExp {
+        switch (tradeTypeCategory) {
+            case 'Rise/Fall':
+                return /^(Rise|Fall)$/;
+            case 'Rise':
+                return 'Rise';
+            case 'Fall':
+                return 'Fall';
+            case 'Accumulators':
+                return 'Accumulators';
+            case 'Matches/Differs':
+                return /^(Matches|Differs)$/;
+            case 'Matches':
+                return 'Matches';
+            case 'Differs':
+                return 'Differs';
+            case 'Over/Under':
+                return /^(Over|Under)$/;
+            case 'Over':
+                return 'Over';
+            case 'Under':
+                return 'Under';
+            case 'Even/Odd':
+                return /^(Even|Odd)$/;
+            case 'Even':
+                return 'Even';
+            case 'Odd':
+                return 'Odd';
+            default:
+                throw new Error(
+                    `verifyAutomationContractCardDetails: unsupported trade type category '${tradeTypeCategory}'`
+                );
+        }
+    }
+
+    /**
+     * Verify the Closed tab lists a settled contract from an automation run at the **initial stake**.
+     * Martingale increases stake after losses, so multiple closed cards may exist — this targets the
+     * one matching market, trade type, and initial stake from the spec.
+     *
+     * @returns The profit/loss text from the matched closed card, e.g. "+1.03 USD"
+     */
+    async verifyAutomationClosedPositionVisible(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string
+    ): Promise<string> {
+        const formattedStake = Number(stake).toFixed(2);
+        const tradeTypeMatcher = this.automationCardTradeTypeMatcher(tradeTypeCategory);
+        const expectedStake = `${formattedStake} ${currency}`;
+
+        await this.goToPositions();
+
+        if (!this.isMobile) {
+            await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+            await expect(this.positionsTitle, 'Positions flyout header should read "Positions"').toHaveText(
+                'Positions'
+            );
+        }
+
+        await this.clickClosedTab();
+        await expect(this.positionsClosedTab, 'Closed tab should be selected').toHaveAttribute('aria-selected', 'true');
+
+        const card = this.automationClosedCard(market, tradeTypeCategory, formattedStake, currency);
+        await expect(
+            card,
+            `Closed card with market "${market}", trade type "${tradeTypeCategory}", and initial stake "${expectedStake}" should be visible`
+        ).toBeVisible({ timeout: 60_000 });
+        await expect(card.locator('p.symbol'), `Closed card market should be "${market}"`).toHaveText(market, {
+            timeout: 60_000,
+        });
+        if (!this.isMobile) {
+            await expect(
+                card.locator('.contract-card__details').first().locator('svg[width="20"][height="16"]'),
+                'Closed automation contract card should show the automation trading icon'
+            ).toBeVisible();
+        }
+        await expect(
+            card.locator('.trade-type'),
+            `Closed card trade type should match ${tradeTypeCategory}`
+        ).toHaveText(tradeTypeMatcher);
+        await expect(
+            card.locator('.contract-card__details-col').getByTestId('dt_span'),
+            `Closed card stake should be "${expectedStake}"`
+        ).toHaveText(expectedStake);
+        await expect(
+            card.getByText('Closed', { exact: true }),
+            'Closed card should show "Closed" status'
+        ).toBeVisible();
+        const profitLocator = card.locator('p.profit');
+        await expect(profitLocator, 'Closed card profit/loss should have a value').not.toBeEmpty();
+        return (await profitLocator.innerText()).trim();
+    }
+
+    /**
+     * Open the closed automation contract card matching market, trade type, and initial stake.
+     */
+    async openAutomationClosedContract(
+        market: string,
+        tradeTypeCategory: string,
+        stake: string,
+        currency = 'USD'
+    ): Promise<void> {
+        const formattedStake = Number(stake).toFixed(2);
+        const card = this.automationClosedCard(market, tradeTypeCategory, formattedStake, currency);
+        await expect(
+            card,
+            `Closed card with initial stake "${formattedStake} ${currency}" should be visible`
+        ).toBeVisible({ timeout: 60_000 });
+        await expect(async () => {
+            await card.click({ timeout: 3_000 }).catch(() => {});
+            await expect(this.page, 'Should navigate to /contract/ after opening the closed position').toHaveURL(
+                /\/contract\//,
+                { timeout: 3_000 }
+            );
+        }).toPass({ timeout: 30_000 });
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /**
+     * Closed-tab contract cards — mobile uses tabpanel links; desktop flyout uses
+     * `.positions-drawer-closed-tab` (no `tabpanel[name="Closed"]` in the drawer).
+     */
+    private closedPositionsCards(): Locator {
+        if (this.isMobile) {
+            return this.page.getByRole('tabpanel', { name: 'Closed' }).getByRole('link');
+        }
+        return this.positionsFlyout.locator('.positions-drawer-closed-tab a[data-testid="dt_contract_card"]');
+    }
+
+    private automationClosedCard(
+        market: string,
+        tradeTypeCategory: string,
+        formattedStake: string,
+        currency: string
+    ): Locator {
+        const tradeTypeMatcher = this.automationCardTradeTypeMatcher(tradeTypeCategory);
+        const expectedStake = `${formattedStake} ${currency}`;
+        return this.closedPositionsCards()
+            .filter({ has: this.page.locator('p.symbol').filter({ hasText: market }) })
+            .filter({ has: this.page.locator('.trade-type').filter({ hasText: tradeTypeMatcher }) })
+            .filter({
+                has: this.page
+                    .locator('.contract-card__details-col')
+                    .getByTestId('dt_span')
+                    .filter({ hasText: expectedStake }),
+            })
+            .first();
+    }
+
+    /**
+     * Verify the Positions view lists at least one open position from an automation run,
+     * then assert the first contract card details.
+     */
+    async verifyAutomationOpenPositionVisible(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string
+    ): Promise<void> {
+        const positionsBadge = this.isMobile ? this.bottomNavPositionsBadge : this.sidebarPositionsBadge;
+        await expect(
+            positionsBadge,
+            'Positions badge should show at least one open contract while the bot is running'
+        ).toHaveText(/^[1-9]\d*$/);
+
+        await this.goToPositions();
+
+        if (!this.isMobile) {
+            await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+            await expect(this.positionsTitle, 'Positions flyout header should read "Positions"').toHaveText(
+                'Positions'
+            );
+        }
+
+        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
+        await expect(this.positionsOpenTab, 'Open tab should be selected').toHaveAttribute('aria-selected', 'true');
+        await expect(this.positionsClosedTab, 'Closed tab should be visible').toBeVisible();
+        await expect(
+            this.firstContractCard,
+            'At least one open contract card should be visible in Positions'
+        ).toBeVisible();
+
+        await this.verifyAutomationContractCardDetails(market, tradeTypeCategory, currency, stake);
     }
 
     /**

@@ -312,11 +312,23 @@ export class ContractDetailsPage extends TradeBasePage {
     }
 
     /**
-     * Progress slider track line — open contracts only.
+     * Progress slider track line — open time-based contracts (Rise/Fall, etc.).
      * Source: dc-progress-slider__line
      */
     get contractDetailsProgressBar(): Locator {
         return this.contractCard.locator('.dc-progress-slider__line');
+    }
+
+    /**
+     * Tick progress slider — open tick contracts (Rise/Fall ticks, Even/Odd, Matches/Differs, Over/Under).
+     * Source: dc-progress-slider with dc-progress-slider__ticks-caption ("Tick N").
+     */
+    get contractDetailsTickProgressSlider(): Locator {
+        return this.contractCard.locator('.dc-progress-slider');
+    }
+
+    get contractDetailsTickProgressCaption(): Locator {
+        return this.contractCard.locator('.dc-progress-slider__ticks-caption');
     }
 
     /**
@@ -333,6 +345,26 @@ export class ContractDetailsPage extends TradeBasePage {
      */
     get contractDetailsSellButton(): Locator {
         return this.contractCard.getByTestId('dt_contract_card_sell');
+    }
+
+    /**
+     * Desktop contract card — non-resalable footer message (tick digit types).
+     * Source: dc-contract-card__no-resale-msg (not a button on contract details).
+     */
+    get contractDetailsResaleNotOffered(): Locator {
+        return this.contractCard.locator('.dc-contract-card__no-resale-msg');
+    }
+
+    /** @deprecated Use {@link contractDetailsResaleNotOffered} — Positions cards may render a button instead. */
+    get contractDetailsResaleNotOfferedButton(): Locator {
+        return this.contractCard.getByRole('button', { name: /^Resale not offered$/i });
+    }
+
+    /** Mobile contract details footer — same non-resalable state as desktop. */
+    get mobileContractDetailsResaleNotOfferedButton(): Locator {
+        return this.page
+            .locator('.contract-details-footer--container')
+            .getByRole('button', { name: /^Resale not offered$/i });
     }
 
     /**
@@ -494,11 +526,19 @@ export class ContractDetailsPage extends TradeBasePage {
 
     /**
      * Pencil toggle that opens the TP/SL editor on the desktop Multipliers card.
-     * While Deal Cancellation is active it is non-interactive: either `disabled` or
-     * `.dc-contract-card-dialog-toggle--disabled` (toggle-card-dialog.tsx).
+     * While Deal Cancellation is active it is non-interactive via the native `disabled`
+     * attribute (Popover path) or `.dc-contract-card-dialog-toggle--disabled` (toggle-card-dialog.tsx).
      */
     get multTpSlEditToggle(): Locator {
         return this.contractCard.locator('button.dc-contract-card-dialog-toggle');
+    }
+
+    /**
+     * "Details" tab in the contract audit tabs (Reference ID, Commission, Deal cancellation, etc.).
+     * Source: `.dc-tabs__list--contract-audit__tabs li` with text "Details"
+     */
+    get multDetailsTab(): Locator {
+        return this.page.locator('.dc-tabs__list--contract-audit__tabs li', { hasText: 'Details' });
     }
 
     /**
@@ -624,9 +664,124 @@ export class ContractDetailsPage extends TradeBasePage {
         );
     }
 
+    /**
+     * Accumulators tick progress bar on the open contract card (e.g. "14 Ticks").
+     * Source: dc-tick-counter-bar__container — replaces the duration/progress-slider on open accu contracts.
+     */
+    get accuTickCounterBar(): Locator {
+        return this.contractCard.locator('.dc-tick-counter-bar__text');
+    }
+
+    /** Contract details page overlay — `#dt_contract_replay_container.dc-page-overlay`. */
+    get contractDetailsOverlay(): Locator {
+        return this.page.locator('#dt_contract_replay_container.dc-page-overlay');
+    }
+
+    /** Replay chart panel beside the contract drawer on desktop open contracts. */
+    get replayChartContainer(): Locator {
+        return this.page.getByTestId('dt_replay_chart_container');
+    }
+
     // ============================================
     // ACTIONS
     // ============================================
+
+    /**
+     * Whether contract details show a settled contract (used to retry Accumulators / short tick runs).
+     */
+    async isAutomationContractDetailsClosed(): Promise<boolean> {
+        if (this.isMobile) {
+            return this.page
+                .locator('.contract-details')
+                .getByText('Closed', { exact: true })
+                .isVisible()
+                .catch(() => false);
+        }
+
+        if (await this.contractDetailsReferenceIDSell.isVisible().catch(() => false)) {
+            const sellRefText = await this.contractDetailsReferenceIDSell.innerText().catch(() => '');
+            if (/\(Sell\)/.test(sellRefText)) {
+                return true;
+            }
+        }
+
+        if (await this.contractDetailsExitSpotLabel.isVisible().catch(() => false)) {
+            return true;
+        }
+
+        if (await this.contractDetailsExitTimeLabel.isVisible().catch(() => false)) {
+            return true;
+        }
+
+        // Contract drawer audit rows may omit data-testids — fall back to settled labels in the card.
+        if (
+            await this.contractCard
+                .getByText('Exit time', { exact: true })
+                .isVisible()
+                .catch(() => false)
+        ) {
+            return true;
+        }
+
+        if (
+            await this.contractCard
+                .getByText('Exit spot', { exact: true })
+                .isVisible()
+                .catch(() => false)
+        ) {
+            return true;
+        }
+
+        if (
+            await this.contractCard
+                .getByText(/\(Sell\)/)
+                .isVisible()
+                .catch(() => false)
+        ) {
+            return true;
+        }
+
+        return this.contractDetailsProgressBarCompleted.isVisible().catch(() => false);
+    }
+
+    /**
+     * Whether contract details currently show an open contract.
+     * - Accumulators: Sell/Close footer, or accu tick counter while open.
+     * - Tick digits (Even/Odd, etc.): "Resale not offered" or tick progress caption — no Sell/Close.
+     * - Rise/Fall (ticks): "Resale not offered" while open; minute/hour duration may show Sell.
+     * - Rise/Fall (time): Sell button + remaining-time progress bar.
+     */
+    async isOpenAutomationContractDetails(): Promise<boolean> {
+        if (await this.isAutomationContractDetailsClosed()) {
+            return false;
+        }
+
+        const sellOrCloseButton = this.isMobile
+            ? this.mobileContractDetailsCloseButton
+            : this.contractDetailsSellButton;
+        if (await sellOrCloseButton.isVisible().catch(() => false)) {
+            return true;
+        }
+
+        const resaleNotOffered = this.isMobile
+            ? this.mobileContractDetailsResaleNotOfferedButton
+            : this.contractDetailsResaleNotOffered;
+        if (await resaleNotOffered.isVisible().catch(() => false)) {
+            return true;
+        }
+
+        if (!this.isMobile) {
+            if (await this.accuTickCounterBar.isVisible().catch(() => false)) {
+                return true;
+            }
+            if (await this.contractDetailsTickProgressCaption.isVisible().catch(() => false)) {
+                return true;
+            }
+            return this.contractDetailsProgressBar.isVisible().catch(() => false);
+        }
+
+        return false;
+    }
 
     /**
      * Close the contract details overlay by clicking the header close button.
@@ -710,6 +865,8 @@ export class ContractDetailsPage extends TradeBasePage {
                 'Deal Cancellation timer badge should be visible on the open contract details'
             ).toBeVisible();
         } else {
+            // Deal cancellation audit row lives on the Details tab, not TP & SL History.
+            await this.multDetailsTab.click();
             await expect(
                 this.dealCancellationAuditRow,
                 'Desktop audit grid should show the Deal cancellation row'
@@ -802,6 +959,696 @@ export class ContractDetailsPage extends TradeBasePage {
             .replace(/\s+[A-Z]+$/, '')
             .trim();
         return (parseFloat(stake) + sign * parseFloat(profitNumeric)).toFixed(2);
+    }
+
+    /**
+     * Verify the open contract details page for a contract opened by an automation run.
+     * Uses spec params for market/stake/trade-type category; live fields are asserted for presence only.
+     *
+     * @param options.growthRate - Accumulators growth rate from the spec, e.g. `"3%"`.
+     * @param options.takeProfit - Accumulators take profit when set; omit to assert `"-"` on the card.
+     */
+    async verifyAutomationOpenContractDetailsPage(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string,
+        options: { growthRate?: string; takeProfit?: string } = {}
+    ): Promise<void> {
+        const formattedStake = Number(stake).toFixed(2);
+
+        await expect(
+            this.contractDetailsHeaderTitle,
+            'Contract details header title should be "Contract details"'
+        ).toHaveText('Contract details');
+
+        if (this.isMobile) {
+            await this.verifyAutomationOpenContractDetailsMobile(
+                market,
+                tradeTypeCategory,
+                currency,
+                formattedStake,
+                options
+            );
+        } else {
+            await this.verifyAutomationOpenContractDetailsDesktop(
+                market,
+                tradeTypeCategory,
+                currency,
+                formattedStake,
+                options
+            );
+        }
+    }
+
+    private automationContractTradeTypeMatcher(tradeTypeCategory: string): string | RegExp {
+        switch (tradeTypeCategory) {
+            case 'Rise/Fall':
+                return /^(Rise|Fall)$/;
+            case 'Rise':
+                return 'Rise';
+            case 'Fall':
+                return 'Fall';
+            case 'Accumulators':
+                return 'Accumulators';
+            case 'Matches/Differs':
+                return /^(Matches|Differs)$/;
+            case 'Matches':
+                return 'Matches';
+            case 'Differs':
+                return 'Differs';
+            case 'Over/Under':
+                return /^(Over|Under)$/;
+            case 'Over':
+                return 'Over';
+            case 'Under':
+                return 'Under';
+            case 'Even/Odd':
+                return /^(Even|Odd)$/;
+            case 'Even':
+                return 'Even';
+            case 'Odd':
+                return 'Odd';
+            default:
+                throw new Error(
+                    `verifyAutomationOpenContractDetailsPage: unsupported trade type category '${tradeTypeCategory}'`
+                );
+        }
+    }
+
+    /** Even/Odd, Matches/Differs, Over/Under — tick digit contracts; not Accumulators or Rise/Fall. */
+    private isDigitTradeTypeCategory(tradeTypeCategory: string): boolean {
+        return [
+            'Matches/Differs',
+            'Matches',
+            'Differs',
+            'Over/Under',
+            'Over',
+            'Under',
+            'Even/Odd',
+            'Even',
+            'Odd',
+        ].includes(tradeTypeCategory);
+    }
+
+    /** Tick digit contracts do not offer early resale while open. Accumulators keep Sell/Close. */
+    private isNonResalableTickTradeType(tradeTypeCategory: string): boolean {
+        return this.isDigitTradeTypeCategory(tradeTypeCategory);
+    }
+
+    /** Throws a retryable error when the contract settled before open assertions run. */
+    private async assertAutomationContractDetailsStillOpen(): Promise<void> {
+        if (await this.isAutomationContractDetailsClosed()) {
+            throw new Error(
+                'Contract settled before open details could be verified — retrying with the next open contract'
+            );
+        }
+    }
+
+    private async verifyOpenContractTickProgress(): Promise<void> {
+        await expect(
+            this.contractDetailsTickProgressCaption,
+            'Tick progress caption should show the current tick'
+        ).toHaveText(/Tick \d+/);
+        await expect(this.contractDetailsTickProgressSlider, 'Tick progress slider should be visible').toBeVisible();
+    }
+
+    /**
+     * Open contract progress — tick duration (Rise/Fall ticks, digit types) shows "Tick N";
+     * minute/hour duration shows remaining time on the progress bar.
+     */
+    private async verifyOpenContractProgressIndicator(): Promise<void> {
+        if (await this.contractDetailsTickProgressCaption.isVisible().catch(() => false)) {
+            await this.verifyOpenContractTickProgress();
+            return;
+        }
+        await expect(this.contractDetailsRemainingTime, 'Remaining time should have a value').not.toBeEmpty();
+        await expect(this.contractDetailsProgressBar, 'Progress bar should be visible').toBeVisible();
+    }
+
+    private async verifyAutomationOpenContractSellAction(tradeTypeCategory: string): Promise<void> {
+        if (await this.isAutomationContractDetailsClosed()) {
+            throw new Error(
+                'Contract settled before open details could be verified — retrying with the next open contract'
+            );
+        }
+
+        if (this.isNonResalableTickTradeType(tradeTypeCategory)) {
+            if (this.isMobile) {
+                await expect(
+                    this.mobileContractDetailsResaleNotOfferedButton,
+                    'Resale not offered should be shown on open tick digit contracts'
+                ).toBeVisible();
+                await expect(
+                    this.mobileContractDetailsResaleNotOfferedButton,
+                    'Resale not offered button should be disabled'
+                ).toBeDisabled();
+            } else {
+                await expect(
+                    this.contractDetailsResaleNotOffered,
+                    'Resale not offered should be shown on open tick digit contracts'
+                ).toHaveText('Resale not offered');
+            }
+
+            const sellOrCloseButton = this.isMobile
+                ? this.mobileContractDetailsCloseButton
+                : this.contractDetailsSellButton;
+            await expect(
+                sellOrCloseButton,
+                'Sell/Close should not be shown when resale is not offered'
+            ).not.toBeVisible();
+            return;
+        }
+
+        const resaleNotOffered = this.isMobile
+            ? this.mobileContractDetailsResaleNotOfferedButton
+            : this.contractDetailsResaleNotOffered;
+        if (await resaleNotOffered.isVisible().catch(() => false)) {
+            if (this.isMobile) {
+                await expect(
+                    resaleNotOffered,
+                    'Resale not offered button should be disabled when early sell is unavailable'
+                ).toBeDisabled();
+            } else {
+                await expect(
+                    this.contractDetailsResaleNotOffered,
+                    'Resale not offered should be shown when early sell is unavailable'
+                ).toHaveText('Resale not offered');
+            }
+            await expect(
+                this.isMobile ? this.mobileContractDetailsCloseButton : this.contractDetailsSellButton,
+                'Sell/Close should not be shown when resale is not offered'
+            ).not.toBeVisible();
+            return;
+        }
+
+        const sellOrCloseButton = this.isMobile
+            ? this.mobileContractDetailsCloseButton
+            : this.contractDetailsSellButton;
+        await expect(sellOrCloseButton, 'Sell/Close button should be visible on the open contract').toBeVisible();
+        if (!this.isMobile) {
+            await expect(this.contractDetailsSellButton, 'Sell button label should be "Sell"').toHaveText('Sell');
+        }
+    }
+
+    private async verifyAutomationOpenContractDetailsMobile(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        formattedStake: string,
+        options: { growthRate?: string; takeProfit?: string }
+    ): Promise<void> {
+        await this.assertAutomationContractDetailsStillOpen();
+        await this.verifyAutomationOpenContractSellAction(tradeTypeCategory);
+
+        await expect(this.mobileContractMarket, `Mobile contract card should show market "${market}"`).toHaveText(
+            market
+        );
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(
+                this.mobileContractTradeType,
+                'Mobile contract card should show trade type "Accumulators"'
+            ).toHaveText('Accumulators');
+        } else {
+            await expect(
+                this.mobileContractTradeType,
+                `Mobile contract card trade type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+        }
+
+        await expect(this.mobileContractProfit, 'Mobile contract profit/loss should have a live value').not.toBeEmpty();
+        await expect(this.mobileContractCardStake, `Stake should show "${formattedStake} ${currency}"`).toContainText(
+            formattedStake
+        );
+        await expect(this.mobileOrderDetailsValue('Reference ID'), 'Reference ID should have a value').not.toBeEmpty();
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(
+                this.mobileOrderDetailsValue('Stake'),
+                `Stake should contain "${formattedStake}"`
+            ).toContainText(formattedStake);
+            if (options.growthRate) {
+                await expect(
+                    this.mobileOrderDetailsValue('Growth rate'),
+                    `Growth rate should contain "${options.growthRate}"`
+                ).toContainText(options.growthRate);
+            } else {
+                await expect(
+                    this.mobileOrderDetailsValue('Growth rate'),
+                    'Growth rate should have a value'
+                ).not.toBeEmpty();
+            }
+            if (options.takeProfit) {
+                await expect(
+                    this.mobileOrderDetailsValue('Take profit'),
+                    `Take profit should contain "${options.takeProfit}"`
+                ).toContainText(options.takeProfit);
+            }
+            await expect(
+                this.mobileEntryExitDetails,
+                'Entry & exit details section should be visible for Accumulators'
+            ).toBeVisible();
+        } else {
+            await expect(this.mobileOrderDetailsValue('Duration'), 'Duration should have a value').not.toBeEmpty();
+            await expect(
+                this.mobileOrderDetailsValue('Stake'),
+                `Stake should contain "${formattedStake}"`
+            ).toContainText(formattedStake);
+
+            if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+                await expect(this.mobileOrderDetailsValue('Target'), 'Target should have a value').not.toBeEmpty();
+            } else {
+                await expect(this.mobileOrderDetailsValue('Barrier'), 'Barrier should have a value').not.toBeEmpty();
+            }
+        }
+    }
+
+    private async verifyAutomationOpenContractDetailsDesktop(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        formattedStake: string,
+        options: { growthRate?: string; takeProfit?: string }
+    ): Promise<void> {
+        await this.assertAutomationContractDetailsStillOpen();
+
+        await expect(this.contractDetailsOverlay, 'Contract details overlay should be visible').toBeVisible();
+        await expect(
+            this.page.getByTestId('dt_page_overlay_header_close'),
+            'Contract details close button should be visible'
+        ).toBeVisible();
+        await expect(this.contractDetailsMarket, `Contract card symbol should be "${market}"`).toHaveText(market);
+        await expect(this.contractDetailsCurrency, `Contract card currency should be "${currency}"`).toHaveText(
+            currency
+        );
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(this.accuContractTypeLabel, 'Contract type should be "Accumulators"').toHaveText(
+                'Accumulators'
+            );
+            if (options.growthRate) {
+                await expect(
+                    this.accuContractGrowthRate,
+                    `Growth rate chip should be "${options.growthRate}"`
+                ).toHaveText(options.growthRate);
+            } else {
+                await expect(this.accuContractGrowthRate, 'Growth rate chip should have a value').not.toBeEmpty();
+            }
+            await expect(this.accuTickCounterBar, 'Tick counter should show tick progress').toHaveText(
+                /\d+\s+[Tt]icks/
+            );
+            if (options.takeProfit) {
+                await expect(
+                    this.contractCardItem('Take profit:'),
+                    `Take profit should show "${options.takeProfit}"`
+                ).toContainText(options.takeProfit);
+            } else {
+                await expect(
+                    this.contractCardItem('Take profit:'),
+                    'Take profit should be "-" when not set'
+                ).toHaveText('-');
+            }
+        } else if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(
+                this.contractDetailsTradeType,
+                `Contract card type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+            await this.verifyOpenContractTickProgress();
+        } else {
+            await expect(
+                this.contractDetailsTradeType,
+                `Contract card type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+            await this.verifyOpenContractProgressIndicator();
+        }
+
+        await expect(this.contractCardItem('Stake:'), `Stake should contain "${formattedStake}"`).toContainText(
+            formattedStake
+        );
+        await expect(
+            this.contractCardItem('Total profit/loss:'),
+            'Total profit/loss should have a live value'
+        ).not.toBeEmpty();
+        await expect(
+            this.contractCardItem('Contract value:'),
+            'Contract value should have a live value'
+        ).not.toBeEmpty();
+        await this.verifyAutomationOpenContractSellAction(tradeTypeCategory);
+
+        await expect(this.contractDetailsReferenceIDLabel, 'Reference ID label should be "Reference ID"').toHaveText(
+            'Reference ID'
+        );
+        await expect(this.contractDetailsReferenceID, 'Reference ID should match "N (Buy)"').toHaveText(
+            /\d+\s+\(Buy\)/
+        );
+        await expect(this.contractDetailsStartTimeLabel, 'Start time label should be "Start time"').toHaveText(
+            'Start time'
+        );
+        await expect(this.contractDetailsStartTime, 'Start time should have a value').not.toBeEmpty();
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(this.contractDetailsEntrySpotLabel, 'Entry spot label should be "Entry spot"').toHaveText(
+                'Entry spot'
+            );
+            await expect(this.contractDetailsEntrySpot, 'Entry spot price should have a value').not.toBeEmpty();
+            await expect(this.replayChartContainer, 'Replay chart should be visible for Accumulators').toBeVisible();
+        } else if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(this.contractDetailsDurationLabel, 'Duration label should be "Duration"').toHaveText(
+                'Duration'
+            );
+            await expect(this.contractDetailsDuration, 'Duration should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsBarrierLabel, 'Target label should be "Target"').toHaveText('Target');
+            await expect(this.contractDetailsBarrier, 'Target should have a value').not.toBeEmpty();
+            await expect(
+                this.replayChartContainer,
+                'Replay chart should be visible for tick digit contracts'
+            ).toBeVisible();
+        } else {
+            await expect(this.contractDetailsEntrySpotLabel, 'Entry spot label should be "Entry spot"').toHaveText(
+                'Entry spot'
+            );
+            await expect(this.contractDetailsEntrySpot, 'Entry spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsDurationLabel, 'Duration label should be "Duration"').toHaveText(
+                'Duration'
+            );
+            await expect(this.contractDetailsDuration, 'Duration should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsBarrierLabel, 'Barrier label should be "Barrier"').toHaveText('Barrier');
+            await expect(this.contractDetailsBarrier, 'Barrier should have a value').not.toBeEmpty();
+        }
+    }
+
+    /**
+     * Verify the closed contract details page for a contract settled after an automation run stops.
+     * Uses spec params for market/stake/trade-type category; settled fields are asserted for presence
+     * or cross-checked against the Closed-tab P/L where applicable.
+     *
+     * @param profitLossAmount - P/L from the closed positions card, e.g. "+1.03 USD"
+     * @param options.growthRate - Accumulators growth rate from the spec, e.g. `"3%"`.
+     * @param options.takeProfit - Accumulators take profit when set; omit to assert `"-"` on the card.
+     */
+    async verifyAutomationClosedContractDetailsPage(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string,
+        profitLossAmount: string,
+        options: { growthRate?: string; takeProfit?: string } = {}
+    ): Promise<void> {
+        const formattedStake = Number(stake).toFixed(2);
+
+        await expect(
+            this.contractDetailsHeaderTitle,
+            'Contract details header title should be "Contract details"'
+        ).toHaveText('Contract details');
+
+        if (this.isMobile) {
+            await this.verifyAutomationClosedContractDetailsMobile(
+                market,
+                tradeTypeCategory,
+                currency,
+                formattedStake,
+                profitLossAmount,
+                options
+            );
+        } else {
+            await this.verifyAutomationClosedContractDetailsDesktop(
+                market,
+                tradeTypeCategory,
+                currency,
+                formattedStake,
+                profitLossAmount,
+                options
+            );
+        }
+    }
+
+    private async verifyAutomationClosedContractDetailsMobile(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        formattedStake: string,
+        profitLossAmount: string,
+        options: { growthRate?: string; takeProfit?: string }
+    ): Promise<void> {
+        const profitLossNumeric = profitLossAmount
+            .replace(/^[+-]/, '')
+            .replace(/\s+[A-Z]+$/, '')
+            .trim();
+
+        await expect(
+            this.mobileContractMarket,
+            `Mobile closed contract card should show market "${market}"`
+        ).toHaveText(market);
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(
+                this.mobileContractTradeType,
+                'Mobile closed contract card should show trade type "Accumulators"'
+            ).toHaveText('Accumulators');
+        } else {
+            await expect(
+                this.mobileContractTradeType,
+                `Mobile closed contract card trade type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+        }
+
+        await expect(
+            this.mobileContractProfit,
+            `Mobile closed contract profit/loss should contain "${profitLossNumeric}"`
+        ).toContainText(profitLossNumeric);
+
+        const refIdValueCell = this.page
+            .locator('.order-details__table-row', {
+                has: this.page.locator('.order-details__table-row-cell', { hasText: 'Reference ID' }),
+            })
+            .locator('.order-details__table-row-cell')
+            .last();
+        const buyRefIdParagraph = refIdValueCell.locator('p').filter({ hasText: '(Buy)' });
+        const sellRefIdParagraph = refIdValueCell.locator('p').filter({ hasText: '(Sell)' });
+        await expect(buyRefIdParagraph, 'Buy Reference ID should contain "(Buy)"').toContainText('(Buy)');
+        await expect(sellRefIdParagraph, 'Sell Reference ID should contain "(Sell)"').toContainText('(Sell)');
+
+        await expect(this.mobileOrderDetailsValue('Duration'), 'Duration should have a value').not.toBeEmpty();
+        await expect(this.mobileOrderDetailsValue('Stake'), `Stake should contain "${formattedStake}"`).toContainText(
+            formattedStake
+        );
+
+        if (tradeTypeCategory === 'Accumulators') {
+            if (options.growthRate) {
+                await expect(
+                    this.mobileOrderDetailsValue('Growth rate'),
+                    `Growth rate should contain "${options.growthRate}"`
+                ).toContainText(options.growthRate);
+            } else {
+                await expect(
+                    this.mobileOrderDetailsValue('Growth rate'),
+                    'Growth rate should have a value'
+                ).not.toBeEmpty();
+            }
+            if (options.takeProfit) {
+                await expect(
+                    this.mobileOrderDetailsValue('Take profit'),
+                    `Take profit should contain "${options.takeProfit}"`
+                ).toContainText(options.takeProfit);
+            }
+            await expect(
+                this.mobileEntryExitDetails,
+                'Entry & exit details section should be visible for closed Accumulators'
+            ).toBeVisible();
+        } else if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(this.mobileOrderDetailsValue('Target'), 'Target should have a value').not.toBeEmpty();
+        } else {
+            await expect(this.mobileOrderDetailsValue('Barrier'), 'Barrier should have a value').not.toBeEmpty();
+        }
+
+        await expect(
+            this.mobileContractDetailsCloseButton,
+            'Close button should not be visible on a closed automation contract'
+        ).not.toBeVisible();
+    }
+
+    private async verifyAutomationClosedContractDetailsDesktop(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        formattedStake: string,
+        profitLossAmount: string,
+        options: { growthRate?: string; takeProfit?: string }
+    ): Promise<void> {
+        const profitLossNumeric = profitLossAmount
+            .replace(/^[+-]/, '')
+            .replace(/\s+[A-Z]+$/, '')
+            .trim();
+        const expectedContractValue = this.calculateClosedContractValue(formattedStake, profitLossAmount);
+
+        await expect(this.contractDetailsOverlay, 'Contract details overlay should be visible').toBeVisible();
+        await expect(
+            this.page.getByTestId('dt_page_overlay_header_close'),
+            'Contract details close button should be visible'
+        ).toBeVisible();
+        await expect(this.contractDetailsMarket, `Contract card symbol should be "${market}"`).toHaveText(market);
+        await expect(this.contractDetailsCurrency, `Contract card currency should be "${currency}"`).toHaveText(
+            currency
+        );
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(this.accuContractTypeLabel, 'Contract type should be "Accumulators"').toHaveText(
+                'Accumulators'
+            );
+            if (options.growthRate) {
+                await expect(
+                    this.accuContractGrowthRate,
+                    `Growth rate chip should be "${options.growthRate}"`
+                ).toHaveText(options.growthRate);
+            } else {
+                await expect(this.accuContractGrowthRate, 'Growth rate chip should have a value').not.toBeEmpty();
+            }
+            await expect(
+                this.accuTickCounterBar,
+                'Tick counter should not be visible on a closed Accumulators contract'
+            ).not.toBeVisible();
+            await expect(
+                this.contractDetailsProgressBarCompleted,
+                'Completed progress slider should be visible on a closed Accumulators contract'
+            ).toBeVisible();
+            if (options.takeProfit) {
+                await expect(
+                    this.contractCardItem('Take profit:'),
+                    `Take profit should show "${options.takeProfit}"`
+                ).toContainText(options.takeProfit);
+            } else {
+                await expect(
+                    this.contractCardItem('Take profit:'),
+                    'Take profit should be "-" when not set'
+                ).toHaveText('-');
+            }
+        } else if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(
+                this.contractDetailsTradeType,
+                `Contract card type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+            await expect(
+                this.contractDetailsTickProgressCaption,
+                'Tick progress caption should not be visible on a closed tick digit contract'
+            ).not.toBeVisible();
+            await expect(
+                this.contractDetailsProgressBarCompleted,
+                'Completed progress slider should be visible on a closed tick digit contract'
+            ).toBeVisible();
+        } else {
+            await expect(
+                this.contractDetailsTradeType,
+                `Contract card type should match ${tradeTypeCategory}`
+            ).toHaveText(this.automationContractTradeTypeMatcher(tradeTypeCategory));
+            await expect(
+                this.contractDetailsRemainingTime,
+                'Remaining time should not be visible on a closed contract'
+            ).not.toBeVisible();
+            await expect(
+                this.contractDetailsProgressBar,
+                'Progress bar should not be visible on a closed contract'
+            ).not.toBeVisible();
+            await expect(
+                this.contractDetailsProgressBarCompleted,
+                'Completed progress slider should be visible on a closed contract'
+            ).toBeVisible();
+        }
+
+        await expect(this.contractCardItem('Stake:'), `Stake should contain "${formattedStake}"`).toContainText(
+            formattedStake
+        );
+        await expect(
+            this.contractCardItem('Total profit/loss:'),
+            `Total profit/loss should contain "${profitLossNumeric}"`
+        ).toContainText(profitLossNumeric);
+        await expect(
+            this.contractCardItem('Contract value:'),
+            `Contract value should contain "${expectedContractValue}"`
+        ).toContainText(expectedContractValue);
+        await expect(
+            this.contractDetailsSellButton,
+            'Sell button should not be visible on a closed contract'
+        ).not.toBeVisible();
+        if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(
+                this.contractDetailsResaleNotOffered,
+                'Resale not offered footer should not be visible on a closed tick digit contract'
+            ).not.toBeVisible();
+        }
+
+        await expect(this.contractDetailsReferenceIDLabel, 'Reference ID label should be "Reference ID"').toHaveText(
+            'Reference ID'
+        );
+        await expect(this.contractDetailsReferenceID, 'Buy reference ID should match "N (Buy)"').toHaveText(
+            /\d+\s+\(Buy\)/
+        );
+        await expect(this.contractDetailsReferenceIDSell, 'Sell reference ID should match "N (Sell)"').toHaveText(
+            /\d+\s+\(Sell\)/
+        );
+
+        await expect(this.contractDetailsDurationLabel, 'Duration label should be "Duration"').toHaveText('Duration');
+        if (tradeTypeCategory === 'Accumulators' || this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(this.contractDetailsDuration, 'Duration should show tick count').toHaveText(/\d+\s+[Tt]icks/);
+        } else {
+            await expect(this.contractDetailsDuration, 'Duration should have a value').not.toBeEmpty();
+        }
+        await expect(this.contractDetailsStartTimeLabel, 'Start time label should be "Start time"').toHaveText(
+            'Start time'
+        );
+        await expect(this.contractDetailsStartTime, 'Start time should have a value').not.toBeEmpty();
+
+        if (tradeTypeCategory === 'Accumulators') {
+            await expect(this.contractDetailsEntrySpotLabel, 'Entry spot label should be "Entry spot"').toHaveText(
+                'Entry spot'
+            );
+            await expect(this.contractDetailsEntrySpot, 'Entry spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsEntrySpotTime, 'Entry spot time should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitSpotLabel, 'Exit spot label should be "Exit spot"').toHaveText(
+                'Exit spot'
+            );
+            await expect(this.contractDetailsExitSpot, 'Exit spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitSpotTime, 'Exit spot time should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitTimeLabel, 'Exit time label should be "Exit time"').toHaveText(
+                'Exit time'
+            );
+            await expect(this.contractDetailsExitTime, 'Exit time should have a value').not.toBeEmpty();
+            await expect(
+                this.replayChartContainer,
+                'Replay chart should be visible for closed Accumulators'
+            ).toBeVisible();
+        } else if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
+            await expect(this.contractDetailsBarrierLabel, 'Target label should be "Target"').toHaveText('Target');
+            await expect(this.contractDetailsBarrier, 'Target should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitSpotLabel, 'Exit spot label should be "Exit spot"').toHaveText(
+                'Exit spot'
+            );
+            await expect(this.contractDetailsExitSpot, 'Exit spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitSpotTime, 'Exit spot time should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitTimeLabel, 'Exit time label should be "Exit time"').toHaveText(
+                'Exit time'
+            );
+            await expect(this.contractDetailsExitTime, 'Exit time should have a value').not.toBeEmpty();
+            await expect(
+                this.replayChartContainer,
+                'Replay chart should be visible for closed tick digit contracts'
+            ).toBeVisible();
+        } else {
+            await expect(this.contractDetailsEntrySpotLabel, 'Entry spot label should be "Entry spot"').toHaveText(
+                'Entry spot'
+            );
+            await expect(this.contractDetailsEntrySpot, 'Entry spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsBarrierLabel, 'Barrier label should be "Barrier"').toHaveText('Barrier');
+            await expect(this.contractDetailsBarrier, 'Barrier should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitSpotLabel, 'Exit spot label should be "Exit spot"').toHaveText(
+                'Exit spot'
+            );
+            await expect(this.contractDetailsExitSpot, 'Exit spot price should have a value').not.toBeEmpty();
+            await expect(this.contractDetailsExitTimeLabel, 'Exit time label should be "Exit time"').toHaveText(
+                'Exit time'
+            );
+            await expect(this.contractDetailsExitTime, 'Exit time should have a value').not.toBeEmpty();
+        }
     }
 
     /**
@@ -1823,7 +2670,7 @@ export class ContractDetailsPage extends TradeBasePage {
             await expect(
                 this.multTpSlEditToggle,
                 'TP/SL edit should be disabled while Deal Cancellation is active'
-            ).toHaveClass(/dc-contract-card-dialog-toggle--disabled/);
+            ).toBeDisabled();
         }
         await expect(
             this.contractCardItem('Total profit/loss:'),
@@ -1925,6 +2772,9 @@ export class ContractDetailsPage extends TradeBasePage {
                 'Empty state description should indicate no TP/SL has been set'
             ).toHaveText('You have yet to update either take profit or stop loss');
         }
+
+        // Restore Details tab so follow-up checks (e.g. verifyDealCancellationAvailable) see the audit grid.
+        await this.multDetailsTab.click();
 
         return { buyId, entrySpot, commission };
     }

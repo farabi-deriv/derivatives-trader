@@ -131,6 +131,11 @@ export class TradeBasePage {
         return this.page.locator('.bottom-nav-container').getByText('Menu');
     }
 
+    /** Bottom nav Automate tab — mobile only. Source: bottom-nav.tsx `bottom-nav-item--automate`. */
+    get bottomNavAutomate(): Locator {
+        return this.page.locator('.bottom-nav-item--automate');
+    }
+
     /**
      * "Open positions" link in the mobile Menu → Reports section.
      * Navigates to the open positions list (trade table).
@@ -301,7 +306,8 @@ export class TradeBasePage {
 
     /**
      * Navigate to the Positions view.
-     * - Desktop: clicks the sidebar Positions button → opens the flyout
+     * - Desktop: waits for the flyout if already open (automation opens it on run start);
+     *   otherwise clicks sidebar Positions to open it
      * - Mobile: clicks the bottom nav Positions tab → navigates to positions page
      *
      * Waits for Deriv API to settle after navigation.
@@ -310,7 +316,11 @@ export class TradeBasePage {
         if (this.isMobile) {
             await this.bottomNavPositions.click();
         } else {
-            await this.sidebarPositionsButton.click();
+            const flyout = this.page.locator('.dc-flyout.dc-flyout--open');
+            if (!(await flyout.isVisible().catch(() => false))) {
+                await this.sidebarPositionsButton.click();
+            }
+            await expect(flyout, 'Positions flyout should be open on desktop').toBeVisible();
         }
         await NavigationUtils.waitForDerivApiSettled(this.page);
     }
@@ -530,7 +540,7 @@ export class TradeBasePage {
         await expect(
             this.activeAccountTypeLabel,
             `Account trigger should show "${expectedText}" once the ${type} account is active`
-        ).toContainText(expectedText, { timeout: 30_000 });
+        ).toContainText(expectedText);
     }
 
     /**

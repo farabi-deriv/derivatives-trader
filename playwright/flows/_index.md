@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-08-17
+Last updated: 2026-09-01
 
 ---
 
@@ -41,10 +41,10 @@ Each module section lists every documented flow with its current **status** and 
 | `reports`          | 8           | 8          | 0         |
 | `notifications`    | 9           | 9          | 0         |
 | `auth`             | 3           | 3          | 3         |
-| `automation`       | 9           | 9          | 6         |
+| `trade-automate`   | 12          | 12         | 9         |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 25          | 25         | 24        |
-| **Total**          | **100**     | **100**    | **63**    |
+| **Total**          | **103**     | **103**    | **66**    |
 
 > Status advances: `documented` → `automated`
 
@@ -163,21 +163,24 @@ Each module section lists every documented flow with its current **status** and 
 
 ---
 
-## Module: `automation` — Automated Trading
+## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/automation/` · **Test folder:** `playwright/tests/automation/`
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (trade-type subfolders for Flows 7–11)
 
-| Flow   | Priority | Description                                           | User State                                     | Status       |
-| ------ | -------- | ----------------------------------------------------- | ---------------------------------------------- | ------------ |
-| Flow 1 | P0       | Lifecycle — start strategy → Running → Stop           | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 2 | P1       | Pause and Resume a running automation                 | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 3 | P1       | Risk threshold auto-stop (loss/profit threshold)      | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 4 | P2       | Strategy selection & params (Martingale / D'Alembert) | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 5 | P2       | Resync after account switch (stays Running)           | authenticated, funded real/staging, 2 accounts | `automated`  |
-| Flow 6 | P1       | Automation panel loads with default state             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 7 | P3       | Automation unavailable for EU account (gating)        | authenticated, EU/DIEL account                 | `documented` |
-| —      | P2       | "Automation already running" adoption snackbar (G1)   | authenticated, run active                      | `documented` |
-| —      | P2       | Validation / unsupported-contract-type error (G2)     | authenticated, funded real/staging (non-EU)    | `documented` |
+| Flow    | Priority | Description                                                        | User State                                     | Status       |
+| ------- | -------- | ------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
+| Flow 1  | P1       | Pause and Resume a running automation                              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 2  | P1       | Risk threshold auto-stop (loss/profit threshold)                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 3  | P2       | Strategy selection & params (Martingale / D'Alembert)              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 4  | P2       | Resync after account switch (stays Running)                        | authenticated, funded real/staging, 2 accounts | `automated`  |
+| Flow 6  | P3       | Automation unavailable for EU account (gating)                     | authenticated, EU/DIEL account                 | `documented` |
+| Flow 7  | P0       | Automate — Rise/Fall lifecycle (Rise/Fall × demo/real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8  | P1       | Automate — Accumulators lifecycle (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9  | P1       | Automate — Matches/Differs lifecycle (Matches/Differs × demo/real) | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10 | P1       | Automate — Over/Under lifecycle (Over/Under × demo/real)           | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11 | P1       | Automate — Even/Odd lifecycle (Even/Odd × demo/real)               | authenticated, funded real/staging (non-EU)    | `automated`  |
+| —       | P2       | "Automation already running" adoption snackbar (G1)                | authenticated, run active                      | `documented` |
+| —       | P2       | Validation / unsupported-contract-type error (G2)                  | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
 
@@ -235,7 +238,7 @@ Each module section lists every documented flow with its current **status** and 
 | **Now**  | `positions`        | Flow 1 (open positions mobile), Flow 2 (desktop flyout)                             |
 | **Next** | `reports`          | Flow 1 (page load), Flow 5 (Trade Table), Flow 6 (Statement)                        |
 | **Next** | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1 (trade banner) |
-| **Soon** | `automation`       | Flow 7 (EU gating) + G1 (already-running snackbar) + G2 (validation)                |
+| **Soon** | `trade-automate`   | Flow 6 (EU gating) + G1 (already-running snackbar) + G2 (validation)                |
 | **Done** | `market-selection` | Flows 1–24 automated; G1 remains a product gap (tab-scoped params not built yet)    |
 
 ---
@@ -261,6 +264,6 @@ AI will read all `coverage.md` files and `playwright/tests/` spec files, compute
 | reports          | [flow](reports/flow.md)          | [catalog](reports/catalog.md)          | [coverage](reports/coverage.md)          |
 | notifications    | [flow](notifications/flow.md)    | [catalog](notifications/catalog.md)    | [coverage](notifications/coverage.md)    |
 | auth             | [flow](auth/flow.md)             | [catalog](auth/catalog.md)             | [coverage](auth/coverage.md)             |
-| automation       | [flow](automation/flow.md)       | [catalog](automation/catalog.md)       | [coverage](automation/coverage.md)       |
+| trade-automate   | [flow](trade-automate/flow.md)   | [catalog](trade-automate/catalog.md)   | [coverage](trade-automate/coverage.md)   |
 | feed             | [flow](feed/flow.md)             | [catalog](feed/catalog.md)             | [coverage](feed/coverage.md)             |
 | market-selection | [flow](market-selection/flow.md) | [catalog](market-selection/catalog.md) | [coverage](market-selection/coverage.md) |

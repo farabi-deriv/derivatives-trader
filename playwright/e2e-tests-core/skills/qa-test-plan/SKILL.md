@@ -73,7 +73,7 @@ cat playwright/flows/<module>/catalog.md   # journey id → spec file + tags (@p
 - Match on the **component path** from the PR diff (e.g. `AppV2/Components/TradeParameters/Duration/` → `trade` module; `ChartMaximizeButton` + a Turbos barrier issue → `trade` module, Turbos flows 10.1–10.4).
 - Match on **trade type / feature keyword** (barrier → Higher/Lower, Touch/No Touch, Turbos; duration → trade Duration; market picker → `market-selection`).
 - Match on **user state** from the issue (authenticated/funded, mobile/desktop, market closed, EU account) against the flow's "User State" column in `_index.md`.
-- Modules in this repo: `trade`, `positions`, `reports`, `notifications`, `auth`, `automation`, `feed`, `market-selection`.
+- Modules in this repo: `trade`, `positions`, `reports`, `notifications`, `auth`, `trade-automate`, `feed`, `market-selection`.
 
 **What to fold into the plan from the flows:**
 

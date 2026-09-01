@@ -390,6 +390,11 @@ export class TradeMultipliersPage extends TradeParametersPage {
      * ```
      */
     async setMultiplier(value: string): Promise<void> {
+        const currentValue = (await this.multiplierField.inputValue()).trim();
+        if (currentValue === value) {
+            return;
+        }
+
         if (this.isMobile) {
             await this.multiplierField.click();
 
