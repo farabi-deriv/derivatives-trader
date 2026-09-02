@@ -119,4 +119,48 @@ describe('PurchaseButtonContent', () => {
         expect(screen.queryByText(localized_basis.max_payout)).not.toBeInTheDocument();
         expect(screen.getByText(/19.23/)).toBeInTheDocument();
     });
+
+    it('should withhold a priced amount but keep the basis label while the stake is above the balance', () => {
+        // A payout under a permanently disabled Buy is a promise the account cannot collect, so the
+        // value slot takes the same dash an errored proposal gets.
+        render(<PurchaseButtonContent {...mock_props} is_stake_above_balance />);
+
+        expect(screen.getByText(localized_basis.payout)).toBeInTheDocument();
+        expect(screen.queryByText('$19.23')).not.toBeInTheDocument();
+        expect(screen.getByText('-')).toBeInTheDocument();
+        expect(screen.queryByTestId('square-skeleton')).not.toBeInTheDocument();
+    });
+
+    it('should not shimmer when the stake is above the balance and the proposal is not priced yet', () => {
+        // The gate is a terminal state, so the skeleton must be unreachable from it.
+        render(<PurchaseButtonContent {...mock_props} info={{} as TInfo} is_stake_above_balance />);
+
+        expect(screen.getByText(localized_basis.payout)).toBeInTheDocument();
+        expect(screen.getByText('-')).toBeInTheDocument();
+        expect(screen.queryByTestId('square-skeleton')).not.toBeInTheDocument();
+    });
+
+    it('should withhold the multipliers total cost while the stake is above the balance', () => {
+        render(
+            <PurchaseButtonContent
+                {...mock_props}
+                is_multiplier
+                has_cancellation
+                info={{ stake: '10.00' } as TInfo}
+                is_stake_above_balance
+            />
+        );
+
+        expect(screen.getByText('Total cost')).toBeInTheDocument();
+        expect(screen.queryByText('$10.00')).not.toBeInTheDocument();
+        expect(screen.getByText('-')).toBeInTheDocument();
+    });
+
+    it('should quote the amount exactly as before when is_stake_above_balance is false', () => {
+        render(<PurchaseButtonContent {...mock_props} is_stake_above_balance={false} />);
+
+        expect(screen.getByText(localized_basis.payout)).toBeInTheDocument();
+        expect(screen.getByText('$19.23')).toBeInTheDocument();
+        expect(screen.queryByText('-')).not.toBeInTheDocument();
+    });
 });

@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 
+import { useStore } from '@deriv/stores';
+
 import { trackAnalyticsEvent } from '@deriv/shared';
 import { Localize } from '@deriv-com/translations';
 
@@ -13,6 +15,7 @@ import {
 import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import useTradeError from 'AppV2/Hooks/useTradeError';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
+import { isStakeAboveBalance } from 'AppV2/Utils/insufficient-balance-utils';
 import { mapContractTypeToStakePresetKey } from 'AppV2/Utils/trade-params-preset-utils';
 import { getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
@@ -97,6 +100,10 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
         is_automation_tab,
     } = useTraderStore();
     const automation_store = React.useContext(AutomationStoreContext);
+    const {
+        client: { balance, is_logged_in },
+        ui: { is_switching_account },
+    } = useStore();
     const { is_error_matching_field: has_error } = useTradeError({ error_fields: ['stake', 'amount'] });
 
     // Keep initial_stake in sync with the stake field in automation context.
@@ -116,6 +123,15 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
 
     // Showing snackbar for all cases, except when it is Rise/Fall or Digits and only one subtype has error
     const should_show_snackbar = contract_types.length === 1 || is_multiplier || is_all_types_with_errors;
+
+    // Buy is disabled when the charge exceeds the balance (`PurchaseButton`), which on its own leaves
+    // a dead button and no indication of which field caused it. Marking the field errored names the
+    // culprit using the outline every other trade parameter already uses for its own errors. Same
+    // `isStakeAboveBalance` source as the button, so the two cannot disagree.
+    const is_stake_above_balance =
+        is_logged_in &&
+        !is_switching_account &&
+        isStakeAboveBalance({ balance, stake: proposal_info?.[contract_types[0]]?.stake });
 
     const handleTabChange = (tab: 'chips' | 'input') => {
         setActiveTab(tab);
@@ -145,7 +161,7 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
             is_minimized={is_minimized}
             disabled={has_open_accu_contract || is_market_closed}
             is_locked={is_automation_params_locked}
-            has_error={has_error && should_show_snackbar}
+            has_error={(has_error && should_show_snackbar) || is_stake_above_balance}
             popover_classname='stake-popover'
             popoverWidth={376}
             header={<TabSelector activeTab={active_tab} onTabChange={handleTabChange} />}

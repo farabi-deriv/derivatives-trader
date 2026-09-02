@@ -260,6 +260,48 @@ describe('Stake', () => {
 
         expect(screen.getByRole('textbox')).toBeDisabled();
     });
+
+    describe('desktop Stake field, unaffordable charge', () => {
+        // Buy is disabled by PurchaseButton in this state; without the field's own error the desktop
+        // user gets a dead button and no indication of which parameter is at fault.
+        const ERROR_CLASS = '.quill-input__wrapper__variant--fill--error';
+
+        beforeEach(() => {
+            default_mock_store.client.is_logged_in = true;
+            default_mock_store.modules.trade.proposal_info[CONTRACT_TYPES.CALL] = {
+                ...default_mock_store.modules.trade.proposal_info[CONTRACT_TYPES.CALL],
+                stake: '10.00',
+            };
+        });
+
+        it('marks the Stake field as errored when the balance cannot cover the charge', () => {
+            default_mock_store.client.balance = '0.77';
+            const { container } = render(<MockedStake />);
+
+            // The errored state is a wrapper class only — quill exposes no role, testid or aria
+            // attribute for it, so the class is the only observable signal.
+            // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+            expect(container.querySelector(ERROR_CLASS)).toBeInTheDocument();
+        });
+
+        it('leaves the Stake field neutral when the balance covers the charge', () => {
+            default_mock_store.client.balance = '20.00';
+            const { container } = render(<MockedStake />);
+
+            // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+            expect(container.querySelector(ERROR_CLASS)).not.toBeInTheDocument();
+        });
+
+        it('leaves the Stake field neutral while an account switch is in flight', () => {
+            // The balance in hand may still be the outgoing account's.
+            default_mock_store.client.balance = '0.77';
+            default_mock_store.ui.is_switching_account = true;
+            const { container } = render(<MockedStake />);
+
+            // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+            expect(container.querySelector(ERROR_CLASS)).not.toBeInTheDocument();
+        });
+    });
 });
 
 describe('StakeInput', () => {
@@ -715,6 +757,7 @@ describe('StakeInputDesktop', () => {
             }
         );
     });
+
 });
 
 describe('Stake - Mobile header actions', () => {

@@ -11,6 +11,11 @@ import { useTraderStore } from 'Stores/useTraderStores';
 type TPurchaseButtonContent = {
     has_no_button_content?: boolean;
     info: ReturnType<typeof useTraderStore>['proposal_info'][0] | Record<string, never>;
+    /**
+     * The balance gate on **Buy** is active, so the value slot takes the existing unpriced
+     * placeholder instead of an amount the account cannot pay for. The basis label is unaffected.
+     */
+    is_stake_above_balance?: boolean;
     /** Accumulators' max payout — shown in place of the standard payout for a fresh accumulator. */
     max_payout?: number | string;
 } & Pick<
@@ -32,6 +37,7 @@ const PurchaseButtonContent = ({
     info,
     is_accumulator,
     is_multiplier,
+    is_stake_above_balance,
     is_turbos,
     is_vanilla,
     max_payout,
@@ -98,9 +104,9 @@ const PurchaseButtonContent = ({
                         className={clsx(!has_open_accu_contract && 'purchase-button__information__item')}
                         color='quill-typography__color--prominent'
                     >
-                        {amount ? (
+                        {amount && !is_stake_above_balance ? (
                             formatAmountWithSymbol(currency, amount, !is_turbos && !is_vanilla)
-                        ) : info.has_error ? (
+                        ) : info.has_error || is_stake_above_balance ? (
                             '-'
                         ) : (
                             // Renders a <span>, so it nests safely inside this <p>-based CaptionText.

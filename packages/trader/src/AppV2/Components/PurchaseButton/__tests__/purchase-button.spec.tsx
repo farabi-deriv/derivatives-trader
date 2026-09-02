@@ -473,4 +473,164 @@ describe('PositionsContent', () => {
         await userEvent.click(purchase_button);
         expect(default_mock_store.modules.trade.onPurchaseV2).toBeCalled();
     });
+
+    describe('balance-aware Buy gate', () => {
+
+        beforeEach(() => {
+            // The gate compares `proposal_info.CALL.stake` (`10.00` in the shared mock, i.e.
+            // `proposal.ask_price`) against the account balance, so only the balance varies below.
+            default_mock_store.client.is_logged_in = true;
+            default_mock_store.client.currency = 'USD';
+        });
+
+        it('should disable Buy when the charge exceeds the balance', async () => {
+            default_mock_store.client.balance = '0.77';
+            mockPurchaseButton();
+
+            const purchase_button = screen.getAllByRole('button')[0];
+            expect(purchase_button).toBeDisabled();
+
+            await userEvent.click(purchase_button);
+
+            // No buy request, and no error sheet either — the sheet belongs to the server path.
+            expect(default_mock_store.modules.trade.onPurchaseV2).not.toBeCalled();
+            expect(default_mock_store.common.setServicesError).not.toBeCalled();
+        });
+
+        it('should withhold the quoted payout without shimmering while the gate is active', () => {
+            default_mock_store.client.balance = '0.77';
+            mockPurchaseButton();
+
+            expect(screen.getByText('Payout')).toBeInTheDocument();
+            expect(screen.queryByText('$19.26')).not.toBeInTheDocument();
+            expect(screen.getByText('-')).toBeInTheDocument();
+            expect(screen.queryByTestId('square-skeleton')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('dt_skeleton')).not.toBeInTheDocument();
+        });
+
+        it('should leave Buy available when the charge exactly equals the balance', () => {
+            default_mock_store.client.balance = '10.00';
+            mockPurchaseButton();
+
+            expect(screen.getAllByRole('button')[0]).toBeEnabled();
+            expect(screen.getByText('$19.26')).toBeInTheDocument();
+        });
+
+        it('should leave Buy available when the balance is above the charge', () => {
+            default_mock_store.client.balance = '20.00';
+            mockPurchaseButton();
+
+            expect(screen.getAllByRole('button')[0]).toBeEnabled();
+            expect(screen.getByText('$19.26')).toBeInTheDocument();
+        });
+
+        it('should disable Buy when the balance is zero', () => {
+            default_mock_store.client.balance = '0.00';
+            mockPurchaseButton();
+
+            expect(screen.getAllByRole('button')[0]).toBeDisabled();
+        });
+
+        it('should read a comma-grouped balance rather than truncating it at the separator', () => {
+            // `Number('9,999.00')` is NaN — `parseAmount` is what keeps this affordable.
+            default_mock_store.client.balance = '9,999.00';
+            mockPurchaseButton();
+
+            expect(screen.getAllByRole('button')[0]).toBeEnabled();
+            expect(screen.getByText('$19.26')).toBeInTheDocument();
+        });
+
+        it.each([undefined, '', 'n/a'])('should stay inert for an unreadable balance of %p', balance => {
+            default_mock_store.client.balance = balance as unknown as string;
+            mockPurchaseButton();
+
+            // An account whose balance has not loaded must never be reported as 0.00.
+            expect(screen.getAllByRole('button')[0]).toBeEnabled();
+            expect(screen.queryByText(/0\.00/)).not.toBeInTheDocument();
+            expect(screen.getByText('$19.26')).toBeInTheDocument();
+        });
+
+        it('should stay inert for an unpriced proposal, keeping its existing placeholder', () => {
+            default_mock_store.client.balance = '0.77';
+            default_mock_store.modules.trade.proposal_info.CALL = {
+                ...default_mock_store.modules.trade.proposal_info.CALL,
+                stake: '',
+                obj_contract_basis: { text: 'Payout', value: '' },
+            };
+            mockPurchaseButton();
+
+            expect(screen.getAllByRole('button')[0]).toBeEnabled();
+            expect(screen.getByTestId('square-skeleton')).toBeInTheDocument();
+        });
+
+        it('should keep the auth path for a logged-out user even with a low balance', async () => {
+            // `client.balance` is normally unreadable when logged out; seeding it proves the gate
+            // does not get in front of the log-in prompt.
+            default_mock_store.client.is_logged_in = false;
+            default_mock_store.client.balance = '0.77';
+            mockPurchaseButton();
+
+            const purchase_button = screen.getAllByRole('button')[0];
+            expect(purchase_button).toBeEnabled();
+
+            await userEvent.click(purchase_button);
+
+            expect(default_mock_store.common.setServicesError).toHaveBeenCalledWith(
+                expect.objectContaining({ code: 'AuthorizationRequired', type: 'buy' }),
+                true
+            );
+        });
+
+        it('should stay fully inert while an account switch is in flight', () => {
+            default_mock_store.client.balance = '0.77';
+            default_mock_store.ui.is_switching_account = true;
+            mockPurchaseButton();
+
+            // The balance on hand may still be the previous account's, so it states nothing...
+            // ...and equally withholds nothing: suppressing only the message would leave the payout
+            // silently replaced by `-` on the strength of an outgoing account's balance.
+            expect(screen.getByText('$19.26')).toBeInTheDocument();
+            expect(screen.queryByText('-')).not.toBeInTheDocument();
+        });
+
+        it('should keep the server-reported insufficient-balance path pressable', async () => {
+            // The client cannot prove this one — the balance is unreadable — so Buy stays enabled and
+            // the click keeps opening ServiceErrorSheet with its Deposit now action.
+            default_mock_store.client.balance = '';
+            default_mock_store.modules.trade.proposal_info.CALL = {
+                ...default_mock_store.modules.trade.proposal_info.CALL,
+                has_error: true,
+                error_code: 'InsufficientBalance',
+                message: 'Your account balance is insufficient to buy this contract.',
+            };
+            mockPurchaseButton();
+
+            const purchase_button = screen.getAllByRole('button')[0];
+            expect(purchase_button).toBeEnabled();
+
+            await userEvent.click(purchase_button);
+
+            expect(default_mock_store.common.setServicesError).toHaveBeenCalledWith(
+                expect.objectContaining({ code: 'InsufficientBalance', type: 'buy' }),
+                true
+            );
+            expect(default_mock_store.modules.trade.onPurchaseV2).not.toBeCalled();
+        });
+
+        it('should not add any element around the Buy wrapper', () => {
+            // Desktop reaches the Buy row with `.trade-params__content > .purchase-button__wrapper`,
+            // so a refactor that wraps the button must break this test rather than that layout.
+            default_mock_store.client.balance = '0.77';
+            mockPurchaseButton();
+
+            // Node adjacency IS the contract under test here, and Testing Library queries cannot
+            // express it.
+            /* eslint-disable testing-library/no-node-access */
+            const wrapper = screen.getAllByRole('button')[0].closest<HTMLElement>('.purchase-button__wrapper');
+
+            expect(wrapper).toBeInTheDocument();
+            expect(wrapper?.parentElement?.classList.contains('purchase-button__wrapper')).toBe(false);
+            /* eslint-enable testing-library/no-node-access */
+        });
+    });
 });
