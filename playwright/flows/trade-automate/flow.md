@@ -18,20 +18,27 @@
 
 **Run control API (`TradeAutomatePage`):**
 
-| Method                                          | Purpose                                                                                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `startAutomateRun()`                            | Click **Run** (waits for enabled first)                                                                                                    |
-| `verifyAutomateBotIsRunning()`                  | Assert **Status: Running** text, stats line, Pause/Stop labels; trade-form + automation-panel inputs **disabled**; tolerates **Starting…** |
-| `stopAutomateRun()`                             | Click **Stop** and verify idle state (Run visible, Running status gone)                                                                    |
-| `stopAutomateRunIfActive()`                     | `afterEach` cleanup — stop only if Stop is visible                                                                                         |
-| `pauseRun()` / `resumeRun()` / `verifyPaused()` | Flow 1 pause/resume                                                                                                                        |
-| `verifyLossThresholdAutoStop()`                 | Flow 2 — idle Run returns without manual Stop                                                                                              |
+| Method                                          | Purpose                                                                                                                                                                                                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startAutomateRun()`                            | Click **Run** (waits for enabled first)                                                                                                                                                                                       |
+| `verifyAutomateBotIsRunning()`                  | Full running check: controls + open position + contract details (panel specs, post-resume)                                                                                                                                    |
+| `verifyAutomateRunningControls()`               | Fast running check only — Status, Pause/Stop, stats line, params disabled (private; tick lifecycles before sequential)                                                                                                        |
+| `verifyAutomateSequentialContractPurchase()`    | Tick types only: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). **Run immediately after** `verifyAutomateRunningControls()`, before open-position details |
+| `verifyPauseAndResumeWhileRunning()`            | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–14 lifecycles)                                                                                                                                        |
+| `stopAutomateRun()`                             | Click **Stop** and verify idle state (Run visible, Running status gone)                                                                                                                                                       |
+| `stopAutomateRunIfActive()`                     | `afterEach` cleanup — stop only if Stop is visible                                                                                                                                                                            |
+| `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                                                       |
+| `verifyLossThresholdAutoStop()`                 | Flow 2 — idle Run returns without manual Stop                                                                                                                                                                                 |
+
+> **Tick lifecycle order:** `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` → open-position/contract-details (via `verifyAutomateOpenPositionAndContractDetails()`) → `verifyPauseAndResumeWhileRunning()`. Sequential must run while `Contracts: 1` for the first phase — not after the slow open-details retry loop.
+
+> **One open at a time:** `verifyAutomationOpenPositionVisible()` requires exactly one open contract. **Open** stake may be strategy-adjusted (≥ initial, ≤ max. stake); **closed** tab still matches initial stake. Multi-contract sequencing is asserted via `verifyAutomateSequentialContractPurchase()` on tick types only.
 
 **Stake:** Use a low stake (e.g. `1`) whenever a run is started so the bot cannot burn much before it is stopped.
 
-**Demo and real accounts (Flows 7–11):** Dual-outcome trade types (Flows 7, 9–11) run **four tests** per spec — both outcome tabs × demo/real. Accumulators (Flow 8) runs **two tests** — demo then real. The `beforeAll` account is always `'real'`; demo/real switching happens in-app. Each test uses **distinct inline params** (stake, thresholds, digit, etc.) so Martingale doubled stakes do not collide on closed-position lookup.
+**Demo and real accounts (Flows 5–14):** Dual-outcome trade types use `.1`/`.2` per outcome tab (demo + real each). Accumulators use `.1` demo · `.2` real. Flows **5–9** = Martingale; **10–14** = D'Alembert (same trade-type order). The `beforeAll` account is always `'real'`; demo/real switching happens in-app. Each test uses **distinct inline params** so strategy-adjusted stakes do not collide on closed-position lookup.
 
-**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts`. Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/`, mirroring `playwright/tests/trade/`.
+**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts`. Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/` (`*-martingale.spec.ts`, `*-dalembert.spec.ts`), mirroring `playwright/tests/trade/`.
 
 > **No manual close of individual contracts** — stop the run via **Stop**; the bot manages its own contracts.
 
@@ -39,22 +46,22 @@
 
 ## Section 2 — Per-Flow Sections
 
-### Flow 1 — verify-automate-pause-resume.spec.ts
+### Flow 1 — Pause and Resume a running automation
 
 **Display name:** Pause and Resume a running automation
 
-**Prerequisites:** Shared prerequisites; a run is active (Running).
+**Prerequisites:** Shared prerequisites; a run is active (Running). Covered per trade type in Flows 5–14 lifecycles via `verifyPauseAndResumeWhileRunning()` (after sequential contract purchase on tick types, or after first contract on Accumulators). No dedicated spec — see `verify-rise-fall-martingale.spec.ts` as canonical reference.
 
-| #   | Step        | Action                                                | Expected Result                                     | Platform |
-| --- | ----------- | ----------------------------------------------------- | --------------------------------------------------- | -------- |
-| 1   | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` | "Status: Running"; Pause + Stop visible             | Both     |
-| 2   | Pause       | `pauseRun()` → `verifyPaused()`                       | **"Status: Paused"**; the button becomes **Resume** | Both     |
-| 3   | Resume      | `resumeRun()` → `verifyAutomateBotIsRunning()`        | **"Status: Running"**; the button becomes **Pause** | Both     |
-| 4   | Stop        | `stopAutomateRun()`                                   | Run stops; idle **Run** button returns              | Both     |
+> **Removed:** Former standalone `verify-pause-resume.spec.ts` — pause/resume is embedded in every trade-type lifecycle (Flows 5–14).
+
+| #   | Step        | Action                                                                                       | Expected Result                                                         | Platform |
+| --- | ----------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------- |
+| 1   | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `verifyPauseAndResumeWhileRunning()` | Running → Paused (params disabled, no new contracts) → Resume → Running | Both     |
+| 2   | Stop        | `stopAutomateRun()`                                                                          | Run stops; idle **Run** button returns                                  | Both     |
 
 ---
 
-### Flow 2 — verify-automate-threshold-stop.spec.ts
+### Flow 2 — Risk threshold auto-stop (loss/profit threshold)
 
 **Display name:** Risk threshold auto-stop (loss threshold reached)
 
@@ -68,22 +75,7 @@
 
 ---
 
-### Flow 3 — verify-automate-strategy-selection.spec.ts
-
-**Display name:** Strategy selection and parameters
-
-**Prerequisites:** Shared prerequisites.
-
-| #   | Step              | Action                                                                      | Expected Result                            | Platform |
-| --- | ----------------- | --------------------------------------------------------------------------- | ------------------------------------------ | -------- |
-| 1   | Panel defaults    | `verifyPanelDefaultState()`                                                 | Martingale defaults visible; Run enabled   | Both     |
-| 2   | Select D'Alembert | `selectStrategy("D'Alembert")`                                              | Strategy shows D'Alembert; params update   | Both     |
-| 3   | Set params        | `setStakeIncrement(3)`                                                      | Stake increment saved                      | Both     |
-| 4   | Start + Stop      | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()` | Runs with D'Alembert, then returns to idle | Both     |
-
----
-
-### Flow 4 — verify-automate-resync.spec.ts
+### Flow 3 — Resync after account switch (run stays Running)
 
 **Display name:** Resync after account switch (run stays Running)
 
@@ -97,9 +89,11 @@
 
 > Guards the known intermittent "stuck on Starting…" resync behaviour (GRWT-9318).
 
+> **Removed:** Former standalone strategy-selection flow — covered by Martingale (Flows 5–9) and D'Alembert (Flows 10–14) lifecycle specs via `selectStrategy()` in each run.
+
 ---
 
-### Flow 6 — verify-automate-eu-gating.spec.ts
+### Flow 4 — Automation unavailable for EU account (gating)
 
 **Display name:** Automation unavailable for EU account (gating)
 
@@ -112,113 +106,66 @@
 
 ---
 
-### Supported trade type runs — shared pattern (Flows 7–11)
+### Supported trade type runs — shared pattern (Flows 5–14)
 
-> Each UI trade type automation supports gets its own spec under `playwright/tests/trade-automate/<trade-type>/`. Tests pass a **full inline params object** to a dedicated POM method (`runRiseFallAndVerify`, `runAccumulatorsAndVerify`, etc.) — same pattern as manual `buy*AndVerify()`.
+> Each UI trade type gets one spec per strategy under `playwright/tests/trade-automate/<trade-type>/`. Tests pass a **full inline params object** to a dedicated POM method — same pattern as manual `buy*AndVerify()`.
 
-**Tests per spec:**
+**Tests per spec (child flows):**
 
-| Flows                  | Outcomes                                            | Tests                                                                                |
-| ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 7, 9–11 (dual-outcome) | Rise/Fall · Matches/Differs · Over/Under · Even/Odd | **4** — `{Outcome} (Demo Account)` · `{Outcome} (Real Account)` for each outcome tab |
-| 8 (Accumulators)       | Single trade type                                   | **2** — `(Demo Account)` · `(Real Account)`                                          |
+| Parent flow | Strategy   | Outcomes / account split | Child flows                         |
+| ----------- | ---------- | ------------------------ | ----------------------------------- |
+| 5, 7–9      | Martingale | Dual-outcome trade types | `.1`/`.2` (demo + real per outcome) |
+| 6           | Martingale | Accumulators             | `.1` demo · `.2` real               |
+| 10, 12–14   | D'Alembert | Dual-outcome trade types | `.1`/`.2` (demo + real per outcome) |
+| 11          | D'Alembert | Accumulators             | `.1` demo · `.2` real               |
 
-**Params convention:** No shared exported types — each `run*AndVerify()` method destructures its params inline on the function signature (same pattern as `buyRiseAndVerify({ accountType, market, … })` on manual trade POMs). Specs pass a matching inline object literal per test call.
-
-**Params shape:** trade-form fields at the top level + nested `automation` block for the automation panel:
-
-| Block        | Fields                                                                                                                       |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Top-level    | `accountType`, `market`, `tradeType` (dual-outcome flows only), `stake`, plus trade-type-specific fields (see below)         |
-| `automation` | `strategy`, `stakeMultiplier` (Martingale) or `stakeIncrement` (D'Alembert), `maxStake?`, `profitThreshold`, `lossThreshold` |
+**Params shape:** trade-form fields at the top level + nested `automation` block (`strategy`, `stakeMultiplier` or `stakeIncrement`, `maxStake?`, `profitThreshold`, `lossThreshold`).
 
 **Lifecycle order (POM — each `run*AndVerify()`):**
 
-1. `goToAutomatedTrading()` — desktop **Automated trading** tab · mobile **Automate** bottom nav
-2. `switchToAccountType(accountType)`
-3. `selectMarketAndTradeType(market, '<Category>', { mode: 'automate' })` — e.g. `'Rise/Fall'`, `'Matches/Differs'`; asserts trade-form shell + Run via `verifyParamsForTradeType(..., 'automate')`
-4. `selectTradeTypeOption(tradeType, position)` — dual-outcome flows only; e.g. `'Rise'` → `'top'`, `'Fall'` → `'bottom'`
-5. `openAndVerifyAutomateGuide('<Category>')` — guide popup: trade-type description, strategy chips (Martingale ↔ D'Alembert), info tooltip; dismiss desktop **X** / mobile **Got it**
-6. `verifyAutomationPanelFieldsVisible()` — strategy params + risk management fields + Run visible (default Martingale)
-7. Trade-form params — duration / digit / growth rate / stake / optional take profit (trade-type-specific)
-8. Automation panel — `selectStrategy()`, `setStakeMultiplier()` or `setStakeIncrement()`, optional `setMaxStake()`, `setProfitThreshold()`, `setLossThreshold()`
-9. `startAutomateRun()` → `verifyAutomateBotIsRunning({ market, stake, tradeType })` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract({ market, stake, tradeType })`
+1. `goToAutomatedTrading()` → `switchToAccountType(accountType)`
+2. `selectMarketAndTradeType(market, '<Category>', { mode: 'automate' })`
+3. `selectTradeTypeOption(tradeType, position)` — dual-outcome flows only
+4. `openAndVerifyAutomateGuide('<Category>')` → `verifyAutomationPanelFieldsVisible()`
+5. Trade-form params → automation panel setters
+6. `startAutomateRun()` → `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` (tick-duration only) → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`
 
-> `tradeType` passed to verification helpers is the **outcome tab label** (e.g. `'Rise'`, `'Matches'`, `'Even'`) for dual-outcome flows, or the category name (e.g. `'Accumulators'`) when there is no outcome tab.
+> **Accumulators (Flows 6, 11):** skip `verifyAutomateSequentialContractPurchase()`; call `verifyPauseAndResumeWhileRunning()` after the first contract is running.
 
-| Trade type      | Flow | Spec                                                      | POM method                     | Trade-form params (in addition to `market`, `stake`) |
-| --------------- | ---- | --------------------------------------------------------- | ------------------------------ | ---------------------------------------------------- |
-| Rise/Fall       | 7    | `rise-fall/verify-automate-rise-fall.spec.ts`             | `runRiseFallAndVerify()`       | `tradeType`, `durationUnit`, `durationValue`         |
-| Accumulators    | 8    | `accumulators/verify-automate-accumulators.spec.ts`       | `runAccumulatorsAndVerify()`   | `growthRate`, `takeProfit?`                          |
-| Matches/Differs | 9    | `matches-differs/verify-automate-matches-differs.spec.ts` | `runMatchesDiffersAndVerify()` | `tradeType`, `durationTicks`, `digit`                |
-| Over/Under      | 10   | `over-under/verify-automate-over-under.spec.ts`           | `runOverUnderAndVerify()`      | `tradeType`, `durationTicks`, `digit`                |
-| Even/Odd        | 11   | `even-odd/verify-automate-even-odd.spec.ts`               | `runEvenOddAndVerify()`        | `tradeType`, `durationTicks`                         |
+| Trade type      | Martingale | D'Alembert | Spec(s)                                                                                  |
+| --------------- | ---------- | ---------- | ---------------------------------------------------------------------------------------- |
+| Rise/Fall       | 5.1–5.2    | 10.1–10.2  | `verify-rise-fall-martingale.spec.ts` · `verify-rise-fall-dalembert.spec.ts`             |
+| Accumulators    | 6.1–6.2    | 11.1–11.2  | `verify-accumulators-martingale.spec.ts` · `verify-accumulators-dalembert.spec.ts`       |
+| Matches/Differs | 7.1–7.2    | 12.1–12.2  | `verify-matches-differs-martingale.spec.ts` · `verify-matches-differs-dalembert.spec.ts` |
+| Over/Under      | 8.1–8.2    | 13.1–13.2  | `verify-over-under-martingale.spec.ts` · `verify-over-under-dalembert.spec.ts`           |
+| Even/Odd        | 9.1–9.2    | 14.1–14.2  | `verify-even-odd-martingale.spec.ts` · `verify-even-odd-dalembert.spec.ts`               |
 
-**Representative params** (first demo test per spec — each test overrides inline as needed):
-
-| Param                        | Rise/Fall            | Accumulators        | Matches/Differs           | Over/Under           | Even/Odd            |
-| ---------------------------- | -------------------- | ------------------- | ------------------------- | -------------------- | ------------------- |
-| `market`                     | Volatility 100 Index | Volatility 10 Index | Volatility 10 Index       | Volatility 10 Index  | Volatility 10 Index |
-| `tradeType`                  | `'Rise'` / `'Fall'`  | —                   | `'Matches'` / `'Differs'` | `'Over'` / `'Under'` | `'Even'` / `'Odd'`  |
-| `stake`                      | `1` (Rise demo)      | `1`                 | `3` (Matches demo)        | `1`                  | `1`                 |
-| Duration                     | `Ticks` / `10 ticks` | —                   | `10 ticks`                | `10 ticks`           | `10 ticks`          |
-| `growthRate`                 | —                    | `4%` (demo)         | —                         | —                    | —                   |
-| `digit`                      | —                    | —                   | `1` (Matches demo)        | `3` (Over demo)      | —                   |
-| `takeProfit`                 | —                    | omitted (no TP)     | —                         | —                    | —                   |
-| `automation.strategy`        | Martingale           | Martingale          | Martingale                | Martingale           | Martingale          |
-| `automation.stakeMultiplier` | `2`                  | `2`                 | `2`                       | `2`                  | `5` (Even/Odd demo) |
-| `automation.maxStake`        | `150`                | `50`                | `56`                      | `70`                 | `66`                |
-| `automation.profitThreshold` | `150`                | `101`               | `108`                     | `104`                | `201`               |
-| `automation.lossThreshold`   | `150`                | `102`               | `109`                     | `104`                | `200`               |
-
-**Example call (Flow 7 — Rise demo, matches current spec):**
-
-```typescript
-await tradeAutomatePage.runRiseFallAndVerify({
-    accountType: 'demo',
-    market: 'Volatility 100 Index',
-    tradeType: 'Rise',
-    durationUnit: 'Ticks',
-    durationValue: '10 ticks',
-    stake: '1',
-    automation: {
-        strategy: 'Martingale',
-        stakeMultiplier: 2,
-        maxStake: '150',
-        profitThreshold: '150',
-        lossThreshold: '150',
-    },
-});
-```
-
-> For D'Alembert, use `strategy: "D'Alembert"` and `stakeIncrement` instead of `stakeMultiplier`. Omit `maxStake` to leave max stake disabled.
+> For D'Alembert, use `strategy: "D'Alembert"` and `stakeIncrement` instead of `stakeMultiplier`. D'Alembert flows use distinct stakes/thresholds to avoid closed-position lookup collisions with Martingale runs on the same backup accounts.
 
 ---
 
-### Flow 7 — rise-fall/verify-automate-rise-fall.spec.ts
+### Flow 5 — Rise/Fall
 
-**Display name:** Automate — Rise/Fall trade type run (primary lifecycle smoke)
+**Spec:** `rise-fall/verify-rise-fall-martingale.spec.ts` · **POM:** `runRiseFallAndVerify()` · **Tags:** `@automate @martingale @smoke @desktop @mobile`
 
-**POM:** `runRiseFallAndVerify()`
+**Child flows:** **5.1** Rise (demo + real) · **5.2** Fall (demo + real)
 
-**Tests:** `VERIFY automation run on Rise/Fall — Rise (Demo Account)` · `— Rise (Real Account)` · `— Fall (Demo Account)` · `— Fall (Real Account)`
+**Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_RISE_FALL`).
 
-**Prerequisites:** Shared prerequisites; dedicated backup account (`TEST_EMAIL_AUTOMATE_RISE_FALL`).
+| #   | Step             | Action                                                                                                                                                                                                 | Expected Result                                                                                                                          | Platform |
+| --- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Open Automation  | `goToAutomatedTrading()`                                                                                                                                                                               | Automation tab/page active                                                                                                               | Both     |
+| 2   | Switch account   | `switchToAccountType(accountType)`                                                                                                                                                                     | Active account matches `accountType`                                                                                                     | Both     |
+| 3   | Select Rise/Fall | `selectMarketAndTradeType(market, 'Rise/Fall', { mode: 'automate' })`                                                                                                                                  | Rise/Fall trade form + Run visible                                                                                                       | Both     |
+| 4   | Select outcome   | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                                                                                                                  | Purchase button colour matches Rise/Fall tab                                                                                             | Both     |
+| 5   | Guide popup      | `openAndVerifyAutomateGuide('Rise/Fall')`                                                                                                                                                              | Guide verified; dismiss (desktop **X**, mobile **Got it**)                                                                               | Both     |
+| 6   | Panel defaults   | `verifyAutomationPanelFieldsVisible()`                                                                                                                                                                 | Strategy params + risk management fields + Run visible                                                                                   | Both     |
+| 7   | Set duration     | `selectDuration(durationUnit, durationValue)`                                                                                                                                                          | Duration field reflects value                                                                                                            | Both     |
+| 8   | Set stake        | `setStake(stake)`                                                                                                                                                                                      | Initial stake saved                                                                                                                      | Both     |
+| 9   | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`                                                                                                        | All automation params saved                                                                                                              | Both     |
+| 10  | Run lifecycle    | `startAutomateRun()` → running controls → `verifyAutomateSequentialContractPurchase()` → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; sequential purchase; **Pause → Resume → Running**; Stop returns idle **Run**; closed position matches initial stake | Both     |
 
-| #   | Step             | Action                                                                                                 | Expected Result                                                                                              | Platform |
-| --- | ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | -------- |
-| 1   | Open Automation  | `goToAutomatedTrading()`                                                                               | Automation tab/page active                                                                                   | Both     |
-| 2   | Switch account   | `switchToAccountType(accountType)`                                                                     | Active account matches `accountType`                                                                         | Both     |
-| 3   | Select Rise/Fall | `selectMarketAndTradeType(market, 'Rise/Fall', { mode: 'automate' })`                                  | Rise/Fall trade form + Run visible                                                                           | Both     |
-| 4   | Select outcome   | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                  | Purchase button colour matches Rise/Fall tab                                                                 | Both     |
-| 5   | Guide popup      | `openAndVerifyAutomateGuide('Rise/Fall')`                                                              | **Automate Rise/Fall** guide verified; strategy chips + tooltips; dismiss (desktop **X**, mobile **Got it**) | Both     |
-| 6   | Panel defaults   | `verifyAutomationPanelFieldsVisible()`                                                                 | Strategy params + risk management fields + Run visible (Martingale defaults)                                 | Both     |
-| 7   | Set duration     | `selectDuration(durationUnit, durationValue)`                                                          | Duration field reflects value (e.g. Ticks / 10 ticks)                                                        | Both     |
-| 8   | Set stake        | `setStake(stake)`                                                                                      | Initial stake saved on trade form                                                                            | Both     |
-| 9   | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`        | All automation params saved                                                                                  | Both     |
-| 10  | Run lifecycle    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; Stop returns idle **Run**; closed position matches initial stake                        | Both     |
-
-**Inline params (spec — Rise demo):**
+**Inline params (Flow 5.1 — Rise demo):**
 
 ```typescript
 await tradeAutomatePage.runRiseFallAndVerify({
@@ -240,30 +187,17 @@ await tradeAutomatePage.runRiseFallAndVerify({
 
 ---
 
-### Flow 8 — accumulators/verify-automate-accumulators.spec.ts
+### Flow 6 — Accumulators
 
-**Display name:** Automate — Accumulators trade type run
+**Spec:** `accumulators/verify-accumulators-martingale.spec.ts` · **POM:** `runAccumulatorsAndVerify()`
 
-**POM:** `runAccumulatorsAndVerify()`
+**Child flows:** **6.1** demo · **6.2** real
 
-**Tests:** `VERIFY automation run on Accumulators trade type (Demo Account)` · `(Real Account)`
+**Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_ACCUMULATORS`).
 
-**Prerequisites:** Shared prerequisites; dedicated backup account (`TEST_EMAIL_AUTOMATE_ACCUMULATORS`).
+Same step table as Flow 5 where applicable (no outcome tab; uses `growthRate`, optional `takeProfit`). **Omits** `verifyAutomateSequentialContractPurchase()` — see shared lifecycle note above.
 
-| #   | Step                | Action                                                                                          | Expected Result                                                                      | Platform |
-| --- | ------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
-| 1   | Open Automation     | `goToAutomatedTrading()`                                                                        | Automation tab/page active                                                           | Both     |
-| 2   | Switch account      | `switchToAccountType(accountType)`                                                              | Active account matches `accountType`                                                 | Both     |
-| 3   | Select Accumulators | `selectMarketAndTradeType(market, 'Accumulators', { mode: 'automate' })`                        | Growth rate + stake + Run visible                                                    | Both     |
-| 4   | Guide popup         | `openAndVerifyAutomateGuide('Accumulators')`                                                    | **Automate Accumulators** guide verified; dismiss (desktop **X**, mobile **Got it**) | Both     |
-| 5   | Panel defaults      | `verifyAutomationPanelFieldsVisible()`                                                          | Strategy params + risk management fields + Run visible                               | Both     |
-| 6   | Set growth rate     | `setGrowthRate(growthRate)`                                                                     | Growth rate field shows value (e.g. `5%`)                                            | Both     |
-| 7   | Set stake           | `setStake(stake)`                                                                               | Initial stake saved                                                                  | Both     |
-| 8   | Set take profit     | Optional `setTakeProfit(takeProfit)`                                                            | Take profit field shows value (omit for no TP)                                       | Both     |
-| 9   | Automation panel    | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold` | All automation params saved                                                          | Both     |
-| 10  | Run lifecycle       | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()`                     | **Status: Running**; `stopAutomateRun()` verifies idle **Run** returns               | Both     |
-
-**Inline params (spec — demo):**
+**Inline params (Flow 6.1 — demo):**
 
 ```typescript
 await tradeAutomatePage.runAccumulatorsAndVerify({
@@ -281,35 +215,17 @@ await tradeAutomatePage.runAccumulatorsAndVerify({
 });
 ```
 
-> Optional: add `takeProfit: '5'` for the with-TP variant. Omit for no take-profit (current lifecycle spec).
-
 ---
 
-### Flow 9 — matches-differs/verify-automate-matches-differs.spec.ts
+### Flow 7 — Matches/Differs
 
-**Display name:** Automate — Matches/Differs trade type run
+**Spec:** `matches-differs/verify-matches-differs-martingale.spec.ts` · **POM:** `runMatchesDiffersAndVerify()`
 
-**POM:** `runMatchesDiffersAndVerify()`
+**Child flows:** **7.1** Matches (demo + real) · **7.2** Differs (demo + real)
 
-**Tests:** `VERIFY automation run on Matches/Differs — Matches (Demo Account)` · `— Matches (Real Account)` · `— Differs (Demo Account)` · `— Differs (Real Account)`
+**Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS`).
 
-**Prerequisites:** Shared prerequisites; dedicated backup account (`TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS`).
-
-| #   | Step                   | Action                                                                                                 | Expected Result                                                                       | Platform |
-| --- | ---------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------- |
-| 1   | Open Automation        | `goToAutomatedTrading()`                                                                               | Automation tab/page active                                                            | Both     |
-| 2   | Switch account         | `switchToAccountType(accountType)`                                                                     | Active account matches `accountType`                                                  | Both     |
-| 3   | Select Matches/Differs | `selectMarketAndTradeType(market, 'Matches/Differs', { mode: 'automate' })`                            | Last digit + duration + Run visible                                                   | Both     |
-| 4   | Select outcome         | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                  | Purchase button colour matches Matches/Differs tab                                    | Both     |
-| 5   | Guide popup            | `openAndVerifyAutomateGuide('Matches/Differs')`                                                        | Guide verified; dismiss (desktop **X**, mobile **Got it**)                            | Both     |
-| 6   | Panel defaults         | `verifyAutomationPanelFieldsVisible()`                                                                 | Strategy params + risk management fields + Run visible                                | Both     |
-| 7   | Set digit              | `selectDigit(digit)`                                                                                   | Digit selector reflects value (e.g. `1`)                                              | Both     |
-| 8   | Set duration           | `selectDuration('Ticks', durationTicks)`                                                               | Duration reflects value (e.g. `10 ticks`)                                             | Both     |
-| 9   | Set stake              | `setStake(stake)`                                                                                      | Initial stake saved                                                                   | Both     |
-| 10  | Automation panel       | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`        | All automation params saved                                                           | Both     |
-| 11  | Run lifecycle          | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; Stop returns idle **Run**; closed position matches initial stake | Both     |
-
-**Inline params (spec — Matches demo):**
+**Inline params (Flow 7.1 — Matches demo):**
 
 ```typescript
 await tradeAutomatePage.runMatchesDiffersAndVerify({
@@ -331,31 +247,15 @@ await tradeAutomatePage.runMatchesDiffersAndVerify({
 
 ---
 
-### Flow 10 — over-under/verify-automate-over-under.spec.ts
+### Flow 8 — Over/Under
 
-**Display name:** Automate — Over/Under trade type run
+**Spec:** `over-under/verify-over-under-martingale.spec.ts` · **POM:** `runOverUnderAndVerify()`
 
-**POM:** `runOverUnderAndVerify()`
+**Child flows:** **8.1** Over (demo + real) · **8.2** Under (demo + real)
 
-**Tests:** `VERIFY automation run on Over/Under — Over (Demo Account)` · `— Over (Real Account)` · `— Under (Demo Account)` · `— Under (Real Account)`
+**Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_OVER_UNDER`).
 
-**Prerequisites:** Shared prerequisites; dedicated backup account (`TEST_EMAIL_AUTOMATE_OVER_UNDER`).
-
-| #   | Step              | Action                                                                                                 | Expected Result                                                                       | Platform |
-| --- | ----------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------- |
-| 1   | Open Automation   | `goToAutomatedTrading()`                                                                               | Automation tab/page active                                                            | Both     |
-| 2   | Switch account    | `switchToAccountType(accountType)`                                                                     | Active account matches `accountType`                                                  | Both     |
-| 3   | Select Over/Under | `selectMarketAndTradeType(market, 'Over/Under', { mode: 'automate' })`                                 | Last digit + duration + Run visible                                                   | Both     |
-| 4   | Select outcome    | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                  | Purchase button colour matches Over/Under tab                                         | Both     |
-| 5   | Guide popup       | `openAndVerifyAutomateGuide('Over/Under')`                                                             | Guide verified; dismiss (desktop **X**, mobile **Got it**)                            | Both     |
-| 6   | Panel defaults    | `verifyAutomationPanelFieldsVisible()`                                                                 | Strategy params + risk management fields + Run visible                                | Both     |
-| 7   | Set digit         | `selectDigit(digit)`                                                                                   | Digit selector reflects value (e.g. `3`)                                              | Both     |
-| 8   | Set duration      | `selectDuration('Ticks', durationTicks)`                                                               | Duration reflects value (e.g. `10 ticks`)                                             | Both     |
-| 9   | Set stake         | `setStake(stake)`                                                                                      | Initial stake saved                                                                   | Both     |
-| 10  | Automation panel  | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`        | All automation params saved                                                           | Both     |
-| 11  | Run lifecycle     | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; Stop returns idle **Run**; closed position matches initial stake | Both     |
-
-**Inline params (spec — Over demo):**
+**Inline params (Flow 8.1 — Over demo):**
 
 ```typescript
 await tradeAutomatePage.runOverUnderAndVerify({
@@ -377,30 +277,15 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 ---
 
-### Flow 11 — even-odd/verify-automate-even-odd.spec.ts
+### Flow 9 — Even/Odd
 
-**Display name:** Automate — Even/Odd trade type run
+**Spec:** `even-odd/verify-even-odd-martingale.spec.ts` · **POM:** `runEvenOddAndVerify()`
 
-**POM:** `runEvenOddAndVerify()`
+**Child flows:** **9.1** Even (demo + real) · **9.2** Odd (demo + real)
 
-**Tests:** `VERIFY automation run on Even/Odd — Even (Demo Account)` · `— Even (Real Account)` · `— Odd (Demo Account)` · `— Odd (Real Account)`
+**Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_EVEN_ODD`).
 
-**Prerequisites:** Shared prerequisites; dedicated backup account (`TEST_EMAIL_AUTOMATE_EVEN_ODD`).
-
-| #   | Step             | Action                                                                                                 | Expected Result                                                                       | Platform |
-| --- | ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------- |
-| 1   | Open Automation  | `goToAutomatedTrading()`                                                                               | Automation tab/page active                                                            | Both     |
-| 2   | Switch account   | `switchToAccountType(accountType)`                                                                     | Active account matches `accountType`                                                  | Both     |
-| 3   | Select Even/Odd  | `selectMarketAndTradeType(market, 'Even/Odd', { mode: 'automate' })`                                   | Duration + Run visible; **no** last-digit prediction                                  | Both     |
-| 4   | Select outcome   | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                  | Purchase button colour matches Even/Odd tab                                           | Both     |
-| 5   | Guide popup      | `openAndVerifyAutomateGuide('Even/Odd')`                                                               | Guide verified; dismiss (desktop **X**, mobile **Got it**)                            | Both     |
-| 6   | Panel defaults   | `verifyAutomationPanelFieldsVisible()`                                                                 | Strategy params + risk management fields + Run visible                                | Both     |
-| 7   | Set duration     | `selectDuration('Ticks', durationTicks)`                                                               | Duration reflects value (e.g. `10 ticks`)                                             | Both     |
-| 8   | Set stake        | `setStake(stake)`                                                                                      | Initial stake saved                                                                   | Both     |
-| 9   | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`        | All automation params saved                                                           | Both     |
-| 10  | Run lifecycle    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; Stop returns idle **Run**; closed position matches initial stake | Both     |
-
-**Inline params (spec — Even demo):**
+**Inline params (Flow 9.1 — Even demo):**
 
 ```typescript
 await tradeAutomatePage.runEvenOddAndVerify({
@@ -418,6 +303,62 @@ await tradeAutomatePage.runEvenOddAndVerify({
     },
 });
 ```
+
+---
+
+### Flow 10 — Rise/Fall (D'Alembert)
+
+**Spec:** `rise-fall/verify-rise-fall-dalembert.spec.ts` · **POM:** `runRiseFallAndVerify()`
+
+**Child flows:** **10.1** Rise (demo + real) · **10.2** Fall (demo + real)
+
+Same step table as Flow 5; `strategy: "D'Alembert"`, `stakeIncrement: 3`, distinct stakes/thresholds.
+
+**Inline params (Flow 10.1 — Rise demo):**
+
+```typescript
+await tradeAutomatePage.runRiseFallAndVerify({
+    accountType: 'demo',
+    market: 'Volatility 100 Index',
+    tradeType: 'Rise',
+    durationUnit: 'Ticks',
+    durationValue: '10 ticks',
+    stake: '2',
+    automation: {
+        strategy: "D'Alembert",
+        stakeIncrement: 3,
+        maxStake: '160',
+        profitThreshold: '160',
+        lossThreshold: '160',
+    },
+});
+```
+
+---
+
+### Flow 11 — Accumulators (D'Alembert)
+
+**Spec:** `accumulators/verify-accumulators-dalembert.spec.ts` · **POM:** `runAccumulatorsAndVerify()`
+
+**Child flows:** **11.1** demo · **11.2** real — same steps as Flow 6; D'Alembert params.
+
+---
+
+### Flow 12 — Matches/Differs (D'Alembert)
+
+**Spec:** `matches-differs/verify-matches-differs-dalembert.spec.ts` · **Child flows:** **12.1** Matches · **12.2** Differs (demo + real each). Same steps as Flow 7; D'Alembert params.
+
+---
+
+### Flow 13 — Over/Under (D'Alembert)
+
+**Spec:** `over-under/verify-over-under-dalembert.spec.ts` · **Child flows:** **13.1** Over · **13.2** Under (demo + real each). Same steps as Flow 8; D'Alembert params.
+
+---
+
+### Flow 14 — Even/Odd (D'Alembert)
+
+**Spec:** `even-odd/verify-even-odd-dalembert.spec.ts` · **Child flows:** **14.1** Even · **14.2** Odd (demo + real each). Same steps as Flow 9; D'Alembert params.
 
 ---
 

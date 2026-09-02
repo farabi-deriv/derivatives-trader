@@ -1,7 +1,7 @@
 /**
- * @name     Automate — Matches/Differs trade type run
- * @id       flow-9
- * @flow     playwright/flows/trade-automate/flow.md#flow-9--verify-automate-matches-differsspec
+ * @name     Automate — Matches/Differs trade type run (Martingale)
+ * @id       flow-7.1, flow-7.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-7--matchesdiffers
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Matches/Differs', { tag: ['@automate', '@desktop', '@mobile'] }, () => {
+test.describe('Automate — Matches/Differs', { tag: ['@automate', '@martingale', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -38,6 +38,7 @@ test.describe('Automate — Matches/Differs', { tag: ['@automate', '@desktop', '
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
+    /** Flow 7.1 — Matches/Differs Martingale: Matches (demo + real) */
     test('VERIFY automation run on Matches/Differs — Matches (Demo Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runMatchesDiffersAndVerify({
             accountType: 'demo',
@@ -74,6 +75,7 @@ test.describe('Automate — Matches/Differs', { tag: ['@automate', '@desktop', '
         });
     });
 
+    /** Flow 7.2 — Matches/Differs Martingale: Differs (demo + real) */
     test('VERIFY automation run on Matches/Differs — Differs (Demo Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runMatchesDiffersAndVerify({
             accountType: 'demo',

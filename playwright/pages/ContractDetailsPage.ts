@@ -1,4 +1,5 @@
 import { Locator, expect } from '@playwright/test';
+import { PositionsPage } from './PositionsPage';
 import { TradeBasePage } from './TradeBasePage';
 
 /**
@@ -677,6 +678,13 @@ export class ContractDetailsPage extends TradeBasePage {
         return this.page.locator('#dt_contract_replay_container.dc-page-overlay');
     }
 
+    /** Contract details + audit grid container (desktop replay overlay, mobile contract-details root). */
+    private get contractDetailsContainer(): Locator {
+        return this.isMobile
+            ? this.page.locator('.contract-details')
+            : this.page.locator('#dt_contract_replay_container');
+    }
+
     /** Replay chart panel beside the contract drawer on desktop open contracts. */
     get replayChartContainer(): Locator {
         return this.page.getByTestId('dt_replay_chart_container');
@@ -686,16 +694,39 @@ export class ContractDetailsPage extends TradeBasePage {
     // ACTIONS
     // ============================================
 
+    static readonly AUTOMATION_CONTRACT_SETTLED_RETRY =
+        'Contract settled before open details could be verified — retrying with the next open contract';
+
     /**
      * Whether contract details show a settled contract (used to retry Accumulators / short tick runs).
      */
     async isAutomationContractDetailsClosed(): Promise<boolean> {
         if (this.isMobile) {
-            return this.page
-                .locator('.contract-details')
-                .getByText('Closed', { exact: true })
-                .isVisible()
-                .catch(() => false);
+            if (
+                await this.contractDetailsContainer
+                    .getByText('Closed', { exact: true })
+                    .isVisible()
+                    .catch(() => false)
+            ) {
+                return true;
+            }
+            if (
+                await this.contractDetailsContainer
+                    .getByText('Exit spot', { exact: true })
+                    .isVisible()
+                    .catch(() => false)
+            ) {
+                return true;
+            }
+            if (
+                await this.contractDetailsContainer
+                    .getByText(/\(Sell\)/)
+                    .isVisible()
+                    .catch(() => false)
+            ) {
+                return true;
+            }
+            return false;
         }
 
         if (await this.contractDetailsReferenceIDSell.isVisible().catch(() => false)) {
@@ -710,6 +741,34 @@ export class ContractDetailsPage extends TradeBasePage {
         }
 
         if (await this.contractDetailsExitTimeLabel.isVisible().catch(() => false)) {
+            return true;
+        }
+
+        // Audit grid rows (sibling to the card) may omit data-testids — scope to the overlay container.
+        if (
+            await this.contractDetailsContainer
+                .getByText('Exit time', { exact: true })
+                .isVisible()
+                .catch(() => false)
+        ) {
+            return true;
+        }
+
+        if (
+            await this.contractDetailsContainer
+                .getByText('Exit spot', { exact: true })
+                .isVisible()
+                .catch(() => false)
+        ) {
+            return true;
+        }
+
+        if (
+            await this.contractDetailsContainer
+                .getByText(/\(Sell\)/)
+                .isVisible()
+                .catch(() => false)
+        ) {
             return true;
         }
 
@@ -973,7 +1032,12 @@ export class ContractDetailsPage extends TradeBasePage {
         tradeTypeCategory: string,
         currency: string,
         stake: string,
-        options: { growthRate?: string; takeProfit?: string } = {}
+        options: {
+            growthRate?: string;
+            takeProfit?: string;
+            allowStrategyAdjustedStake?: boolean;
+            maxStake?: string;
+        } = {}
     ): Promise<void> {
         const formattedStake = Number(stake).toFixed(2);
 
@@ -1057,11 +1121,43 @@ export class ContractDetailsPage extends TradeBasePage {
     }
 
     /** Throws a retryable error when the contract settled before open assertions run. */
-    private async assertAutomationContractDetailsStillOpen(): Promise<void> {
+    private async throwIfAutomationContractSettled(): Promise<void> {
         if (await this.isAutomationContractDetailsClosed()) {
-            throw new Error(
-                'Contract settled before open details could be verified — retrying with the next open contract'
-            );
+            throw new Error(ContractDetailsPage.AUTOMATION_CONTRACT_SETTLED_RETRY);
+        }
+    }
+
+    private async assertAutomationContractDetailsStillOpen(): Promise<void> {
+        await this.throwIfAutomationContractSettled();
+    }
+
+    private async assertOpenAccumulatorTickCounter(): Promise<void> {
+        await this.throwIfAutomationContractSettled();
+        if (!(await this.accuTickCounterBar.isVisible().catch(() => false))) {
+            throw new Error(ContractDetailsPage.AUTOMATION_CONTRACT_SETTLED_RETRY);
+        }
+        await expect(this.accuTickCounterBar, 'Tick counter should show tick progress').toHaveText(/\d+\s+[Tt]icks/);
+    }
+
+    private async assertAutomationOpenStakeField(
+        stakeLocator: Locator,
+        formattedInitialStake: string,
+        currency: string,
+        options: { allowStrategyAdjustedStake?: boolean; maxStake?: string }
+    ): Promise<void> {
+        await expect(stakeLocator, 'Stake field should have a value').not.toBeEmpty();
+        const stakeText = (await stakeLocator.textContent()) ?? '';
+
+        if (options.allowStrategyAdjustedStake) {
+            PositionsPage.assertStrategyAdjustedStakeText(stakeText, formattedInitialStake, options.maxStake);
+            return;
+        }
+
+        await expect(stakeLocator, `Stake should contain "${formattedInitialStake}"`).toContainText(
+            formattedInitialStake
+        );
+        if (stakeText.includes(currency)) {
+            await expect(stakeLocator, `Stake should contain "${currency}"`).toContainText(currency);
         }
     }
 
@@ -1156,7 +1252,12 @@ export class ContractDetailsPage extends TradeBasePage {
         tradeTypeCategory: string,
         currency: string,
         formattedStake: string,
-        options: { growthRate?: string; takeProfit?: string }
+        options: {
+            growthRate?: string;
+            takeProfit?: string;
+            allowStrategyAdjustedStake?: boolean;
+            maxStake?: string;
+        }
     ): Promise<void> {
         await this.assertAutomationContractDetailsStillOpen();
         await this.verifyAutomationOpenContractSellAction(tradeTypeCategory);
@@ -1178,16 +1279,16 @@ export class ContractDetailsPage extends TradeBasePage {
         }
 
         await expect(this.mobileContractProfit, 'Mobile contract profit/loss should have a live value').not.toBeEmpty();
-        await expect(this.mobileContractCardStake, `Stake should show "${formattedStake} ${currency}"`).toContainText(
-            formattedStake
-        );
+        await this.assertAutomationOpenStakeField(this.mobileContractCardStake, formattedStake, currency, options);
         await expect(this.mobileOrderDetailsValue('Reference ID'), 'Reference ID should have a value').not.toBeEmpty();
 
         if (tradeTypeCategory === 'Accumulators') {
-            await expect(
+            await this.assertAutomationOpenStakeField(
                 this.mobileOrderDetailsValue('Stake'),
-                `Stake should contain "${formattedStake}"`
-            ).toContainText(formattedStake);
+                formattedStake,
+                currency,
+                options
+            );
             if (options.growthRate) {
                 await expect(
                     this.mobileOrderDetailsValue('Growth rate'),
@@ -1211,10 +1312,12 @@ export class ContractDetailsPage extends TradeBasePage {
             ).toBeVisible();
         } else {
             await expect(this.mobileOrderDetailsValue('Duration'), 'Duration should have a value').not.toBeEmpty();
-            await expect(
+            await this.assertAutomationOpenStakeField(
                 this.mobileOrderDetailsValue('Stake'),
-                `Stake should contain "${formattedStake}"`
-            ).toContainText(formattedStake);
+                formattedStake,
+                currency,
+                options
+            );
 
             if (this.isDigitTradeTypeCategory(tradeTypeCategory)) {
                 await expect(this.mobileOrderDetailsValue('Target'), 'Target should have a value').not.toBeEmpty();
@@ -1229,7 +1332,12 @@ export class ContractDetailsPage extends TradeBasePage {
         tradeTypeCategory: string,
         currency: string,
         formattedStake: string,
-        options: { growthRate?: string; takeProfit?: string }
+        options: {
+            growthRate?: string;
+            takeProfit?: string;
+            allowStrategyAdjustedStake?: boolean;
+            maxStake?: string;
+        }
     ): Promise<void> {
         await this.assertAutomationContractDetailsStillOpen();
 
@@ -1255,9 +1363,7 @@ export class ContractDetailsPage extends TradeBasePage {
             } else {
                 await expect(this.accuContractGrowthRate, 'Growth rate chip should have a value').not.toBeEmpty();
             }
-            await expect(this.accuTickCounterBar, 'Tick counter should show tick progress').toHaveText(
-                /\d+\s+[Tt]icks/
-            );
+            await this.assertOpenAccumulatorTickCounter();
             if (options.takeProfit) {
                 await expect(
                     this.contractCardItem('Take profit:'),
@@ -1283,9 +1389,7 @@ export class ContractDetailsPage extends TradeBasePage {
             await this.verifyOpenContractProgressIndicator();
         }
 
-        await expect(this.contractCardItem('Stake:'), `Stake should contain "${formattedStake}"`).toContainText(
-            formattedStake
-        );
+        await this.assertAutomationOpenStakeField(this.contractCardItem('Stake:'), formattedStake, currency, options);
         await expect(
             this.contractCardItem('Total profit/loss:'),
             'Total profit/loss should have a live value'
@@ -1294,6 +1398,7 @@ export class ContractDetailsPage extends TradeBasePage {
             this.contractCardItem('Contract value:'),
             'Contract value should have a live value'
         ).not.toBeEmpty();
+        await this.throwIfAutomationContractSettled();
         await this.verifyAutomationOpenContractSellAction(tradeTypeCategory);
 
         await expect(this.contractDetailsReferenceIDLabel, 'Reference ID label should be "Reference ID"').toHaveText(

@@ -593,12 +593,15 @@ export class PositionsPage extends TradeBasePage {
      * @param tradeTypeCategory - Automate trade-type category, e.g. "Accumulators" or "Rise/Fall"
      * @param currency          - Currency code, e.g. "USD"
      * @param stake             - Initial stake amount, e.g. "1" or "2.00" (formatted to two decimals on the card)
+     * @param options.allowStrategyAdjustedStake - When true, assert open stake is within [initial, maxStake] instead of exact initial.
+     * @param options.maxStake  - Max. stake cap from the automation panel (optional upper bound).
      */
     async verifyAutomationContractCardDetails(
         market: string,
         tradeTypeCategory: string,
         currency: string,
-        stake: string
+        stake: string,
+        options: { allowStrategyAdjustedStake?: boolean; maxStake?: string } = {}
     ): Promise<void> {
         const formattedStake = Number(stake).toFixed(2);
 
@@ -611,9 +614,13 @@ export class PositionsPage extends TradeBasePage {
             this.contractCardType,
             `Contract card type should match the ${tradeTypeCategory} automation trade type`
         ).toHaveText(this.automationCardTradeTypeMatcher(tradeTypeCategory));
-        await expect(this.contractCardStake, `Stake should show "${formattedStake} ${currency}"`).toHaveText(
-            `${formattedStake} ${currency}`
-        );
+        if (options.allowStrategyAdjustedStake) {
+            await this.assertOpenAutomationStakeInRange(this.contractCardStake, stake, currency, options.maxStake);
+        } else {
+            await expect(this.contractCardStake, `Stake should show "${formattedStake} ${currency}"`).toHaveText(
+                `${formattedStake} ${currency}`
+            );
+        }
         await expect(
             this.contractCardStatusTimer,
             'Status timer should show remaining time or tick progress'
@@ -787,39 +794,141 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
-     * Verify the Positions view lists at least one open position from an automation run,
-     * then assert the first contract card details.
+     * Open-tab contract cards scoped to the active Positions view.
      */
-    async verifyAutomationOpenPositionVisible(
-        market: string,
-        tradeTypeCategory: string,
-        currency: string,
-        stake: string
-    ): Promise<void> {
-        const positionsBadge = this.isMobile ? this.bottomNavPositionsBadge : this.sidebarPositionsBadge;
+    private get openTabContractCards(): Locator {
+        if (this.isMobile) {
+            return this.page.getByRole('tabpanel', { name: 'Open' }).getByTestId('dt_contract_card');
+        }
+        return this.positionsFlyout.locator('.positions-drawer-open [data-testid="dt_contract_card"]');
+    }
+
+    private get positionsBadge(): Locator {
+        return this.isMobile ? this.bottomNavPositionsBadge : this.sidebarPositionsBadge;
+    }
+
+    /**
+     * Read the sidebar/bottom-nav open-positions badge count. Returns 0 when the badge is hidden.
+     */
+    async getOpenPositionsCount(): Promise<number> {
+        if (!(await this.positionsBadge.isVisible().catch(() => false))) {
+            return 0;
+        }
+        const text = (await this.positionsBadge.textContent())?.trim() ?? '';
+        return text ? Number.parseInt(text, 10) : 0;
+    }
+
+    /**
+     * Assert automation holds exactly one open contract — badge and Open-tab card count both read 1.
+     */
+    async verifyExactlyOneOpenPosition(): Promise<void> {
         await expect(
-            positionsBadge,
-            'Positions badge should show at least one open contract while the bot is running'
-        ).toHaveText(/^[1-9]\d*$/);
+            this.positionsBadge,
+            'Positions badge should show exactly one open contract while the bot is running'
+        ).toHaveText('1');
 
         await this.goToPositions();
 
         if (!this.isMobile) {
             await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+        }
+
+        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
+        await expect(this.positionsOpenTab, 'Open tab should be selected').toHaveAttribute('aria-selected', 'true');
+        await expect(this.openTabContractCards, 'Open tab should list exactly one contract card').toHaveCount(1);
+    }
+
+    /**
+     * Count contract cards on the Positions Open tab (navigates to Positions first).
+     */
+    async getOpenTabContractCount(): Promise<number> {
+        await this.goToPositions();
+
+        if (!this.isMobile) {
+            await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+        }
+
+        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
+        await expect(this.positionsOpenTab, 'Open tab should be selected').toHaveAttribute('aria-selected', 'true');
+        return this.openTabContractCards.count();
+    }
+
+    /**
+     * Assert no contracts remain open — badge hidden and Open tab shows the empty state.
+     */
+    async verifyNoOpenPositions(): Promise<void> {
+        await expect(this.positionsBadge, 'Positions badge should be hidden when no contracts are open').toBeHidden();
+
+        await this.goToPositions();
+
+        if (!this.isMobile) {
+            await expect(this.positionsFlyout, 'Positions flyout should be open').toBeVisible();
+        }
+
+        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
+        await expect(this.positionsOpenTab, 'Open tab should be selected').toHaveAttribute('aria-selected', 'true');
+        await expect(this.noOpenPositionsText, 'Open tab should show the empty state').toBeVisible();
+    }
+
+    /**
+     * Verify the Positions view lists exactly one open position from an automation run,
+     * then assert the first contract card details.
+     *
+     * Used by `verifyAutomateBotIsRunning()` for all automate flows (panel Flows 1–3 and
+     * trade-type lifecycles 5–14). Requires badge and Open-tab count === 1, not merely ≥ 1.
+     */
+    async verifyAutomationOpenPositionVisible(
+        market: string,
+        tradeTypeCategory: string,
+        currency: string,
+        stake: string,
+        options: { allowStrategyAdjustedStake?: boolean; maxStake?: string } = {}
+    ): Promise<void> {
+        await this.verifyExactlyOneOpenPosition();
+
+        if (!this.isMobile) {
             await expect(this.positionsTitle, 'Positions flyout header should read "Positions"').toHaveText(
                 'Positions'
             );
         }
 
-        await expect(this.positionsOpenTab, 'Open tab should be visible').toBeVisible();
-        await expect(this.positionsOpenTab, 'Open tab should be selected').toHaveAttribute('aria-selected', 'true');
         await expect(this.positionsClosedTab, 'Closed tab should be visible').toBeVisible();
-        await expect(
-            this.firstContractCard,
-            'At least one open contract card should be visible in Positions'
-        ).toBeVisible();
+        await this.verifyAutomationContractCardDetails(market, tradeTypeCategory, currency, stake, options);
+    }
 
-        await this.verifyAutomationContractCardDetails(market, tradeTypeCategory, currency, stake);
+    private async assertOpenAutomationStakeInRange(
+        stakeLocator: Locator,
+        initialStake: string,
+        currency: string,
+        maxStake?: string
+    ): Promise<void> {
+        await expect(
+            stakeLocator,
+            `Stake should be formatted as an amount in ${currency} while the bot is running`
+        ).toHaveText(new RegExp(`^[\\d,]+\\.\\d{2} ${currency}$`));
+        const stakeText = (await stakeLocator.textContent()) ?? '';
+        PositionsPage.assertStrategyAdjustedStakeText(stakeText, initialStake, maxStake);
+    }
+
+    /**
+     * Parse a formatted stake label and assert it stays within strategy bounds while a run is active.
+     * Martingale/D'Alembert may raise the live open stake above the configured initial stake.
+     */
+    static assertStrategyAdjustedStakeText(stakeText: string, initialStake: string, maxStake?: string): void {
+        const match = stakeText.replace(/,/g, '').match(/([\d]+\.\d{2})/);
+        if (!match) {
+            throw new Error(`Could not parse automation stake from "${stakeText}"`);
+        }
+        const amount = Number.parseFloat(match[1]);
+        const initial = Number(initialStake);
+        expect(amount, `Open stake ${amount} should be at least initial stake ${initial}`).toBeGreaterThanOrEqual(
+            initial
+        );
+        if (maxStake !== undefined) {
+            expect(amount, `Open stake ${amount} should not exceed max stake ${maxStake}`).toBeLessThanOrEqual(
+                Number(maxStake)
+            );
+        }
     }
 
     /**

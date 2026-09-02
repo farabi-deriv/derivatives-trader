@@ -740,38 +740,56 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Open the Strategy selector, confirm both bundled strategies are offered, select one, and
-     * confirm the Strategy field reflects the chosen label after the selector closes.
+     * Open the Strategy selector, confirm both bundled strategies are offered, select one if
+     * needed, then set the strategy-specific stake parameter (multiplier or increment).
      *
-     * Both bundled strategies (Martingale, D'Alembert) are asserted present so the test doubles as
-     * coverage of the selector's contents (Flow 4 step 1).
-     *
-     * @param label - The strategy to select, e.g. `"D'Alembert"`.
-     * @returns Promise that resolves once the Strategy field shows the selected label.
+     * Both bundled strategies (Martingale, D'Alembert) are asserted present when the picker
+     * opens so the test doubles as coverage of the selector's contents.
      */
-    async selectStrategy(label: string): Promise<void> {
-        if ((await this.strategyField.inputValue()).trim() === label) {
-            return;
-        }
-        await this.strategyField.click();
-        await expect(
-            this.strategyOption('Martingale'),
-            'Martingale should be offered in the strategy selector'
-        ).toBeVisible();
-        await expect(
-            this.strategyOption("D'Alembert"),
-            "D'Alembert should be offered in the strategy selector"
-        ).toBeVisible();
-        await this.strategyOption(label).click();
-        if (this.isMobile) {
+    async selectStrategy({
+        strategy,
+        stakeMultiplier,
+        stakeIncrement,
+    }: {
+        strategy: 'Martingale' | "D'Alembert";
+        stakeMultiplier?: number;
+        stakeIncrement?: number;
+    }): Promise<void> {
+        if ((await this.strategyField.inputValue()).trim() !== strategy) {
+            await this.strategyField.click();
             await expect(
-                this.actionSheetSaveButton(this.strategySheet),
-                'Strategy Save should enable after choosing a different strategy'
-            ).toBeEnabled();
-            await this.saveMobileSheet(this.strategySheet);
-            await expect(this.strategySheet, 'Strategy sheet should close after Save').not.toBeVisible();
+                this.strategyOption('Martingale'),
+                'Martingale should be offered in the strategy selector'
+            ).toBeVisible();
+            await expect(
+                this.strategyOption("D'Alembert"),
+                "D'Alembert should be offered in the strategy selector"
+            ).toBeVisible();
+            await this.strategyOption(strategy).click();
+            if (this.isMobile) {
+                await expect(
+                    this.actionSheetSaveButton(this.strategySheet),
+                    'Strategy Save should enable after choosing a different strategy'
+                ).toBeEnabled();
+                await this.saveMobileSheet(this.strategySheet);
+                await expect(this.strategySheet, 'Strategy sheet should close after Save').not.toBeVisible();
+            }
+            await expect(this.strategyField, `Strategy field should show '${strategy}' after selection`).toHaveValue(
+                strategy
+            );
         }
-        await expect(this.strategyField, `Strategy field should show '${label}' after selection`).toHaveValue(label);
+
+        if (strategy === 'Martingale') {
+            if (stakeMultiplier === undefined) {
+                throw new Error('stakeMultiplier is required when strategy is Martingale');
+            }
+            await this.setStakeMultiplier(stakeMultiplier);
+        } else {
+            if (stakeIncrement === undefined) {
+                throw new Error("stakeIncrement is required when strategy is D'Alembert");
+            }
+            await this.setStakeIncrement(stakeIncrement);
+        }
     }
 
     /**
@@ -1029,25 +1047,26 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.verifyAutomationPanelFieldsVisible();
         await this.selectDuration(durationUnit, durationValue);
         await this.setStake(stake);
-        await this.selectStrategy(automation.strategy);
-        if (automation.strategy === 'Martingale') {
-            if (automation.stakeMultiplier === undefined) {
-                throw new Error('stakeMultiplier is required when strategy is Martingale');
-            }
-            await this.setStakeMultiplier(automation.stakeMultiplier);
-        } else {
-            if (automation.stakeIncrement === undefined) {
-                throw new Error("stakeIncrement is required when strategy is D'Alembert");
-            }
-            await this.setStakeIncrement(automation.stakeIncrement);
-        }
+        await this.selectStrategy({
+            strategy: automation.strategy,
+            stakeMultiplier: automation.stakeMultiplier,
+            stakeIncrement: automation.stakeIncrement,
+        });
         if (automation.maxStake !== undefined) {
             await this.setMaxStake(automation.maxStake, stake);
         }
         await this.setProfitThreshold(automation.profitThreshold);
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
-        await this.verifyAutomateBotIsRunning({ market, stake, tradeType });
+        await this.verifyAutomateRunningControls(tradeType);
+        await this.verifyAutomateSequentialContractPurchase();
+        await this.verifyAutomateOpenPositionAndContractDetails({
+            market,
+            stake,
+            tradeType,
+            maxStake: automation.maxStake,
+        });
+        await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
     }
@@ -1088,25 +1107,34 @@ export class TradeAutomatePage extends TradeParametersPage {
         if (takeProfit !== undefined) {
             await this.setTakeProfit(takeProfit);
         }
-        await this.selectStrategy(automation.strategy);
-        if (automation.strategy === 'Martingale') {
-            if (automation.stakeMultiplier === undefined) {
-                throw new Error('Stake Multiplier is required when strategy is Martingale');
-            }
-            await this.setStakeMultiplier(automation.stakeMultiplier);
-        } else {
-            if (automation.stakeIncrement === undefined) {
-                throw new Error("Stake Increment is required when strategy is D'Alembert");
-            }
-            await this.setStakeIncrement(automation.stakeIncrement);
-        }
+        await this.selectStrategy({
+            strategy: automation.strategy,
+            stakeMultiplier: automation.stakeMultiplier,
+            stakeIncrement: automation.stakeIncrement,
+        });
         if (automation.maxStake !== undefined) {
             await this.setMaxStake(automation.maxStake, stake);
         }
         await this.setProfitThreshold(automation.profitThreshold);
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
-        await this.verifyAutomateBotIsRunning({ market, stake, tradeType: 'Accumulators', growthRate, takeProfit });
+        await this.verifyAutomateBotIsRunning({
+            market,
+            stake,
+            tradeType: 'Accumulators',
+            growthRate,
+            takeProfit,
+            maxStake: automation.maxStake,
+        });
+        await this.verifyPauseAndResumeWhileRunning({
+            market,
+            stake,
+            tradeType: 'Accumulators',
+            currency: 'USD',
+            growthRate,
+            takeProfit,
+            maxStake: automation.maxStake,
+        });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({
             market,
@@ -1154,25 +1182,26 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.selectDigit(digit);
         await this.selectDuration('Ticks', durationTicks);
         await this.setStake(stake);
-        await this.selectStrategy(automation.strategy);
-        if (automation.strategy === 'Martingale') {
-            if (automation.stakeMultiplier === undefined) {
-                throw new Error('stakeMultiplier is required when strategy is Martingale');
-            }
-            await this.setStakeMultiplier(automation.stakeMultiplier);
-        } else {
-            if (automation.stakeIncrement === undefined) {
-                throw new Error("stakeIncrement is required when strategy is D'Alembert");
-            }
-            await this.setStakeIncrement(automation.stakeIncrement);
-        }
+        await this.selectStrategy({
+            strategy: automation.strategy,
+            stakeMultiplier: automation.stakeMultiplier,
+            stakeIncrement: automation.stakeIncrement,
+        });
         if (automation.maxStake !== undefined) {
             await this.setMaxStake(automation.maxStake, stake);
         }
         await this.setProfitThreshold(automation.profitThreshold);
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
-        await this.verifyAutomateBotIsRunning({ market, stake, tradeType });
+        await this.verifyAutomateRunningControls(tradeType);
+        await this.verifyAutomateSequentialContractPurchase();
+        await this.verifyAutomateOpenPositionAndContractDetails({
+            market,
+            stake,
+            tradeType,
+            maxStake: automation.maxStake,
+        });
+        await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
     }
@@ -1214,25 +1243,26 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.selectDigit(digit);
         await this.selectDuration('Ticks', durationTicks);
         await this.setStake(stake);
-        await this.selectStrategy(automation.strategy);
-        if (automation.strategy === 'Martingale') {
-            if (automation.stakeMultiplier === undefined) {
-                throw new Error('stakeMultiplier is required when strategy is Martingale');
-            }
-            await this.setStakeMultiplier(automation.stakeMultiplier);
-        } else {
-            if (automation.stakeIncrement === undefined) {
-                throw new Error("stakeIncrement is required when strategy is D'Alembert");
-            }
-            await this.setStakeIncrement(automation.stakeIncrement);
-        }
+        await this.selectStrategy({
+            strategy: automation.strategy,
+            stakeMultiplier: automation.stakeMultiplier,
+            stakeIncrement: automation.stakeIncrement,
+        });
         if (automation.maxStake !== undefined) {
             await this.setMaxStake(automation.maxStake, stake);
         }
         await this.setProfitThreshold(automation.profitThreshold);
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
-        await this.verifyAutomateBotIsRunning({ market, stake, tradeType });
+        await this.verifyAutomateRunningControls(tradeType);
+        await this.verifyAutomateSequentialContractPurchase();
+        await this.verifyAutomateOpenPositionAndContractDetails({
+            market,
+            stake,
+            tradeType,
+            maxStake: automation.maxStake,
+        });
+        await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
     }
@@ -1271,25 +1301,26 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.verifyAutomationPanelFieldsVisible();
         await this.selectDuration('Ticks', durationTicks);
         await this.setStake(stake);
-        await this.selectStrategy(automation.strategy);
-        if (automation.strategy === 'Martingale') {
-            if (automation.stakeMultiplier === undefined) {
-                throw new Error('stakeMultiplier is required when strategy is Martingale');
-            }
-            await this.setStakeMultiplier(automation.stakeMultiplier);
-        } else {
-            if (automation.stakeIncrement === undefined) {
-                throw new Error("stakeIncrement is required when strategy is D'Alembert");
-            }
-            await this.setStakeIncrement(automation.stakeIncrement);
-        }
+        await this.selectStrategy({
+            strategy: automation.strategy,
+            stakeMultiplier: automation.stakeMultiplier,
+            stakeIncrement: automation.stakeIncrement,
+        });
         if (automation.maxStake !== undefined) {
             await this.setMaxStake(automation.maxStake, stake);
         }
         await this.setProfitThreshold(automation.profitThreshold);
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
-        await this.verifyAutomateBotIsRunning({ market, stake, tradeType });
+        await this.verifyAutomateRunningControls(tradeType);
+        await this.verifyAutomateSequentialContractPurchase();
+        await this.verifyAutomateOpenPositionAndContractDetails({
+            market,
+            stake,
+            tradeType,
+            maxStake: automation.maxStake,
+        });
+        await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
     }
@@ -1328,35 +1359,9 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Verify the run reached the Running state. Tolerates the transient "Starting..." — the
-     * store only flips to running once the first contract is observed, which arrives async.
-     *
-     * Asserts the full running UI from automation-actions.tsx: status block, info icon, stats
-     * line, Pause/Stop controls, trade-form + automation-panel params disabled per trade type,
-     * an automation open position in Positions, open contract details verification, and Run hidden.
-     *
-     * @param market - Market name from the spec, as shown on the Positions contract card
-     * @param stake - Initial stake from the spec (formatted to two decimals on the card)
-     * @param tradeType - Trade-type category from the spec, e.g. `'Accumulators'` or `'Rise/Fall'`
-     * @param growthRate - Accumulators growth rate from the spec, e.g. `"5%"`.
-     * @param takeProfit - Accumulators take profit when set in the spec.
-     * @returns Promise that resolves once the Running state + controls + stats are visible.
+     * Verify running controls and locked params — fast check before sequential purchase timing.
      */
-    async verifyAutomateBotIsRunning({
-        market,
-        stake,
-        tradeType,
-        currency = 'USD',
-        growthRate,
-        takeProfit,
-    }: {
-        market: string;
-        stake: string;
-        tradeType: string;
-        currency?: string;
-        growthRate?: string;
-        takeProfit?: string;
-    }): Promise<void> {
+    private async verifyAutomateRunningControls(tradeType: string): Promise<void> {
         await expect(
             this.automationActionsStatus,
             'Automation status block should be visible while the bot is running'
@@ -1375,27 +1380,198 @@ export class TradeAutomatePage extends TradeParametersPage {
         await expect(this.stopButton, 'Stop button should be enabled while running').toBeEnabled();
         await expect(this.runButton, 'Run button should be hidden while the bot is running').not.toBeVisible();
         await this.verifyTradeAndAutomationParamsState(tradeType, 'disabled');
-        // Short-lived contracts (Accumulators, Even/Odd tick runs) can settle between Positions
-        // and contract details. Trade-type-specific open assertions live in ContractDetailsPage
-        // (Accumulators keep Sell/Close + accu tick counter; Even/Odd uses resale + tick slider).
+    }
+
+    /**
+     * Verify exactly one open automation position and its contract details overlay.
+     * Retries when short-lived contracts settle between Positions and details.
+     */
+    private async verifyAutomateOpenPositionAndContractDetails({
+        market,
+        stake,
+        tradeType,
+        currency = 'USD',
+        growthRate,
+        takeProfit,
+        maxStake,
+    }: {
+        market: string;
+        stake: string;
+        tradeType: string;
+        currency?: string;
+        growthRate?: string;
+        takeProfit?: string;
+        maxStake?: string;
+    }): Promise<void> {
         await expect(async () => {
-            await this.positionsPage.verifyAutomationOpenPositionVisible(market, tradeType, currency, stake);
+            if (/\/contract\//.test(this.page.url())) {
+                if (await this.contractDetailsPage.isAutomationContractDetailsClosed()) {
+                    await this.contractDetailsPage.closeContractDetails();
+                }
+            }
+            await this.positionsPage.verifyAutomationOpenPositionVisible(market, tradeType, currency, stake, {
+                allowStrategyAdjustedStake: true,
+                maxStake,
+            });
             await this.positionsPage.openFirstContract();
-            if (await this.contractDetailsPage.isAutomationContractDetailsClosed()) {
+            if (!(await this.contractDetailsPage.isOpenAutomationContractDetails())) {
                 await this.contractDetailsPage.closeContractDetails();
-                throw new Error(
-                    'Contract settled before open details could be verified — retrying with the next open contract'
-                );
+                throw new Error(ContractDetailsPage.AUTOMATION_CONTRACT_SETTLED_RETRY);
             }
             await this.contractDetailsPage.verifyAutomationOpenContractDetailsPage(market, tradeType, currency, stake, {
                 growthRate,
                 takeProfit,
+                allowStrategyAdjustedStake: true,
+                maxStake,
             });
         }).toPass({ timeout: 90_000 });
         await this.contractDetailsPage.closeContractDetails();
         if (this.isMobile) {
             await this.goToAutomatedTrading();
         }
+    }
+
+    /**
+     * Verify the run reached the Running state. Tolerates the transient "Starting..." — the
+     * store only flips to running once the first contract is observed, which arrives async.
+     *
+     * Asserts the full running UI from automation-actions.tsx: status block, info icon, stats
+     * line, Pause/Stop controls, trade-form + automation-panel params disabled per trade type,
+     * an automation open position in Positions (exactly one — see
+     * `verifyAutomationOpenPositionVisible`), open contract details verification, and Run hidden.
+     *
+     * Tick-duration lifecycles call `verifyAutomateRunningControls()` then
+     * `verifyAutomateSequentialContractPurchase()` before open-position details so the stats line
+     * is still at `Contracts: 1` when sequencing is asserted.
+     *
+     * @param market - Market name from the spec, as shown on the Positions contract card
+     * @param stake - Initial stake from the spec (formatted to two decimals on the card)
+     * @param tradeType - Trade-type category from the spec, e.g. `'Accumulators'` or `'Rise/Fall'`
+     * @param growthRate - Accumulators growth rate from the spec, e.g. `"5%"`.
+     * @param takeProfit - Accumulators take profit when set in the spec.
+     * @param maxStake - Automation max. stake cap; used to bound strategy-adjusted open stakes.
+     * @returns Promise that resolves once the Running state + controls + stats are visible.
+     */
+    async verifyAutomateBotIsRunning({
+        market,
+        stake,
+        tradeType,
+        currency = 'USD',
+        growthRate,
+        takeProfit,
+        maxStake,
+    }: {
+        market: string;
+        stake: string;
+        tradeType: string;
+        currency?: string;
+        growthRate?: string;
+        takeProfit?: string;
+        maxStake?: string;
+    }): Promise<void> {
+        await this.verifyAutomateRunningControls(tradeType);
+        await this.verifyAutomateOpenPositionAndContractDetails({
+            market,
+            stake,
+            tradeType,
+            currency,
+            growthRate,
+            takeProfit,
+            maxStake,
+        });
+    }
+
+    /**
+     * Parse the live `Contracts: N | P/L: …` stats line while a run is active.
+     */
+    async getAutomationContractsCount(): Promise<number> {
+        await expect(this.automationStats, 'Automation stats line should be visible while running').toBeVisible();
+        const statsText = (await this.automationStats.textContent()) ?? '';
+        const match = statsText.match(/Contracts:\s*(\d+)/);
+        if (!match) {
+            throw new Error(`Could not parse contracts count from stats line: "${statsText}"`);
+        }
+        return Number.parseInt(match[1], 10);
+    }
+
+    /**
+     * Verify the bot purchases contracts one at a time: exactly one open position while each
+     * contract is live, the first settles (open count → 0), then exactly one open again once at
+     * least a second contract has been purchased (`Contracts >= 2`; the cumulative counter may
+     * read 3+ on fast tick types before the poll observes the re-open).
+     *
+     * Call after `verifyAutomateBotIsRunning()` while the run is still active. Used for
+     * tick-duration trade types where contracts expire on a predictable schedule. On mobile,
+     * re-navigates to Automate before each stats read — Positions is a separate bottom-nav
+     * route that unmounts `.automate-mobile__run-button`.
+     */
+    async verifyAutomateSequentialContractPurchase({ timeout = 120_000 }: { timeout?: number } = {}): Promise<void> {
+        await this.goToAutomatedTrading();
+        await expect(this.statusRunning, 'Bot should still be running during sequential contract checks').toHaveText(
+            'Status: Running'
+        );
+
+        await expect(async () => {
+            await this.goToAutomatedTrading();
+            expect(await this.getAutomationContractsCount()).toBe(1);
+            await this.positionsPage.verifyExactlyOneOpenPosition();
+        }).toPass({ timeout: 30_000 });
+
+        let maxOpenCountSeen = 0;
+        await expect
+            .poll(
+                async () => {
+                    await this.goToAutomatedTrading();
+                    const openCount = await this.positionsPage.getOpenPositionsCount();
+                    maxOpenCountSeen = Math.max(maxOpenCountSeen, openCount);
+                    return openCount;
+                },
+                {
+                    message: 'First contract should close or expire (no open positions) before the bot purchases again',
+                    timeout,
+                }
+            )
+            .toBe(0);
+
+        expect(
+            maxOpenCountSeen,
+            `Automation should never hold more than one open contract at a time (max badge count seen: ${maxOpenCountSeen})`
+        ).toBeLessThanOrEqual(1);
+
+        let contractsAtSecondOpen: number | null = null;
+        await expect
+            .poll(
+                async () => {
+                    await this.goToAutomatedTrading();
+                    await expect(
+                        this.statusRunning,
+                        'Bot should still be running while waiting for the second purchase'
+                    ).toHaveText('Status: Running');
+                    const openCount = await this.positionsPage.getOpenPositionsCount();
+                    const count = await this.getAutomationContractsCount();
+                    if (openCount === 1 && count >= 2) {
+                        contractsAtSecondOpen =
+                            contractsAtSecondOpen === null ? count : Math.min(contractsAtSecondOpen, count);
+                        return true;
+                    }
+                    return false;
+                },
+                {
+                    message:
+                        'A second contract should open (Contracts >= 2 with exactly one open position) while the bot is still running',
+                    timeout: 60_000,
+                    intervals: [250],
+                }
+            )
+            .toBe(true);
+
+        await this.positionsPage.verifyExactlyOneOpenPosition();
+        expect(
+            contractsAtSecondOpen,
+            `At least two contracts should be purchased before the poll ends (first re-open seen at Contracts: ${contractsAtSecondOpen})`
+        ).toBeGreaterThanOrEqual(2);
+
+        await this.goToAutomatedTrading();
     }
 
     /**
@@ -1446,7 +1622,7 @@ export class TradeAutomatePage extends TradeParametersPage {
         const locked = state === 'disabled';
         const assertField = async (field: Locator, label: string) => {
             if (locked) {
-                await expect(field, `${label} should be disabled while running`).toBeDisabled();
+                await expect(field, `${label} should be disabled while automation is active`).toBeDisabled();
             } else {
                 await expect(field, `${label} should be enabled after stopping`).toBeEnabled();
             }
@@ -1536,16 +1712,129 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Verify the run is paused — "Status: Paused" and both the Resume and Stop buttons are shown.
-     *
-     * @returns Promise that resolves once the paused state is confirmed.
+     * Verify the run is paused — full paused UI from automation-actions.tsx: status block,
+     * info icon, stats line, Resume/Stop controls, Run hidden, trade-form + automation
+     * panel params disabled, and no new contracts purchased during an observation window.
      */
-    async verifyPaused(): Promise<void> {
-        await expect(this.statusPaused, 'Status should become "Paused" after pausing').toBeVisible({
-            timeout: 30_000,
+    async verifyPaused({ tradeType }: { tradeType: string }): Promise<void> {
+        await expect(
+            this.automationActionsStatus,
+            'Automation status block should be visible while the bot is paused'
+        ).toBeVisible();
+        await expect(this.statusPaused, 'Status line text should be "Status: Paused"').toHaveText('Status: Paused');
+        await expect(
+            this.automationStatusInfoIcon,
+            'Status info icon should be visible beside the Paused status'
+        ).toBeVisible();
+        await expect(this.automationStats, 'Stats line should read "Contracts: N | P/L: $X.XX"').toHaveText(
+            /Contracts:\s*\d+\s*\|\s*P\/L:\s*-?\$[\d,]+\.\d{2}/
+        );
+        await expect(this.resumeButton, 'Resume button label should be "Resume"').toHaveText('Resume');
+        await expect(this.resumeButton, 'Resume button should be enabled while paused').toBeEnabled();
+        await expect(this.stopButton, 'Stop button label should be "Stop"').toHaveText('Stop');
+        await expect(this.stopButton, 'Stop button should be enabled while paused').toBeEnabled();
+        await expect(this.pauseButton, 'Pause button should be hidden while paused').not.toBeVisible();
+        await expect(this.runButton, 'Run button should be hidden while the bot is paused').not.toBeVisible();
+        await this.verifyTradeAndAutomationParamsState(tradeType, 'disabled');
+        await this.verifyNoNewContractsWhilePaused();
+    }
+
+    /**
+     * While paused, poll for an observation window and assert the bot does not purchase new
+     * contracts: stats `Contracts: N` stays fixed and open-positions count never exceeds the
+     * count at pause time. An existing open contract may settle (count may drop to 0).
+     */
+    private async verifyNoNewContractsWhilePaused({
+        observationMs = 15_000,
+        pollIntervalMs = 2_000,
+    }: { observationMs?: number; pollIntervalMs?: number } = {}): Promise<void> {
+        await this.goToAutomatedTrading();
+        await expect(this.statusPaused, 'Bot should be paused before observing contract activity').toHaveText(
+            'Status: Paused'
+        );
+
+        const contractsBaseline = await this.getAutomationContractsCount();
+        const openBaseline = await this.positionsPage.getOpenPositionsCount();
+        const startedAt = Date.now();
+
+        await expect
+            .poll(
+                async () => {
+                    await this.goToAutomatedTrading();
+                    await expect(this.statusPaused, 'Bot should remain paused during observation').toHaveText(
+                        'Status: Paused'
+                    );
+
+                    const contractsCount = await this.getAutomationContractsCount();
+                    const openCount = await this.positionsPage.getOpenPositionsCount();
+
+                    if (contractsCount > contractsBaseline) {
+                        throw new Error(
+                            `Automation purchased a new contract while paused (Contracts: ${contractsBaseline} → ${contractsCount})`
+                        );
+                    }
+                    if (openCount > openBaseline) {
+                        throw new Error(`Open positions badge increased while paused (${openBaseline} → ${openCount})`);
+                    }
+
+                    return Date.now() - startedAt >= observationMs ? 'stable' : 'observing';
+                },
+                {
+                    message:
+                        `No new contracts should appear for ${observationMs}ms while paused ` +
+                        `(baseline Contracts: ${contractsBaseline}, open badge: ${openBaseline})`,
+                    timeout: observationMs + 30_000,
+                    intervals: [pollIntervalMs],
+                }
+            )
+            .toBe('stable');
+
+        const openTabCount = await this.positionsPage.getOpenTabContractCount();
+        expect(
+            openTabCount,
+            `Open tab should not list more contracts than at pause time (baseline ${openBaseline}, got ${openTabCount})`
+        ).toBeLessThanOrEqual(openBaseline);
+
+        if (this.isMobile) {
+            await this.goToAutomatedTrading();
+        }
+    }
+
+    /**
+     * Pause an active run, verify Paused, resume, and verify Running again (Flow 1).
+     * Call after the bot has live contracts — e.g. after `verifyAutomateSequentialContractPurchase()`
+     * on tick lifecycles, or after `verifyAutomateBotIsRunning()` on Accumulators.
+     */
+    async verifyPauseAndResumeWhileRunning({
+        market,
+        stake,
+        tradeType,
+        currency = 'USD',
+        growthRate,
+        takeProfit,
+        maxStake,
+    }: {
+        market: string;
+        stake: string;
+        tradeType: string;
+        currency?: string;
+        growthRate?: string;
+        takeProfit?: string;
+        maxStake?: string;
+    }): Promise<void> {
+        await this.goToAutomatedTrading();
+        await this.pauseRun();
+        await this.verifyPaused({ tradeType });
+        await this.resumeRun();
+        await this.verifyAutomateBotIsRunning({
+            market,
+            stake,
+            tradeType,
+            currency,
+            growthRate,
+            takeProfit,
+            maxStake,
         });
-        await expect(this.resumeButton, 'Resume button should be visible while paused').toBeVisible();
-        await expect(this.stopButton, 'Stop button should be visible while paused').toBeVisible();
     }
 
     /**

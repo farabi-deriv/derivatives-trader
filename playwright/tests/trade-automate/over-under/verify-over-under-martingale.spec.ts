@@ -1,7 +1,7 @@
 /**
- * @name     Automate — Over/Under trade type run
- * @id       flow-10
- * @flow     playwright/flows/trade-automate/flow.md#flow-10--verify-automate-over-underspec
+ * @name     Automate — Over/Under trade type run (Martingale)
+ * @id       flow-8.1, flow-8.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-8--overunder
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Over/Under', { tag: ['@automate', '@desktop', '@mobile'] }, () => {
+test.describe('Automate — Over/Under', { tag: ['@automate', '@martingale', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -36,6 +36,7 @@ test.describe('Automate — Over/Under', { tag: ['@automate', '@desktop', '@mobi
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
+    /** Flow 8.1 — Over/Under Martingale: Over (demo + real) */
     test('VERIFY automation run on Over/Under — Over (Demo Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runOverUnderAndVerify({
             accountType: 'demo',
@@ -72,6 +73,7 @@ test.describe('Automate — Over/Under', { tag: ['@automate', '@desktop', '@mobi
         });
     });
 
+    /** Flow 8.2 — Over/Under Martingale: Under (demo + real) */
     test('VERIFY automation run on Over/Under — Under (Demo Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runOverUnderAndVerify({
             accountType: 'demo',

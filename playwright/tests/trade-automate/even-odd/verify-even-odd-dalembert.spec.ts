@@ -1,7 +1,7 @@
 /**
- * @name     Automate — Even/Odd trade type run
- * @id       flow-11
- * @flow     playwright/flows/trade-automate/flow.md#flow-11--verify-automate-even-oddspec
+ * @name     Automate — Even/Odd trade type run (D'Alembert)
+ * @id       flow-14.1, flow-14.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-14--evenodd-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Even/Odd', { tag: ['@automate', '@desktop', '@mobile'] }, () => {
+test.describe('Automate — Even/Odd', { tag: ['@automate', '@dalembert', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -36,70 +36,72 @@ test.describe('Automate — Even/Odd', { tag: ['@automate', '@desktop', '@mobile
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
-    test('VERIFY automation run on Even/Odd — Even (Demo Account)', async ({ tradeAutomatePage }) => {
+    /** Flow 14.1 — Even/Odd D'Alembert: Even (demo + real) */
+    test("VERIFY D'Alembert automation run on Even/Odd — Even (Demo Account)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runEvenOddAndVerify({
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Even',
             durationTicks: '10 ticks',
-            stake: '1',
+            stake: '2',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 5,
-                maxStake: '66',
-                profitThreshold: '201',
-                lossThreshold: '200',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '76',
+                profitThreshold: '211',
+                lossThreshold: '210',
             },
         });
     });
 
-    test('VERIFY automation run on Even/Odd — Even (Real Account)', async ({ tradeAutomatePage }) => {
+    test("VERIFY D'Alembert automation run on Even/Odd — Even (Real Account)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runEvenOddAndVerify({
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Even',
             durationTicks: '9 ticks',
-            stake: '4',
+            stake: '5',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 10,
-                maxStake: '65',
-                profitThreshold: '200',
-                lossThreshold: '201',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '75',
+                profitThreshold: '210',
+                lossThreshold: '211',
             },
         });
     });
 
-    test('VERIFY automation run on Even/Odd — Odd (Demo Account)', async ({ tradeAutomatePage }) => {
+    /** Flow 14.2 — Even/Odd D'Alembert: Odd (demo + real) */
+    test("VERIFY D'Alembert automation run on Even/Odd — Odd (Demo Account)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runEvenOddAndVerify({
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Odd',
             durationTicks: '10 ticks',
-            stake: '1',
+            stake: '2',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 5,
-                maxStake: '66',
-                profitThreshold: '201',
-                lossThreshold: '200',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '76',
+                profitThreshold: '211',
+                lossThreshold: '210',
             },
         });
     });
 
-    test('VERIFY automation run on Even/Odd — Odd (Real Account)', async ({ tradeAutomatePage }) => {
+    test("VERIFY D'Alembert automation run on Even/Odd — Odd (Real Account)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runEvenOddAndVerify({
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Odd',
             durationTicks: '9 ticks',
-            stake: '4',
+            stake: '5',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 10,
-                maxStake: '65',
-                profitThreshold: '200',
-                lossThreshold: '201',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '75',
+                profitThreshold: '210',
+                lossThreshold: '211',
             },
         });
     });

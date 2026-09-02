@@ -1,7 +1,7 @@
 /**
- * @name     Automate — Accumulators trade type run
- * @id       flow-8
- * @flow     playwright/flows/trade-automate/flow.md#flow-8--verify-automate-accumulatorsspec
+ * @name     Automate — Accumulators trade type run (D'Alembert)
+ * @id       flow-11.1, flow-11.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-11--accumulators-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Accumulators', { tag: ['@automate', '@desktop', '@mobile'] }, () => {
+test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -38,34 +38,40 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@desktop', '@mo
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
-    test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({ tradeAutomatePage }) => {
+    /** Flow 11.1 — Accumulators D'Alembert: demo lifecycle */
+    test("VERIFY D'Alembert automation run on Accumulators trade type (Demo Account)", async ({
+        tradeAutomatePage,
+    }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
-            market: 'Volatility 10 Index',
-            growthRate: '4%',
-            stake: '1',
+            market: 'Volatility 100 (1s) Index',
+            growthRate: '5%',
+            stake: '3',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 2,
-                maxStake: '50',
-                profitThreshold: '101',
-                lossThreshold: '102',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '60',
+                profitThreshold: '111',
+                lossThreshold: '112',
             },
         });
     });
 
-    test('VERIFY automation run on Accumulators trade type (Real Account)', async ({ tradeAutomatePage }) => {
+    /** Flow 11.2 — Accumulators D'Alembert: real lifecycle */
+    test("VERIFY D'Alembert automation run on Accumulators trade type (Real Account)", async ({
+        tradeAutomatePage,
+    }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
-            market: 'Volatility 10 Index',
-            growthRate: '5%',
-            stake: '2',
+            market: 'Volatility 100 (1s) Index',
+            growthRate: '4%',
+            stake: '5',
             automation: {
-                strategy: 'Martingale',
-                stakeMultiplier: 2,
-                maxStake: '50',
-                profitThreshold: '101',
-                lossThreshold: '102',
+                strategy: "D'Alembert",
+                stakeIncrement: 3,
+                maxStake: '60',
+                profitThreshold: '113',
+                lossThreshold: '114',
             },
         });
     });

@@ -41,10 +41,10 @@ Each module section lists every documented flow with its current **status** and 
 | `reports`          | 8           | 8          | 0         |
 | `notifications`    | 9           | 9          | 0         |
 | `auth`             | 3           | 3          | 3         |
-| `trade-automate`   | 12          | 12         | 9         |
+| `trade-automate`   | 26          | 26         | 23        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 25          | 25         | 24        |
-| **Total**          | **103**     | **103**    | **66**    |
+| **Total**          | **117**     | **117**    | **80**    |
 
 > Status advances: `documented` → `automated`
 
@@ -165,22 +165,36 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (trade-type subfolders for Flows 7–11)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 5–9 Martingale · Flows 10–14 D'Alembert)
 
-| Flow    | Priority | Description                                                        | User State                                     | Status       |
-| ------- | -------- | ------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
-| Flow 1  | P1       | Pause and Resume a running automation                              | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 2  | P1       | Risk threshold auto-stop (loss/profit threshold)                   | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 3  | P2       | Strategy selection & params (Martingale / D'Alembert)              | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 4  | P2       | Resync after account switch (stays Running)                        | authenticated, funded real/staging, 2 accounts | `automated`  |
-| Flow 6  | P3       | Automation unavailable for EU account (gating)                     | authenticated, EU/DIEL account                 | `documented` |
-| Flow 7  | P0       | Automate — Rise/Fall lifecycle (Rise/Fall × demo/real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 8  | P1       | Automate — Accumulators lifecycle (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 9  | P1       | Automate — Matches/Differs lifecycle (Matches/Differs × demo/real) | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 10 | P1       | Automate — Over/Under lifecycle (Over/Under × demo/real)           | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 11 | P1       | Automate — Even/Odd lifecycle (Even/Odd × demo/real)               | authenticated, funded real/staging (non-EU)    | `automated`  |
-| —       | P2       | "Automation already running" adoption snackbar (G1)                | authenticated, run active                      | `documented` |
-| —       | P2       | Validation / unsupported-contract-type error (G2)                  | authenticated, funded real/staging (non-EU)    | `documented` |
+| Flow      | Priority | Description                                                    | User State                                     | Status       |
+| --------- | -------- | -------------------------------------------------------------- | ---------------------------------------------- | ------------ |
+| Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–14) | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 2    | P1       | Risk threshold auto-stop (loss/profit threshold)               | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 3    | P2       | Resync after account switch (stays Running)                    | authenticated, funded real/staging, 2 accounts | `automated`  |
+| Flow 4    | P3       | Automation unavailable for EU account (gating)                 | authenticated, EU/DIEL account                 | `documented` |
+| Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.2  | P0       | Rise/Fall — Martingale Fall (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.1  | P1       | Accumulators — Martingale demo                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.2  | P1       | Accumulators — Martingale real                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.1  | P1       | Matches/Differs — Martingale Matches (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.2  | P1       | Matches/Differs — Martingale Differs (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.1  | P1       | Over/Under — Martingale Over (demo + real)                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.2  | P1       | Over/Under — Martingale Under (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.1  | P1       | Even/Odd — Martingale Even (demo + real)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.2  | P1       | Even/Odd — Martingale Odd (demo + real)                        | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.1 | P1       | Rise/Fall — D'Alembert Rise (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.2 | P1       | Rise/Fall — D'Alembert Fall (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.1 | P1       | Accumulators — D'Alembert demo                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.2 | P1       | Accumulators — D'Alembert real                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.1 | P1       | Matches/Differs — D'Alembert Matches (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.2 | P1       | Matches/Differs — D'Alembert Differs (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.1 | P1       | Over/Under — D'Alembert Over (demo + real)                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.2 | P1       | Over/Under — D'Alembert Under (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                        | authenticated, funded real/staging (non-EU)    | `automated`  |
+| —         | P2       | "Automation already running" adoption snackbar (G1)            | authenticated, run active                      | `documented` |
+| —         | P2       | Validation / unsupported-contract-type error (G2)              | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
 
@@ -238,7 +252,7 @@ Each module section lists every documented flow with its current **status** and 
 | **Now**  | `positions`        | Flow 1 (open positions mobile), Flow 2 (desktop flyout)                             |
 | **Next** | `reports`          | Flow 1 (page load), Flow 5 (Trade Table), Flow 6 (Statement)                        |
 | **Next** | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1 (trade banner) |
-| **Soon** | `trade-automate`   | Flow 6 (EU gating) + G1 (already-running snackbar) + G2 (validation)                |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) + G1 (already-running snackbar) + G2 (validation)                |
 | **Done** | `market-selection` | Flows 1–24 automated; G1 remains a product gap (tab-scoped params not built yet)    |
 
 ---

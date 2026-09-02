@@ -1,7 +1,7 @@
 /**
  * @name     Automate — resync after account switch (run stays Running)
- * @id       flow-4
- * @flow     playwright/flows/trade-automate/flow.md#flow-4--resync-after-account-switch-run-stays-running
+ * @id       flow-3
+ * @flow     playwright/flows/trade-automate/flow.md#flow-3--resync-after-account-switch-run-stays-running
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../fixtures/fixtures';
@@ -47,7 +47,7 @@ test.describe('Automate — Resync after account switch', { tag: ['@automate', '
     });
 
     /**
-     * Flow 4 — start a run on the real account (A) → Running → switch to the demo account (B) and
+     * Flow 3 — start a run on the real account (A) → Running → switch to the demo account (B) and
      * back to A → the run on A must be re-adopted as Running (not stuck on "Starting…", no manual
      * refresh) → Stop. Guards the known intermittent resync bug GRWT-9318.
      */
