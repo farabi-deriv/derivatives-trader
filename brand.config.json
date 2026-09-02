@@ -7,6 +7,7 @@
         "production": "home.deriv.com/dashboard"
     },
     "documents_hostname": "docs.deriv.com",
+    "media_hostname": "media.deriv.com",
     "platform": {
         "name": "Derivatives Trader",
         "logo": "IcRebrandingDerivTrader",

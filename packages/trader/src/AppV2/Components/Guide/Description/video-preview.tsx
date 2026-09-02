@@ -6,7 +6,7 @@ import { CaptionText } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
-import { getVideoMp4Url, getVideoThumbnailUrl } from 'AppV2/Utils/video-config';
+import { getVideoMp4Url } from 'AppV2/Utils/video-config';
 
 type TVideoPreview = {
     contract_type: string;
@@ -45,10 +45,13 @@ const VideoPreview = ({ contract_type, toggleVideoPlayer, video_src }: TVideoPre
                     onClick={() => setIsStarted(true)}
                     onKeyDown={e => e.key === 'Enter' && setIsStarted(true)}
                 >
-                    <img
-                        src={getVideoThumbnailUrl(video_src)}
-                        alt='video thumbnail'
+                    <video
+                        src={`${getVideoMp4Url(video_src)}#t=0.1`}
+                        preload='metadata'
+                        muted
+                        playsInline
                         className='guide-video__preview__thumbnail'
+                        data-testid='dt_video_preview_thumbnail'
                     />
                     <div className='guide-video__preview__icon__wrapper'>
                         <LabelPairedPlayMdFillIcon className='guide-video__preview__icon' />
@@ -66,12 +69,15 @@ const VideoPreview = ({ contract_type, toggleVideoPlayer, video_src }: TVideoPre
                 onClick={toggleVideoPlayer}
                 onKeyDown={toggleVideoPlayer}
             >
-                <img
-                    src={getVideoThumbnailUrl(video_src)}
-                    alt='video thumbnail'
+                <video
+                    src={`${getVideoMp4Url(video_src)}#t=0.1`}
+                    preload='metadata'
+                    muted
+                    playsInline
                     width='112'
                     height='73'
                     className='guide-video__preview__thumbnail'
+                    data-testid='dt_video_preview_thumbnail'
                 />
                 <div className='guide-video__preview__icon__wrapper'>
                     <LabelPairedPlayMdFillIcon className='guide-video__preview__icon' />

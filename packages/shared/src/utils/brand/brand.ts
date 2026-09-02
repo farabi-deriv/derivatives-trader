@@ -45,6 +45,15 @@ export const getDocumentsUrl = () => {
     return `https://${substituteDerivDomain(config_data.documents_hostname)}`;
 };
 
+/**
+ * Host that serves media assets (guide/onboarding videos, etc.), stored on R2
+ * under the media subdomain. Mirrors getDocumentsUrl() so the brand TLD is
+ * substituted for .be / .me deployments.
+ */
+export const getMediaUrl = () => {
+    return `https://${substituteDerivDomain(config_data.media_hostname)}`;
+};
+
 export const getBrandHomeUrl = (language?: string) => {
     const baseUrl = `${getBrandUrl()}/home`;
     return appendLangParam(baseUrl, language);

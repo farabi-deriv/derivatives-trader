@@ -69,4 +69,14 @@ describe('StreamIframe component', () => {
         expect(screen.queryByTestId(dt_loader)).not.toBeInTheDocument();
         expect(video).toBeInTheDocument();
     });
+
+    it('[TGV-003] sources the accumulator stats video from the R2 /stream/<id>.mp4 path with no Cloudflare Stream reference', () => {
+        render(<StreamIframe {...mocked_props} />);
+        const video = screen.getByTestId(video_stream_testid);
+
+        const src = video.getAttribute('src') ?? '';
+        expect(src).toBe(getVideoMp4Url(UNIFIED_MODE_VIDEO_ID.accumulator_stats));
+        expect(src).toMatch(new RegExp(`/stream/${UNIFIED_MODE_VIDEO_ID.accumulator_stats}\\.mp4$`));
+        expect(src).not.toContain('cloudflarestream.com');
+    });
 });

@@ -5,7 +5,11 @@ import { CONTRACT_LIST } from 'AppV2/Utils/trade-types-utils';
 
 import VideoPreview from '../video-preview';
 
-const mock_props = { contract_type: CONTRACT_LIST.ACCUMULATORS, toggleVideoPlayer: jest.fn(), video_src: '' };
+const mock_props = {
+    contract_type: CONTRACT_LIST.ACCUMULATORS,
+    toggleVideoPlayer: jest.fn(),
+    video_src: 'test_video_id',
+};
 
 let mock_is_mobile = true;
 
@@ -19,8 +23,7 @@ jest.mock('@deriv/components', () => ({
 }));
 
 jest.mock('AppV2/Utils/video-config', () => ({
-    getVideoMp4Url: (src: string) => src,
-    getVideoThumbnailUrl: (src: string) => src,
+    getVideoMp4Url: (src: string) => `https://media.deriv.com/stream/${src}.mp4`,
 }));
 
 describe('VideoPreview', () => {
@@ -32,6 +35,15 @@ describe('VideoPreview', () => {
         it('should render component', () => {
             render(<VideoPreview {...mock_props} />);
             expect(screen.getByText(/Watch this video to learn about this trade type/i)).toBeInTheDocument();
+        });
+
+        it('[TGV-002] should render a video still frame (with #t=0.1 src), not an image, on mobile', () => {
+            render(<VideoPreview {...mock_props} />);
+
+            const video = screen.getByTestId('dt_video_preview_thumbnail');
+            expect(video.tagName).toBe('VIDEO');
+            expect(video).toHaveAttribute('src', 'https://media.deriv.com/stream/test_video_id.mp4#t=0.1');
+            expect(screen.queryByAltText('video thumbnail')).not.toBeInTheDocument();
         });
     });
 
@@ -45,7 +57,16 @@ describe('VideoPreview', () => {
             expect(screen.getByTestId('dt_video_preview')).toBeInTheDocument();
         });
 
-        it('should switch to video player when play button is clicked', async () => {
+        it('[TGV-002] should render a video still frame (with #t=0.1 src), not an image, on desktop', () => {
+            render(<VideoPreview {...mock_props} />);
+
+            const video = screen.getByTestId('dt_video_preview_thumbnail');
+            expect(video.tagName).toBe('VIDEO');
+            expect(video).toHaveAttribute('src', 'https://media.deriv.com/stream/test_video_id.mp4#t=0.1');
+            expect(screen.queryByAltText('video thumbnail')).not.toBeInTheDocument();
+        });
+
+        it('[TGV-002] should switch to video player when play button is clicked', async () => {
             render(<VideoPreview {...mock_props} />);
             await userEvent.click(screen.getByTestId('dt_video_preview'));
             expect(screen.getByTestId('dt_video_player')).toBeInTheDocument();

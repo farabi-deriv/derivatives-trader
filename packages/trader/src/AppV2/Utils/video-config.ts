@@ -1,10 +1,7 @@
-export const CLOUDFLARE_CUSTOMER_CODE = 'hhvo3ceuqt00w8g8';
+import { getMediaUrl } from '@deriv/shared';
 
-export const getVideoMp4Url = (video_id: string) =>
-    `https://customer-${CLOUDFLARE_CUSTOMER_CODE}.cloudflarestream.com/${video_id}/downloads/default.mp4`;
-
-export const getVideoThumbnailUrl = (video_id: string) =>
-    `https://customer-${CLOUDFLARE_CUSTOMER_CODE}.cloudflarestream.com/${video_id}/thumbnails/thumbnail.jpg`;
+// Videos are served from R2 under the brand-aware media host, keyed `stream/<video_id>.mp4`.
+export const getVideoMp4Url = (video_id: string) => `${getMediaUrl()}/stream/${video_id}.mp4`;
 
 type TDtraderVideoUrl = {
     [key: string]: TVideoVariants;
@@ -97,12 +94,12 @@ export const ACCUMULATOR_MANUAL_VIDEO_ID = {
 // Automation onboarding videos
 export const AUTOMATION_ONBOARDING_VIDEO_ID = {
     desktop: {
-        light: 'c4b8c07440ec81e7d3058885e257d10e', // automation-onboarding-desktop-light.mp4
-        dark: '86fbd6b7dfecef9179d70c750a7ffad9', // automation-onboarding-desktop-dark.mp4
+        light: 'c4b8c07440ec81e7d3058885e257d10e', // automation-guide-desktop-light.mp4
+        dark: '86fbd6b7dfecef9179d70c750a7ffad9', // automation-guide-desktop-dark.mp4
     },
     mobile: {
-        light: '8dd11c29f00a148ec29917ff35024516', // automation-onboarding-mobile-light.mp4
-        dark: 'd3566c4429888cc14b1256441162ada9', // automation-onboarding-mobile-dark.mp4
+        light: '8dd11c29f00a148ec29917ff35024516', // automation-guide-mobile-light.mp4
+        dark: 'd3566c4429888cc14b1256441162ada9', // automation-guide-mobile-dark.mp4
     },
 };
 

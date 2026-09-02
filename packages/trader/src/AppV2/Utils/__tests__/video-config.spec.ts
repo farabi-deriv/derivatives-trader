@@ -1,4 +1,9 @@
-import { DESCRIPTION_VIDEO_ID, getContractDescriptionAnimationSrc, getDescriptionVideoId } from '../video-config';
+import {
+    DESCRIPTION_VIDEO_ID,
+    getContractDescriptionAnimationSrc,
+    getDescriptionVideoId,
+    getVideoMp4Url,
+} from '../video-config';
 
 describe('getDescriptionVideoId', () => {
     it('should return an id for Vanillas description video in light theme', () => {
@@ -33,6 +38,48 @@ describe('getDescriptionVideoId', () => {
     });
     it('should return undefined when called with empty arguments', () => {
         expect(getDescriptionVideoId()).toEqual(undefined);
+    });
+});
+
+describe('getVideoMp4Url', () => {
+    const originalLocation = window.location;
+
+    const mockLocation = (overrides: Partial<Location>) => {
+        Object.defineProperty(window, 'location', {
+            value: { ...originalLocation, ...overrides },
+            configurable: true,
+            writable: true,
+        });
+    };
+
+    afterEach(() => {
+        Object.defineProperty(window, 'location', {
+            value: originalLocation,
+            configurable: true,
+            writable: true,
+        });
+    });
+
+    it('[TGV-001] builds the R2 /stream/<id>.mp4 URL on a deriv.com hostname', () => {
+        mockLocation({ hostname: 'dtrader.deriv.com' });
+
+        expect(getVideoMp4Url('26d1401d2e3f6ae16913a21ec0579fc1')).toBe(
+            'https://media.deriv.com/stream/26d1401d2e3f6ae16913a21ec0579fc1.mp4'
+        );
+    });
+
+    it('[TGV-001] follows the brand TLD on a deriv.be hostname', () => {
+        mockLocation({ hostname: 'dtrader.deriv.be' });
+
+        expect(getVideoMp4Url('26d1401d2e3f6ae16913a21ec0579fc1')).toBe(
+            'https://media.deriv.be/stream/26d1401d2e3f6ae16913a21ec0579fc1.mp4'
+        );
+    });
+
+    it('[TGV-001] never references cloudflarestream.com', () => {
+        mockLocation({ hostname: 'dtrader.deriv.com' });
+
+        expect(getVideoMp4Url('26d1401d2e3f6ae16913a21ec0579fc1')).not.toContain('cloudflarestream.com');
     });
 });
 
