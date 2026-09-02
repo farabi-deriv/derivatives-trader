@@ -293,7 +293,6 @@
         "exports packages/trader/src/AppV2/Utils/trading-times-utils.ts getTradingSessions",
         "exports packages/trader/src/AppV2/Utils/video-config.ts ACCUMULATOR_MANUAL_VIDEO_ID",
         "exports packages/trader/src/AppV2/Utils/video-config.ts AUTOMATION_ONBOARDING_VIDEO_ID",
-        "exports packages/trader/src/AppV2/Utils/video-config.ts CLOUDFLARE_CUSTOMER_CODE",
         "exports packages/trader/src/AppV2/Utils/video-config.ts ONBOARDING_VIDEO_ID",
         "exports packages/trader/src/AppV2/Utils/video-config.ts getAutomationOnboardingVideoId",
         "exports packages/trader/src/Modules/Contract/Components/ContentLoader/trade-params.tsx TradeParamsLoader",
