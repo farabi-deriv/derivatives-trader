@@ -2,23 +2,16 @@ import { getDurationMinMaxValues, getExpiryType } from '@deriv/shared';
 
 import { TTradeStore } from 'Types';
 
-type TOnChangeExpiry = (store: TTradeStore) => {
-    contract_expiry_type: string;
-};
 type TAssertDurationParams = Partial<
     Pick<TTradeStore, 'contract_expiry_type' | 'duration' | 'duration_min_max' | 'duration_unit'>
 >;
 
 /**
- * Re-derives `contract_expiry_type` for the pipeline. Barrier re-seeding on an expiry-type change
- * is NOT done here: it used to be triggered by this function's result differing from the store,
- * which only worked while the store's value was derived incorrectly. The trade-store reaction that
- * owns `contract_expiry_type` can see the transition directly and re-seeds there instead.
+ * `contract_expiry_type` is a computed on the store now — a total function of the duration fields —
+ * so the pipeline step that re-derived it into diffs is gone. Writing it back would throw (MobX
+ * forbids assigning a computed), which aborted the cascade mid-flight: the market selector needed a
+ * second click to add a tab because the first click's cascade died on that assignment.
  */
-export const onChangeExpiry: TOnChangeExpiry = store => ({
-    contract_expiry_type: getExpiryType(store),
-});
-
 export const onChangeContractType = (store: TTradeStore) => {
     const contract_expiry_type = getExpiryType(store);
 

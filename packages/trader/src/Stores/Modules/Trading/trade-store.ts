@@ -39,6 +39,8 @@ import {
     getTradeTypeName,
     getTradeURLParams,
     hasBarrier,
+    hasIntradayDurationUnit,
+    toMoment,
     isAccumulatorContract,
     isBarrierSupported,
     isCryptocurrency,
@@ -123,13 +125,6 @@ const BARRIER_DEFAULTS = {
     DEFAULT_RELATIVE_BARRIER: '+0.1',
     /** Default decimal places for absolute barrier formatting */
     ABSOLUTE_BARRIER_DECIMAL_PLACES: 5,
-} as const;
-
-const DURATION_DEFAULTS = {
-    /** Default duration in ticks for volatility markets */
-    DEFAULT_TICK_DURATION: 5,
-    /** Default duration in minutes for forex markets */
-    DEFAULT_MINUTE_DURATION: 5,
 } as const;
 
 type BarrierSupportType = 'relative' | 'absolute';
@@ -329,7 +324,14 @@ export default class TradeStore extends BaseStore {
     form_components: string[] = [];
 
     // Contract Type
-    contract_expiry_type = '';
+    // Derived, never stored: which expiry bucket (tick/intraday/daily) the current selection falls
+    // into, i.e. which `contracts_for` entry applies. It was an observable written by a reaction,
+    // so it lagged whatever changed it last — reading a bucket the incoming trade type does not
+    // offer is what sent a proposal with the digit default as its barrier.
+    get contract_expiry_type() {
+        if (!this.root_store?.common) return '';
+        return getExpiryType(this) || '';
+    }
     contract_type = '';
     prev_contract_type = '';
     contract_types_list: TContractTypesList = {};
@@ -367,7 +369,6 @@ export default class TradeStore extends BaseStore {
     // Trade-type group key (mapContractTypeToDurationPresetKey) the default duration was last applied
     // for. Grouped so Up/Down sub-toggles (turboslong/turbosshort) don't reset it. Not observable/
     // persisted: resets to '' on load so the default re-applies on a fresh session.
-    duration_default_applied_for = '';
     expiry_date: string | null = '';
     expiry_epoch: number | string = '';
     expiry_time: string | null = '';
@@ -550,7 +551,7 @@ export default class TradeStore extends BaseStore {
             cancellation_price: observable,
             cancellation_range_list: observable.ref, // Array of objects - use ref
             cached_multiplier_cancellation_list: observable.ref, // Array of objects - use ref
-            contract_expiry_type: observable,
+            contract_expiry_type: computed,
             contract_type: observable,
             contract_types_list: observable.ref, // Object - use ref
             contract_types_list_v2: observable.ref, // Object - use ref
@@ -789,16 +790,14 @@ export default class TradeStore extends BaseStore {
         // trade-params pipeline uses, so the reaction and the pipeline can no longer disagree, and
         // it depends on everything that derivation reads since several flows assign the
         // duration/expiry fields directly rather than going through the pipeline.
+        // The bucket itself is computed; this reaction exists only for the side effect of crossing a
+        // bucket boundary, which needs the previous value to detect.
         reaction(
-            () => [this.duration_unit, this.expiry_type, this.expiry_date, this.duration_units_list],
-            () => {
-                const next_expiry_type = getExpiryType(this);
-                if (!next_expiry_type || next_expiry_type === this.contract_expiry_type) return;
+            () => this.contract_expiry_type,
+            (next_expiry_type, previous_expiry_type) => {
+                if (!next_expiry_type) return;
 
-                const previous_expiry_type = this.contract_expiry_type;
                 runInAction(() => {
-                    this.contract_expiry_type = next_expiry_type;
-
                     // `contracts_for` returns a different default barrier per expiry_type, so
                     // crossing a boundary (minutes -> days flips relative to absolute) has to
                     // re-seed the barrier, or the previous type's value is left in a field that no
@@ -809,6 +808,7 @@ export default class TradeStore extends BaseStore {
                     if (!previous_expiry_type) return; // first resolve: the pipeline seeds it
 
                     const { barrier_1, barrier_2, barrier_count } = ContractType.getBarriers(
+                        this.symbol,
                         this.contract_type,
                         next_expiry_type
                     );
@@ -999,10 +999,41 @@ export default class TradeStore extends BaseStore {
         await when(() => this.has_symbols_for_v2);
     }
 
+    // The daily-only expiry default: server time (never browser-local), the next available
+    // trading day, and no literal close time — StartDate.onChangeExpiry -> ContractType.getExpiryTime
+    // resolves that once expiry_type/expiry_date land in the store (see the caller).
+    private async getDailyExpirySeed() {
+        const server_time = this.root_store.common.server_time || ServerTime.get();
+        const has_intraday = hasIntradayDurationUnit(this.duration_units_list);
+        const expiry_date = await ContractType.getNextTradingDayDate(this.symbol, server_time, has_intraday);
+        return {
+            expiry_type: 'endtime' as const,
+            expiry_date,
+            expiry_time: null,
+        };
+    }
+
+    // Single owner of the default-duration value object, shared by both appliers.
+    // Returns `is_daily_only` because callers must pass it as `is_changed_by_user` — that is what
+    // runs processTradeParams, which resolves `expiry_time` from the seeded date.
+    private async getDefaultDurationValues(default_duration: { unit: string; value: number }) {
+        const is_daily_only = default_duration.unit === 'd';
+        return {
+            is_daily_only,
+            values: {
+                duration_unit: default_duration.unit,
+                duration: default_duration.value,
+                expiry_time: null,
+                expiry_type: 'duration',
+                ...(is_daily_only ? await this.getDailyExpirySeed() : {}),
+            },
+        };
+    }
+
     async processContractsForV2() {
         // So a symbol change mid-await can't release the proposal hold for the wrong symbol.
         const symbol_at_start = this.symbol;
-        const contract_categories = ContractType.getContractCategories();
+        const contract_categories = ContractType.getContractCategories(this.symbol);
         // Await sequentially: first sets contract_types_list, second sets barrier/duration values.
         // Without await, these race each other and the second call's forgetAllProposal
         // cancels the first call's work.
@@ -1020,15 +1051,12 @@ export default class TradeStore extends BaseStore {
         // retained duration that is out of range here. Tracking the group it was applied for
         // means a manually-set duration survives a plain symbol change (same type), while the
         // configured default still lands on first load — where the retained value may be valid.
-        const current_duration_group = this.current_duration_group;
-        const should_apply_default =
-            this.duration_default_applied_for !== current_duration_group ||
-            !isValidPersistedDuration(
-                this.duration,
-                this.duration_unit,
-                this.duration_min_max,
-                this.duration_units_list
-            );
+        const should_apply_default = !isValidPersistedDuration(
+            this.duration,
+            this.duration_unit,
+            this.duration_min_max,
+            this.duration_units_list
+        );
         if (this.contract_type && should_apply_default) {
             const default_duration = getDefaultDuration(
                 this.contract_type,
@@ -1036,24 +1064,69 @@ export default class TradeStore extends BaseStore {
                 this.duration_units_list
             );
             if (default_duration) {
-                await this.processNewValuesAsync(
-                    {
-                        duration_unit: default_duration.unit,
-                        duration: default_duration.value,
-                        expiry_time: null,
-                        expiry_type: 'duration',
-                    },
-                    false,
-                    null,
-                    false
-                );
-                this.duration_default_applied_for = current_duration_group;
+                const { is_daily_only, values } = await this.getDefaultDurationValues(default_duration);
+                // The daily seed above awaits a trading-times lookup, and useContractsFor invokes this
+                // method un-awaited per `contracts_for` response — so a symbol change during that gap
+                // would commit the previous symbol's expiry date. Same invariant as the hold release
+                // below, re-checked after the async gap.
+                if (this.symbol !== symbol_at_start) return;
+                await this.processNewValuesAsync(values, is_daily_only, null, false);
                 // Re-validate explicitly: the validation reaction fired against the stale
                 // duration when the new limits arrived and won't re-fire on a duration-only
                 // change — a leftover error would block requestProposal.
                 this.changeDurationValidationRules();
             }
         }
+        // A 'd' duration means the contract runs past a day boundary, and the API requires those to
+        // expire at the end of a trading day — which this store models as expiry_type 'endtime'.
+        // Enforce that independently of the default-duration gate above: on a cold load the persisted
+        // duration is usually valid, so that gate does not open and nothing else would seed it.
+        // Daily-only symbols only: where the contract also offers intraday units, a 'd' duration or a
+        // same-day end date is a legitimate choice and must not be forced to an end time.
+        if (
+            this.contract_type &&
+            this.duration_unit === 'd' &&
+            this.expiry_type !== 'endtime' &&
+            this.duration_units_list.length > 0 &&
+            !hasIntradayDurationUnit(this.duration_units_list)
+        ) {
+            // The user's prior choice, if any, is the persisted expiry_date — the duration integer
+            // is tick-preset residue (e.g. touch_no_touch's 10) left behind when the unit became
+            // 'd', and converting it to days once put the end date 10 days out on reload. A kept
+            // date that has gone stale or falls on a closed day is advanced by the validation below.
+            const server_time = this.root_store.common.server_time || ServerTime.get();
+            const has_future_date = !!this.expiry_date && toMoment(this.expiry_date).isAfter(server_time, 'day');
+            const seed = has_future_date
+                ? { expiry_type: 'endtime' as const, expiry_time: null }
+                : await this.getDailyExpirySeed();
+            // Skip the write, never the hold release below, if the symbol moved during the lookup.
+            if (this.symbol === symbol_at_start) {
+                await this.processNewValuesAsync(seed, true, null, false);
+            }
+        }
+
+        // A carried-over expiry_date is only checked for being in the past (getExpiryDate's naive
+        // `+1 day`), never for being a day this symbol actually trades — so a switch between symbols
+        // with different calendars, or that +1 landing on a weekend, would price against a closed
+        // day. Validate it against this symbol's own trading times; getNextTradingDayDate returns
+        // the date unchanged when it is already tradeable.
+        if (
+            this.expiry_type === 'endtime' &&
+            this.expiry_date &&
+            this.duration_units_list.length > 0 &&
+            !hasIntradayDurationUnit(this.duration_units_list)
+        ) {
+            const tradeable_date = await ContractType.getNextTradingDayDate(
+                this.symbol,
+                toMoment(this.expiry_date),
+                true // start at expiry_date itself rather than the day after
+            );
+            // Skip the write, never the hold release below, if the symbol moved during the lookup.
+            if (tradeable_date !== this.expiry_date && this.symbol === symbol_at_start) {
+                await this.processNewValuesAsync({ expiry_date: tradeable_date }, true, null, false);
+            }
+        }
+
         // Turbos: seed payout_per_point from contracts_for choices before the first proposal, and
         // replace a value not in this market's own list — a request priced against it is rejected.
         if (
@@ -1319,7 +1392,8 @@ export default class TradeStore extends BaseStore {
         if (this.is_automation_mode && supported_trade_types.size) this.setActiveOpenMarkets(this.open_markets);
     }
 
-    // Trade-type group of the current contract type (paired with duration_default_applied_for).
+    // Trade-type group of the current contract type — an Up/Down or Allow-equals sub-toggle
+    // stays in the same group, a real trade-type switch changes it.
     get current_duration_group() {
         return mapContractTypeToDurationPresetKey(this.contract_type) ?? '';
     }
@@ -1335,13 +1409,18 @@ export default class TradeStore extends BaseStore {
             this.duration_units_list
         );
         if (!default_duration) return;
-        this.duration_default_applied_for = this.current_duration_group;
-        await this.onChangeMultiple({
-            duration_unit: default_duration.unit,
-            duration: default_duration.value,
-            expiry_time: null,
-            expiry_type: 'duration',
-        });
+        const symbol_at_start = this.symbol;
+        const group_at_start = this.current_duration_group;
+        // Shares the daily branch with processContractsForV2; without it this mobile safety net would
+        // knock a seeded daily contract back to expiry_type: 'duration'.
+        const { values } = await this.getDefaultDurationValues(default_duration);
+        // Same invariant as processContractsForV2: the daily seed's trading-times round trip can
+        // outlive a switch, and committing then applies the previous market's expiry. The applied-for
+        // flag is set only on the committing path, so a bail leaves the default still to be applied.
+        if (this.symbol !== symbol_at_start || this.current_duration_group !== group_at_start) {
+            return;
+        }
+        await this.onChangeMultiple(values);
     }
 
     async onChange(e: { target: { name: string; value: unknown } }) {
@@ -1854,6 +1933,13 @@ export default class TradeStore extends BaseStore {
 
         Object.keys(cloneObject(new_state) || {}).forEach(key => {
             if (key === 'root_store' || ['validation_rules', 'validation_errors', 'currency'].indexOf(key) > -1) return;
+            // Derived fields have no setter; assigning one throws (MobX forbids writing a computed)
+            // and aborts the whole cascade — first observed as the market selector needing two clicks.
+            const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(this), key);
+            if (descriptor?.get && !descriptor?.set) {
+                delete new_state[key as keyof TradeStore];
+                return;
+            }
             if (JSON.stringify(this[key as keyof this]) === JSON.stringify(new_state[key as keyof TradeStore])) {
                 delete new_state[key as keyof TradeStore];
             } else {
@@ -3354,11 +3440,15 @@ export default class TradeStore extends BaseStore {
      */
     private getApiDefaultBarrier(
         contract_type: string = this.contract_type,
-        expiry_type: string = this.contract_expiry_type
+        expiry_type: string = this.contract_expiry_type,
+        // The symbol to read config for. handleTradeParamsResetOnSymbolChange runs before
+        // `this.symbol` is updated, so it must ask for the incoming symbol explicitly — the default
+        // would hand it the outgoing market's barrier.
+        symbol: string | null = this.symbol
     ): string | undefined {
         if (!contract_type || !expiry_type) return undefined;
 
-        const default_barrier = getPropertyValue(ContractType.getFullContractTypes(), [
+        const default_barrier = getPropertyValue(ContractType.getFullContractTypes(symbol), [
             contract_type,
             'config',
             'barriers',
@@ -3377,9 +3467,10 @@ export default class TradeStore extends BaseStore {
      */
     public getBarrierSupportFromApiDefault(
         contract_type: string = this.contract_type,
-        expiry_type: string = this.contract_expiry_type
+        expiry_type: string = this.contract_expiry_type,
+        symbol: string | null = this.symbol
     ): BarrierSupportType | null {
-        const default_barrier = this.getApiDefaultBarrier(contract_type, expiry_type);
+        const default_barrier = this.getApiDefaultBarrier(contract_type, expiry_type, symbol);
         if (!default_barrier) return null;
 
         return /^[+-]/.test(default_barrier) ? 'relative' : 'absolute';
@@ -3427,10 +3518,10 @@ export default class TradeStore extends BaseStore {
         // Prefer the live API default-barrier sign for the currently selected symbol's contract
         // type. A prospective symbol (one we haven't switched to yet) has no contracts_for
         // loaded, so it falls through to the market-based heuristic below.
-        if (symbol === this.symbol) {
-            const api_default_support = this.getBarrierSupportFromApiDefault();
-            if (api_default_support) return api_default_support;
-        }
+        // Any symbol whose contracts_for is cached can answer for itself now that the cache is keyed
+        // by symbol — an unloaded one yields undefined and falls through to the heuristic below.
+        const api_default_support = this.getBarrierSupportFromApiDefault(undefined, undefined, symbol);
+        if (api_default_support) return api_default_support;
 
         // Forex symbols typically only support absolute barriers
         // Synthetic indices typically support relative barriers
@@ -3514,19 +3605,6 @@ export default class TradeStore extends BaseStore {
                 // Ignore localStorage errors
             }
 
-            // Reset UI store duration units when switching markets
-            if (duration_support_changed) {
-                if (new_duration_support === 'ticks') {
-                    // Switching to volatility markets - default to ticks
-                    this.root_store.ui.advanced_duration_unit = 't';
-                    this.root_store.ui.simple_duration_unit = 't';
-                } else {
-                    // Switching to forex markets - default to minutes for endtime
-                    this.root_store.ui.advanced_duration_unit = 'm';
-                    this.root_store.ui.simple_duration_unit = 'm';
-                }
-            }
-
             const reset_values: Partial<TradeStore> = {};
 
             // Reset barrier values if barrier support changed
@@ -3534,10 +3612,10 @@ export default class TradeStore extends BaseStore {
                 // Clear barrier validation errors before updating values to prevent "required field" errors
                 this.clearBarrierValidationErrors();
 
-                // Prefer the live API default barrier for the new context (contracts_for for the
-                // new symbol may already be loaded); otherwise fall back to the hardcoded
-                // constants for the derived support type.
-                const api_default_barrier = this.getApiDefaultBarrier();
+                // Prefer the live API default barrier for the new symbol — with two tabs open its
+                // contracts_for is usually already cached. This previously defaulted to `this.symbol`,
+                // which is still the OUTGOING market here, so it seeded the barrier we just left.
+                const api_default_barrier = this.getApiDefaultBarrier(undefined, undefined, new_symbol);
 
                 if (new_barrier_support === 'absolute') {
                     // Switching to absolute barriers (e.g., forex)
@@ -3557,25 +3635,6 @@ export default class TradeStore extends BaseStore {
                     // Reset to default relative barrier
                     reset_values.barrier_1 = api_default_barrier || BARRIER_DEFAULTS.DEFAULT_RELATIVE_BARRIER;
                     reset_values.barrier_2 = '';
-                }
-            }
-
-            // Reset duration values if duration support changed
-            if (duration_support_changed) {
-                if (new_duration_support === 'ticks') {
-                    // Switching to volatility markets - always default to ticks
-                    reset_values.duration_unit = 't';
-                    reset_values.expiry_type = 'duration';
-                    reset_values.duration = DURATION_DEFAULTS.DEFAULT_TICK_DURATION;
-                    reset_values.expiry_date = null;
-                    reset_values.expiry_time = null;
-                } else {
-                    // Switching to forex markets - default to duration (minutes)
-                    reset_values.duration_unit = 'm';
-                    reset_values.expiry_type = 'duration';
-                    reset_values.duration = DURATION_DEFAULTS.DEFAULT_MINUTE_DURATION;
-                    reset_values.expiry_date = null;
-                    reset_values.expiry_time = null;
                 }
             }
 

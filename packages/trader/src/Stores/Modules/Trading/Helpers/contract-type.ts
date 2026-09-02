@@ -8,6 +8,7 @@ import {
     getContractCategoriesConfig,
     getContractSubtype,
     getContractTypesConfig,
+    getExpiryType as getContractExpiryType,
     getLocalizedBasis,
     getPropertyValue,
     getSortedTradeTypes,
@@ -70,10 +71,26 @@ export const ContractType = (() => {
         ReturnType<typeof getExpiryType> &
         ReturnType<typeof getEqualProps>;
 
-    let available_contract_types: ReturnType<typeof getContractTypesConfig> = {};
-    let available_categories: TTradeTypesCategories = {};
-    let contract_types: ReturnType<typeof getContractTypesConfig>;
-    let non_available_categories: TTradeTypesCategories = {};
+    type TSymbolConfig = {
+        available_contract_types: ReturnType<typeof getContractTypesConfig>;
+        available_categories: TTradeTypesCategories;
+        contract_types: ReturnType<typeof getContractTypesConfig>;
+        non_available_categories: TTradeTypesCategories;
+    };
+
+    const EMPTY_SYMBOL_CONFIG: TSymbolConfig = {
+        available_contract_types: {},
+        available_categories: {},
+        contract_types: {} as ReturnType<typeof getContractTypesConfig>,
+        non_available_categories: {},
+    };
+
+    // One entry per symbol. This was a single set of slots rebuilt wholesale on every contracts_for
+    // response, so with two markets open a reader could be handed the other market's barriers.
+    const config_by_symbol: Record<string, TSymbolConfig> = {};
+    // Readers state which symbol they want; an unknown symbol yields empty config, never another's.
+    const configFor = (symbol?: string | null): TSymbolConfig =>
+        (symbol && config_by_symbol[symbol]) || EMPTY_SYMBOL_CONFIG;
     const trading_events: { [key: string]: Record<string, TEvents | undefined> } = {};
     const trading_times: { [key: string]: Record<string, TTimes> } = {};
 
@@ -83,9 +100,10 @@ export const ContractType = (() => {
         const has_contracts = getPropertyValue(r, ['contracts_for']);
         if (!has_contracts) return;
         const contract_categories = getContractCategoriesConfig();
-        contract_types = getContractTypesConfig(symbol);
-        available_contract_types = {};
-        available_categories = cloneObject(contract_categories);
+        const contract_types = getContractTypesConfig(symbol);
+        const available_contract_types: ReturnType<typeof getContractTypesConfig> = {};
+        let non_available_categories: TTradeTypesCategories = {};
+        let available_categories = cloneObject(contract_categories);
         r.contracts_for.available.forEach(contract => {
             const type = Object.keys(contract_types).find(key => {
                 const isContractTypeMatch = contract_types[key].trade_types.indexOf(contract.contract_type) !== -1;
@@ -156,7 +174,7 @@ export const ContractType = (() => {
                 const categories: Array<string | TTextValueStrings> = getCategories(key);
                 const title = contract_types[type]?.title;
                 const is_available = !!available_categories[key as keyof TTradeTypesCategories]?.categories?.find(
-                    el => (el as TTextValueStrings).text === title
+                    (el: TTextValueStrings) => el.text === title
                 );
                 if (categories.includes(type) && !is_available) {
                     categories[categories.indexOf(type)] = { value: type, text: title };
@@ -167,6 +185,13 @@ export const ContractType = (() => {
             });
         }
         non_available_categories = getCleanedUpCategories(non_available_categories);
+
+        config_by_symbol[symbol] = {
+            available_contract_types,
+            available_categories,
+            contract_types,
+            non_available_categories,
+        };
     };
 
     const buildContractTypesConfig = (symbol: string): Promise<void> =>
@@ -207,6 +232,11 @@ export const ContractType = (() => {
         } = store;
 
         if (!contract_type) return {};
+        // Mid tab-switch the store briefly pairs the new symbol with the outgoing contract_type (or
+        // an unloaded catalogue). Deriving from that mismatch blanked barrier_1, and rapid switching
+        // could price the empty field before the correct pair's own cascade repaired it. Absence of
+        // the type in this symbol's catalogue means derive nothing, not derive empties.
+        if (!configFor(store.symbol).available_contract_types[contract_type]) return {};
 
         let stored_barriers_data: TTradeStore['short_barriers' | 'long_barriers' | 'strike_price_choices'];
         switch (getContractSubtype(contract_type)) {
@@ -230,22 +260,53 @@ export const ContractType = (() => {
                 stored_barriers_data = {};
         }
 
-        const form_components = getComponents(contract_type);
-        const obj_basis = getBasis(contract_type, basis);
-        const obj_trade_types = getTradeTypes(contract_type);
-        const obj_start_dates = getStartDates(contract_type, start_date);
-        const obj_barrier = getBarriers(contract_type, contract_expiry_type, stored_barriers_data?.barrier);
-        const obj_duration_unit = getDurationUnit(duration_unit, contract_type);
+        // Every derivation is addressed to this store's own symbol, so a contracts_for response for
+        // another open market can no longer be read here — the switch-time race that mixed barriers.
+        const symbol = store.symbol;
+        const form_components = getComponents(symbol, contract_type);
+        const obj_basis = getBasis(symbol, contract_type, basis);
+        const obj_trade_types = getTradeTypes(symbol, contract_type);
+        const obj_start_dates = getStartDates(symbol, contract_type, start_date);
+        const obj_duration_unit = getDurationUnit(symbol, duration_unit, contract_type);
 
-        const obj_duration_units_list = getDurationUnitsList(contract_type);
-        const obj_duration_units_min_max = getDurationMinMax(contract_type);
-        const obj_accumulator_range_list = getAccumulatorRange(contract_type);
-        const obj_barrier_choices = getBarrierChoices(contract_type, stored_barriers_data?.barrier_choices);
-        const obj_payout_choices = getPayoutChoices(contract_type);
-        const obj_multiplier_range_list = getMultiplierRange(contract_type, multiplier);
-        const obj_cancellation = getCancellation(contract_type, cancellation_duration);
+        const obj_duration_units_list = getDurationUnitsList(symbol, contract_type);
+        // The store's bucket is computed from its live duration fields, which mid tab-switch still
+        // belong to the outgoing tab — a valid (symbol, type) pair then reads a bucket it does not
+        // offer and blanks the barrier. Re-derive from the incoming type's own resolved unit and
+        // units; `duration_unit` decides the bucket before the list is even consulted.
+        const next_contract_expiry_type =
+            (store.root_store?.common?.server_time &&
+                getContractExpiryType({
+                    ...store,
+                    // A spread of the live store does not carry root_store in the app (it does for
+                    // the plain-object test mocks, which is why tests missed this) — pass it
+                    // explicitly or the shared getExpiryType crashes reading root_store.common.
+                    root_store: store.root_store,
+                    duration_unit: obj_duration_unit.duration_unit,
+                    duration_units_list: obj_duration_units_list.duration_units_list,
+                })) ||
+            contract_expiry_type;
+        const obj_barrier = getBarriers(
+            symbol,
+            contract_type,
+            next_contract_expiry_type,
+            stored_barriers_data?.barrier
+        );
+        // A type can offer no barrier for the resolved bucket (e.g. daily-only reached mid-switch
+        // from an intraday tab). Leave the store's existing value rather than blanking the field —
+        // the same convention the bucket-crossing reaction documents.
+        if (obj_barrier.barrier_count > 0 && !obj_barrier.barrier_1) {
+            delete (obj_barrier as Partial<typeof obj_barrier>).barrier_1;
+            delete (obj_barrier as Partial<typeof obj_barrier>).barrier_2;
+        }
+        const obj_duration_units_min_max = getDurationMinMax(symbol, contract_type);
+        const obj_accumulator_range_list = getAccumulatorRange(symbol, contract_type);
+        const obj_barrier_choices = getBarrierChoices(symbol, contract_type, stored_barriers_data?.barrier_choices);
+        const obj_payout_choices = getPayoutChoices(symbol, contract_type);
+        const obj_multiplier_range_list = getMultiplierRange(symbol, contract_type, multiplier);
+        const obj_cancellation = getCancellation(symbol, contract_type, cancellation_duration);
         const obj_expiry_type = getExpiryType(obj_duration_units_list.duration_units_list, expiry_type);
-        const obj_equal = getEqualProps(contract_type);
+        const obj_equal = getEqualProps(symbol, contract_type);
 
         return {
             ...form_components,
@@ -281,7 +342,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getComponents = (c_type: string) => {
+    const getComponents = (symbol: string | null, c_type: string) => {
+        const { contract_types } = configFor(symbol);
         if (!contract_types) return {};
         const check = ['duration', 'amount', ...(contract_types[c_type]?.components ?? [])].filter(
             component =>
@@ -298,7 +360,8 @@ export const ContractType = (() => {
         );
     };
 
-    const getDurationUnitsList = (contract_type: string) => {
+    const getDurationUnitsList = (symbol: string | null, contract_type: string) => {
+        const { available_contract_types } = configFor(symbol);
         return {
             duration_units_list:
                 (getPropertyValue(available_contract_types, [
@@ -310,7 +373,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getDurationUnit = (duration_unit: string, contract_type: string) => {
+    const getDurationUnit = (symbol: string | null, duration_unit: string, contract_type: string) => {
+        const { available_contract_types } = configFor(symbol);
         // For Vanilla contracts, validate that the duration_unit is supported
         // If not supported, default to 'm' (minutes)
         // This preserves user selection while ensuring valid duration units
@@ -329,7 +393,7 @@ export const ContractType = (() => {
 
         if (vanillaContractTypes.includes(contract_type)) {
             // Get available duration units for this contract type
-            const { duration_units_list } = getDurationUnitsList(contract_type);
+            const { duration_units_list } = getDurationUnitsList(symbol, contract_type);
             const available_units = duration_units_list.map(unit => unit.value);
 
             // If the requested duration_unit is available, use it; otherwise default to 'm'
@@ -362,7 +426,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getDurationMinMax = (contract_type: string, contract_expiry_type?: string) => {
+    const getDurationMinMax = (symbol: string | null, contract_type: string, contract_expiry_type?: string) => {
+        const { available_contract_types } = configFor(symbol);
         let duration_min_max: TTradeStore['duration_min_max'] =
             getPropertyValue(available_contract_types, [contract_type, 'config', 'durations', 'min_max']) || {};
 
@@ -378,9 +443,10 @@ export const ContractType = (() => {
         return { duration_min_max };
     };
 
-    const getFullContractTypes = () => available_contract_types;
+    const getFullContractTypes = (symbol: string | null) => configFor(symbol).available_contract_types;
 
-    const getStartDates = (contract_type: string, current_start_date: number) => {
+    const getStartDates = (symbol: string | null, contract_type: string, current_start_date: number) => {
+        const { available_contract_types } = configFor(symbol);
         const config: TConfig = getPropertyValue(available_contract_types, [contract_type, 'config']);
         const start_dates_list = [];
 
@@ -396,7 +462,8 @@ export const ContractType = (() => {
         return { start_date, start_dates_list };
     };
 
-    const getSessions = (contract_type: string, start_date: number) => {
+    const getSessions = (symbol: string | null, contract_type: string, start_date: number) => {
+        const { available_contract_types } = configFor(symbol);
         const config: TConfig = getPropertyValue(available_contract_types, [contract_type, 'config']) || {};
         const sessions = undefined;
         return { sessions };
@@ -548,6 +615,43 @@ export const ContractType = (() => {
         return underlying ? trading_times[date][underlying] : trading_times[date];
     };
 
+    // Finds the next date, on or after `from_moment`, that is an available trading day for
+    // `symbol` — server time in, never local time. `close?.[0] === '--'` is this codebase's
+    // existing "closed on that date" signal (see getExpiryTime below and day.tsx's picker).
+    // Missing/unusable trading_times data degrades to the unmodified candidate rather than
+    // blocking, since a WS response without an entry for the requested date is not distinguishable
+    // here from a genuinely open market.
+    const getNextTradingDayDate = async (
+        symbol: string | null,
+        from_moment: Dayjs,
+        has_intraday: boolean
+    ): Promise<string> => {
+        let candidate = has_intraday ? from_moment.clone() : from_moment.clone().add(1, 'day');
+        const MAX_ITERATIONS = 7;
+
+        for (let i = 0; i < MAX_ITERATIONS; i++) {
+            const candidate_date = candidate.format('YYYY-MM-DD');
+            let times: TTimes | undefined;
+            try {
+                // Each iteration depends on the previous one's result (step forward only while the
+                // prior candidate was closed), so this cannot be parallelized.
+                times = (await getTradingTimes(candidate_date, symbol)) as TTimes; // eslint-disable-line no-await-in-loop
+            } catch {
+                return candidate_date;
+            }
+
+            if (!Array.isArray(times?.close)) {
+                return candidate_date;
+            }
+            if (times.close[0] !== '--') {
+                return candidate_date;
+            }
+            candidate = candidate.clone().add(1, 'day');
+        }
+
+        return candidate.format('YYYY-MM-DD');
+    };
+
     const getExpiryType = (
         duration_units_list: ReturnType<typeof getDurationUnitsList>['duration_units_list'],
         expiry_type: string | null
@@ -560,9 +664,7 @@ export const ContractType = (() => {
                 return { expiry_type: 'duration' };
             }
             if (duration_units_list.length === 0) {
-                return {
-                    expiry_type: null,
-                };
+                return { expiry_type };
             }
         }
 
@@ -581,7 +683,11 @@ export const ContractType = (() => {
             const moment_start = toMoment(start_date);
             const moment_expiry = toMoment(expiry_date);
 
-            if (!hasIntradayDurationUnit(duration_units_list)) {
+            // Advance a same-day date only when the units are KNOWN to be daily-only. An empty list
+            // means the symbol's contracts_for is not cached yet (the first cascade after a reload
+            // runs before it arrives) — treating that as daily-only pushed a restored same-day end
+            // date to tomorrow on every refresh of an intraday-capable symbol.
+            if (duration_units_list.length > 0 && !hasIntradayDurationUnit(duration_units_list)) {
                 const is_invalid = moment_expiry.isSameOrBefore(moment_start, 'day');
                 proper_expiry_date = (is_invalid ? moment_start.clone().add(1, 'day') : moment_expiry).format(
                     'YYYY-MM-DD'
@@ -621,6 +727,10 @@ export const ContractType = (() => {
                 end_time = market_close_time;
             } else {
                 const start_moment = start_date ? buildMoment(start_date, start_time) : (ServerTime.get() as Dayjs);
+                // `HH:mm` is deliberate here, not a gap: no same-day picker (TimeGridPicker,
+                // adjusted_start_time, getClosestTimeToCurrentGMT) ever offers seconds, and the API
+                // accepts/echoes same-day seconds unchanged regardless — see the Evidence section of
+                // proposal.md for the probe that confirmed this.
                 const end_moment = buildMoment(expiry_date, expiry_time);
 
                 end_time = end_moment.format('HH:mm');
@@ -628,9 +738,24 @@ export const ContractType = (() => {
                     const is_end_of_day = start_moment.get('hours') === 23 && start_moment.get('minute') >= 55;
                     const is_end_of_session =
                         sessions && !isSessionAvailable(sessions, start_moment.clone().add(5, 'minutes'));
-                    end_time = start_moment.clone().add(is_end_of_day || is_end_of_session ? 0 : 5, 'minutes');
-                    // Set the end_time to be multiple of 5 to be equal as the SELECTED_TIME that shown to the client.
-                    end_time = setMinuteMultipleByFive(end_time as Dayjs).format('HH:mm');
+                    // Only round when 5 minutes was actually added: is_end_of_day/is_end_of_session
+                    // already decided not to push the clamp past the end of the day, and rounding
+                    // that unrounded value can roll `.minute(60)` into the next day (DCE-005).
+                    const should_add_five_minutes = !(is_end_of_day || is_end_of_session);
+                    end_time = start_moment.clone().add(should_add_five_minutes ? 5 : 0, 'minutes');
+                    if (should_add_five_minutes) {
+                        // Set the end_time to be multiple of 5 to be equal as the SELECTED_TIME that shown to the client.
+                        const rounded = setMinuteMultipleByFive(end_time as Dayjs);
+                        // The above rounding can still push the minute to 60 for a start moment in
+                        // the last ~9 minutes of the day (e.g. 23:51 + 5 = 23:56, rounds up to
+                        // "23:60"), rolling into the next day. The caller pairs this HH:mm with the
+                        // *unchanged* expiry_date, so a rollover here yields a date_expiry in the
+                        // past (DCE-005) — clamp to the end of the start day instead of crossing it.
+                        end_time = rounded.isSame(start_moment, 'day')
+                            ? rounded
+                            : start_moment.clone().hour(23).minute(59);
+                    }
+                    end_time = (end_time as Dayjs).format('HH:mm');
                 }
             }
         }
@@ -639,11 +764,21 @@ export const ContractType = (() => {
 
     const setMinuteMultipleByFive = (moment_obj: Dayjs) => moment_obj.minute(Math.ceil(moment_obj.minute() / 5) * 5);
 
-    const getTradeTypes = (contract_type: string) => ({
-        trade_types: getPropertyValue(available_contract_types, [contract_type, 'config', 'trade_types']),
+    const getTradeTypes = (symbol: string | null, contract_type: string) => ({
+        trade_types: getPropertyValue(configFor(symbol).available_contract_types, [
+            contract_type,
+            'config',
+            'trade_types',
+        ]),
     });
 
-    const getBarriers = (contract_type: string, expiry_type: string, stored_barrier_value?: string) => {
+    const getBarriers = (
+        symbol: string | null,
+        contract_type: string,
+        expiry_type: string,
+        stored_barrier_value?: string
+    ) => {
+        const { available_contract_types } = configFor(symbol);
         const barriers =
             (getPropertyValue(available_contract_types, [contract_type, 'config', 'barriers']) as TBarriers) || {};
         const barrier_values = barriers[expiry_type] || {};
@@ -656,7 +791,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getBasis = (contract_type: string, basis: string) => {
+    const getBasis = (symbol: string | null, contract_type: string, basis: string) => {
+        const { available_contract_types } = configFor(symbol);
         const arr_basis: string[] = getPropertyValue(available_contract_types, [contract_type, 'basis']) || [];
         const localized_basis = getLocalizedBasis();
         const basis_list = arr_basis.reduce<TTextValueStrings[]>(
@@ -670,25 +806,38 @@ export const ContractType = (() => {
         };
     };
 
-    const getAccumulatorRange = (contract_type: string) => ({
+    const getAccumulatorRange = (symbol: string | null, contract_type: string) => ({
         accumulator_range_list:
-            (getPropertyValue(available_contract_types, [contract_type, 'config', 'growth_rate_range']) as number[]) ||
-            [],
+            (getPropertyValue(configFor(symbol).available_contract_types, [
+                contract_type,
+                'config',
+                'growth_rate_range',
+            ]) as number[]) || [],
     });
 
-    const getBarrierChoices = (contract_type: string, stored_barrier_choices = [] as string[]) => ({
+    const getBarrierChoices = (
+        symbol: string | null,
+        contract_type: string,
+        stored_barrier_choices = [] as string[]
+    ) => ({
         barrier_choices: stored_barrier_choices.length
             ? stored_barrier_choices
-            : getPropertyValue(available_contract_types, [contract_type, 'config', 'barrier_choices']) || [],
+            : getPropertyValue(configFor(symbol).available_contract_types, [
+                  contract_type,
+                  'config',
+                  'barrier_choices',
+              ]) || [],
     });
 
-    const getPayoutChoices = (contract_type: string): { payout_choices: string[] } => {
+    const getPayoutChoices = (symbol: string | null, contract_type: string): { payout_choices: string[] } => {
+        const { available_contract_types } = configFor(symbol);
         const choices: number[] =
             getPropertyValue(available_contract_types, [contract_type, 'config', 'payout_choices']) || [];
         return { payout_choices: choices.map(String) };
     };
 
-    const getMultiplierRange = (contract_type: string, multiplier: number) => {
+    const getMultiplierRange = (symbol: string | null, contract_type: string, multiplier: number) => {
+        const { available_contract_types } = configFor(symbol);
         const arr_multiplier: number[] =
             getPropertyValue(available_contract_types, [contract_type, 'config', 'multiplier_range']) || [];
 
@@ -698,7 +847,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getCancellation = (contract_type: string, cancellation_duration: string) => {
+    const getCancellation = (symbol: string | null, contract_type: string, cancellation_duration: string) => {
+        const { available_contract_types } = configFor(symbol);
         const arr_cancellation_range: string[] =
             getPropertyValue(available_contract_types, [contract_type, 'config', 'cancellation_range']) || [];
         const cached_multipliers_cancellation: string[] =
@@ -723,7 +873,8 @@ export const ContractType = (() => {
         };
     };
 
-    const getEqualProps = (contract_type: string) => {
+    const getEqualProps = (symbol: string | null, contract_type: string) => {
+        const { available_contract_types } = configFor(symbol);
         const base_contract_type = /^(.*)_equal$/.exec(contract_type)?.[1];
 
         if (base_contract_type && !available_contract_types[base_contract_type]) {
@@ -752,9 +903,10 @@ export const ContractType = (() => {
         getTradingEvents,
         getTradingDays,
         getTradingTimes,
-        getContractCategories: () => ({
-            contract_types_list: available_categories,
-            non_available_contract_types_list: non_available_categories,
+        getNextTradingDayDate,
+        getContractCategories: (symbol: string | null) => ({
+            contract_types_list: configFor(symbol).available_categories,
+            non_available_contract_types_list: configFor(symbol).non_available_categories,
         }),
         processContractsForResponse,
     };

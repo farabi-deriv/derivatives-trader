@@ -23,6 +23,7 @@ const AllowEquals = observer(({ is_minimized }: TTradeParametersProps) => {
         is_market_closed,
         is_automation_params_locked,
         onChange,
+        symbol,
     } = useTraderStore();
     const { isDesktop } = useDevice();
     const { addSnackbar } = useSnackbar();
@@ -32,7 +33,7 @@ const AllowEquals = observer(({ is_minimized }: TTradeParametersProps) => {
 
     const [is_open, setIsOpen] = React.useState(false);
 
-    const has_callputequal_duration = hasDurationForCallPutEqual(contract_types_list, duration_unit);
+    const has_callputequal_duration = hasDurationForCallPutEqual(symbol, contract_types_list, duration_unit);
     const has_callputequal = hasCallPutEqual(contract_types_list);
     const has_allow_equals = (has_callputequal_duration || expiry_type === 'endtime') && has_callputequal;
 

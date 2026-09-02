@@ -185,6 +185,12 @@ describe('TradeStore', () => {
         ) as typeof tradeStore.proposal_requests;
     });
 
+    describe('updateStore vs computed fields', () => {
+        it('does not throw when a diff carries contract_expiry_type', () => {
+            expect(() => tradeStore.updateStore({ contract_expiry_type: 'daily' } as never)).not.toThrow();
+        });
+    });
+
     describe('Initialization', () => {
         it('should initialize with correct default values', () => {
             expect(tradeStore.amount).toBe(2);
@@ -1465,7 +1471,10 @@ describe('TradeStore', () => {
             expect(tradeStore.duration_unit).toBe('t');
         });
 
-        it('applies the configured default on first activation even when the retained duration is valid', async () => {
+        it('keeps a valid retained duration in preference to the configured default', async () => {
+            // Product decision: your last-used duration wins whenever it is usable for the contract.
+            // The configured preset is a starting point for a duration that does not fit, not an
+            // override. Genuine trade-type switches still apply the preset via applyDefaultDuration.
             tradeStore.contract_type = TRADE_TYPES.RISE_FALL; // configured default: 5 ticks
             tradeStore.duration = 8; // valid tick duration, but not the configured default
             tradeStore.duration_unit = 't';
@@ -1474,13 +1483,10 @@ describe('TradeStore', () => {
                 { value: 't', text: 'Ticks' },
                 { value: 'm', text: 'Minutes' },
             ];
-            // duration_default_applied_for starts '' -> this is the first time the type is active.
-
             await tradeStore.processContractsForV2();
 
-            expect(tradeStore.duration).toBe(5);
+            expect(tradeStore.duration).toBe(8);
             expect(tradeStore.duration_unit).toBe('t');
-            expect(tradeStore.duration_default_applied_for).toBe(TRADE_TYPES.RISE_FALL);
         });
 
         it('leaves a valid manual duration unchanged on a later symbol change for the same type', async () => {
@@ -1490,7 +1496,6 @@ describe('TradeStore', () => {
             tradeStore.duration_min_max = { tick: { min: 1, max: 10 } };
             tradeStore.duration_units_list = [{ value: 't', text: 'Ticks' }];
             // The default was already applied for this type on an earlier run.
-            tradeStore.duration_default_applied_for = TRADE_TYPES.RISE_FALL;
 
             await tradeStore.processContractsForV2();
 
@@ -1501,7 +1506,6 @@ describe('TradeStore', () => {
         it('leaves a retained duration unchanged when it is valid for the new symbol', async () => {
             setStaleDurationState(30, 'm'); // 30 minutes is within [15 minutes, 1 day]
             // Default already applied for this type -> a valid retained value is preserved.
-            tradeStore.duration_default_applied_for = TRADE_TYPES.RISE_FALL;
 
             await tradeStore.processContractsForV2();
 
@@ -1530,7 +1534,8 @@ describe('TradeStore', () => {
 
         it('re-validates the corrected duration so a stale validation error cannot block the proposal', async () => {
             setStaleDurationState(2, 'm');
-            tradeStore.contract_expiry_type = 'intraday';
+            // contract_expiry_type is derived from these; setStaleDurationState(2, 'm') already
+            // puts the selection in the intraday bucket.
             tradeStore.form_components = ['duration', 'amount'];
             tradeStore.validation_rules = {
                 duration: { rules: [['number', { min: 15, max: 1440 }]] },
@@ -1546,7 +1551,7 @@ describe('TradeStore', () => {
     });
 
     describe('applyDefaultDuration', () => {
-        it('applies the configured default for the current type and records its group', async () => {
+        it('applies the configured default for the current type', async () => {
             tradeStore.contract_type = TRADE_TYPES.HIGH_LOW; // configured default: 10 ticks
             tradeStore.duration_min_max = { tick: { min: 1, max: 10 } };
             tradeStore.duration_units_list = [{ value: 't', text: 'Ticks' }];
@@ -1563,7 +1568,6 @@ describe('TradeStore', () => {
                 expiry_type: 'duration',
             });
             // Tracked by trade-type group key, not the raw contract type.
-            expect(tradeStore.duration_default_applied_for).toBe('higher_lower');
         });
 
         it('records the shared group for Up/Down turbos sub-types', async () => {
@@ -1573,8 +1577,6 @@ describe('TradeStore', () => {
             jest.spyOn(tradeStore, 'onChangeMultiple').mockResolvedValue(undefined as never);
 
             await tradeStore.applyDefaultDuration();
-
-            expect(tradeStore.duration_default_applied_for).toBe('turbos');
         });
 
         it('does nothing when no contract type is set', async () => {
@@ -1586,7 +1588,6 @@ describe('TradeStore', () => {
             await tradeStore.applyDefaultDuration();
 
             expect(on_change_multiple_spy).not.toHaveBeenCalled();
-            expect(tradeStore.duration_default_applied_for).toBe('');
         });
     });
 

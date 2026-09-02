@@ -98,7 +98,7 @@ describe('hasDurationForCallPutEqual', () => {
     const duration_unit = 't';
     const contract_start_type = 'spot';
     it('Should return true if contract_types_list has rise_fall_equal and mock has its duration values', () => {
-        expect(hasDurationForCallPutEqual(contract_types_list, duration_unit)).toBeTruthy();
+        expect(hasDurationForCallPutEqual('R_100', contract_types_list, duration_unit)).toBeTruthy();
     });
     it('should return false if contract_types_list does not have rise_fall_equal', () => {
         const contract_types_list = {
@@ -112,6 +112,6 @@ describe('hasDurationForCallPutEqual', () => {
                 ],
             },
         };
-        expect(hasDurationForCallPutEqual(contract_types_list, duration_unit)).toBeFalsy();
+        expect(hasDurationForCallPutEqual('R_100', contract_types_list, duration_unit)).toBeFalsy();
     });
 });

@@ -174,7 +174,7 @@ describe('TradeStore - barrier support derived from the API default barrier', ()
         // field keeps an offset like +193.02 where an absolute price is now required.
         beforeEach(() => {
             jest.spyOn(ContractType, 'getBarriers').mockImplementation(
-                (_contract_type: string, expiry_type: string) =>
+                (_symbol: string | null, _contract_type: string, expiry_type: string) =>
                     ({
                         barrier_count: 1,
                         barrier_1: { tick: '+39.37', intraday: '+193.02', daily: '240225.42' }[expiry_type] ?? '',

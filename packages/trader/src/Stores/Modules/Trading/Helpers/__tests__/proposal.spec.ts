@@ -486,5 +486,23 @@ describe('Proposal Helper Functions', () => {
 
             expect(result.DIGITEVEN).toHaveProperty('barrier', '5');
         });
+
+        it('does not fall back to last_digit for a barrier contract without digit prediction', () => {
+            // Rapid tab switching can transiently blank barrier_1; the fallback then priced the
+            // contract at the digit default (5) — "Barrier is out of acceptable range" from the API.
+            const store = {
+                ...mockTradeStore,
+                trade_types: { ONETOUCH: 'Touch' },
+                form_components: ['duration', 'amount', 'barrier'],
+                barrier_count: 1,
+                barrier: '',
+                barrier_1: '',
+                last_digit: '5',
+            };
+
+            const result = createProposalRequests(store);
+
+            expect(result.ONETOUCH.barrier).toBeUndefined();
+        });
     });
 });

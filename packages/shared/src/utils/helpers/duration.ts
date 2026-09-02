@@ -114,7 +114,9 @@ const getDurationFromString = (duration_string: string) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getExpiryType = (store: any) => {
     const { duration_unit, expiry_date, expiry_type, duration_units_list } = store;
-    const server_time = store.root_store.common.server_time;
+    // Callers pass assorted store-shaped objects; a missing root_store must degrade (toMoment(undefined)
+    // is "now"), not crash — a throw here aborts the whole trade-params cascade mid-flight.
+    const server_time = store.root_store?.common?.server_time;
 
     const duration_is_day = expiry_type === 'duration' && duration_unit === 'd';
     const duration_is_endtime = expiry_type === 'endtime';

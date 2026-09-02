@@ -119,6 +119,7 @@ const underlying = 'R_10';
 
 describe('onChangeContractType', () => {
     const trade_store = mockStore({}).modules.trade;
+    trade_store.symbol = underlying; // lookups resolve per symbol
     const resulting_store = {
         barrier_2: '',
         basis: 'stake',
@@ -187,15 +188,24 @@ describe('onChangeContractType', () => {
     });
     it('should return an object with correct store values for Accumulators', () => {
         trade_store.contract_type = TRADE_TYPES.ACCUMULATOR;
+        // barrier_1/barrier_2 are no longer emitted as blanks when the resolved bucket offers no
+        // barrier — the store's existing value is left alone (blank writes were priced as
+        // barrier-less proposals during rapid tab switches).
+        const { barrier_2: _no_blank_barrier, ...accumulator_expected } = resulting_store;
         expect(onChangeContractType(trade_store)).toMatchObject({
-            ...resulting_store,
+            ...accumulator_expected,
             accumulator_range_list: [0.01, 0.02, 0.03, 0.04, 0.05],
-            barrier_1: '',
+            // barrier_1 is no longer emitted as a blank when the resolved bucket offers no barrier —
+            // the store's existing value is left alone (blank writes were priced as barrier-less
+            // proposals during rapid tab switches).
             barrier_choices: [],
             barrier_count: 2,
             duration_min_max: {},
             duration_units_list: [],
-            expiry_type: null,
+            // Accumulators have no duration units; an empty list now preserves the incoming
+            // expiry_type rather than nulling it (nulling erased a restored 'endtime' on cold load).
+            // Inert here: accumulator proposals carry no duration/expiry fields.
+            expiry_type: trade_store.expiry_type,
             form_components: ['amount', 'take_profit', 'accumulator', 'accu_info_display'],
             trade_types: {
                 ACCU: 'ACCU',

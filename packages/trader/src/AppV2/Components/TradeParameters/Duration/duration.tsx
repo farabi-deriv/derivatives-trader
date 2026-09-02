@@ -39,6 +39,7 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         duration_unit,
         duration_units_list,
         duration,
+        expiry_date,
         expiry_epoch,
         expiry_time,
         expiry_type,
@@ -99,22 +100,20 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         }
     }, [expiry_epoch]);
 
-    // When switching to days unit, set tomorrow as default
+    // Reads the daily expiry seeded by TradeStore; never writes it.
+    // The store commits `expiry_date` first and the close time a `trading_times` round trip later, so
+    // the second branch replaces the provisional '23:59:59' once the real one lands — markets closing
+    // earlier (forex on a Friday, ~20:55 GMT) would otherwise keep the fallback for the whole mount.
+    // A user edit is safe: `handleSave` writes draft and store together, so they agree and it no-ops.
     useEffect(() => {
-        if (duration_unit === 'd' && !saved_expiry_date) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const formatted_date = tomorrow.toISOString().split('T')[0];
-
-            setSavedExpiryDate(formatted_date);
-            setSavedExpiryTime('23:59:59');
-
-            onChangeMultiple({
-                expiry_date: `${formatted_date}T23:59:59Z`,
-                expiry_type: 'endtime',
-            });
+        if (duration_unit !== 'd' || !expiry_date) return;
+        if (!saved_expiry_date) {
+            setSavedExpiryDate(expiry_date);
+            setSavedExpiryTime(expiry_time || '23:59:59');
+        } else if (expiry_time && saved_expiry_date === expiry_date && saved_expiry_time !== expiry_time) {
+            setSavedExpiryTime(expiry_time);
         }
-    }, [duration_unit, saved_expiry_date]);
+    }, [duration_unit, saved_expiry_date, saved_expiry_time, expiry_date, expiry_time]);
 
     useEffect(() => {
         if (isInitialMount.current) {

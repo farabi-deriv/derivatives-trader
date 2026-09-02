@@ -10,19 +10,19 @@ export const onChangeStartDate = async (store: TTradeStore) => {
 
     // All contracts now default to spot behavior since start_type was removed from API
     const contract_start_type = 'spot';
-    const obj_sessions = ContractType.getSessions(contract_type, start_date);
+    const obj_sessions = ContractType.getSessions(store.symbol, contract_type, start_date);
     const sessions = obj_sessions.sessions;
     const obj_start_time = ContractType.getStartTime(sessions, start_date, start_time);
 
-    const obj_duration_units_list = ContractType.getDurationUnitsList(contract_type);
+    const obj_duration_units_list = ContractType.getDurationUnitsList(store.symbol, contract_type);
     const duration_units_list = obj_duration_units_list.duration_units_list;
-    const obj_duration_unit = ContractType.getDurationUnit(duration_unit, contract_type);
+    const obj_duration_unit = ContractType.getDurationUnit(store.symbol, duration_unit, contract_type);
 
     const obj_expiry_type = ContractType.getExpiryType(duration_units_list, expiry_type);
     expiry_type = obj_expiry_type.expiry_type;
     const obj_expiry_date = ContractType.getExpiryDate(duration_units_list, store.expiry_date, expiry_type, start_date);
 
-    const obj_duration_min_max = ContractType.getDurationMinMax(contract_type);
+    const obj_duration_min_max = ContractType.getDurationMinMax(store.symbol, contract_type);
 
     return {
         contract_start_type, // Already set to 'spot' above

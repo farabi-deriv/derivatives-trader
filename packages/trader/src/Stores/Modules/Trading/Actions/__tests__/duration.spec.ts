@@ -2,7 +2,7 @@ import { dayjs, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 
 import { ContractType } from '../../Helpers/contract-type';
-import { onChangeContractType, onChangeExpiry } from '../duration';
+import { onChangeContractType } from '../duration';
 
 jest.mock('@deriv/shared', () => {
     const barrier_intraday = '+0.000';
@@ -151,31 +151,6 @@ const trade_store = {
     },
     strike_price_choices: { barrier: barrier_1, barrier_choices },
 };
-
-describe('onChangeExpiry', () => {
-    beforeAll(() => {
-        ContractType.buildContractTypesConfig(underlying);
-    });
-    it('should return an object with expiry type only when duration_unit === m', () => {
-        expect(onChangeExpiry(trade_store)).toMatchObject({
-            contract_expiry_type: 'intraday',
-        });
-    });
-    it('should return an object with expiry type only when duration_unit === h', () => {
-        expect(onChangeExpiry({ ...trade_store, duration_unit: 'h' })).toMatchObject({
-            contract_expiry_type: 'intraday',
-        });
-    });
-    it('should return the expiry type only when duration_unit === d, without re-seeding barriers', () => {
-        // Barrier re-seeding moved to the trade-store reaction that owns `contract_expiry_type`:
-        // it can see the transition directly, whereas this function could only infer one by
-        // disagreeing with the store — which stopped being a reliable signal once the store
-        // derived the value correctly. See barrier-support.spec.ts for the re-seed coverage.
-        const result = onChangeExpiry({ ...trade_store, duration_unit: 'd' });
-
-        expect(result).toEqual({ contract_expiry_type: 'daily' });
-    });
-});
 
 describe('onChangeContractType', () => {
     const daily_min_max = { min: 86400, max: 31536000 };

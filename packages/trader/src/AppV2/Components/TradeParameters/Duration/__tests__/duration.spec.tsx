@@ -6,6 +6,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import TraderProviders from '../../../../../trader-providers';
+import DurationDesktop from '../duration-desktop';
 import Duration from '../index';
 
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
@@ -238,6 +239,49 @@ describe('Duration', () => {
     });
 });
 
+describe('DurationDesktop', () => {
+    let default_trade_store: TCoreStores, mockOnChangeMultiple: jest.Mock;
+
+    beforeEach(() => {
+        mockOnChangeMultiple = jest.fn();
+        default_trade_store = mockStore({
+            modules: {
+                trade: {
+                    onChange: jest.fn(),
+                    validation_errors: { duration: [] },
+                    duration: 1,
+                    duration_unit: 'd',
+                    duration_units_list: [{ value: 'd', text: 'days' }],
+                    expiry_type: 'duration',
+                    expiry_time: '',
+                    expiry_date: '',
+                    onChangeMultiple: mockOnChangeMultiple,
+                    duration_min_max: {
+                        daily: { min: 86400, max: 31536000 },
+                    },
+                    start_time: null,
+                    symbol: 'frxUSDJPY',
+                    contract_type: 'touchnotouch',
+                    active_symbols: [],
+                },
+            },
+            common: {
+                server_time: dayjs('2024-10-10T11:23:10.895Z'),
+            },
+        });
+    });
+
+    it('[DCE-002] does not seed a daily expiry default on mount', () => {
+        render(
+            <TraderProviders store={default_trade_store}>
+                <DurationDesktop />
+            </TraderProviders>
+        );
+
+        expect(mockOnChangeMultiple).not.toHaveBeenCalled();
+    });
+});
+
 describe('Duration - Mobile', () => {
     let default_trade_store: TCoreStores, mockOnChangeMultiple: jest.Mock;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -443,6 +487,47 @@ describe('Duration - Mobile', () => {
         await userEvent.click(screen.getByTestId('dt-actionsheet-overlay'));
 
         expect(mockOnChangeMultiple).not.toHaveBeenCalled();
+    });
+
+    it('[DCE-002] does not seed a daily expiry default on mount (mobile)', () => {
+        default_trade_store.modules.trade.duration_unit = 'd';
+        default_trade_store.modules.trade.saved_expiry_date_v2 = '';
+        mockDurationMobile();
+
+        expect(mockOnChangeMultiple).not.toHaveBeenCalled();
+    });
+
+    it('[DCE-002] upgrades the provisional expiry time once the store resolves the real close time', () => {
+        // The store seeds expiry_date first, the close time a trading_times round trip later. The
+        // field must land on the real close time, not the 23:59:59 fallback shown during the gap.
+        default_trade_store.modules.trade.duration_unit = 'd';
+        default_trade_store.modules.trade.saved_expiry_date_v2 = '';
+        default_trade_store.modules.trade.expiry_date = '2026-08-28';
+        default_trade_store.modules.trade.expiry_time = null;
+
+        // Provisional pass. setSavedExpiryDateV2 is a jest.fn() so the store date does not persist
+        // and the label stays blank, but setSavedExpiryTime is local state and holds the fallback.
+        const { rerender } = render(
+            <TraderProviders store={default_trade_store}>
+                <Duration is_minimized={false} />
+            </TraderProviders>
+        );
+
+        // Mirror the store write the mocked setter would have made, then land the real close time.
+        // observer() wraps in React.memo and mockStore is not observable, so a same-props rerender
+        // short-circuits — flipping is_minimized forces the re-read without remounting.
+        act(() => {
+            default_trade_store.modules.trade.saved_expiry_date_v2 = '2026-08-28';
+            default_trade_store.modules.trade.expiry_time = '20:55:00';
+        });
+        rerender(
+            <TraderProviders store={default_trade_store}>
+                <Duration is_minimized />
+            </TraderProviders>
+        );
+
+        expect(screen.getByDisplayValue(/28 Aug 2026, 20:55:00 GMT/)).toBeInTheDocument();
+        expect(screen.queryByDisplayValue(/23:59:59/)).not.toBeInTheDocument();
     });
 
     it('should enable the header save and commit an endtime change when switching to the End time tab (mobile)', async () => {

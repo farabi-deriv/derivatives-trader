@@ -56,6 +56,10 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
         return boundaries.start[0]?.clone().add(5, 'minutes').format('HH:mm') || getClosestTimeToCurrentGMT(5);
     }, [server_time, market_open_times, market_close_times]);
 
+    // Daily-only contracts (no t/s/m/h units) keep full HH:mm:ss precision through the picker;
+    // intraday contracts stay on the HH:mm time-grid they've always used.
+    const is_intraday_contract = useMemo(() => hasIntradayDurationUnit(duration_units_list), [duration_units_list]);
+
     // Helper to check if a date is today
     const isToday = useCallback((date: Date) => {
         const today = new Date();
@@ -97,10 +101,15 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
                 }
                 return adjusted_start_time;
             }
-            // For future dates, use stored expiry_time if available (e.g. market close time)
-            return expiry_time ? expiry_time.substring(0, 5) : '23:59';
+            // For future dates, use stored expiry_time if available (e.g. market close time).
+            // Non-intraday (daily-only) contracts keep full HH:mm:ss precision; intraday contracts
+            // stay on the HH:mm grid the time picker offers.
+            if (is_intraday_contract) {
+                return expiry_time ? expiry_time.substring(0, 5) : '23:59';
+            }
+            return expiry_time || '23:59:59';
         },
-        [expiry_time, adjusted_start_time, isToday]
+        [expiry_time, adjusted_start_time, isToday, is_intraday_contract]
     );
 
     // Local state - not saved to store until Save is clicked
@@ -119,14 +128,13 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
 
     // Calculate if time picker should be enabled (like mobile's is_24_hours_contract)
     const is_24_hours_contract = useMemo(() => {
-        const has_intraday_duration_unit = hasIntradayDurationUnit(duration_units_list);
         const is_selected_date_today = isToday(selectedDate);
 
         // Time picker is enabled only when:
         // 1. Selected date is today (or start_date is set)
         // 2. AND contract has intraday duration units (t, s, m, h)
-        return (!!start_date || is_selected_date_today) && has_intraday_duration_unit;
-    }, [duration_units_list, selectedDate, start_date, isToday]);
+        return (!!start_date || is_selected_date_today) && is_intraday_contract;
+    }, [is_intraday_contract, selectedDate, start_date, isToday]);
 
     // Disable date selection for contracts that don't support daily duration (e.g. Daily Resets)
     // Mirrors mobile logic in day.tsx line 221
@@ -141,7 +149,7 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
 
     // Update time when adjusted_start_time changes (for today's date)
     useEffect(() => {
-        if (isToday(selectedDate) && selectedTime === '23:59') {
+        if (isToday(selectedDate) && (selectedTime === '23:59' || selectedTime === '23:59:59')) {
             setSelectedTime(adjusted_start_time);
         }
     }, [adjusted_start_time, isToday, selectedDate, selectedTime]);
@@ -252,14 +260,14 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
                         trading_times.close[0] !== '--'
                     ) {
                         const market_close_time = trading_times.close.slice(-1)[0];
-                        setSelectedTime(market_close_time.substring(0, 5));
+                        setSelectedTime(is_intraday_contract ? market_close_time.substring(0, 5) : market_close_time);
                     } else {
-                        setSelectedTime('23:59');
+                        setSelectedTime(is_intraday_contract ? '23:59' : '23:59:59');
                     }
                 }
             }
         },
-        [isToday, adjusted_start_time, symbol]
+        [isToday, adjusted_start_time, symbol, is_intraday_contract]
     );
 
     const handleDatePickerClose = useCallback(() => {

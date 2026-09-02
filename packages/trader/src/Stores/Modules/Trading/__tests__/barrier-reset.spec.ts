@@ -209,23 +209,24 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
         });
 
         it('derives relative support for Touch/No Touch from a tick default barrier of +39.37', () => {
-            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH, contract_expiry_type: 'tick' });
-            expect(trade_store.getBarrierSupportFromApiDefault()).toBe('relative');
+            trade_store.updateStore({ symbol: '1HZ50V', contract_type: TRADE_TYPES.TOUCH });
+            // contract_expiry_type is derived from the selection now, so name the bucket explicitly.
+            expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.TOUCH, 'tick')).toBe('relative');
         });
 
         it('derives absolute support for Turbos from a bare-number tick default barrier', () => {
-            trade_store.updateStore({ contract_type: TRADE_TYPES.TURBOS.LONG, contract_expiry_type: 'tick' });
-            expect(trade_store.getBarrierSupportFromApiDefault()).toBe('absolute');
+            trade_store.updateStore({ symbol: '1HZ50V', contract_type: TRADE_TYPES.TURBOS.LONG });
+            expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.TURBOS.LONG, 'tick')).toBe('absolute');
         });
 
         it('derives absolute support for a forex barrier contract from the default-barrier sign', () => {
-            trade_store.updateStore({ contract_type: TRADE_TYPES.HIGH_LOW, contract_expiry_type: 'intraday' });
-            expect(trade_store.getBarrierSupportFromApiDefault()).toBe('absolute');
+            trade_store.updateStore({ symbol: '1HZ50V', contract_type: TRADE_TYPES.HIGH_LOW });
+            expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.HIGH_LOW, 'intraday')).toBe('absolute');
         });
 
         it('returns null when no API default barrier is available for the contract type + expiry_type', () => {
-            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH, contract_expiry_type: 'daily' });
-            expect(trade_store.getBarrierSupportFromApiDefault()).toBeNull();
+            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH });
+            expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.TOUCH, 'daily')).toBeNull();
         });
     });
 
@@ -254,11 +255,6 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             expect(result).toEqual({
                 barrier_1: '1.0000', // Default when no tick data available
                 barrier_2: '',
-                duration: 5,
-                duration_unit: 'm',
-                expiry_type: 'duration',
-                expiry_date: null,
-                expiry_time: null,
             });
 
             // Should clear localStorage
@@ -277,12 +273,51 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             expect(result).toEqual({
                 barrier_1: '1.23460', // spot + pip_size increment
                 barrier_2: '',
-                duration: 5,
-                duration_unit: 'm',
-                expiry_type: 'duration',
-                expiry_date: null,
-                expiry_time: null,
             });
+        });
+
+        it("seeds the barrier from the INCOMING symbol's contracts_for, not the outgoing one", () => {
+            // The reset runs before `this.symbol` is updated, so defaulting the lookup to
+            // `this.symbol` read the market being left. With two tabs open the incoming symbol's
+            // contracts_for is already cached, so its own default barrier is available.
+            ContractType.processContractsForResponse(
+                {
+                    contracts_for: {
+                        available: [
+                            {
+                                barrier: '+39.37', // synthetics use relative barriers
+                                barriers: 1,
+                                contract_category: 'touchnotouch',
+                                contract_type: 'ONETOUCH',
+                                expiry_type: 'daily',
+                                max_contract_duration: '365d',
+                                min_contract_duration: '1d',
+                                sentiment: 'high_vol',
+                                underlying_symbol: '1HZ100V',
+                            },
+                        ],
+                        non_available: [],
+                    },
+                } as never,
+                '1HZ100V'
+            );
+            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH, duration_unit: 'd', expiry_type: 'duration' });
+
+            const result = trade_store.handleTradeParamsResetOnSymbolChange('EURUSD', '1HZ100V');
+
+            expect(result?.barrier_1).toBe('+39.37');
+        });
+
+        it('writes no duration or expiry values, because it cannot know them yet', () => {
+            const result = trade_store.handleTradeParamsResetOnSymbolChange('EURUSD', '1HZ100V');
+
+            expect(result).not.toHaveProperty('duration');
+            expect(result).not.toHaveProperty('duration_unit');
+            expect(result).not.toHaveProperty('expiry_type');
+            // Critically the seeded expiry survives: wiping it left daily-only contracts pricing by
+            // duration with no date_expiry. onChangeExpiry re-derives the time for the new symbol.
+            expect(result).not.toHaveProperty('expiry_date');
+            expect(result).not.toHaveProperty('expiry_time');
         });
 
         it('should reset barriers when switching from forex to synthetic', () => {
@@ -291,11 +326,6 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             expect(result).toEqual({
                 barrier_1: '+0.1',
                 barrier_2: '',
-                duration: 5,
-                duration_unit: 't',
-                expiry_date: null,
-                expiry_time: null,
-                expiry_type: 'duration',
             });
 
             // Should clear localStorage
@@ -335,22 +365,9 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             expect(localStorageMock.removeItem).not.toHaveBeenCalled();
         });
 
-        it('should reset UI store duration units when switching from synthetic to forex', () => {
-            const result = trade_store.handleTradeParamsResetOnSymbolChange('1HZ100V', 'EURUSD');
-
-            // Should have reset UI store duration units to minutes for forex
-            expect(mockRootStore.ui.advanced_duration_unit).toBe('m');
-            expect(mockRootStore.ui.simple_duration_unit).toBe('m');
-        });
-
-        it('should reset UI store duration units when switching from forex to synthetic', () => {
-            const result = trade_store.handleTradeParamsResetOnSymbolChange('EURUSD', '1HZ100V');
-
-            // Should have reset UI store duration units to ticks for synthetic
-            expect(mockRootStore.ui.advanced_duration_unit).toBe('t');
-            expect(mockRootStore.ui.simple_duration_unit).toBe('t');
-        });
-
+        // The UI-store duration-unit writes were removed with the rest of the market-name guessing:
+        // 'forex -> minutes' is wrong for a daily-only pair, they were written before contracts_for
+        // was known, and nothing in the monorepo reads advanced_duration_unit / simple_duration_unit.
         it('should clear all localStorage keys when switching markets', () => {
             trade_store.handleTradeParamsResetOnSymbolChange('1HZ100V', 'EURUSD');
 

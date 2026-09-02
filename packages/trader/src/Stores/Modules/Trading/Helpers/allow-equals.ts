@@ -18,6 +18,7 @@ export const hasCallPutEqual = (contract_type_list: THasDurationForCallPutEqual[
 };
 
 export const hasDurationForCallPutEqual = (
+    symbol: string | null,
     contract_type_list: THasDurationForCallPutEqual['contract_type_list'],
     duration_unit: THasDurationForCallPutEqual['duration_unit']
 ) => {
@@ -29,7 +30,7 @@ export const hasDurationForCallPutEqual = (
     }, []);
 
     const contract_duration_list = contract_list.map(list => ({
-        [list]: getPropertyValue(ContractType.getFullContractTypes(), [list, 'config', 'durations', 'units_display']),
+        [list]: getPropertyValue(ContractType.getFullContractTypes(symbol), [list, 'config', 'durations', 'units_display']),
     }));
 
     // Check whether rise fall equal is exists and has the current store duration unit

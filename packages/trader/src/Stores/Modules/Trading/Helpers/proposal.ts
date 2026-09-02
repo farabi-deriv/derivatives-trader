@@ -263,7 +263,10 @@ export const createProposalRequestForContract = (store: TTradeStore, type_of_con
             !isAccumulatorContract(type_of_contract) &&
             !isTurbosContract(type_of_contract) &&
             !isRiseFallContractType(type_of_contract) && {
-                barrier: store.barrier || store.barrier_1 || store.last_digit,
+                barrier:
+                    store.barrier ||
+                    store.barrier_1 ||
+                    (store.form_components.indexOf('last_digit') !== -1 ? store.last_digit : undefined),
             }),
         ...(store.barrier_count === 2 &&
             !isAccumulatorContract(type_of_contract) &&

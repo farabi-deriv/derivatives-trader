@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
 import { dayjs, hasIntradayDurationUnit, trackAnalyticsEvent } from '@deriv/shared';
@@ -280,22 +280,6 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         active_symbols,
     } = useTraderStore();
 
-    // Normalize stale daily duration: when duration_unit is 'd' and no explicit end time has
-    // been saved, convert to endtime expiry with the correct default date.
-    // useLayoutEffect runs synchronously before browser paint, preventing visible flicker.
-    useLayoutEffect(() => {
-        if (duration_unit === 'd' && expiry_type !== 'endtime' && duration_units_list.length > 0) {
-            const has_intraday = hasIntradayDurationUnit(duration_units_list);
-            const default_date = has_intraday ? dayjs() : dayjs().add(1, 'days');
-            onChangeMultiple({
-                expiry_type: 'endtime',
-                expiry_date: default_date.format('YYYY-MM-DD'),
-                expiry_time: '23:59:00',
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [duration_units_list]);
-
     // Get market category for duration preset filtering
     const marketCategory = React.useMemo(() => {
         const symbolData = getSymbolMarketData(symbol, active_symbols);
@@ -571,14 +555,20 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
             return formatMinutesValue(duration);
         }
         if (duration_unit === 'd') {
-            // Display the correct default: today for intraday contracts, tomorrow for daily-only.
-            // When duration_units_list hasn't loaded yet, default to today (most 'd' contracts
-            // have intraday units) to avoid a visible tomorrow→today flicker.
+            // The store (TradeStore.processContractsForV2/applyDefaultDuration) owns the daily
+            // expiry seed, so this reads expiry_date/expiry_time once they've settled.
+            if (expiry_date) {
+                const date = dayjs(expiry_date);
+                const formattedDate = date.format('D MMM');
+                const formattedTime = expiry_time ? expiry_time.substring(0, 5) : '23:59';
+                return `${formattedDate}, ${formattedTime}`;
+            }
+            // Pre-settle fallback (the very first render, before the store has seeded expiry_date):
+            // approximate the same default so there's no blank flash. Today for intraday contracts,
+            // tomorrow for daily-only; default to today when duration_units_list hasn't loaded yet.
             const has_intraday = duration_units_list.length === 0 || hasIntradayDurationUnit(duration_units_list);
-            const expiryDate = (has_intraday ? dayjs() : dayjs().add(1, 'day')).hour(23).minute(59);
-            const formattedDate = expiryDate.format('D MMM');
-            const formattedTime = expiryDate.format('HH:mm');
-            return `${formattedDate}, ${formattedTime}`;
+            const formattedDate = (has_intraday ? dayjs() : dayjs().add(1, 'day')).format('D MMM');
+            return `${formattedDate}, 23:59`;
         }
         return `${duration} ${duration_unit}`;
     }, [
