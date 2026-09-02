@@ -946,6 +946,149 @@ describe('Stake - Mobile header actions', () => {
     });
 });
 
+describe('Multipliers stop out (mobile sheet)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useProposal } = require('AppV2/Hooks/useProposal');
+    let multipliers_mock_store: ReturnType<typeof mockStore>;
+
+    const createMultipliersStore = (trade_overrides = {}) => {
+        const store = mockStore({
+            modules: {
+                trade: {
+                    ...mockStore({}).modules.trade,
+                    amount: 10,
+                    basis: 'stake',
+                    contract_type: TRADE_TYPES.MULTIPLIER,
+                    currency: 'USD',
+                    // The defect: with Stop loss committed, the Stake sheet used to drop the Stop out row.
+                    has_stop_loss: true,
+                    is_multiplier: true,
+                    proposal_info: {
+                        [CONTRACT_TYPES.MULTIPLIER.UP]: {
+                            has_error: false,
+                            limit_order: { stop_out: { order_amount: -10 } },
+                            stake: 10,
+                        },
+                        [CONTRACT_TYPES.MULTIPLIER.DOWN]: {
+                            has_error: false,
+                            limit_order: { stop_out: { order_amount: -10 } },
+                            stake: 10,
+                        },
+                    },
+                    stop_out: -10,
+                    stop_out_level: '8160.12',
+                    trade_types: {
+                        [CONTRACT_TYPES.MULTIPLIER.UP]: 'Multiply Up',
+                        [CONTRACT_TYPES.MULTIPLIER.DOWN]: 'Multiply Down',
+                    },
+                    validation_params: {
+                        [CONTRACT_TYPES.MULTIPLIER.UP]: { stake: { max: '2000.00', min: '1.00' } },
+                        [CONTRACT_TYPES.MULTIPLIER.DOWN]: { stake: { max: '2000.00', min: '1.00' } },
+                    },
+                    ...trade_overrides,
+                },
+            },
+        });
+        store.ui.is_mobile = true;
+        // `Stake` picks the mobile/desktop variant from `modules.trade.root_store.ui.is_mobile`;
+        // mockStore doesn't wire `root_store`, so point it back at the root to mount `StakeMobile`.
+        store.modules.trade.root_store = store;
+        return store;
+    };
+
+    beforeEach(() => {
+        useProposal.mockReturnValue({ data: mockProposalData, error: null, isFetching: false });
+        multipliers_mock_store = createMultipliersStore();
+    });
+
+    const renderMobileStake = (store = multipliers_mock_store) =>
+        render(
+            <TraderProviders store={store}>
+                <ModulesProvider store={store}>
+                    <Stake is_minimized />
+                </ModulesProvider>
+            </TraderProviders>
+        );
+
+    // The mobile field's onClick lives on the input, so click the value, not the <label> text.
+    const openSheet = async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByDisplayValue('$10'));
+
+    // Each details row is keyed on its own value, so the Stop out row is replaced the moment the
+    // formatted amount lands. Settle it before tapping the label, or the click hits a detached node.
+    const openSettledSheet = async (user: ReturnType<typeof userEvent.setup>) => {
+        await openSheet(user);
+        await screen.findByText('$10.00');
+    };
+
+    // Every carousel page is mounted at once and translated into view, so page presence proves
+    // nothing — only the active item tells us which page the trader is actually looking at. That
+    // active-ness is a class with no role, testid or aria equivalent, so a query is the only way in.
+    // eslint-disable-next-line testing-library/no-node-access
+    const getActivePage = () => document.querySelector('.carousel__item--active');
+
+    it('shows the Stop out and Stop out level rows with Stop loss set', async () => {
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSheet(user);
+
+        expect(screen.getByText('Stop out')).toBeInTheDocument();
+        expect(screen.getByText('Stop out level')).toBeInTheDocument();
+        expect(screen.getByText('8160.12')).toBeInTheDocument();
+        // The amount is formatted in an effect, so it lands one commit after the sheet mounts.
+        expect(await screen.findByText('$10.00')).toBeInTheDocument();
+    });
+
+    it('opens the Stop out explanation with its percentage when the label is tapped', async () => {
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSettledSheet(user);
+        await user.click(screen.getByText('Stop out'));
+
+        await waitFor(() =>
+            expect(getActivePage()).toHaveTextContent(
+                'Your contract will be closed automatically when your loss reaches 100% of your stake.'
+            )
+        );
+    });
+
+    it('falls back to the generic Stop out explanation when no percentage can be derived', async () => {
+        const user = userEvent.setup();
+        renderMobileStake(
+            createMultipliersStore({
+                proposal_info: {
+                    [CONTRACT_TYPES.MULTIPLIER.UP]: { has_error: false },
+                    [CONTRACT_TYPES.MULTIPLIER.DOWN]: { has_error: false },
+                },
+            })
+        );
+
+        await openSettledSheet(user);
+        await user.click(screen.getByText('Stop out'));
+
+        await waitFor(() =>
+            expect(getActivePage()).toHaveTextContent(
+                'Your contract will be closed automatically when your loss reaches a certain percentage of your stake.'
+            )
+        );
+    });
+
+    it('opens the Stop out level explanation when the label is tapped', async () => {
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSettledSheet(user);
+        await user.click(screen.getByText('Stop out level'));
+
+        await waitFor(() =>
+            expect(getActivePage()).toHaveTextContent(
+                'The price at which your position closes automatically, capping your loss at your stake.'
+            )
+        );
+    });
+});
+
 describe('Vanillas stake presets', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { useProposal } = require('AppV2/Hooks/useProposal');

@@ -10,7 +10,7 @@ import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 import { TTradeStore } from 'Types';
 
-type TStakeDetailsProps = Pick<TTradeStore, 'contract_type' | 'currency' | 'has_stop_loss' | 'is_multiplier'> & {
+type TStakeDetailsProps = Pick<TTradeStore, 'contract_type' | 'currency' | 'is_multiplier'> & {
     contract_types: string[];
     details: {
         error_1?: string;
@@ -39,7 +39,6 @@ const StakeDetails = observer(
         contract_types,
         currency,
         details,
-        has_stop_loss,
         is_loading_proposal,
         is_multiplier,
         is_empty,
@@ -108,7 +107,11 @@ const StakeDetails = observer(
         const payout_title = <Localize i18n_default_text='Payout' />;
         const content = [
             {
-                is_displayed: !has_stop_loss && is_multiplier && !should_show_payout_details,
+                // Deliberately independent of Take profit / Stop loss: stop out is the platform's own
+                // liquidation point (a function of the stake and the multiplier), while an SL is an
+                // additional trader-chosen limit that may sit anywhere inside it. Hiding the harder of
+                // the two limits once an SL exists was issue #1305 — mobile has no other surface for it.
+                is_displayed: is_multiplier && !should_show_payout_details,
                 is_stop_out: true,
                 label: <Localize i18n_default_text='Stop out' />,
                 value: displayed_values.stop_out,

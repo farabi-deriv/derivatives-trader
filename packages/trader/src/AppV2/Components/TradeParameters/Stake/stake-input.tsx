@@ -164,7 +164,6 @@ const StakeInput = observer(
             currency,
             symbol,
             barrier_1,
-            has_stop_loss,
             is_accumulator,
             is_multiplier,
             is_turbos,
@@ -657,7 +656,6 @@ const StakeInput = observer(
                         contract_types={contract_types}
                         currency={currency}
                         details={details}
-                        has_stop_loss={has_stop_loss}
                         is_loading_proposal={is_loading_proposal}
                         is_multiplier={is_multiplier}
                         is_empty={!displayAmount}

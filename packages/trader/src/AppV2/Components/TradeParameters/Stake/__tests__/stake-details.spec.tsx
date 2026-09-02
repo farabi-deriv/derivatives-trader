@@ -16,7 +16,6 @@ const base_props = {
     contract_type: 'multiplier',
     contract_types: ['MULTUP'],
     currency: 'USD',
-    has_stop_loss: false,
     is_loading_proposal: false,
     is_multiplier: true,
     is_empty: false,
@@ -44,6 +43,23 @@ describe('StakeDetails multiplier info', () => {
             </TraderProviders>
         );
     };
+
+    // The component takes no risk-management input at all, so there is no state in which it can
+    // suppress the row — the Stop loss coupling that hid it (#1305) is gone from its contract.
+    it('renders the Stop out row for the multipliers variant', () => {
+        renderStakeDetails();
+
+        expect(screen.getByText('Stop out')).toBeInTheDocument();
+        expect(screen.getByText('$10.00')).toBeInTheDocument();
+    });
+
+    it('keeps the Stop out row visible with a placeholder when no stop out amount is priced', () => {
+        renderStakeDetails({ details: { ...base_props.details, stop_out: 0 } });
+
+        expect(screen.getByText('Stop out')).toBeInTheDocument();
+        expect(screen.queryByText('$10.00')).not.toBeInTheDocument();
+        expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
 
     it('opens the Stop out explanation (in-sheet page) when the Stop out label is tapped', async () => {
         const onOpenStopOut = jest.fn();

@@ -146,7 +146,6 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
         contract_type,
         currency,
         barrier_1,
-        has_stop_loss,
         is_accumulator,
         is_multiplier,
         is_turbos,
@@ -485,7 +484,6 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
                     contract_types={contract_types}
                     currency={currency}
                     details={details}
-                    has_stop_loss={has_stop_loss}
                     is_loading_proposal={is_loading_proposal}
                     is_multiplier={is_multiplier}
                     is_empty={!proposal_request_values.amount}
