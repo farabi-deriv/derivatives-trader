@@ -71,6 +71,7 @@ import { isDigitContractType, isDigitTradeType } from 'AppV2/Utils/digits';
 import {
     addToOpenMarkets,
     isSameMarket,
+    isSameOpenMarketList,
     readOpenMarkets,
     removeFromOpenMarkets,
     replaceInOpenMarkets,
@@ -1349,6 +1350,8 @@ export default class TradeStore extends BaseStore {
     // read `this.open_markets` (the active collection) and route the result back through here, so a
     // mutation only ever touches the mode the strip is currently showing.
     setActiveOpenMarkets(next: TOpenMarket[]) {
+        // Elide no-op writes: the guard below reallocates via `filter`, so an unchanged list would still
+        // churn every observer — which cancelled the first-Automate-entry seed mid-pick (#1071).
         if (this.is_automation_mode) {
             // Guard: once the automation-supported set is known, an unsupported trade type can never
             // be written to (or persisted in) the automation strip — enforced here, the single writer
@@ -1356,9 +1359,11 @@ export default class TradeStore extends BaseStore {
             // cleanup. Empty set = not loaded yet → pass through unfiltered.
             const supported = this.automation_supported_trade_types;
             const guarded = supported.size ? next.filter(market => supported.has(market.contract_type)) : next;
+            if (isSameOpenMarketList(guarded, this.open_markets_automation)) return;
             this.open_markets_automation = guarded;
             writeOpenMarkets('automation', guarded);
         } else {
+            if (isSameOpenMarketList(next, this.open_markets_manual)) return;
             this.open_markets_manual = next;
             writeOpenMarkets('manual', next);
         }

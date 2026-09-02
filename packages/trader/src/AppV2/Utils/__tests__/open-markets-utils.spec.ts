@@ -2,6 +2,7 @@ import {
     addToOpenMarkets,
     getMaxOpenMarkets,
     isSameMarket,
+    isSameOpenMarketList,
     MAX_OPEN_MARKETS,
     MAX_OPEN_MARKETS_MOBILE,
     MAX_OPEN_MARKETS_WEB,
@@ -23,6 +24,15 @@ describe('open-markets-utils', () => {
         expect(getMaxOpenMarkets(false)).toBe(MAX_OPEN_MARKETS_WEB);
         expect(MAX_OPEN_MARKETS_MOBILE).toBe(4);
         expect(MAX_OPEN_MARKETS_WEB).toBe(7);
+    });
+
+    it('isSameOpenMarketList compares lists element-wise, ignoring array identity', () => {
+        // Powers the writer's no-op-write elision, so a fresh but equal array must compare equal.
+        expect(isSameOpenMarketList([rise, high_low], [{ ...rise }, { ...high_low }])).toBe(true);
+        expect(isSameOpenMarketList([], [])).toBe(true);
+        expect(isSameOpenMarketList([rise], [rise, high_low])).toBe(false);
+        expect(isSameOpenMarketList([rise, high_low], [high_low, rise])).toBe(false); // order matters
+        expect(isSameOpenMarketList([rise], [high_low])).toBe(false);
     });
 
     it('isSameMarket compares the (symbol, contract_type) pair', () => {

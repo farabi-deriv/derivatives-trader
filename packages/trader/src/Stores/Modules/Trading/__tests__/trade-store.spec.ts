@@ -2892,6 +2892,49 @@ describe('TradeStore', () => {
             expect(spy).not.toHaveBeenCalled();
             spy.mockRestore();
         });
+
+        it('[MT-009] routes a write by the LIVE mode: a write after leaving automation lands in manual (characterization)', () => {
+            setAutomationMode(true);
+            const manual_before = [...tradeStore.open_markets_manual];
+            // The mode flips (the user leaves Automate) before this write happens — as it does when the
+            // automation seed's awaited default-symbol pick resolves late. The collection is chosen here,
+            // at write time, so the write lands in MANUAL. This is why the seed in `market-tabs.tsx` must
+            // re-read `is_automation_mode` at commit time rather than trust its render-time value (#1071).
+            setAutomationMode(false);
+            tradeStore.setActiveOpenMarkets([...tradeStore.open_markets_manual, rise_market]);
+            expect(tradeStore.open_markets_manual).toEqual([...manual_before, rise_market]);
+            expect(tradeStore.open_markets_automation).toEqual([]);
+        });
+
+        it('[MT-008] leaves the automation collection reference unchanged when the guard filters nothing out', () => {
+            setAutomationMode(true);
+            const rise_a: TOpenMarket = { symbol: 'R_100', contract_type: 'rise_fall' };
+            const rise_b: TOpenMarket = { symbol: 'R_50', contract_type: 'rise_fall' };
+            tradeStore.open_markets_automation = [rise_a, rise_b];
+            const before = tradeStore.open_markets_automation;
+            const setItem = jest.spyOn(Storage.prototype, 'setItem');
+            // Every open tab is already supported → re-applying the guard filters nothing out. The
+            // writer must elide the no-op write rather than fabricate a fresh equal array (which would
+            // reallocate the observable and churn every observer, cancelling the seed effect — #1071).
+            tradeStore.setAutomationSupportedTradeTypes(new Set(['rise_fall']));
+            expect(tradeStore.open_markets_automation).toBe(before);
+            expect(setItem).not.toHaveBeenCalledWith(OPEN_MARKETS_STORAGE_KEYS.automation, expect.anything());
+            setItem.mockRestore();
+        });
+
+        it('[MT-008] still reassigns and persists the collection when a genuine change occurs', () => {
+            setAutomationMode(true);
+            tradeStore.automation_supported_trade_types = new Set(['rise_fall']);
+            const before = tradeStore.open_markets_automation;
+            const setItem = jest.spyOn(Storage.prototype, 'setItem');
+            // Turbos is unsupported → filtered out → the guarded list genuinely differs from the
+            // current one, so the writer must reassign and persist as before.
+            tradeStore.setActiveOpenMarkets([rise_market, turbos_market]);
+            expect(tradeStore.open_markets_automation).not.toBe(before);
+            expect(tradeStore.open_markets_automation).toEqual([rise_market]);
+            expect(setItem).toHaveBeenCalledWith(OPEN_MARKETS_STORAGE_KEYS.automation, JSON.stringify([rise_market]));
+            setItem.mockRestore();
+        });
     });
 
     describe('market selection supersession (phantom-tab races)', () => {

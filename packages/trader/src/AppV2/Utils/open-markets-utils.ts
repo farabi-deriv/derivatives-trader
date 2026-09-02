@@ -31,6 +31,10 @@ export const getMaxOpenMarkets = (is_mobile: boolean) => (is_mobile ? MAX_OPEN_M
 export const isSameMarket = (a: TOpenMarket, b: TOpenMarket) =>
     a.symbol === b.symbol && a.contract_type === b.contract_type;
 
+/** Element-wise list equality, so a writer can elide a no-op write instead of reallocating. */
+export const isSameOpenMarketList = (a: TOpenMarket[], b: TOpenMarket[]) =>
+    a.length === b.length && a.every((market, index) => isSameMarket(market, b[index]));
+
 /** Read + validate a mode's persisted list (a plain cast would let stale/tampered values through). */
 export const readOpenMarkets = (mode: TOpenMarketsMode): TOpenMarket[] => {
     const stored = safeParse(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS[mode]) ?? '') as TOpenMarket[] | null;

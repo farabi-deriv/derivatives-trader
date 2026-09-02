@@ -31,6 +31,9 @@ import MarketTab from './market-tab';
 
 import './market-tabs.scss';
 
+// Seed attempts per Automate visit: the `.catch()` releases the latch, so a dead WS would otherwise retry forever.
+const MAX_SEED_ATTEMPTS = 3;
+
 type TMarketTabs = {
     /** When set (e.g. in Automate), restrict the selector's trade types to these values and
      * disable any open tab whose trade type isn't in the set. */
@@ -51,6 +54,9 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
     // Device-dependent tab cap: 4 on mobile, 7 on web.
     const max_open_markets = getMaxOpenMarkets(isMobile);
     useAvailableContracts();
+    // Kept so the async seed can read LIVE store state at commit time — a captured value freezes at
+    // the last render, which never happens again once the strip unmounts.
+    const trade_store = useTraderStore();
     const {
         active_symbols,
         symbol,
@@ -66,7 +72,7 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
         setReplacingMarket,
         is_market_selector_open,
         setMarketSelectorOpen,
-    } = useTraderStore();
+    } = trade_store;
     const {
         client: { currency },
         portfolio: { active_positions },
@@ -93,6 +99,7 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
     // Guards the "add a default supported market" fallback so it fires at most once per entry into a
     // filtered mode with no tradeable tab (reset once a supported market is active again).
     const has_added_default_ref = useRef(false);
+    const seed_attempts_ref = useRef(0);
     // Previous open-tab count, for emitting tab open/close/limit analytics off real count changes.
     const prev_tab_count_ref = useRef<number | null>(null);
 
@@ -141,6 +148,7 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
         if (is_selecting_market || is_reconciling_url_trade_type) return;
         if (!supported_trade_types?.size) {
             has_added_default_ref.current = false;
+            seed_attempts_ref.current = 0;
             return;
         }
 
@@ -151,6 +159,7 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
             );
         if (active_is_supported_tab) {
             has_added_default_ref.current = false;
+            seed_attempts_ref.current = 0;
             return;
         }
         const tradeable = [...open_markets].reverse().find(market => supported_trade_types.has(market.contract_type));
@@ -159,19 +168,23 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
                 selectMarketAndTradeType(tradeable.symbol, tradeable.contract_type);
             return;
         }
-        // No tradeable tab open — add a default supported market (once).
-        if (has_added_default_ref.current) return;
-        has_added_default_ref.current = true;
+        // No tradeable tab open — add a default supported market.
         const trade_type = supported_trade_types.has('rise_fall') ? 'rise_fall' : [...supported_trade_types][0];
+        // Resolved before the latch/budget are spent — a bail here never starts the seed that releases them.
         if (!trade_type) return;
-        let is_cancelled = false;
+        if (has_added_default_ref.current || seed_attempts_ref.current >= MAX_SEED_ATTEMPTS) return;
+        has_added_default_ref.current = true;
+        seed_attempts_ref.current += 1;
         (async () => {
             const default_symbol = (await pickDefaultSymbol(active_symbols)) || symbol;
-            if (!is_cancelled && default_symbol) selectMarketAndTradeType(default_symbol, trade_type);
-        })();
-        return () => {
-            is_cancelled = true;
-        };
+            // The writer picks its collection from the LIVE mode, so committing after the user left
+            // Automate would inject this default into the MANUAL strip and overwrite their market.
+            if (!default_symbol || !trade_store.is_automation_mode) return;
+            await selectMarketAndTradeType(default_symbol, trade_type);
+        })().catch(() => {
+            // Release the latch so a later run can retry, bounded by MAX_SEED_ATTEMPTS.
+            has_added_default_ref.current = false;
+        });
     }, [
         supported_trade_types,
         contract_type,
@@ -182,6 +195,7 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
         is_automation_market_locked,
         is_selecting_market,
         is_reconciling_url_trade_type,
+        trade_store,
     ]);
 
     // While a run is active in the automation view, pin the strip to the market the bot is running
