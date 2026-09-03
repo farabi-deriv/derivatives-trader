@@ -45,6 +45,112 @@ export class ReportsPage extends TradeBasePage {
     }
 
     /**
+     * Reports meta wrapper containing filters or toolbar.
+     * Source: data-testid="dt_reports_meta_wrapper"
+     */
+    get metaWrapper(): Locator {
+        return this.page.getByTestId('dt_reports_meta_wrapper');
+    }
+
+    /**
+     * Contract type filter dropdown on Open Positions (Options / Multipliers / Accumulators).
+     * Desktop: .open-positions__contract-types-selector-container .dc-dropdown__container
+     * Mobile: .open-positions__accumulator-container-mobile__contract-dropdown select
+     */
+    get contractTypeFilter(): Locator {
+        if (this.isMobile) {
+            return this.page
+                .locator(
+                    '.open-positions__accumulator-container-mobile__contract-dropdown select, select[name="contract_types"]'
+                )
+                .first();
+        }
+        return this.page
+            .locator(
+                '.open-positions__contract-types-selector-container .dc-dropdown__container, .open-positions__accumulator-container .dc-dropdown__container'
+            )
+            .first();
+    }
+
+    /**
+     * Growth rate sub-filter for Accumulators (All growth rates, 1%, 2%, 3%, 4%, 5%).
+     * Desktop: .open-positions__accumulator-container__rates-dropdown
+     * Mobile: .open-positions__accumulator-container--mobile__rates-dropdown select
+     */
+    get growthRateFilter(): Locator {
+        if (this.isMobile) {
+            return this.page
+                .locator(
+                    '.open-positions__accumulator-container--mobile__rates-dropdown select, select[name="accumulator_rates"]'
+                )
+                .first();
+        }
+        return this.page
+            .locator('.open-positions__accumulator-container__rates-dropdown .dc-dropdown__container')
+            .first();
+    }
+
+    /**
+     * Calendar icon in date filter on Trade Table and Statement.
+     * Source: data-testid="dt_calendar_icon"
+     */
+    get calendarIcon(): Locator {
+        return this.page.getByTestId('dt_calendar_icon');
+    }
+
+    /**
+     * Date from input field (desktop id).
+     * Source: #dt_calendar_input_from
+     */
+    get calendarInputFrom(): Locator {
+        return this.page.locator('#dt_calendar_input_from');
+    }
+
+    /**
+     * Date to input field (desktop id).
+     * Source: #dt_calendar_input_to
+     */
+    get calendarInputTo(): Locator {
+        return this.page.locator('#dt_calendar_input_to');
+    }
+
+    /**
+     * Transaction type filter dropdown on Statement tab.
+     * Desktop: .reports__meta-filter--statement .dc-dropdown__display
+     * Mobile: select element inside reports filter
+     */
+    get transactionTypeFilter(): Locator {
+        if (this.isMobile) {
+            return this.page.locator('.reports__meta-filter select, .reports__meta-filter--statement select').first();
+        }
+        return this.page.locator('.reports__meta-filter--statement .dc-dropdown__display').first();
+    }
+
+    /**
+     * Empty state icon shown when no history/transactions exist.
+     * Source: data-testid="dt_empty_trade_history_icon"
+     */
+    get emptyStateIcon(): Locator {
+        return this.page.getByTestId('dt_empty_trade_history_icon');
+    }
+
+    /**
+     * Data table rows (desktop) or data list items (mobile).
+     */
+    get tableRows(): Locator {
+        return this.page.locator(
+            'a.table__row-link, a.profit-table__row, a.statement__row, a.data-list__item--wrapper, .dc-data-list__item'
+        );
+    }
+
+    /**
+     * Archived statement tab link.
+     */
+    get archivedStatementTab(): Locator {
+        return this.page.getByText('Archived statement');
+    }
+
+    /**
      * "Open positions" nav link in the Reports sidebar — desktop only.
      * Source: dc-vertical-tab__header id="dc_open-positions_link"
      */
@@ -715,6 +821,46 @@ export class ReportsPage extends TradeBasePage {
      */
     async closeReports(): Promise<void> {
         await this.reportsCloseButton.click();
+    }
+
+    /**
+     * Select a contract type filter option (e.g. "Options", "Multipliers", "Accumulators").
+     */
+    async selectContractTypeFilter(option: string): Promise<void> {
+        if (this.isMobile) {
+            const value = option.toLowerCase();
+            await this.contractTypeFilter.selectOption({ label: option }).catch(async () => {
+                await this.contractTypeFilter.selectOption(value);
+            });
+        } else {
+            await this.contractTypeFilter.click();
+            const dropdownItem = this.page
+                .locator('.dc-list__item, [data-testid="dti_list_item"]')
+                .filter({ hasText: option })
+                .first();
+            await expect(dropdownItem, `Contract type item "${option}" should be visible`).toBeVisible();
+            await dropdownItem.click();
+        }
+    }
+
+    /**
+     * Select a transaction type filter option on Statement (e.g. "Buy", "Sell", "All transactions").
+     */
+    async selectTransactionTypeFilter(option: string): Promise<void> {
+        if (this.isMobile) {
+            const selectEl = this.transactionTypeFilter;
+            await selectEl.selectOption(option.toLowerCase()).catch(async () => {
+                await selectEl.selectOption({ label: option });
+            });
+            return;
+        }
+        await this.transactionTypeFilter.click();
+        const dropdownItem = this.page
+            .locator('.dc-dropdown__container .dc-list__item, [data-testid="dt_dropdown_container"] .dc-list__item')
+            .filter({ hasText: option })
+            .first();
+        await expect(dropdownItem, `Dropdown item "${option}" should be visible`).toBeVisible();
+        await dropdownItem.click();
     }
 
     // ============================================
