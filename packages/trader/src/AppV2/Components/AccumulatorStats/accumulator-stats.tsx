@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx';
 
 import { LabelPairedChevronUpSmBoldIcon, LabelPairedXmarkMdRegularIcon } from '@deriv/quill-icons';
-import { observer } from '@deriv/stores';
+import { observer, useStore } from '@deriv/stores';
 import { ActionSheet, Heading, Modal, Text } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
-import { UNIFIED_MODE_VIDEO_ID } from 'AppV2/Utils/video-config';
+import { getAccumulatorStatsVideoId } from 'AppV2/Utils/video-config';
 import { useTraderStore } from 'Stores/useTraderStores';
 
 import StreamIframe from '../StreamIframe';
@@ -50,40 +50,45 @@ const DesktopExpandedView = React.memo(
 );
 DesktopExpandedView.displayName = 'DesktopExpandedView';
 
-const DesktopStatsModal = React.memo(({ is_open, onClose }: { is_open: boolean; onClose: () => void }) => (
-    <Modal
-        isOpened={is_open}
-        showHandleBar={false}
-        showSecondaryButton={false}
-        showCrossIcon={false}
-        isMobile={false}
-        primaryButtonLabel={<Localize i18n_default_text='Got it' />}
-        primaryButtonCallback={onClose}
-        toggleModal={onClose}
-        className='accumulator-stats-desktop-modal'
-    >
-        <div className='accumulator-stats-desktop-modal__header'>
-            <Heading.H4>
-                <Localize i18n_default_text='Stats' />
-            </Heading.H4>
-            <button className='accumulator-stats-desktop-modal__close' onClick={onClose} aria-label='Close'>
-                <LabelPairedXmarkMdRegularIcon />
-            </button>
-        </div>
-        <div className='accumulator-stats-desktop-modal__content'>
-            <div className='accumulator-stats-desktop-modal__video'>
-                <StreamIframe src={UNIFIED_MODE_VIDEO_ID.accumulator_stats} title='accumulator_stats' />
+const DesktopStatsModal = React.memo(
+    ({ is_open, onClose, video_src }: { is_open: boolean; onClose: () => void; video_src: string }) => (
+        <Modal
+            isOpened={is_open}
+            showHandleBar={false}
+            showSecondaryButton={false}
+            showCrossIcon={false}
+            isMobile={false}
+            primaryButtonLabel={<Localize i18n_default_text='Got it' />}
+            primaryButtonCallback={onClose}
+            toggleModal={onClose}
+            className='accumulator-stats-desktop-modal'
+        >
+            <div className='accumulator-stats-desktop-modal__header'>
+                <Heading.H4>
+                    <Localize i18n_default_text='Stats' />
+                </Heading.H4>
+                <button className='accumulator-stats-desktop-modal__close' onClick={onClose} aria-label='Close'>
+                    <LabelPairedXmarkMdRegularIcon />
+                </button>
             </div>
-            <Text className='accumulator-stats-desktop-modal__description'>
-                <Localize i18n_default_text='Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.' />
-            </Text>
-        </div>
-    </Modal>
-));
+            <div className='accumulator-stats-desktop-modal__content'>
+                <div className='accumulator-stats-desktop-modal__video'>
+                    <StreamIframe src={video_src} title='accumulator_stats' />
+                </div>
+                <Text className='accumulator-stats-desktop-modal__description'>
+                    <Localize i18n_default_text='Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.' />
+                </Text>
+            </div>
+        </Modal>
+    )
+);
 DesktopStatsModal.displayName = 'DesktopStatsModal';
 
 const AccumulatorStats = observer(() => {
     const { ticks_history_stats = {} } = useTraderStore();
+    const {
+        ui: { is_dark_mode_on },
+    } = useStore();
     const { isDesktop } = useDevice();
     const [is_open, setIsOpen] = useState(false);
     const [is_open_description, setIsOpenDescription] = useState(false);
@@ -198,7 +203,13 @@ const AccumulatorStats = observer(() => {
             </div>
 
             {/* Desktop Modal */}
-            {isDesktop && is_modal_open && <DesktopStatsModal is_open={is_modal_open} onClose={onModalClose} />}
+            {isDesktop && is_modal_open && (
+                <DesktopStatsModal
+                    is_open={is_modal_open}
+                    onClose={onModalClose}
+                    video_src={getAccumulatorStatsVideoId(is_dark_mode_on)}
+                />
+            )}
 
             {/* Mobile ActionSheet - unchanged */}
             {!isDesktop && (

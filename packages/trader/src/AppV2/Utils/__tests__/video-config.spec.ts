@@ -1,8 +1,10 @@
 import {
     DESCRIPTION_VIDEO_ID,
+    getAccumulatorStatsVideoId,
     getContractDescriptionAnimationSrc,
     getDescriptionVideoId,
     getVideoMp4Url,
+    UNIFIED_MODE_VIDEO_ID,
 } from '../video-config';
 
 describe('getDescriptionVideoId', () => {
@@ -38,6 +40,30 @@ describe('getDescriptionVideoId', () => {
     });
     it('should return undefined when called with empty arguments', () => {
         expect(getDescriptionVideoId()).toEqual(undefined);
+    });
+});
+
+describe('getAccumulatorStatsVideoId', () => {
+    it('[ASM-001] returns the light Stats id in light theme', () => {
+        expect(getAccumulatorStatsVideoId(false)).toEqual(UNIFIED_MODE_VIDEO_ID.accumulator_stats.light);
+    });
+    it('[ASM-001] returns the light Stats id by default', () => {
+        expect(getAccumulatorStatsVideoId()).toEqual(UNIFIED_MODE_VIDEO_ID.accumulator_stats.light);
+    });
+    it('[ASM-003] returns the dark Stats id in dark theme', () => {
+        expect(getAccumulatorStatsVideoId(true)).toEqual(UNIFIED_MODE_VIDEO_ID.accumulator_stats.dark);
+    });
+    it('[ASM-003] returns a non-empty dark id distinct from the light id', () => {
+        const light_id = getAccumulatorStatsVideoId(false);
+        const dark_id = getAccumulatorStatsVideoId(true);
+
+        expect(dark_id).toBeTruthy();
+        expect(dark_id).not.toEqual(light_id);
+    });
+    it('[ASM-003] resolves the dark id to a /stream/<id>.mp4 URL on the brand media host', () => {
+        expect(getVideoMp4Url(getAccumulatorStatsVideoId(true))).toMatch(
+            new RegExp(`/stream/${UNIFIED_MODE_VIDEO_ID.accumulator_stats.dark}\\.mp4$`)
+        );
     });
 });
 

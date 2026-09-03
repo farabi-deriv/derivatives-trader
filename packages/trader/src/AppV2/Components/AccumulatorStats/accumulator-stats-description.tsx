@@ -1,17 +1,23 @@
 import React from 'react';
+import { observer } from 'mobx-react-lite';
 
-import { Localize } from '@deriv-com/translations';
+import { useStore } from '@deriv/stores';
 import { ActionSheet, Text } from '@deriv-com/quill-ui';
+import { Localize } from '@deriv-com/translations';
 
-import { UNIFIED_MODE_VIDEO_ID } from 'AppV2/Utils/video-config';
+import { getAccumulatorStatsVideoId } from 'AppV2/Utils/video-config';
 
 import StreamIframe from '../StreamIframe';
 
-const AccumulatorStatsDescription = ({ onActionSheetClose }: { onActionSheetClose: () => void }) => {
+const AccumulatorStatsDescription = observer(({ onActionSheetClose }: { onActionSheetClose: () => void }) => {
+    const {
+        ui: { is_dark_mode_on },
+    } = useStore();
+
     return (
         <ActionSheet.Portal showHandlebar shouldCloseOnDrag handleBarPosition='absolute'>
             <div className='stats-description'>
-                <StreamIframe src={UNIFIED_MODE_VIDEO_ID.accumulator_stats} title='accumulator_stats' />
+                <StreamIframe src={getAccumulatorStatsVideoId(is_dark_mode_on)} title='accumulator_stats' />
                 <div className='stats-description__content'>
                     <div className='stats-description__content__title'>
                         <Text size='lg' bold color='quill-typography__color--prominent'>
@@ -34,6 +40,6 @@ const AccumulatorStatsDescription = ({ onActionSheetClose }: { onActionSheetClos
             />
         </ActionSheet.Portal>
     );
-};
+});
 
 export default AccumulatorStatsDescription;

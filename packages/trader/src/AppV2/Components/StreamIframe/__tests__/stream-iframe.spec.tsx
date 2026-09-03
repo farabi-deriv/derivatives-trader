@@ -10,7 +10,7 @@ const video_stream_testid = 'dt_video_stream';
 const dt_loader = 'square-skeleton';
 
 const mocked_props = {
-    src: UNIFIED_MODE_VIDEO_ID.accumulator_stats,
+    src: UNIFIED_MODE_VIDEO_ID.accumulator_stats.light,
     test_id: video_stream_testid,
     title: 'accumulator_stats',
 };
@@ -26,7 +26,7 @@ describe('StreamIframe component', () => {
         expect(video).toHaveAttribute('autoplay');
         expect(video).not.toHaveAttribute('controls');
         expect(video).toHaveAttribute('preload', 'auto');
-        expect(video).toHaveAttribute('src', getVideoMp4Url(UNIFIED_MODE_VIDEO_ID.accumulator_stats));
+        expect(video).toHaveAttribute('src', getVideoMp4Url(UNIFIED_MODE_VIDEO_ID.accumulator_stats.light));
         expect(video).toHaveAttribute('width', '100%');
         expect(video).toHaveAttribute('height', '100%');
         expect(screen.getByTestId(dt_loader)).toBeInTheDocument();
@@ -75,8 +75,8 @@ describe('StreamIframe component', () => {
         const video = screen.getByTestId(video_stream_testid);
 
         const src = video.getAttribute('src') ?? '';
-        expect(src).toBe(getVideoMp4Url(UNIFIED_MODE_VIDEO_ID.accumulator_stats));
-        expect(src).toMatch(new RegExp(`/stream/${UNIFIED_MODE_VIDEO_ID.accumulator_stats}\\.mp4$`));
+        expect(src).toBe(getVideoMp4Url(UNIFIED_MODE_VIDEO_ID.accumulator_stats.light));
+        expect(src).toMatch(new RegExp(`/stream/${UNIFIED_MODE_VIDEO_ID.accumulator_stats.light}\\.mp4$`));
         expect(src).not.toContain('cloudflarestream.com');
     });
 });

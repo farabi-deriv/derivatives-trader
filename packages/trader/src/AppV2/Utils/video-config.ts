@@ -62,9 +62,12 @@ export const DESCRIPTION_VIDEO_ID: TDtraderVideoUrl = {
     },
 };
 
-// The ids here won't have dark and light theme
-export const UNIFIED_MODE_VIDEO_ID = {
-    accumulator_stats: '26d1401d2e3f6ae16913a21ec0579fc1',
+// Themed Accumulators Stats explainer animation ids
+export const UNIFIED_MODE_VIDEO_ID: TDtraderVideoUrl = {
+    accumulator_stats: {
+        light: '26d1401d2e3f6ae16913a21ec0579fc1',
+        dark: '4c54974c56304075985e4b50addb77d2',
+    },
 };
 
 // Onboarding videos
@@ -105,6 +108,10 @@ export const AUTOMATION_ONBOARDING_VIDEO_ID = {
 
 export const getDescriptionVideoId = (contract_type = '', is_dark_theme = false) =>
     DESCRIPTION_VIDEO_ID[contract_type]?.[is_dark_theme ? 'dark' : 'light'];
+
+// Helper function to get the themed Accumulators Stats video id
+export const getAccumulatorStatsVideoId = (is_dark_theme = false) =>
+    UNIFIED_MODE_VIDEO_ID.accumulator_stats[is_dark_theme ? 'dark' : 'light'];
 
 // Helper function to derive the themed trade-type guide animation (.lottie) source path.
 // Mirrors the light/dark selection of getDescriptionVideoId, using the committed
