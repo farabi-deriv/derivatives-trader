@@ -13,7 +13,7 @@
 | ---------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | Flow 1     | Embedded in Flows 5–14 · `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts` (canonical) | `@automate @martingale @smoke @desktop @mobile` |
 | Flow 2     | `trade-automate/verify-threshold-stop.spec.ts`                                                      | `@automate @desktop @mobile`                    |
-| Flow 3     | `trade-automate/verify-resync.spec.ts`                                                              | `@automate @desktop @mobile`                    |
+| Flow 3     | `trade-automate/verify-account-switch-resync.spec.ts`                                               | `@automate @desktop @mobile`                    |
 | Flow 4     | `trade-automate/verify-eu-gating.spec.ts`                                                           | `@automate @desktop @mobile`                    |
 | G1         | `trade-automate/verify-already-running.spec.ts`                                                     | `@automate @desktop @mobile`                    |
 | G2         | `trade-automate/verify-validation.spec.ts`                                                          | `@automate @desktop @mobile`                    |
@@ -119,27 +119,56 @@ test('VERIFY loss threshold auto-stops the run', async ({ tradeAutomatePage }) =
 
 > **Flow 2** = `VERIFY loss threshold auto-stops the run`
 
-### Flow 3 — verify-resync.spec.ts
+### Flow 3 — verify-account-switch-resync.spec.ts
 
-Second account is the demo account every login carries. Guards GRWT-9318 (stuck on "Starting…" after account switch).
+Single test — Account B is the demo account every login carries. Guards GRWT-9318 (stuck on "Starting…" after account switch). No sequential purchase or pause/resume — only account-switch resync.
 
 ```typescript
-test('VERIFY automation run is re-adopted as Running after switching account away and back', async ({
+test.beforeAll(async ({ }, testInfo) => {
+    const account = await createAccountV2viaJS('real', { currency: 'USD', trading: true, … });
+    accountEmail = account.email;
+    accountPassword = account.password;
+});
+
+test('VERIFY automation run is re-adopted as Running after switching account', async ({
+    page,
+    loginPage,
     tradeAutomatePage,
 }) => {
+    await TradeBasePage.seedLocalStorageOnOrigin(page);
+    await loginPage.login(accountEmail, accountPassword);
+
     await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
     await tradeAutomatePage.verifyPanelDefaultState();
     await tradeAutomatePage.setStake('1');
     await tradeAutomatePage.startAutomateRun();
-    await tradeAutomatePage.verifyAutomateBotIsRunning();
+    await tradeAutomatePage.verifyAutomateBotIsRunning({
+        market: 'Volatility 100 Index',
+        stake: '1',
+        tradeType: 'Rise/Fall',
+    });
+
     await tradeAutomatePage.switchToAccountType('demo');
+    await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.verifyPanelDefaultState();
     await tradeAutomatePage.switchToAccountType('real');
-    await tradeAutomatePage.verifyAutomateBotIsRunning();
+
+    await tradeAutomatePage.verifyAutomateBotIsRunning({
+        market: 'Volatility 100 Index',
+        stake: '1',
+        tradeType: 'Rise/Fall',
+    });
+
     await tradeAutomatePage.stopAutomateRun();
+});
+
+test.afterEach(async ({ tradeAutomatePage }) => {
+    await tradeAutomatePage.stopAutomateRunIfActive();
 });
 ```
 
-> **Flow 3** = `VERIFY automation run is re-adopted as Running after switching account away and back`
+> **Flow 3** = `VERIFY automation run is re-adopted as Running after switching account`
 
 ### Flow 4 + G1 + G2 — not yet implemented
 

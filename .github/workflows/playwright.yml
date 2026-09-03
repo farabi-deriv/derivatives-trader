@@ -147,10 +147,18 @@ jobs:
           SELECTED="${{ inputs.platform || github.event.inputs.platform || 'all' }}"
           SCHEDULE="${{ github.event.schedule }}"
           # Staging smoke (30 1) and production smoke (45 1) run chromium-mobile only.
-          # Staging regression (0 22) and manual "all" still fan out to every platform.
           if [ "$SCHEDULE" = "30 1 * * *" ] || [ "$SCHEDULE" = "45 1 * * *" ]; then
             MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.platform == "chromium-mobile")]')
-          elif [ "${{ github.event_name }}" = "schedule" ] || [ "$SELECTED" = "all" ]; then
+          elif [ "$SCHEDULE" = "0 22 * * 0-4" ]; then
+            # Daily staging regression — all 5 browsers on Tuesday & Thursday (MYT).
+            # 22:00 UTC runs match Monday & Wednesday UTC (day 1 & 3) → Tue & Thu MYT.
+            DAY_OF_WEEK=$(date -u +%u)
+            if [ "$DAY_OF_WEEK" -eq 1 ] || [ "$DAY_OF_WEEK" -eq 3 ]; then
+              MATRIX="$ALL"
+            else
+              MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.browser == "chromium")]')
+            fi
+          elif [ "$SELECTED" = "all" ]; then
             MATRIX="$ALL"
           elif [ "$SELECTED" = "chromium-all" ]; then
             MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.browser == "chromium")]')

@@ -79,15 +79,20 @@
 
 **Display name:** Resync after account switch (run stays Running)
 
-**Prerequisites:** Shared prerequisites; a run is active on Account A; a second account available.
+**Spec:** `playwright/tests/trade-automate/verify-account-switch-resync.spec.ts` · **Test:** `VERIFY automation run is re-adopted as Running after switching account`
 
-| #   | Step           | Action                                                             | Expected Result                                                         | Platform |
-| --- | -------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------- | -------- |
-| 1   | Start a run    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A | "Status: Running"                                                       | Both     |
-| 2   | Switch account | `switchToAccountType('demo')` then `'real'`                        | Automation on A is re-adopted as **Running** (not stuck on "Starting…") | Both     |
-| 3   | Verify + Stop  | `verifyAutomateBotIsRunning()` → `stopAutomateRun()`               | Run stops; idle **Run** returns                                         | Both     |
+**Prerequisites:** Shared prerequisites; Account A = funded **real** (staging test); Account B = **demo** on the same login. `beforeAll` creates Account A via `createAccountV2viaJS('real', …)`; login runs inline in the single test. `afterEach` calls `stopAutomateRunIfActive()` if the test fails after `startAutomateRun()`.
 
-> Guards the known intermittent "stuck on Starting…" resync behaviour (GRWT-9318).
+**Params:** Volatility 100 Index · Rise/Fall · stake `1` (Martingale defaults; no strategy/threshold overrides).
+
+| #   | Step           | Action                                                                                                                                                           | Expected Result                                                                                    | Platform |
+| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Configure      | `goToAutomatedTrading()` → `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' })` → `verifyPanelDefaultState()` → `setStake('1')` | Automate panel ready on Account A                                                                  | Both     |
+| 2   | Start a run    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A                                                                                               | "Status: Running"                                                                                  | Both     |
+| 3   | Switch account | `switchToAccountType('demo')` → `goToAutomatedTrading()` → `verifyPanelDefaultState()` then `switchToAccountType('real')`                                        | Demo shows idle panel (Run enabled); real run re-adopted as **Running** (not stuck on "Starting…") | Both     |
+| 4   | Verify + Stop  | `verifyAutomateBotIsRunning()` → `stopAutomateRun()`                                                                                                             | Run stops; idle **Run** returns                                                                    | Both     |
+
+> Guards the known intermittent "stuck on Starting…" resync behaviour (GRWT-9318). Uses full `verifyAutomateBotIsRunning()` (controls + open position + contract details) before and after the account round-trip — not `verifyAutomateRunningControls()` alone.
 
 > **Removed:** Former standalone strategy-selection flow — covered by Martingale (Flows 5–9) and D'Alembert (Flows 10–14) lifecycle specs via `selectStrategy()` in each run.
 

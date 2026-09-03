@@ -145,7 +145,8 @@ export abstract class TradeDigitsPage extends TradeParametersPage {
         }
         await this.durationField.click();
         if (this.isMobile) {
-            await this.selectWheelPickerOption('[data-testid="dt_duration_ticks_wheel"]', value);
+            await expect(this.durationContainer, 'Duration action sheet should open').toBeVisible();
+            await this.selectWheelPickerOption(this.durationTicksWheel, value);
             await expect(this.durationContainer, 'Duration sheet should be open on mobile').toBeVisible();
             await this.saveMobileSheet(this.durationContainer);
             await expect(this.durationContainer, 'Duration sheet should close after Save').not.toBeVisible();

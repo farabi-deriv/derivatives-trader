@@ -330,7 +330,8 @@ export class TradeParametersPage extends TradeBasePage {
     durationUnitTab(unit: string): Locator {
         const isTimeUnit = ['seconds', 'minutes', 'hours'].includes(unit.toLowerCase());
         const tabName = this.isMobile && isTimeUnit ? 'Time' : unit;
-        return this.page.getByRole('tab', { name: new RegExp(`^${tabName}$`, 'i') });
+        const scope = this.isMobile ? this.durationContainer : this.durationPopover;
+        return scope.getByRole('tab', { name: new RegExp(`^${tabName}$`, 'i') });
     }
 
     /**
@@ -340,9 +341,15 @@ export class TradeParametersPage extends TradeBasePage {
      */
     private async selectDurationUnitTabIfVisible(unit: string): Promise<void> {
         const unitTab = this.durationUnitTab(unit);
-        if (await unitTab.isVisible().catch(() => false)) {
-            await unitTab.click();
+        if ((await unitTab.count()) === 0) {
+            return;
         }
+        await expect(unitTab, `Duration '${unit}' tab should be visible in the open picker`).toBeVisible();
+        if ((await unitTab.getAttribute('aria-selected')) === 'true') {
+            return;
+        }
+        await unitTab.click();
+        await expect(unitTab, `Duration '${unit}' tab should be selected`).toHaveAttribute('aria-selected', 'true');
     }
 
     /**
@@ -366,10 +373,35 @@ export class TradeParametersPage extends TradeBasePage {
 
     /**
      * Mobile duration action sheet root (duration.tsx / container.tsx).
+     * `:visible` excludes closed/transitioning portal copies still in the DOM.
      * Header Save commits the wheel selection; dismiss (X/overlay/drag) discards drafts.
      */
     get durationContainer(): Locator {
-        return this.page.locator('.duration-container');
+        return this.page.locator('.duration-container:visible').filter({
+            has: this.page.getByRole('heading', { name: 'Duration' }),
+        });
+    }
+
+    /** Desktop duration popover — vertical unit tabs and preset chips. */
+    get durationPopover(): Locator {
+        return this.page.locator('.duration-popover');
+    }
+
+    /**
+     * Mobile duration Ticks tab wheel picker.
+     * Source: duration/container.tsx — `data-testid="dt_duration_ticks_wheel"`.
+     * Hidden (`duration-container__wheel--hidden`) until the Ticks tab is selected.
+     */
+    get durationTicksWheel(): Locator {
+        return this.durationContainer.getByTestId('dt_duration_ticks_wheel');
+    }
+
+    /**
+     * Mobile duration Time tab wheel picker (hr/min/sec columns).
+     * Source: duration/container.tsx — `data-testid="dt_duration_time_wheel"`.
+     */
+    get durationTimeWheel(): Locator {
+        return this.durationContainer.getByTestId('dt_duration_time_wheel');
     }
 
     /**
@@ -774,29 +806,11 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
-     * Select a duration by unit and preset chip value.
-     * Opens the duration popover, switches to the given unit (desktop only — unit sidebar),
-     * then clicks the matching preset chip.
+     * Select duration by unit and formatted value.
+     * Mobile: unit tab → wheel picker → Save. Desktop: preset chip or manual input.
      *
-     * Unit labels (as rendered in duration-unit-selector.tsx):
-     *   'Ticks' | 'Seconds' | 'Minutes' | 'Hours' | 'End Time'
-     *
-     * Chip formatted values (as produced by duration-desktop.tsx formatters):
-     *   ticks    → '5 ticks', '10 ticks'
-     *   seconds  → '15 sec', '30 sec'
-     *   minutes  → '1 min', '5 min'
-     *   hours    → '1 hr', '4 hr'
-     *   end time → 'DD Mon YYYY HH:mm' (e.g. '25 Jun 2026 14:30')
-     *
-     * @param unit           - Duration unit label (e.g. 'Ticks', 'Minutes', 'End Time')
-     * @param formattedValue - Chip label or end-time string as described above
-     *
-     * @example
-     * ```typescript
-     * await tradeParametersPage.selectDuration('Ticks', '5 ticks');
-     * await tradeParametersPage.selectDuration('Minutes', '1 min');
-     * await tradeParametersPage.selectDuration('End Time', '25 Jun 2026 14:30');
-     * ```
+     * @param unit - 'Ticks' | 'Seconds' | 'Minutes' | 'Hours' | 'End Time'
+     * @param formattedValue - e.g. '10 ticks', '5 min', '1 hr', '25 Jun 2026 14:30'
      */
     async selectDuration(unit: string, formattedValue: string): Promise<void> {
         const unitLower = unit.toLowerCase();
@@ -807,9 +821,11 @@ export class TradeParametersPage extends TradeBasePage {
                 return;
             }
             await this.durationField.click();
+            if (this.isMobile) {
+                await expect(this.durationContainer, 'Duration action sheet should open').toBeVisible();
+            }
             await this.selectDurationUnitTabIfVisible(unit);
 
-            // formattedValue format: "DD Mon YYYY HH:mm" (e.g. "25 Jun 2026 14:30")
             const endTimeMatch = formattedValue.match(/^(\d{1,2}) (\w+ \d{4}) (\d{2}):(\d{2})$/);
             if (!endTimeMatch) {
                 throw new Error(
@@ -832,12 +848,7 @@ export class TradeParametersPage extends TradeBasePage {
         const isMobileTimeUnit = this.isMobile && ['seconds', 'minutes', 'hours'].includes(unitLower);
         const mobileTimeComponents = isMobileTimeUnit ? this.parseTimeComponents(unit, formattedValue) : undefined;
 
-        // Expected displayed value, computed once and reused by the skip check, Save retry, and final assertion.
-        // Mobile expands abbreviations to full words (e.g. "15 min" → "15 minutes") EXCEPT once the
-        // combined hr/min/sec value includes an hour component, where the field switches to a zero-padded
-        // clock format instead (e.g. "1 hr" → "01:00:00", "1h 30m" → "01:30:00") — see duration.tsx
-        // getInputValues(). On desktop most units keep the chip abbreviation, EXCEPT hours, which the app
-        // renders in full ("1 hr" → "1 hour", "1h 30m" → "1 hour 30 minutes").
+        // Normalize chip label to the value the duration field displays (mobile expands units; hours may use clock format).
         const isHoursFormat = /\bhr\b/.test(formattedValue) || /^\d+h(\s+\d+m)?$/.test(formattedValue);
         const displayValue =
             mobileTimeComponents && mobileTimeComponents.hours > 0
@@ -854,26 +865,30 @@ export class TradeParametersPage extends TradeBasePage {
         }
 
         await this.durationField.click();
+        if (this.isMobile) {
+            await expect(this.durationContainer, 'Duration action sheet should open').toBeVisible();
+        }
         await this.selectDurationUnitTabIfVisible(unit);
 
         if (this.isMobile) {
             if (unitLower === 'ticks') {
-                await this.selectWheelPickerOption('[data-testid="dt_duration_ticks_wheel"]', formattedValue);
+                await expect(
+                    this.durationTicksWheel,
+                    'Ticks wheel should be visible after selecting the Ticks tab'
+                ).toBeVisible();
+                await this.selectWheelPickerOption(this.durationTicksWheel, formattedValue);
             } else {
-                // Non-null: this branch only runs when isMobileTimeUnit is true, which is exactly when
-                // mobileTimeComponents was computed above.
                 const { hours, minutes, seconds } = mobileTimeComponents!;
-                const timeWheel = '[data-testid="dt_duration_time_wheel"]';
-                const columnCount = await this.page
-                    .locator(timeWheel)
-                    .locator('.quill-wheel-picker__container')
-                    .count();
+                await expect(
+                    this.durationTimeWheel,
+                    'Time wheel should be visible after selecting the Time tab'
+                ).toBeVisible();
+                const columnCount = await this.durationTimeWheel.locator('.quill-wheel-picker__container').count();
                 if (columnCount === 3) {
-                    await this.selectWheelPickerColumnOption(timeWheel, 0, `${hours} hr`);
-                    await this.selectWheelPickerColumnOption(timeWheel, 1, `${minutes} min`);
-                    await this.selectWheelPickerColumnOption(timeWheel, 2, `${seconds} sec`);
+                    await this.selectWheelPickerColumnOption(this.durationTimeWheel, 0, `${hours} hr`);
+                    await this.selectWheelPickerColumnOption(this.durationTimeWheel, 1, `${minutes} min`);
+                    await this.selectWheelPickerColumnOption(this.durationTimeWheel, 2, `${seconds} sec`);
                 } else if (columnCount === 2) {
-                    // [hr, min] — Hours tab (Higher/Lower) and Vanillas Time tab (seconds N/A for Vanillas).
                     if (unitLower !== 'hours' && unitLower !== 'minutes') {
                         throw new Error(
                             `selectDuration: 2-column Time wheel encountered for unit '${unit}', but the ` +
@@ -881,11 +896,11 @@ export class TradeParametersPage extends TradeBasePage {
                                 `Verify this trade type's actual column order (it may be [min, sec]) before mapping it here.`
                         );
                     }
-                    await this.selectWheelPickerColumnOption(timeWheel, 0, `${hours} hr`);
-                    await this.selectWheelPickerColumnOption(timeWheel, 1, `${minutes} min`);
+                    await this.selectWheelPickerColumnOption(this.durationTimeWheel, 0, `${hours} hr`);
+                    await this.selectWheelPickerColumnOption(this.durationTimeWheel, 1, `${minutes} min`);
                 } else {
                     throw new Error(
-                        `selectDuration: unexpected Time wheel column count ${columnCount} for '${timeWheel}'`
+                        `selectDuration: unexpected Time wheel column count ${columnCount} for durationTimeWheel`
                     );
                 }
             }
@@ -899,7 +914,6 @@ export class TradeParametersPage extends TradeBasePage {
             } else {
                 await this.durationManualInputToggle.click();
                 if (unitLower === 'hours') {
-                    // formattedValue expected as 'Xh Ym' (e.g. '1h 30m') or 'Xh' (e.g. '2h')
                     const hoursMatch = formattedValue.match(/(\d+)h/);
                     const minutesMatch = formattedValue.match(/(\d+)m/);
                     const popover = this.page.locator('.duration-popover__content');
@@ -1151,12 +1165,12 @@ export class TradeParametersPage extends TradeBasePage {
      * Select a value in a single-column quill-ui `WheelPicker` action sheet — shared by Growth rate,
      * Multiplier, Payout per point, Strike, and the Duration Ticks-only wheel.
      *
-     * @param wheelSelector - CSS selector of the wheel-picker wrapper (e.g. '.multiplier__wheel-picker')
+     * @param wheelSelector - CSS selector or locator of the wheel-picker wrapper (e.g. '.multiplier__wheel-picker')
      * @param value - Option label exactly as rendered (e.g. 'x200', '5%')
      */
-    protected async selectWheelPickerOption(wheelSelector: string, value: string): Promise<void> {
-        const wheel = this.page.locator(wheelSelector);
-        await expect(wheel, `Wheel picker '${wheelSelector}' should be visible`).toBeVisible();
+    protected async selectWheelPickerOption(wheelSelector: string | Locator, value: string): Promise<void> {
+        const wheel = typeof wheelSelector === 'string' ? this.page.locator(wheelSelector) : wheelSelector;
+        await expect(wheel, 'Wheel picker should be visible').toBeVisible();
         await this.commitWheelPickerOption(wheel, value);
     }
 
@@ -1166,20 +1180,18 @@ export class TradeParametersPage extends TradeBasePage {
      * `DurationTimeWheel`), rendered as sibling `.quill-wheel-picker__container` columns inside one
      * wrapper, each with its own listbox.
      *
-     * @param wheelSelector - CSS selector of the wheel-picker wrapper containing all columns
+     * @param wheelSelector - CSS selector or locator of the wheel-picker wrapper containing all columns
      * @param columnIndex - 0-based column index (e.g. 0 = hours, 1 = minutes, 2 = seconds)
      * @param value - Option label exactly as rendered (e.g. '1 hr', '15 min', '30 sec')
      */
     protected async selectWheelPickerColumnOption(
-        wheelSelector: string,
+        wheelSelector: string | Locator,
         columnIndex: number,
         value: string
     ): Promise<void> {
-        const column = this.page.locator(wheelSelector).locator('.quill-wheel-picker__container').nth(columnIndex);
-        await expect(
-            column,
-            `Wheel picker column ${columnIndex} in '${wheelSelector}' should be visible`
-        ).toBeVisible();
+        const wheel = typeof wheelSelector === 'string' ? this.page.locator(wheelSelector) : wheelSelector;
+        const column = wheel.locator('.quill-wheel-picker__container').nth(columnIndex);
+        await expect(column, `Wheel picker column ${columnIndex} should be visible`).toBeVisible();
         await this.commitWheelPickerOption(column, value);
     }
 

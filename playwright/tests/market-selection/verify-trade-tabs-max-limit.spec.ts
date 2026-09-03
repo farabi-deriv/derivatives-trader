@@ -48,7 +48,7 @@ test.describe(
 
             await expect(
                 marketSelectionPage.addMarketButton,
-                'Add-market button should report aria-disabled at the cap on both platforms'
+                'Add-market button should report aria-disabled'
             ).toHaveAttribute('aria-disabled', 'true');
 
             await marketSelectionPage.verifyAddMarketBlockedAtCap(max);

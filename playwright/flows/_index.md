@@ -165,36 +165,36 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 5–9 Martingale · Flows 10–14 D'Alembert)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 2–3 panel specs · Flows 5–9 Martingale · Flows 10–14 D'Alembert)
 
-| Flow      | Priority | Description                                                    | User State                                     | Status       |
-| --------- | -------- | -------------------------------------------------------------- | ---------------------------------------------- | ------------ |
-| Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–14) | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 2    | P1       | Risk threshold auto-stop (loss/profit threshold)               | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 3    | P2       | Resync after account switch (stays Running)                    | authenticated, funded real/staging, 2 accounts | `automated`  |
-| Flow 4    | P3       | Automation unavailable for EU account (gating)                 | authenticated, EU/DIEL account                 | `documented` |
-| Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 5.2  | P0       | Rise/Fall — Martingale Fall (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 6.1  | P1       | Accumulators — Martingale demo                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 6.2  | P1       | Accumulators — Martingale real                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 7.1  | P1       | Matches/Differs — Martingale Matches (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 7.2  | P1       | Matches/Differs — Martingale Differs (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 8.1  | P1       | Over/Under — Martingale Over (demo + real)                     | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 8.2  | P1       | Over/Under — Martingale Under (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 9.1  | P1       | Even/Odd — Martingale Even (demo + real)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 9.2  | P1       | Even/Odd — Martingale Odd (demo + real)                        | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 10.1 | P1       | Rise/Fall — D'Alembert Rise (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 10.2 | P1       | Rise/Fall — D'Alembert Fall (demo + real)                      | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 11.1 | P1       | Accumulators — D'Alembert demo                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 11.2 | P1       | Accumulators — D'Alembert real                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 12.1 | P1       | Matches/Differs — D'Alembert Matches (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 12.2 | P1       | Matches/Differs — D'Alembert Differs (demo + real)             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 13.1 | P1       | Over/Under — D'Alembert Over (demo + real)                     | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 13.2 | P1       | Over/Under — D'Alembert Under (demo + real)                    | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                        | authenticated, funded real/staging (non-EU)    | `automated`  |
-| —         | P2       | "Automation already running" adoption snackbar (G1)            | authenticated, run active                      | `documented` |
-| —         | P2       | Validation / unsupported-contract-type error (G2)              | authenticated, funded real/staging (non-EU)    | `documented` |
+| Flow      | Priority | Description                                                                          | User State                                     | Status       |
+| --------- | -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
+| Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–14)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 2    | P1       | Risk threshold auto-stop (loss/profit threshold)                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 3    | P2       | Resync after account switch (stays Running) — `verify-account-switch-resync.spec.ts` | authenticated, funded real/staging, 2 accounts | `automated`  |
+| Flow 4    | P3       | Automation unavailable for EU account (gating)                                       | authenticated, EU/DIEL account                 | `documented` |
+| Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.2  | P0       | Rise/Fall — Martingale Fall (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.1  | P1       | Accumulators — Martingale demo                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.2  | P1       | Accumulators — Martingale real                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.1  | P1       | Matches/Differs — Martingale Matches (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.2  | P1       | Matches/Differs — Martingale Differs (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.1  | P1       | Over/Under — Martingale Over (demo + real)                                           | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.2  | P1       | Over/Under — Martingale Under (demo + real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.1  | P1       | Even/Odd — Martingale Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.2  | P1       | Even/Odd — Martingale Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.1 | P1       | Rise/Fall — D'Alembert Rise (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.2 | P1       | Rise/Fall — D'Alembert Fall (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.1 | P1       | Accumulators — D'Alembert demo                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.2 | P1       | Accumulators — D'Alembert real                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.1 | P1       | Matches/Differs — D'Alembert Matches (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.2 | P1       | Matches/Differs — D'Alembert Differs (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.1 | P1       | Over/Under — D'Alembert Over (demo + real)                                           | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.2 | P1       | Over/Under — D'Alembert Under (demo + real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `documented` |
+| —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
 
