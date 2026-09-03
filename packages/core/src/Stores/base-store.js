@@ -32,9 +32,6 @@ export default class BaseStore {
     themeChangeDisposer = null;
     theme_change_listener = null;
 
-    realAccountSignupEndedDisposer = null;
-    real_account_signup_ended_listener = null;
-
     partial_fetch_time = 0;
 
     /**
@@ -62,12 +59,10 @@ export default class BaseStore {
             onClientInit: action.bound,
             onNetworkStatusChange: action.bound,
             onThemeChange: action.bound,
-            onRealAccountSignupEnd: action.bound,
             disposeLogout: action.bound,
             disposeClientInit: action.bound,
             disposeNetworkStatusChange: action.bound,
             disposeThemeChange: action.bound,
-            disposeRealAccountSignupEnd: action.bound,
             onUnmount: action.bound,
             assertHasValidCache: action.bound,
         });
@@ -380,33 +375,6 @@ export default class BaseStore {
         this.theme_change_listener = listener;
     }
 
-    onRealAccountSignupEnd(listener) {
-        this.realAccountSignupEndedDisposer = when(
-            () => this.root_store.ui.has_real_account_signup_ended,
-            () => {
-                try {
-                    const result = this.real_account_signup_ended_listener();
-                    if (result && result.then && typeof result.then === 'function') {
-                        result.then(() => {
-                            this.root_store.ui.setRealAccountSignupEnd(false);
-                            this.onRealAccountSignupEnd(this.real_account_signup_ended_listener);
-                        });
-                    } else {
-                        throw new Error('Real account signup listeners are required to return a promise.');
-                    }
-                } catch (error) {
-                    // there is no listener currently active. so we can just ignore the error raised from treating
-                    // a null object as a function. Although, in development mode, we throw a console error.
-                    if (!isProduction()) {
-                        console.error(error); // eslint-disable-line
-                    }
-                }
-            }
-        );
-
-        this.real_account_signup_ended_listener = listener;
-    }
-
     disposeLogout() {
         if (typeof this.logoutDisposer === 'function') {
             this.logoutDisposer();
@@ -435,19 +403,11 @@ export default class BaseStore {
         this.theme_change_listener = null;
     }
 
-    disposeRealAccountSignupEnd() {
-        if (typeof this.realAccountSignupEndedDisposer === 'function') {
-            this.realAccountSignupEndedDisposer();
-        }
-        this.real_account_signup_ended_listener = null;
-    }
-
     onUnmount() {
         this.disposeLogout();
         this.disposeClientInit();
         this.disposeNetworkStatusChange();
         this.disposeThemeChange();
-        this.disposeRealAccountSignupEnd();
     }
 
     assertHasValidCache(loginid, ...reactions) {

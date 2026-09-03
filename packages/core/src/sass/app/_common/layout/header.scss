@@ -29,18 +29,6 @@
         pointer-events: none;
     }
 
-    &__menu-mobile-whatsapp {
-        &-link {
-            text-decoration: none;
-            color: var(--color-text-secondary);
-            padding-left: 1.6rem;
-        }
-    }
-
-    &__menu-mobile-livechat {
-        border-bottom: 1px solid var(--color-surface-border);
-    }
-
     &__menu-mobile-body-wrapper {
         position: relative;
         overflow-y: auto;

@@ -60,7 +60,7 @@ npm run clean                                # Clean node_modules (interactive)
 
 # Architecture
 
-## Monorepo structure (9 NPM packages via npm workspaces)
+## Monorepo structure (8 NPM packages via npm workspaces)
 
 - `@deriv/core` - App shell, routing, global stores, initialization
 - `@deriv/trader` - Trading terminal (main + mobile AppV2 variant)
@@ -70,7 +70,6 @@ npm run clean                                # Clean node_modules (interactive)
 - `@deriv/api` - React Query hooks (useQuery, useSubscription, useMutation, APIProvider)
 - `@deriv/shared` - Cross-package utilities (contract types, validators, routes, analytics, brand config)
 - `@deriv/utils` - General utilities (safeParse, crypto, type helpers)
-- `@deriv/api-v2` - Remote config + feature flags
 
 ## State management (MobX 6)
 
@@ -181,7 +180,7 @@ Sass/ → src/sass/
 
 # Repo etiquette
 
-- Feature flags stored in `@deriv/api-v2` remote config (no rebuild required)
+- Feature flags stored in `@deriv/api` remote config (no rebuild required)
 - Analytics: track events via `trackAnalyticsEvent(name, payload)` from @deriv/shared
 - Mobile app integration: `ce_dtrader_app_v2` event with `action: 'open'` fired after auth completes
 - Multi-brand support: deriv.com, deriv.be, deriv.me (URLs adapt to current domain via `@deriv/shared` brand utilities)
@@ -330,7 +329,7 @@ const LazyModule = React.lazy(() => import('./Module'));
 
 ## Project stats
 
-- Monorepo with 9 packages
+- Monorepo with 8 packages
 - ~210K lines of code
 - React 18 + MobX 6 + TypeScript 5 + Webpack 5 + Jest 29
 - Last updated: 2025-01-16

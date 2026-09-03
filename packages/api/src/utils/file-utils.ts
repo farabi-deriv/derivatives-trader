@@ -1,3 +1,11 @@
+// compressImage decorates a canvas Blob with File-like `name`/`lastModifiedDate` own-properties.
+declare global {
+    interface Blob {
+        lastModifiedDate: number;
+        name: string;
+    }
+}
+
 const DEFAULT_IMAGE_WIDTH = 2560;
 const DEFAULT_IMAGE_QUALITY = 0.9;
 const WORD_SIZE = 4;

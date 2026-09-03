@@ -36,10 +36,6 @@
             "entry": ["src/index.ts", "jest.config.js"],
             "project": ["src/**/*.{ts,tsx,js,jsx}"]
         },
-        "packages/api-v2": {
-            "entry": ["src/index.ts", "jest.config.js"],
-            "project": ["src/**/*.{ts,tsx,js,jsx}"]
-        },
         "packages/shared": {
             "entry": ["src/index.ts", "jest.config.js"],
             "project": ["src/**/*.{ts,tsx,js,jsx}"]

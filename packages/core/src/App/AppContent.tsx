@@ -31,13 +31,6 @@ const AppContent: React.FC<{ passthrough: any }> = observer(({ passthrough }) =>
     const { switchLanguage } = useTranslations();
     const { isBridgeAvailable, sendBridgeEvent } = useMobileBridge();
 
-    // NOTE: Disabled Intercom until further notice
-    // const { data } = useRemoteConfig(true);
-    // const { cs_chat_intercom } = data;
-
-    // const token = current_account?.token || null;
-    // useIntercom(cs_chat_intercom, token);
-
     const html = document.documentElement;
 
     React.useEffect(() => {

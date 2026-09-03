@@ -1,5 +1,4 @@
 import { getLogoutURL, removeCookies } from '@deriv/shared';
-import { Chat } from '@deriv/utils';
 
 import WS from './ws-methods';
 
@@ -50,10 +49,6 @@ export const requestRestLogout = async () => {
  */
 export const requestLogout = () => WS.logout().then(doLogout);
 
-function endChat() {
-    Chat.clear();
-}
-
 const doLogout = response => {
     if (response.logout !== 1) return undefined;
     removeCookies('affiliate_token', 'affiliate_tracking', 'onfido_token', 'gclid', 'utm_data');
@@ -68,6 +63,5 @@ const doLogout = response => {
     Object.keys(sessionStorage)
         .filter(key => key !== 'trade_store')
         .forEach(key => sessionStorage.removeItem(key));
-    endChat();
     return response;
 };

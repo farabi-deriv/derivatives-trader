@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
-import { useDebounce } from '@deriv/api-v2';
+import { useDebounce } from '@deriv/api';
 import { Button, TextField, TextFieldAddon } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 

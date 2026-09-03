@@ -35,7 +35,6 @@ export default class CommonStore extends BaseStore {
             server_time: observable,
             services_error: observable,
             setAppRouterHistory: action.bound,
-            setAppstorePlatform: action.bound,
             setError: action.bound,
             setInitialRouteHistoryItem: action.bound,
             setIsSocketOpened: action.bound,
@@ -45,10 +44,8 @@ export default class CommonStore extends BaseStore {
             setServerTime: action.bound,
             setServicesError: action.bound,
             resetServicesError: action.bound,
-            setWithdrawURL: action.bound,
             showError: action.bound,
             was_socket_opened: observable,
-            withdraw_url: observable,
         });
     }
 
@@ -71,7 +68,6 @@ export default class CommonStore extends BaseStore {
     server_time = ServerTime.get() || toMoment(); // fallback: get current time from moment.js
     services_error = {};
     was_socket_opened = false;
-    withdraw_url = '';
 
     setSelectedContractType(contract_type) {
         this.selected_contract_type = contract_type;
@@ -118,10 +114,6 @@ export default class CommonStore extends BaseStore {
             return Promise.reject(e);
         }
     };
-
-    setAppstorePlatform(platform) {
-        this.platform = platform;
-    }
 
     setPlatform() {
         const search = window.location.search;
@@ -216,9 +208,6 @@ export default class CommonStore extends BaseStore {
         });
     }
 
-    setWithdrawURL(withdraw_url) {
-        this.withdraw_url = withdraw_url;
-    }
     resetServicesError() {
         this.services_error = {};
     }

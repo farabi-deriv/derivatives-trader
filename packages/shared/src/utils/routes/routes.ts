@@ -1,8 +1,6 @@
 export const routes = {
     // Essential routes
     index: '/',
-    callback_page: '/callback',
-    error404: '/404',
     unavailable: '/unavailable',
     endpoint: '/endpoint',
 

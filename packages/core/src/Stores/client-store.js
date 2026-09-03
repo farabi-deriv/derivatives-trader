@@ -115,11 +115,6 @@ export default class ClientStore extends BaseStore {
                 this.setCookieAccount();
             }
         );
-
-        when(
-            () => !this.is_logged_in && this.root_store.ui && this.root_store.ui.is_real_acc_signup_on,
-            () => this.root_store.ui.closeRealAccountSignup()
-        );
     }
 
     get balance() {
@@ -280,7 +275,6 @@ export default class ClientStore extends BaseStore {
         const search_params = new URLSearchParams(search);
         const redirect_url = search_params?.get('redirect_url');
         const action_param = search_params?.get('action');
-        const loginid_param = search_params?.get('loginid');
 
         const account_id = getAccountId();
 
@@ -305,15 +299,7 @@ export default class ClientStore extends BaseStore {
             }
         }
 
-        // Handle special action parameters and user_id for both logged-in and logged-out states
-        if (
-            ['crypto_transactions_withdraw', 'payment_withdraw', 'payment_agent_withdraw'].includes(action_param) &&
-            loginid_param
-        ) {
-            this.setLoginId(loginid_param);
-        } else {
-            this.setLoginId(window.sessionStorage.getItem('active_loginid') || LocalStore.get('active_loginid'));
-        }
+        this.setLoginId(window.sessionStorage.getItem('active_loginid') || LocalStore.get('active_loginid'));
 
         this.user_id = LocalStore.get('active_user_id');
 
@@ -340,12 +326,7 @@ export default class ClientStore extends BaseStore {
         if (this.is_logged_in) {
             if (redirect_url) {
                 const redirect_route = routes[redirect_url].length > 1 ? routes[redirect_url] : '';
-                const has_action = [
-                    'crypto_transactions_withdraw',
-                    'payment_agent_withdraw',
-                    'payment_withdraw',
-                    'reset_password',
-                ].includes(action_param);
+                const has_action = ['reset_password'].includes(action_param);
 
                 if (has_action) {
                     const query_string = filterUrlQuery(search, ['platform', 'code', 'action', 'loginid']);

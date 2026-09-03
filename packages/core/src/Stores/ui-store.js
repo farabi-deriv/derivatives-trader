@@ -76,38 +76,15 @@ export default class UIStore extends BaseStore {
     is_route_modal_on = false;
 
     // real account signup
-    is_real_acc_signup_on = false;
     is_from_signup_account = false;
-    real_account_signup_target = undefined;
-    has_real_account_signup_ended = false;
-
-    // verification modal
-    is_verification_modal_visible = false;
-
-    //verification document submitted modal
-    is_verification_submitted = false;
 
     // position states
     show_positions_toggle = true;
 
     modal_index = 0;
 
-    // Mt5 topup
-    is_top_up_virtual_open = false;
-    is_top_up_virtual_in_progress = false;
-    is_top_up_virtual_success = false;
-
     // MT5 create real STP from demo, show only real accounts from switcher
     should_show_real_accounts_list = false;
-
-    // Real account signup
-    real_account_signup = {
-        active_modal_index: -1,
-        previous_currency: '',
-        current_currency: '',
-        success_message: '',
-        error_message: '',
-    };
 
     // UI Focus retention
     current_focus = null;
@@ -131,34 +108,8 @@ export default class UIStore extends BaseStore {
     //warn user if they want to close create real account modal
     is_closing_create_real_account_modal = false;
 
-    // MT5 account needed modal
-    is_account_needed_modal_on = false;
-    account_needed_modal_props = {
-        target: '',
-        target_label: '',
-        target_dmt5_label: '',
-    };
-
-    manage_real_account_tab_index = 0;
-
-    //traders-hub
-    is_real_tab_enabled = false;
-
-    choose_crypto_currency_target = null;
-
-    // add crypto accounts
-    should_show_cancel = false;
-
-    should_show_trade_assessment_form = false;
-    should_trigger_tour_guide = false;
-    is_trading_assessment_for_existing_user_enabled = false;
-    is_trading_assessment_for_new_user_enabled = false;
-    should_show_assessment_complete_modal = false;
     app_contents_scroll_ref = null;
-    is_deriv_account_needed_modal_visible = false;
     is_redirected_from_email = false;
-    is_switch_to_deriv_account_modal_visible = false;
-    is_mt5_migration_modal_enabled = false;
     isUrlUnavailableModalVisible = false;
     // 'trade_type' | 'symbol' | 'both' — which URL value(s) were invalid
     urlUnavailableModalReason = 'trade_type';
@@ -199,7 +150,6 @@ export default class UIStore extends BaseStore {
         super({ root_store, local_storage_properties, store_name });
 
         makeObservable(this, {
-            account_needed_modal_props: observable,
             is_services_error_visible: observable,
             is_link_expired_modal_visible: observable,
             is_reset_password_modal_visible: observable,
@@ -219,15 +169,12 @@ export default class UIStore extends BaseStore {
             advanced_duration_unit: observable,
             advanced_expiry_type: observable,
             app_contents_scroll_ref: observable,
-            choose_crypto_currency_target: observable,
             current_focus: observable,
             duration_d: observable,
             duration_h: observable,
             duration_m: observable,
             duration_s: observable,
             duration_t: observable,
-            has_real_account_signup_ended: observable,
-            is_account_needed_modal_on: observable,
             is_forced_to_exit_pnv: observable,
             is_phone_verification_completed: observable,
 
@@ -236,7 +183,6 @@ export default class UIStore extends BaseStore {
 
             is_closing_create_real_account_modal: observable,
             is_dark_mode_on: observable,
-            is_deriv_account_needed_modal_visible: observable,
             is_from_signup_account: observable,
             is_redirected_from_email: observable,
 
@@ -247,19 +193,9 @@ export default class UIStore extends BaseStore {
 
             active_sidebar_flyout: observable,
             is_positions_drawer_on: computed,
-            is_real_acc_signup_on: observable,
-            is_real_tab_enabled: observable,
             is_reports_visible: observable,
             is_route_modal_on: observable,
             is_settings_modal_on: observable,
-            is_switch_to_deriv_account_modal_visible: observable,
-            is_top_up_virtual_in_progress: observable,
-            is_top_up_virtual_open: observable,
-            is_top_up_virtual_success: observable,
-            is_trading_assessment_for_existing_user_enabled: observable,
-            is_trading_assessment_for_new_user_enabled: observable,
-            is_verification_modal_visible: observable,
-            is_verification_submitted: observable,
             is_tnc_update_modal_open: observable,
             isUrlUnavailableModalVisible: observable,
             urlUnavailableModalReason: observable,
@@ -267,31 +203,20 @@ export default class UIStore extends BaseStore {
             is_try_real_modal_visible: observable,
             is_switching_account: observable,
             is_chart_loading: observable,
-            manage_real_account_tab_index: observable,
             modal_index: observable,
             notification_messages_ui: observable,
             prompt_when: observable,
             promptFn: observable,
             purchase_states: observable,
-            real_account_signup_target: observable,
-            real_account_signup: observable,
             reports_route_tab_index: observable,
             settings_extension: observable,
             should_show_phone_number_otp: observable,
-            should_show_assessment_complete_modal: observable,
-            should_show_cancel: observable,
             should_show_cancellation_warning: observable,
             should_show_real_accounts_list: observable,
-            should_trigger_tour_guide: observable,
             show_positions_toggle: observable,
             simple_duration_unit: observable,
             toasts: observable.shallow,
             addToast: action.bound,
-            closeAccountNeededModal: action.bound,
-            closeRealAccountSignup: action.bound,
-            closeSuccessTopUpModal: action.bound,
-            closeTopUpModal: action.bound,
-            continueRouteAfterChooseCrypto: action.bound,
             disableApp: action.bound,
             disableRouteModal: action.bound,
             enableApp: action.bound,
@@ -304,17 +229,11 @@ export default class UIStore extends BaseStore {
             url_hashed_values: observable,
             notifyAppInstall: action.bound,
             onChangeUiStore: action.bound,
-            openAccountNeededModal: action.bound,
-            openDerivRealAccountNeededModal: action.bound,
             openPositionsDrawer: action.bound,
-            openSwitchToRealAccountModal: action.bound,
-            openTopUpModal: action.bound,
             populateSettingsExtensions: action.bound,
             removePWAPromptEvent: action.bound,
             removeToast: action.bound,
             resetPurchaseStates: action.bound,
-            resetRealAccountSignupParams: action.bound,
-            resetRealAccountSignupTarget: action.bound,
             setShouldShowPhoneNumberOTP: action.bound,
             setAppContentsScrollRef: action.bound,
             setChartCountdown: action.bound,
@@ -330,27 +249,16 @@ export default class UIStore extends BaseStore {
             setIsClosingCreateRealAccountModal: action.bound,
             setIsFromSignupAccount: action.bound,
             setIsNativepickerVisible: action.bound,
-            setIsVerificationModalVisible: action.bound,
-            setIsVerificationSubmitted: action.bound,
             setReportsTabIndex: action.bound,
             toggleShouldShowRealAccountsList: action.bound,
-            shouldNavigateAfterChooseCrypto: action.bound,
             setRedirectFromEmail: action.bound,
-            setIsRealTabEnabled: action.bound,
-            setIsTradingAssessmentForExistingUserEnabled: action.bound,
-            setIsTradingAssessmentForNewUserEnabled: action.bound,
-            setManageRealAccountActiveTabIndex: action.bound,
             setModalIndex: action.bound,
             setPromptHandler: action.bound,
             setPurchaseState: action.bound,
             setPWAPromptEvent: action.bound,
-            setRealAccountSignupEnd: action.bound,
-            setRealAccountSignupParams: action.bound,
             setResetTradingPasswordModalOpen: action.bound,
             setRouteModal: action.bound,
-            setShouldShowCancel: action.bound,
             setSubSectionIndex: action.bound,
-            setTopUpInProgress: action.bound,
             setMobileLanguageMenuOpen: action.bound,
             toggleCancellationWarning: action.bound,
             toggleHistoryTab: action.bound,
@@ -394,10 +302,6 @@ export default class UIStore extends BaseStore {
 
     setIsClosingCreateRealAccountModal(is_closing_create_real_account_modal) {
         this.is_closing_create_real_account_modal = is_closing_create_real_account_modal;
-    }
-
-    setIsRealTabEnabled(is_real_tab_enabled) {
-        this.is_real_tab_enabled = is_real_tab_enabled;
     }
 
     setShouldShowPhoneNumberOTP(should_show_phone_number_otp) {
@@ -575,48 +479,6 @@ export default class UIStore extends BaseStore {
         this.active_sidebar_flyout = 'positions';
     }
 
-    setShouldShowCancel(value) {
-        this.should_show_cancel = value;
-    }
-
-    resetRealAccountSignupTarget() {
-        this.real_account_signup_target = '';
-    }
-
-    setManageRealAccountActiveTabIndex(index) {
-        this.manage_real_account_tab_index = index;
-    }
-
-    closeRealAccountSignup() {
-        this.root_store.client.setRealAccountSignupFormData([]);
-        this.root_store.client.setRealAccountSignupFormStep(0);
-
-        this.is_real_acc_signup_on = false;
-        this.resetRealAccountSignupTarget();
-        setTimeout(() => {
-            this.resetRealAccountSignupParams();
-            this.setRealAccountSignupEnd(true);
-        }, 300);
-    }
-
-    openAccountNeededModal(target, target_label, target_dmt5_label) {
-        this.is_account_needed_modal_on = true;
-        this.account_needed_modal_props = {
-            target,
-            target_label,
-            target_dmt5_label,
-        };
-    }
-
-    closeAccountNeededModal() {
-        this.is_account_needed_modal_on = false;
-        this.account_needed_modal_props = {
-            target: '',
-            target_label: '',
-            target_dmt5_label: '',
-        };
-    }
-
     toggleReports(is_visible) {
         this.is_reports_visible = is_visible;
     }
@@ -639,22 +501,6 @@ export default class UIStore extends BaseStore {
 
     toggleHistoryTab(state_change = !this.is_history_tab_active) {
         this.is_history_tab_active = state_change;
-    }
-
-    setTopUpInProgress(bool) {
-        this.is_top_up_virtual_in_progress = bool;
-    }
-
-    closeTopUpModal() {
-        this.is_top_up_virtual_open = false;
-    }
-
-    openTopUpModal() {
-        this.is_top_up_virtual_open = true;
-    }
-
-    closeSuccessTopUpModal() {
-        this.is_top_up_virtual_success = false;
     }
 
     toggleResetPasswordModal(state_change = !this.is_reset_password_modal_visible) {
@@ -681,27 +527,6 @@ export default class UIStore extends BaseStore {
             this.root_store.client.setPreventRedirectToHub(false);
         }
         this.is_reset_trading_password_modal_visible = is_reset_trading_password_modal_visible;
-    }
-
-    setRealAccountSignupParams(params) {
-        this.real_account_signup = {
-            ...this.real_account_signup,
-            ...params,
-        };
-    }
-
-    setRealAccountSignupEnd(has_ended) {
-        this.has_real_account_signup_ended = has_ended;
-    }
-
-    resetRealAccountSignupParams() {
-        this.real_account_signup = {
-            active_modal_index: -1,
-            previous_currency: '',
-            current_currency: '',
-            success_message: '',
-            error_message: '',
-        };
     }
 
     toggleOnScreenKeyboard() {
@@ -767,48 +592,12 @@ export default class UIStore extends BaseStore {
         this.should_show_real_accounts_list = value;
     }
 
-    shouldNavigateAfterChooseCrypto(next_location) {
-        this.choose_crypto_currency_target = next_location;
-    }
-
-    continueRouteAfterChooseCrypto() {
-        this.root_store.common.routeTo(this.choose_crypto_currency_target);
-    }
-
-    openDerivRealAccountNeededModal() {
-        this.is_deriv_account_needed_modal_visible = !this.is_deriv_account_needed_modal_visible;
-    }
-
     setRedirectFromEmail(value) {
         this.is_redirected_from_email = value;
     }
 
-    setIsTradingAssessmentForExistingUserEnabled(value) {
-        this.is_trading_assessment_for_existing_user_enabled = value;
-    }
-
-    setIsTradingAssessmentForNewUserEnabled(value) {
-        this.is_trading_assessment_for_new_user_enabled = value;
-    }
-
-    openSwitchToRealAccountModal() {
-        this.is_switch_to_deriv_account_modal_visible = !this.is_switch_to_deriv_account_modal_visible;
-    }
-
     setSubSectionIndex(index) {
         this.sub_section_index = index;
-    }
-
-    setIsVerificationModalVisible(value) {
-        this.is_verification_modal_visible = value;
-    }
-
-    setIsVerificationSubmitted(value) {
-        this.is_verification_submitted = value;
-    }
-
-    setShouldTriggerTourGuide(value) {
-        this.should_trigger_tour_guide = value;
     }
 
     toggleUrlUnavailableModal(value, reason = 'trade_type') {

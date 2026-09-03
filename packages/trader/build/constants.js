@@ -36,16 +36,10 @@ const ALIASES = {
     _common: path.resolve(__dirname, '../src/_common'),
     AppV2: path.resolve(__dirname, '../src/AppV2'),
     Assets: path.resolve(__dirname, '../src/Assets'),
-    Constants: path.resolve(__dirname, '../src/Constants'),
-    Fonts: path.resolve(__dirname, '../src/public/fonts'),
-    Images: path.resolve(__dirname, '../src/public/images'),
     Modules: path.resolve(__dirname, '../src/Modules'),
     Sass: path.resolve(__dirname, '../src/sass'),
-    Services: path.resolve(__dirname, '../src/Services'),
     Stores: path.resolve(__dirname, '../src/Stores'),
-    Translations: path.resolve(__dirname, '../src/public/translations'),
     Types: path.resolve(__dirname, '../src/Types'),
-    Utils: path.resolve(__dirname, '../src/Utils'),
 };
 
 const rules = (is_test_env = false) => [

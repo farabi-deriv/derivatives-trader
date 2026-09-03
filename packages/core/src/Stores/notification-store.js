@@ -258,7 +258,7 @@ export default class NotificationStore extends BaseStore {
         this.notification_messages = this.notification_messages.filter(n => n.key !== key);
         // Add notification messages to LocalStore when user closes, check for redundancy
         const active_loginid = LocalStore.get('active_loginid');
-        if (!excluded_notifications.includes(key) && !key.startsWith('p2p_order') && active_loginid) {
+        if (!excluded_notifications.includes(key) && active_loginid) {
             let messages = LocalStore.getObject('notification_messages');
             // Check if same message already exists in LocalStore for this account
             if (messages[active_loginid] && messages[active_loginid].includes(key)) {
@@ -386,7 +386,7 @@ export default class NotificationStore extends BaseStore {
             is_virtual: {
                 key: 'is_virtual',
                 header: localize('You are on your demo account'),
-                message: localize('Please switch to your real account or create one to access the cashier.'),
+                message: localize('Please switch to your real account or create one.'),
                 type: 'warning',
             },
             new_version_available: {

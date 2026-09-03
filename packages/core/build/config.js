@@ -80,10 +80,6 @@ const copyConfig = base => {
             },
         },
         {
-            from: path.resolve(__dirname, '../src/public/images/common/callback_loader.gif'),
-            to: 'public/images/common/callback_loader.gif',
-        },
-        {
             from: path.resolve(__dirname, '../src/public/images/common/logos/platform_logos/'),
             to: 'public/images/common/logos/platform_logos/',
         },

@@ -8,7 +8,8 @@ import ModulesProvider from 'Stores/Providers/modules-providers';
 import TraderProviders from '../../../../../trader-providers';
 import BarrierContentDesktop from '../barrier-content-desktop';
 
-jest.mock('@deriv/api-v2', () => ({
+jest.mock('@deriv/api', () => ({
+    ...jest.requireActual('@deriv/api'),
     useDebounce: jest.fn((value: unknown) => value),
 }));
 

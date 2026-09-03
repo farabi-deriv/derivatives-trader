@@ -73,8 +73,6 @@ module.exports = function (env) {
             /^@deriv\/shared\/.+$/,
             /^@deriv\/components\/.+$/,
             /^@deriv-com\/translations\/.+$/,
-            /^@deriv\/account\/.+$/,
-            /^@deriv\/analytics\/.+$/,
         ],
         target: 'web',
         plugins: plugins(base, false),

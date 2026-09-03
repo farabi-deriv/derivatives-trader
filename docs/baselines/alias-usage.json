@@ -3,16 +3,10 @@
         "trader": [
             "AppV2",
             "Assets",
-            "Constants",
-            "Fonts",
-            "Images",
             "Modules",
             "Sass",
-            "Services",
             "Stores",
-            "Translations",
             "Types",
-            "Utils",
             "_common"
         ],
         "core": [

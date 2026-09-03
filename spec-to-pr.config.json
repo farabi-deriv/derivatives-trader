@@ -2,7 +2,7 @@
     "base": "master",
     "verify": [
         "npm run check-imports",
-        "npx tsc --project packages/api/tsconfig.json --noEmit && npx tsc --project packages/api-v2/tsconfig.json --noEmit && npx tsc --project packages/utils/tsconfig.json --noEmit && npx tsc --project packages/stores/tsconfig.json --noEmit",
+        "npx tsc --project packages/api/tsconfig.json --noEmit && npx tsc --project packages/utils/tsconfig.json --noEmit && npx tsc --project packages/stores/tsconfig.json --noEmit",
         "npm run test:eslint-all",
         "npm run knip:check",
         "npm run baseline:check",

@@ -1,6 +1,6 @@
 import { action, computed, makeObservable } from 'mobx';
 
-import { epochToMoment, getPlatformName, isProduction, toMoment } from '@deriv/shared';
+import { getPlatformName, isProduction } from '@deriv/shared';
 import { getInitialLanguage } from '@deriv-com/translations';
 
 import BaseStore from './base-store';
@@ -17,7 +17,6 @@ export default class GTMStore extends BaseStore {
             visitorId: computed,
             common_variables: computed,
             pushDataLayer: action.bound,
-            pushTransactionData: action.bound,
         });
     }
 
@@ -60,52 +59,6 @@ export default class GTMStore extends BaseStore {
 
                 dataLayer.push(gtm_object);
             });
-        }
-    }
-
-    /**
-     * Pushes deposit & withdrawal data from transaction-stream to GTM
-     *
-     * @param {object} response
-     * @param {object} extra_data
-     */
-    pushTransactionData(response, extra_data = {}) {
-        if (!this.is_gtm_applicable || this.root_store.client.is_virtual) return;
-        if (!response.transaction || !response.transaction.action) return;
-        if (!['deposit', 'withdrawal'].includes(response.transaction.action)) return;
-
-        const moment_now = toMoment();
-        const storage_key = 'GTM_transactions';
-
-        // Remove values from prev days so localStorage doesn't grow to infinity
-        let gtm_transactions = JSON.parse(localStorage.getItem(storage_key)) || {};
-        if (Object.prototype.hasOwnProperty.call(gtm_transactions, 'timestamp')) {
-            if (moment_now.isAfter(epochToMoment(gtm_transactions.timestamp), 'day')) {
-                localStorage.removeItem(storage_key);
-                gtm_transactions = { timestamp: moment_now.unix() };
-            }
-        }
-        const transactions_arr = gtm_transactions.transactions || [];
-        if (!transactions_arr.includes(response.transaction.transaction_id)) {
-            const data = {
-                event: 'transaction',
-                bom_account_type: this.root_store.client.account_type,
-                bom_today: moment_now.unix(),
-                transaction: {
-                    id: response.transaction.transaction_id,
-                    type: response.transaction.action,
-                    time: response.transaction.transaction_time,
-                    amount: response.transaction.amount,
-                },
-            };
-            Object.assign(data, extra_data);
-            this.pushDataLayer(data);
-
-            transactions_arr.push(response.transaction.transaction_id);
-            gtm_transactions.transactions = transactions_arr;
-            gtm_transactions.timestamp = gtm_transactions.timestamp || moment_now.unix();
-
-            localStorage.setItem(storage_key, JSON.stringify(gtm_transactions));
         }
     }
 }

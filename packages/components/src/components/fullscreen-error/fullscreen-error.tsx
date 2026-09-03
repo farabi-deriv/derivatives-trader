@@ -5,8 +5,8 @@ import { Localize } from '@deriv-com/translations';
 
 import Button from '../button';
 import Div100vhContainer from '../div100vh-container';
-import TriangleWarningIcon from '../error-modal/triangle-warning-icon';
 import Text from '../text';
+import TriangleWarningIcon from './triangle-warning-icon';
 
 type TFullscreenError = {
     error_message?: string;

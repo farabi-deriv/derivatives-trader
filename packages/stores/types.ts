@@ -7,7 +7,6 @@ import type {
     TLogOutResponse,
     TPortfolioResponse,
     TPriceProposalOpenContractsResponse,
-    TTransactionsStreamResponse,
     TUpdateContractHistoryResponse,
     TUpdateContractResponse,
 } from '@deriv/api';
@@ -22,7 +21,6 @@ type ContractUpdateHistory = TUpdateContractHistoryResponse['contract_update_his
 type LogOutResponse = TLogOutResponse;
 type Portfolio1 = NonNullable<NonNullable<TPortfolioResponse['portfolio']>['contracts']>[0];
 type ProposalOpenContract = TPriceProposalOpenContractsResponse['proposal_open_contract'];
-type Transaction = TTransactionsStreamResponse['transaction'];
 
 /**
  * Which URL trade param(s) the URL-unavailable acknowledgement is reporting. `both` covers a link
@@ -172,16 +170,6 @@ type TNotification =
     | ((withdrawal_locked: boolean, deposit_locked: boolean) => TNotificationMessage)
     | ((excluded_until: number) => TNotificationMessage);
 
-type RealAccountSignupSettings = {
-    active_modal_index: number;
-    current_currency: string;
-    error_code?: string;
-    error_details?: string | Record<string, string>;
-    error_message: string;
-    previous_currency: string;
-    success_message: string;
-};
-
 export type TCurrentAccount = {
     loginid: string;
     balance: number;
@@ -201,7 +189,6 @@ export type TClientStore = {
     current_account: TCurrentAccount | null;
     setIsLoggingIn: (value: boolean) => void;
     available_crypto_currencies: Array<{ value: string; type: string; name: string }>;
-    available_onramp_currencies: Array<string>;
     balance?: string | number;
     clients_country: string;
     currency: string;
@@ -281,7 +268,6 @@ type TCommonStore = {
     is_language_changing: boolean;
     services_error: TCommonStoreServicesError;
     is_socket_opened: boolean;
-    setAppstorePlatform: (value?: string) => void;
     setError?: (has_error: boolean, error: TCommonStoreError) => void;
     setSelectedContractType: (contract_type: string) => void;
     setServicesError: (error: TCommonStoreServicesError, hide_toast: boolean) => void;
@@ -302,8 +288,6 @@ type TUiStore = {
     duration_t: number;
     enableApp: () => void;
     getDurationFromUnit: (unit: string) => number;
-    has_real_account_signup_ended: boolean;
-    is_additional_kyc_info_modal_open: boolean;
     is_advanced_duration: boolean;
     is_history_tab_active: boolean;
     is_forced_to_exit_pnv: boolean;
@@ -321,8 +305,6 @@ type TUiStore = {
     is_reports_visible: boolean;
     is_reset_password_modal_visible: boolean;
     is_route_modal_on: boolean;
-    is_verification_modal_visible: boolean;
-    is_verification_submitted: boolean;
     is_desktop: boolean;
     is_app_disabled: boolean;
     is_link_expired_modal_visible: boolean;
@@ -333,7 +315,6 @@ type TUiStore = {
     is_positions_drawer_on: boolean;
     is_reset_email_modal_visible: boolean;
     is_services_error_visible: boolean;
-    is_trading_assessment_for_existing_user_enabled: boolean;
     isUrlUnavailableModalVisible: boolean;
     urlUnavailableModalReason: TUrlUnavailableModalReason;
     is_logout_success_modal_visible: boolean;
@@ -353,7 +334,6 @@ type TUiStore = {
     setAppContentsScrollRef: (ref: React.MutableRefObject<null | HTMLDivElement>) => void;
     setCurrentFocus: (value: string | null) => void;
     setDarkMode: (is_dark_mode_on: boolean) => boolean;
-    setIsWalletModalVisible: (value: boolean) => void;
     setIsForcedToExitPnv: (value: boolean) => void;
     setIsPhoneVerificationCompleted: (value: boolean) => void;
     setRedirectFromEmail: (value: boolean) => void;
@@ -361,9 +341,6 @@ type TUiStore = {
     setReportsTabIndex: (value: number) => void;
     setIsClosingCreateRealAccountModal: (value: boolean) => void;
     setIsFromSignupAccount: (value: boolean) => void;
-    setIsVerificationModalVisible: (value: boolean) => void;
-    setIsVerificationSubmitted: (value: boolean) => void;
-    setRealAccountSignupEnd: (status: boolean) => void;
     setPurchaseState: (index: number) => void;
     simple_duration_unit: string;
     should_show_phone_number_otp: boolean;
@@ -374,9 +351,7 @@ type TUiStore = {
         cb?: (() => void) | ((route_to: RouteComponentProps['location'], action: string) => boolean)
     ) => void;
     setSubSectionIndex: (index: number) => void;
-    shouldNavigateAfterChooseCrypto: (value: Omit<string, TRoutes> | TRoutes) => void;
     should_show_real_accounts_list?: boolean;
-    toggleCashier: () => void;
     toggleHistoryTab: (state_change?: boolean) => void;
     toggleLinkExpiredModal: (state_change: boolean) => void;
     toggleResetEmailModal: (state_change: boolean) => void;
@@ -396,26 +371,9 @@ type TUiStore = {
     removeToast: (key: string) => void;
     reports_route_tab_index: number;
     should_show_cancellation_warning: boolean;
-    should_trigger_tour_guide: boolean;
     toggleCancellationWarning: (state_change?: boolean) => void;
     toggleReports: (is_visible: boolean) => void;
-    is_real_acc_signup_on: boolean;
-    is_need_real_account_for_cashier_modal_visible: boolean;
-    toggleNeedRealAccountForCashierModal: () => void;
-    is_switch_to_deriv_account_modal_visible: boolean;
-    openSwitchToRealAccountModal: () => void;
-    openDerivRealAccountNeededModal: () => void;
-    is_top_up_virtual_open: boolean;
-    is_top_up_virtual_in_progress: boolean;
-    is_top_up_virtual_success: boolean;
-    real_account_signup_target: string;
-    closeSuccessTopUpModal: () => void;
-    closeTopUpModal: () => void;
-    openAccountNeededModal: () => void;
-    openTopUpModal: () => void;
     is_reset_trading_password_modal_visible: boolean;
-    real_account_signup: RealAccountSignupSettings;
-    resetRealAccountSignupParams: () => void;
     setResetTradingPasswordModalOpen: () => void;
     populateSettingsExtensions: (menu_items: Array<TPopulateSettingsExtensionsMenuItem> | null) => void;
     purchase_states: boolean[];
@@ -707,7 +665,6 @@ type TGtmStore = {
         platform: 'DBot' | 'MT5' | 'DTrader' | 'undefined';
     }>;
     pushDataLayer: (data: Record<string, unknown>) => void;
-    pushTransactionData: (response: Transaction, extra_data: Record<string, unknown>) => void;
 };
 
 /**

@@ -1,5 +1,3 @@
-import { TCoreStores } from '@deriv/stores/types';
-
 import { TRootStore } from 'Types';
 
 import MarketsStore from './Markets/markets-store';
@@ -12,11 +10,8 @@ export default class ModulesStore {
     markets: MarketsStore;
     trade: TradeStore;
     automation: AutomationStore;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cashier: any;
 
-    constructor(root_store: TRootStore, core_store: TCoreStores) {
-        this.cashier = core_store.modules.cashier;
+    constructor(root_store: TRootStore) {
         this.trade = new TradeStore({ root_store });
         this.automation = new AutomationStore({ root_store });
         this.positions = new PositionsStore({ root_store });
