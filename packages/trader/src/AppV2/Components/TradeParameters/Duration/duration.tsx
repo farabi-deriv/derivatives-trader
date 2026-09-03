@@ -2,18 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { observer } from 'mobx-react-lite';
 
-import { getUnitMap, isMobile, mapErrorMessage, trackAnalyticsEvent } from '@deriv/shared';
+import { getUnitMap, isMobile, mapErrorMessage, routes, trackAnalyticsEvent } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
-import { ActionSheet, TextField, useSnackbar } from '@deriv-com/quill-ui';
+import { ActionSheet, TextField } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
+import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 import {
     clampTimeWheelSelection,
     DURATION_TAB,
     DURATION_UNIT,
-    getDurationFromTimeWheelSelection,
     getDatePickerStartDate,
+    getDurationFromTimeWheelSelection,
     getDurationTab,
     getTickWheelRange,
     getTimeWheelSelectionFromDuration,
@@ -57,7 +58,7 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         unsaved_expiry_date_v2: selected_expiry_date,
         validation_errors,
     } = useTraderStore();
-    const { addSnackbar } = useSnackbar();
+    const announceError = useErrorSnackbar();
     const { name_plural, name, name_singular } = getUnitMap()[duration_unit] ?? {};
     const duration_unit_text = (duration === 1 ? name_singular : name_plural) ?? name;
     const [is_open, setOpen] = useState(false);
@@ -75,9 +76,9 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         (validation_errors.duration?.length ?? 0) > 0;
     const isInitialMount = useRef(true);
     const prevExpiryEpoch = useRef<string | number | null>(null);
-    const { client, common } = useStore();
-    const { is_logged_in } = client;
+    const { common, ui } = useStore();
     const { server_time } = common;
+    const { is_chart_maximized } = ui;
     const { localize } = useTranslations();
 
     // Initialize saved date/time from expiry_epoch or set defaults
@@ -276,14 +277,15 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         if (has_error) {
             const error_obj = proposal_info[contract_type_object[0]] || validation_errors?.duration?.[0];
             if (error_obj?.error_field === 'duration') {
-                addSnackbar({
+                // Deduped app-wide: `PurchaseButton` reports this same sentence off the same
+                // proposal response, and quill plays two enqueues as two toasts (issue #1319).
+                announceError({
                     message: mapErrorMessage(error_obj),
-                    status: 'fail',
-                    hasCloseButton: true,
-                    hasFixedHeight: false,
-                    delay: ERROR_SNACKBAR_DURATION,
                     style: {
-                        marginBottom: is_logged_in ? '48px' : '-8px',
+                        marginBottom: getErrorSnackbarBottomOffset({
+                            pathname: routes.index,
+                            is_chart_maximized,
+                        }),
                         width: 'calc(100% - var(--core-spacing-800)',
                     },
                 });

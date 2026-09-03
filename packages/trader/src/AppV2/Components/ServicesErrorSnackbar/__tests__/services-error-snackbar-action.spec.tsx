@@ -6,6 +6,7 @@ import { SnackbarProvider } from '@deriv-com/quill-ui';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { resetErrorSnackbarDedupe } from 'AppV2/Hooks/useErrorSnackbar';
 import { SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 
 import TraderProviders from '../../../../trader-providers';
@@ -32,6 +33,8 @@ describe('ServicesErrorSnackbar action', () => {
         original_location: PropertyDescriptor | undefined;
 
     beforeEach(() => {
+        // The dedupe record in useErrorSnackbar is module scope, so it outlives a single render.
+        resetErrorSnackbarDedupe();
         (useLocation as jest.Mock).mockReturnValue({ pathname: '/' });
         default_mock_store = mockStore({
             client: { is_logged_in: true },

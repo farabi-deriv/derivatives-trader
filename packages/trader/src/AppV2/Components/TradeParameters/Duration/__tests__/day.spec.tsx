@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { dayjs } from '@deriv/shared';
+import { dayjs, routes } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { TCoreStores } from '@deriv/stores/types';
 import { useSnackbar } from '@deriv-com/quill-ui';
@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { useProposal } from 'AppV2/Hooks/useProposal';
+import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 
 import TraderProviders from '../../../../../trader-providers';
 import DayInput from '../day';
@@ -189,5 +190,33 @@ describe('DayInput', () => {
 
         // Even though the browsed value is dirty, the proposal error keeps save disabled
         expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+
+    it('positions its error toast clear of the Buy button', async () => {
+        // The offset arithmetic is covered in layout-utils.spec.ts; what this pins is that this call
+        // site passes the trade-page arguments, so a later edit here cannot silently drop the
+        // clearance and put the toast back on top of Buy (issue #1246).
+        const mockAddSnackbar = jest.fn();
+        (useSnackbar as jest.Mock).mockReturnValue({ addSnackbar: mockAddSnackbar });
+
+        let proposal_result: { data: unknown; error: unknown } = { data: { proposal: {} }, error: undefined };
+        (useProposal as jest.Mock).mockImplementation(() => proposal_result);
+        mockDayInput();
+
+        proposal_result = {
+            data: undefined,
+            error: { message: 'Invalid duration', details: { field: 'duration' } },
+        };
+        await userEvent.click(screen.getByDisplayValue('23:59:59 GMT'));
+        await userEvent.click(screen.getByText('browse-time'));
+
+        expect(mockAddSnackbar).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'fail',
+                style: expect.objectContaining({
+                    marginBottom: getErrorSnackbarBottomOffset({ pathname: routes.index }),
+                }),
+            })
+        );
     });
 });

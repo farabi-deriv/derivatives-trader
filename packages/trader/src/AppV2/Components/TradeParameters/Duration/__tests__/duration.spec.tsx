@@ -347,6 +347,11 @@ describe('Duration - Mobile', () => {
         );
     };
 
+    // The "endtime expiry carrying no expiry_time" guard that used to sit here asserted a write this
+    // component no longer performs: TradeStore seeds the daily expiry and Duration only reads it.
+    // Covered by trade-store.spec.ts, 'falls back to a duration expiry when an endtime commit
+    // carries no expiry_time'.
+
     it('should render durations with an hour component in clock format (mobile)', () => {
         default_trade_store.modules.trade.duration = 125;
         mockDurationMobile();

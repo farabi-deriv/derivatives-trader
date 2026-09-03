@@ -6,7 +6,8 @@ import { mockStore } from '@deriv/stores';
 import { useSnackbar } from '@deriv-com/quill-ui';
 import { render } from '@testing-library/react';
 
-import { ERROR_SNACKBAR_DURATION, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
+import { resetErrorSnackbarDedupe } from 'AppV2/Hooks/useErrorSnackbar';
+import { ERROR_SNACKBAR_DURATION, getErrorSnackbarBottomOffset, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 
 import TraderProviders from '../../../../trader-providers';
 import ServicesErrorSnackbar from '../services-error-snackbar';
@@ -24,6 +25,8 @@ describe('ServicesErrorSnackbar', () => {
     let mockAddSnackbar = jest.fn();
 
     beforeEach(() => {
+        // The dedupe record in useErrorSnackbar is module scope, so it outlives a single render.
+        resetErrorSnackbarDedupe();
         default_mock_store = mockStore({
             client: { is_logged_in: true },
             common: {
@@ -66,6 +69,21 @@ describe('ServicesErrorSnackbar', () => {
             expect.objectContaining({
                 status: 'fail',
                 delay: ERROR_SNACKBAR_DURATION,
+            })
+        );
+    });
+
+    it('positions the trade-page toast clear of the Buy button', () => {
+        (useLocation as jest.Mock).mockReturnValue({
+            pathname: '/',
+        });
+        render(mockServicesErrorSnackbar());
+
+        expect(mockAddSnackbar).toHaveBeenCalledWith(
+            expect.objectContaining({
+                style: expect.objectContaining({
+                    marginBottom: getErrorSnackbarBottomOffset({ pathname: '/', is_logged_in: true }),
+                }),
             })
         );
     });
@@ -150,5 +168,34 @@ describe('ServicesErrorSnackbar', () => {
         render(mockServicesErrorSnackbar());
 
         expect(mockAddSnackbar).not.toHaveBeenCalled();
+    });
+
+    // Dismissing this toast runs `onSnackbarRemove: resetServicesError`, which clears the store and
+    // flips the gate true→false; while the condition is still live it flips straight back, and the
+    // effect ran again for the same text (issue #1319). useErrorSnackbar suppresses that, and also
+    // the copy PurchaseButton raises for a field-less proposal error off the same response. Each step
+    // supplies a NEW store object — the mock store is not observable, so mutating it in place would
+    // not re-render.
+    it('does not re-announce the same text when a reset flips the gate back', () => {
+        const ERROR = { code: 'SomeAwesomeError', message: 'Mock error message', type: 'buy' };
+        const storeWith = (services_error: Record<string, unknown>) =>
+            mockStore({
+                client: { is_logged_in: true },
+                common: { services_error: services_error as never, resetServicesError: jest.fn() },
+            });
+        const renderWith = (store: ReturnType<typeof mockStore>) => (
+            <TraderProviders store={store}>
+                <ServicesErrorSnackbar />
+            </TraderProviders>
+        );
+        (useLocation as jest.Mock).mockReturnValue({ pathname: '/' });
+
+        const { rerender } = render(renderWith(storeWith(ERROR)));
+        expect(mockAddSnackbar).toHaveBeenCalledTimes(1);
+
+        rerender(renderWith(storeWith({}))); // the reset a dismissal performs
+        rerender(renderWith(storeWith(ERROR))); // …the condition is still live
+
+        expect(mockAddSnackbar).toHaveBeenCalledTimes(1);
     });
 });

@@ -1,13 +1,23 @@
 import React from 'react';
 
+import { routes } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+import { resetErrorSnackbarDedupe } from 'AppV2/Hooks/useErrorSnackbar';
+import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 
 import TraderProviders from '../../../../../trader-providers';
 import Barrier from '../barrier';
 
 jest.mock('AppV2/Components/TradeParameters/Barrier/barrier-input', () => jest.fn(() => <div>Barrier Input</div>));
+
+const mockAddSnackbar = jest.fn();
+jest.mock('@deriv-com/quill-ui', () => ({
+    ...jest.requireActual('@deriv-com/quill-ui'),
+    useSnackbar: jest.fn(() => ({ addSnackbar: mockAddSnackbar })),
+}));
 
 jest.mock('@deriv/quill-icons', () => ({
     ...jest.requireActual('@deriv/quill-icons'),
@@ -102,6 +112,28 @@ describe('Barrier Component', () => {
             await userEvent.click(screen.getByRole('textbox'));
             // When ActionSheet is open, error status should not be shown on the TextField
             expect(screen.getByText('Barrier Input')).toBeInTheDocument();
+        });
+
+        it('positions its error toast clear of the Buy button', () => {
+            // The offset arithmetic is covered in layout-utils.spec.ts; what this pins is that this
+            // call site passes the trade-page arguments, so a later edit here cannot silently drop
+            // the clearance and put the toast back on top of Buy (issue #1246).
+            resetErrorSnackbarDedupe();
+            mockAddSnackbar.mockClear();
+            default_mock_store.modules.trade.proposal_info = {
+                CALL: { has_error: true, error_field: 'barrier', message: 'Barrier error message' },
+            };
+            default_mock_store.modules.trade.trade_type_tab = 'CALL';
+            mockBarriers();
+
+            expect(mockAddSnackbar).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    status: 'fail',
+                    style: expect.objectContaining({
+                        marginBottom: getErrorSnackbarBottomOffset({ pathname: routes.index }),
+                    }),
+                })
+            );
         });
     });
 });

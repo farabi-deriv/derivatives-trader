@@ -3,11 +3,12 @@ import { useLocation } from 'react-router-dom';
 
 import { getStaticUrl, isEmptyObject, isValidToCancel, routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
-import { SnackbarController, useSnackbar } from '@deriv-com/quill-ui';
+import { SnackbarController } from '@deriv-com/quill-ui';
 import { useTranslations } from '@deriv-com/translations';
 
 import useContractDetails from 'AppV2/Hooks/useContractDetails';
-import { checkIsServiceModalError, ERROR_SNACKBAR_DURATION, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
+import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
+import { checkIsServiceModalError, getErrorSnackbarBottomOffset, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
@@ -43,11 +44,12 @@ const ServicesErrorSnackbar = observer(() => {
     const {
         common: { services_error, resetServicesError },
         client: { is_logged_in },
+        ui: { is_chart_maximized },
     } = useStore();
     const { is_multiplier, proposal_info, validation_errors, trade_types, contract_type, trade_type_tab } =
         useTraderStore();
     const { contract_info } = useContractDetails();
-    const { addSnackbar } = useSnackbar();
+    const announceError = useErrorSnackbar();
     const { pathname } = useLocation();
 
     const { code, message } = services_error || {};
@@ -83,35 +85,37 @@ const ServicesErrorSnackbar = observer(() => {
 
     const should_show_error_snackbar = checkShouldShowErrorSnackBar();
     const should_contain_action = should_show_error_snackbar && code === SERVICE_ERROR.COMPANY_WIDE_LIMIT_EXCEEDED;
-    const bottom_position =
-        pathname.startsWith(routes.contract.replace('/:contract_id', '')) &&
-        is_multiplier &&
-        isValidToCancel(contract_info)
-            ? '104px'
-            : '48px';
+    const bottom_position = getErrorSnackbarBottomOffset({
+        pathname,
+        is_logged_in,
+        is_chart_maximized,
+        is_cancellable_multiplier: is_multiplier && isValidToCancel(contract_info),
+    });
     const action_props = {
         actionText: localize('View'),
         onActionClick: () => openDocument(getStaticUrl('tnc/trading-terms.pdf', true)),
     };
 
+    // `onSnackbarRemove: resetServicesError` below means dismissing this toast clears the store,
+    // flipping the gate true→false; while the condition is still live it flips straight back and the
+    // effect runs again for the same message. `useErrorSnackbar` absorbs that, along with the copies
+    // of a field-less proposal error that `PurchaseButton` raises from the same response.
     React.useEffect(() => {
-        if (should_show_error_snackbar) {
-            addSnackbar({
-                message: message ?? contract_error_message,
-                status: 'fail',
-                hasCloseButton: true,
-                hasFixedHeight: false,
-                delay: ERROR_SNACKBAR_DURATION,
-                onSnackbarRemove: resetServicesError,
-                style: {
-                    marginBottom: is_logged_in ? bottom_position : '-8px',
-                    width: 'calc(100% - var(--core-spacing-800)',
-                },
-                ...(should_contain_action ? action_props : {}),
-            });
-        }
+        const next_message = message ?? contract_error_message;
+
+        if (!should_show_error_snackbar) return;
+
+        announceError({
+            message: next_message,
+            onSnackbarRemove: resetServicesError,
+            style: {
+                marginBottom: bottom_position,
+                width: 'calc(100% - var(--core-spacing-800)',
+            },
+            ...(should_contain_action ? action_props : {}),
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [should_show_error_snackbar, should_contain_action]);
+    }, [should_show_error_snackbar, should_contain_action, message, contract_error_message]);
 
     return <SnackbarController />;
 });

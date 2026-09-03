@@ -2,12 +2,14 @@ import React from 'react';
 import clsx from 'clsx';
 import { observer } from 'mobx-react-lite';
 
-import { mapErrorMessage } from '@deriv/shared';
-import { ActionSheet, TextField, useSnackbar } from '@deriv-com/quill-ui';
+import { mapErrorMessage, routes } from '@deriv/shared';
+import { useStore } from '@deriv/stores';
+import { ActionSheet, TextField } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
+import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
 import { TTradeParametersProps } from '../trade-parameters';
@@ -18,6 +20,9 @@ import BarrierInput from './barrier-input';
 const Barrier = observer(({ is_minimized }: TTradeParametersProps) => {
     const trade_store = useTraderStore();
     const { barrier_1, is_market_closed, validation_errors, proposal_info, trade_type_tab, symbol } = trade_store;
+    const {
+        ui: { is_chart_maximized },
+    } = useStore();
     const { isMobile } = useDevice();
     const [is_open, setIsOpen] = React.useState(false);
 
@@ -25,7 +30,7 @@ const Barrier = observer(({ is_minimized }: TTradeParametersProps) => {
         (validation_errors.barrier_1?.length ?? 0) > 0 ||
         (proposal_info?.[trade_type_tab]?.has_error && proposal_info?.[trade_type_tab]?.error_field === 'barrier');
 
-    const { addSnackbar } = useSnackbar();
+    const announceError = useErrorSnackbar();
     const [barrier_error_shown, setBarrierErrorShown] = React.useState(false);
 
     const onClose = React.useCallback(() => {
@@ -41,16 +46,21 @@ const Barrier = observer(({ is_minimized }: TTradeParametersProps) => {
         // See the Duration equivalent: the former `!is_minimized` gate meant "expanded sheet only",
         // which no longer exists, so keeping it would make this unreachable on mobile.
         if (has_error && error_field === 'barrier' && !barrier_error_shown && !is_open) {
-            addSnackbar({
+            // Deduped app-wide: `PurchaseButton` reports this same sentence off the same proposal
+            // response, and quill plays two enqueues as two toasts (issue #1319).
+            announceError({
                 message: mapErrorMessage(proposal_error),
-                hasCloseButton: true,
-                status: 'fail',
-                delay: ERROR_SNACKBAR_DURATION,
-                style: { marginBottom: '48px' },
+                hasFixedHeight: true,
+                style: {
+                    marginBottom: getErrorSnackbarBottomOffset({
+                        pathname: routes.index,
+                        is_chart_maximized,
+                    }),
+                },
             });
             setBarrierErrorShown(true);
         }
-    }, [proposal_info, barrier_error_shown, is_open, trade_type_tab, addSnackbar]);
+    }, [proposal_info, barrier_error_shown, is_open, trade_type_tab, announceError, is_chart_maximized]);
 
     // Reset error shown flag when modal opens
     React.useEffect(() => {

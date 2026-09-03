@@ -643,6 +643,26 @@ describe('TradeStore', () => {
                 expect(tradeStore.proposal_info).toEqual({});
                 expect(tradeStore.proposal_requests).toEqual({});
             });
+
+            // A request carrying neither duration nor date_expiry is guaranteed to be rejected with
+            // "Please specify either duration or date_expiry." — withhold it instead (issue #1246).
+            it('sends nothing when the expiry cannot be resolved', () => {
+                tradeStore.is_market_closed = false;
+                tradeStore.is_awaiting_contracts_for = false;
+                tradeStore.validation_errors = {};
+                tradeStore.trade_types = { CALL: 'Higher' };
+                tradeStore.contract_type = 'rise_fall';
+                tradeStore.expiry_type = 'endtime';
+                tradeStore.expiry_time = null;
+                tradeStore.duration = 0;
+                tradeStore.duration_unit = '';
+
+                tradeStore.requestProposal();
+
+                expect(WS.subscribeProposal).not.toHaveBeenCalled();
+                expect(tradeStore.proposal_info).toEqual({});
+                expect(tradeStore.proposal_requests).toEqual({});
+            });
         });
 
         describe('symbol switch', () => {
@@ -1626,6 +1646,9 @@ describe('TradeStore', () => {
             tradeStore.symbol = 'frxXAUUSD';
             tradeStore.currency = 'USD';
             tradeStore.trade_types = { CALL: 'Higher' } as unknown as typeof tradeStore.trade_types;
+            // Normally seeded by processContractsForV2 from the API; ContractType.getContractValues
+            // is mocked away here, and a proposal without a resolvable expiry is withheld.
+            tradeStore.duration_unit = 'm';
         };
 
         beforeEach(() => {
@@ -3198,6 +3221,98 @@ describe('TradeStore', () => {
         it('is null when the active run has no contract template', () => {
             setRun(true, null, { trade_type: 'rise_fall' });
             expect(tradeStore.automation_run_market).toBeNull();
+        });
+    });
+
+    // The "endtime expiry carrying no expiry_time" invariant this file used to assert here was a
+    // commit-funnel fallback that downgraded such a commit to `duration`. It is superseded by the
+    // daily-only expiry seed (#1302), which deliberately commits `endtime` with a null
+    // `expiry_time` and resolves the close time from the seeded trading day right after — so the
+    // fallback would have cancelled the seed and put daily-only contracts back to pricing by
+    // duration. Covered by trade-store-daily-expiry.spec.ts.
+
+    // All market tabs share one TradeStore, so the outgoing tab's error state would otherwise be
+    // (re-)raised against the incoming tab (issue #1246).
+    describe('selectMarketAndTradeType clears the outgoing tab error state', () => {
+        beforeEach(() => {
+            // Force manual mode (see the supersession describe above for why).
+            (tradeStore.root_store.ui as unknown as { is_mobile: boolean }).is_mobile = false;
+            tradeStore.is_automation_page = false;
+            tradeStore.active_trade_panel_tab = TRADE_PANEL_TABS.TRADE;
+            jest.spyOn(tradeStore, 'validateAllProperties').mockImplementation(() => undefined);
+            tradeStore.symbol = 'frxXAUUSD';
+            tradeStore.contract_type = 'rise_fall';
+        });
+
+        afterEach(() => {
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            localStorage.removeItem('active_trade_panel_tab');
+        });
+
+        it('drops the previous tab’s proposal error and resets a pending services_error', async () => {
+            tradeStore.proposal_info = {
+                CALL: { has_error: true, message: 'Please specify either duration or date_expiry.' },
+            } as never;
+            tradeStore.root_store.common.services_error = {
+                code: 'ContractBuyValidationError',
+                message: 'Please specify either duration or date_expiry.',
+            };
+
+            await tradeStore.selectMarketAndTradeType('stpRNG200', 'rise_fall');
+
+            expect(tradeStore.proposal_info).toEqual({});
+            expect(tradeStore.root_store.common.resetServicesError).toHaveBeenCalled();
+        });
+
+        it('does not reset the services error when none is set', async () => {
+            tradeStore.root_store.common.services_error = {};
+
+            await tradeStore.selectMarketAndTradeType('stpRNG200', 'rise_fall');
+
+            expect(tradeStore.root_store.common.resetServicesError).not.toHaveBeenCalled();
+        });
+
+        it('clears the trade-parameter validation errors but leaves unrelated keys alone', async () => {
+            tradeStore.validation_errors.duration = ['Please specify either duration or date_expiry.'];
+            tradeStore.validation_errors.some_other_key = ['untouched'];
+
+            await tradeStore.selectMarketAndTradeType('stpRNG200', 'rise_fall');
+
+            expect(tradeStore.validation_errors.duration).toEqual([]);
+            expect(tradeStore.validation_errors.some_other_key).toEqual(['untouched']);
+        });
+    });
+
+    describe('onProposalResponse staleness guard', () => {
+        beforeEach(() => {
+            tradeStore.symbol = 'stpRNG200';
+            tradeStore.trade_types = { CALL: 'Higher', PUT: 'Lower' };
+            // createProposalRequests rebuilds this map for the current tab, so only the types the tab
+            // trades have an outstanding request — that presence is what the guard keys off.
+            tradeStore.proposal_requests = { CALL: {}, PUT: {} } as never;
+            tradeStore.proposal_info = {};
+        });
+
+        // onProposalResponse awaits the stake-limits probe before writing proposal_info, so these
+        // must be awaited — a synchronous assertion runs before the write lands.
+        it('ignores a response for a contract type with no outstanding request', async () => {
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: 'MULTUP', underlying_symbol: 'stpRNG200' },
+                msg_type: 'proposal',
+                error: { code: 'ContractBuyValidationError', message: 'Stale error' },
+            } as never);
+
+            expect(tradeStore.proposal_info).toEqual({});
+        });
+
+        it('accepts a response for a contract type the current tab does trade', async () => {
+            await tradeStore.onProposalResponse({
+                echo_req: { contract_type: 'CALL', underlying_symbol: 'stpRNG200' },
+                msg_type: 'proposal',
+                proposal: { id: 'proposal_1', ask_price: 10, payout: 19.5 },
+            } as never);
+
+            expect(tradeStore.proposal_info.CALL).toBeDefined();
         });
     });
 });

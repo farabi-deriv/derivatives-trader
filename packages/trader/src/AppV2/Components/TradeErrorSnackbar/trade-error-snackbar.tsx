@@ -1,10 +1,11 @@
 import React from 'react';
 
+import { routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
-import { useSnackbar } from '@deriv-com/quill-ui';
 
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 
+import useErrorSnackbar from '../../Hooks/useErrorSnackbar';
 import useTradeError, { TErrorFields } from '../../Hooks/useTradeError';
 
 /**
@@ -22,29 +23,33 @@ import useTradeError, { TErrorFields } from '../../Hooks/useTradeError';
 const TradeErrorSnackbar = observer(
     ({ error_fields, should_show_snackbar }: { error_fields: TErrorFields[]; should_show_snackbar?: boolean }) => {
         const {
-            client: { is_logged_in },
+            ui: { is_chart_maximized },
         } = useStore();
-        const { addSnackbar } = useSnackbar();
+        const announceError = useErrorSnackbar();
         const { is_error_matching_field: has_error, message } = useTradeError({
             error_fields, // array with BE error_fields, for which we will track errors.
         });
 
+        // The gate below is not a one-shot: switching market tab wipes and refills `proposal_info`,
+        // so it flips true→false→true for what is still the same error. `useErrorSnackbar` absorbs
+        // that, and — unlike a guard local to this component — also the copies of this very sentence
+        // that `PurchaseButton` and `ServicesErrorSnackbar` raise for the same proposal response.
         React.useEffect(() => {
-            if (has_error && should_show_snackbar) {
-                addSnackbar({
-                    message,
-                    status: 'fail',
-                    hasCloseButton: true,
-                    hasFixedHeight: false,
-                    delay: ERROR_SNACKBAR_DURATION,
-                    style: {
-                        marginBottom: is_logged_in ? '48px' : '-8px',
-                        width: 'calc(100% - var(--core-spacing-800)',
-                    },
-                });
-            }
+            if (!has_error || !should_show_snackbar) return;
+
+            announceError({
+                message,
+                style: {
+                    // This component only ever renders on the Trade page.
+                    marginBottom: getErrorSnackbarBottomOffset({
+                        pathname: routes.index,
+                        is_chart_maximized,
+                    }),
+                    width: 'calc(100% - var(--core-spacing-800)',
+                },
+            });
             // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [has_error, should_show_snackbar]);
+        }, [has_error, should_show_snackbar, message]);
 
         return null;
     }

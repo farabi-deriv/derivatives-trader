@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { CONTRACT_TYPES, TRADE_TYPES } from '@deriv/shared';
+import { CONTRACT_TYPES, routes, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { useSnackbar } from '@deriv-com/quill-ui';
 import { render } from '@testing-library/react';
 
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import { resetErrorSnackbarDedupe } from 'AppV2/Hooks/useErrorSnackbar';
+import { ERROR_SNACKBAR_DURATION, getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 
 import TraderProviders from '../../../../trader-providers';
 import TradeErrorSnackbar from '../trade-error-snackbar';
@@ -21,6 +22,8 @@ describe('TradeErrorSnackbar', () => {
     let mockAddSnackbar = jest.fn();
 
     beforeEach(() => {
+        // The dedupe record in useErrorSnackbar is module scope, so it outlives a single render.
+        resetErrorSnackbarDedupe();
         default_mock_store = mockStore({
             client: { is_logged_in: true },
             modules: {
@@ -73,6 +76,42 @@ describe('TradeErrorSnackbar', () => {
         expect(mockAddSnackbar).toHaveBeenCalled();
     });
 
+    // Switching market tab wipes and refills proposal_info, so the gate flips true -> false -> true
+    // for what is still the same error; re-announcing there is what made a dismissed toast come back
+    // (issue #1319). The suppression itself lives in useErrorSnackbar — which also covers the copies
+    // PurchaseButton and ServicesErrorSnackbar raise off the same response, something no guard local
+    // to this component could see. The mock store is not observable, so each step supplies a NEW
+    // store object; mutating in place would not make the component re-read.
+    it('does not re-announce the same error when the proposal is wiped and refilled', () => {
+        const storeWith = (proposal_info: Record<string, unknown>) => {
+            const store = mockStore({ client: { is_logged_in: true } });
+            store.modules.trade = { ...default_mock_store.modules.trade, proposal_info } as never;
+            return store;
+        };
+        const renderWith = (store: ReturnType<typeof mockStore>) => (
+            <TraderProviders store={store}>
+                <TradeErrorSnackbar {...default_mock_props} />
+            </TraderProviders>
+        );
+        const errored_info = () => ({
+            TURBOSLONG: {
+                has_error: true,
+                has_error_details: false,
+                error_code: 'ContractBuyValidationError',
+                error_field: 'take_profit',
+                message: 'Enter an amount equal to or lower than 1701.11.',
+            },
+        });
+
+        const { rerender } = render(renderWith(storeWith(errored_info())));
+        expect(mockAddSnackbar).toHaveBeenCalledTimes(1);
+
+        rerender(renderWith(storeWith({}))); // the wipe a tab switch performs
+        rerender(renderWith(storeWith(errored_info()))); // …and the same error refilled
+
+        expect(mockAddSnackbar).toHaveBeenCalledTimes(1);
+    });
+
     it('passes an auto-dismiss delay to addSnackbar so the error toast does not persist forever', () => {
         render(mockTradeErrorSnackbar());
 
@@ -80,6 +119,18 @@ describe('TradeErrorSnackbar', () => {
             expect.objectContaining({
                 status: 'fail',
                 delay: ERROR_SNACKBAR_DURATION,
+            })
+        );
+    });
+
+    it('positions the toast clear of the Buy button', () => {
+        render(mockTradeErrorSnackbar());
+
+        expect(mockAddSnackbar).toHaveBeenCalledWith(
+            expect.objectContaining({
+                style: expect.objectContaining({
+                    marginBottom: getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: true }),
+                }),
             })
         );
     });

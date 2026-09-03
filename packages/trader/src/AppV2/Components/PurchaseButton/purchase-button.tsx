@@ -14,19 +14,21 @@ import {
     isOpen,
     isPendingSettlement,
     isValidToSell,
+    routes,
     trackAnalyticsEvent,
 } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
-import { Button, useNotifications, useSnackbar } from '@deriv-com/quill-ui';
+import { Button, useNotifications } from '@deriv-com/quill-ui';
 import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import RiskDisclosureModal from 'AppV2/Components/RiskDisclosureModal';
 import useContractsFor from 'AppV2/Hooks/useContractsFor';
+import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
 import { useRiskDisclosure } from 'AppV2/Hooks/useRiskDisclosure';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { isStakeAboveBalance } from 'AppV2/Utils/insufficient-balance-utils';
-import { ERROR_SNACKBAR_DURATION, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
+import { getErrorSnackbarBottomOffset, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 import { getTradeTypeTabsList } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -42,12 +44,12 @@ const PurchaseButton = observer(() => {
     const { localize } = useTranslations();
     const { isMobile } = useDevice();
     const { addBanner } = useNotifications();
-    const { addSnackbar } = useSnackbar();
+    const announceError = useErrorSnackbar();
     const {
         portfolio: { all_positions, onClickSell },
         client,
         common: { services_error, setServicesError },
-        ui: { is_switching_account },
+        ui: { is_chart_maximized, is_switching_account },
     } = useStore();
     // `currency` is aliased because `useTraderStore()` below already destructures one of its own.
     const { balance, currency: account_currency, is_logged_in } = client;
@@ -201,8 +203,6 @@ const PurchaseButton = observer(() => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [basis, basis_options, contract_type]);
 
-    const last_shown_error_ref = React.useRef<string | null>(null);
-
     React.useEffect(() => {
         // Only check errors for the currently displayed contract types (filtered by trade_type_tab)
         // to avoid showing errors from non-displayed contract types (e.g., stale DIGITOVER error on Under tab)
@@ -218,21 +218,21 @@ const PurchaseButton = observer(() => {
                 return false;
             });
 
-            if (has_error && message && message !== last_shown_error_ref.current) {
-                last_shown_error_ref.current = message;
-                addSnackbar({
+            // Deduped app-wide: this button reports the same sentence as `TradeErrorSnackbar` (for a
+            // field-tagged error) or `ServicesErrorSnackbar` (for a field-less one) off a single
+            // proposal response, and quill plays two enqueues as two sequential toasts (issue #1319).
+            if (has_error && message) {
+                announceError({
                     message,
-                    status: 'fail',
-                    hasCloseButton: true,
-                    hasFixedHeight: false,
-                    delay: ERROR_SNACKBAR_DURATION,
                     style: {
-                        marginBottom: is_logged_in ? '48px' : '-8px',
+                        // This button only renders on the Trade page.
+                        marginBottom: getErrorSnackbarBottomOffset({
+                            pathname: routes.index,
+                            is_chart_maximized,
+                        }),
                         width: 'calc(100% - var(--core-spacing-800))',
                     },
                 });
-            } else if (!has_error) {
-                last_shown_error_ref.current = null;
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,6 +1,12 @@
+import { TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 
-import { createProposalRequests, getProposalInfo } from '../proposal';
+import {
+    createProposalRequestForContract,
+    createProposalRequests,
+    getProposalInfo,
+    hasResolvableExpiry,
+} from '../proposal';
 
 describe('Proposal Helper Functions', () => {
     describe('getProposalInfo', () => {
@@ -503,6 +509,105 @@ describe('Proposal Helper Functions', () => {
             const result = createProposalRequests(store);
 
             expect(result.ONETOUCH.barrier).toBeUndefined();
+        });
+    });
+
+    // A duration-taking contract must never go on the wire without an expiry: a request carrying
+    // neither `duration` nor `date_expiry` is exactly what the backend answers with
+    // "Please specify either duration or date_expiry." (issue #1246).
+    describe('expiry resolution', () => {
+        const base_store = {
+            ...mockStore({}).modules.trade,
+            amount: '100',
+            basis: 'stake',
+            currency: 'USD',
+            symbol: 'stpRNG200',
+            duration: '15',
+            duration_unit: 'm',
+            expiry_type: 'duration',
+            form_components: ['duration', 'amount'],
+            contract_type: 'CALL',
+            barrier_count: 0,
+        };
+
+        describe('createProposalRequestForContract', () => {
+            it('falls back to the duration when an endtime expiry has no usable expiry_time', () => {
+                const store = {
+                    ...base_store,
+                    expiry_type: 'endtime',
+                    expiry_date: '2024-01-01',
+                    expiry_time: null,
+                };
+
+                const request = createProposalRequestForContract(store, 'CALL');
+
+                expect(request).toEqual(expect.objectContaining({ duration: 15, duration_unit: 'm' }));
+                expect(request).not.toHaveProperty('date_expiry');
+            });
+
+            it('still sends the absolute expiry when the endtime resolves', () => {
+                const store = {
+                    ...base_store,
+                    expiry_type: 'endtime',
+                    expiry_date: '2024-01-01',
+                    expiry_time: '23:59:59',
+                };
+
+                const request = createProposalRequestForContract(store, 'CALL');
+
+                expect(request).toHaveProperty('date_expiry');
+                expect(request).not.toHaveProperty('duration');
+                expect(request).not.toHaveProperty('duration_unit');
+            });
+        });
+
+        describe('hasResolvableExpiry', () => {
+            it('returns false when neither an expiry time nor a usable duration is available', () => {
+                const store = {
+                    ...base_store,
+                    expiry_type: 'endtime',
+                    expiry_date: '2024-01-01',
+                    expiry_time: null,
+                    duration: 0,
+                    duration_unit: '',
+                };
+
+                expect(hasResolvableExpiry(store)).toBe(false);
+            });
+
+            it('returns true for a resolvable endtime expiry', () => {
+                const store = {
+                    ...base_store,
+                    expiry_type: 'endtime',
+                    expiry_date: '2024-01-01',
+                    expiry_time: '23:59:59',
+                };
+
+                expect(hasResolvableExpiry(store)).toBe(true);
+            });
+
+            it('returns true when a duration and its unit are available', () => {
+                expect(hasResolvableExpiry(base_store)).toBe(true);
+            });
+
+            it('returns true for contract types that take no expiry', () => {
+                expect(
+                    hasResolvableExpiry({
+                        ...base_store,
+                        contract_type: TRADE_TYPES.ACCUMULATOR,
+                        duration: 0,
+                        duration_unit: '',
+                    })
+                ).toBe(true);
+                expect(
+                    hasResolvableExpiry({
+                        ...base_store,
+                        contract_type: TRADE_TYPES.MULTIPLIER,
+                        duration: 0,
+                        duration_unit: '',
+                    })
+                ).toBe(true);
+            });
         });
     });
 });

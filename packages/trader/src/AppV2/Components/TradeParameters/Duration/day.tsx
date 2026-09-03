@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { useInvalidateQuery } from '@deriv/api';
 import { LabelPairedCalendarSmRegularIcon, LabelPairedClockThreeSmRegularIcon } from '@deriv/quill-icons';
-import { hasIntradayDurationUnit, mapErrorMessage, setTime, toMoment } from '@deriv/shared';
+import { hasIntradayDurationUnit, mapErrorMessage, routes, setTime, toMoment } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
 import { ActionSheet, Text, TextField, useSnackbar } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 
 import { useBlockSheetSwipe } from 'AppV2/Hooks/useBlockSheetSwipe';
 import { useProposal } from 'AppV2/Hooks/useProposal';
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import { ERROR_SNACKBAR_DURATION, getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 import { getClosestTimeToCurrentGMT, getDatePickerStartDate, toExpiryDateString } from 'AppV2/Utils/trade-params-utils';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { getBoundaries } from 'Stores/Modules/Trading/Helpers/end-time';
@@ -41,9 +41,10 @@ const DayInput = ({
     const [payout_per_point, setPayoutPerPoint] = useState<number | undefined>();
     const lastSelectedDateRef = useRef<string>('');
     const [barrier_value, setBarrierValue] = useState<string | undefined>();
-    const { common } = useStore();
+    const { common, ui } = useStore();
     const [day, setDay] = useState<number | null>(null);
     const { server_time } = common;
+    const { is_chart_maximized } = ui;
     const {
         amount,
         barrier_1,
@@ -141,7 +142,12 @@ const DayInput = ({
                     status: 'fail',
                     hasCloseButton: true,
                     delay: ERROR_SNACKBAR_DURATION,
-                    style: { marginBottom: '48px' },
+                    style: {
+                        marginBottom: getErrorSnackbarBottomOffset({
+                            pathname: routes.index,
+                            is_chart_maximized,
+                        }),
+                    },
                 });
                 setIsDisabled(true);
             }

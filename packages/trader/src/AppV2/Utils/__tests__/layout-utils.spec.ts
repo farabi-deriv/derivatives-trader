@@ -1,6 +1,12 @@
-import { TRADE_TYPES } from '@deriv/shared';
+import { routes, TRADE_TYPES } from '@deriv/shared';
 
-import { checkIsServiceModalError, getChartHeight, isTradeParamVisible } from '../layout-utils';
+import {
+    checkIsServiceModalError,
+    getChartHeight,
+    getErrorSnackbarBottomOffset,
+    HEIGHT,
+    isTradeParamVisible,
+} from '../layout-utils';
 
 describe('isTradeParamVisible', () => {
     it('should return correct value for expiration component key', () => {
@@ -150,6 +156,67 @@ describe('getChartHeight', () => {
         const default_height = getChartHeight(common_args);
         // Maximized reclaims MARKET_SELECTOR (72) + BOTTOM_NAV (56) = +128
         expect(getChartHeight({ ...common_args, is_maximized: true })).toEqual(default_height + 72 + 56);
+    });
+});
+
+describe('getErrorSnackbarBottomOffset', () => {
+    it('clears the bottom nav and the Buy button on the trade page', () => {
+        const offset = getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: true });
+
+        expect(offset).toBe('112px');
+        expect(parseInt(offset)).toBeGreaterThanOrEqual(HEIGHT.BOTTOM_NAV + HEIGHT.PURCHASE_BUTTON);
+    });
+
+    it('drops the bottom-nav allowance when the chart is maximized (the sheet sits at the screen edge)', () => {
+        const offset = getErrorSnackbarBottomOffset({
+            pathname: routes.index,
+            is_logged_in: true,
+            is_chart_maximized: true,
+        });
+
+        expect(offset).toBe('56px');
+        expect(parseInt(offset)).toBeGreaterThanOrEqual(HEIGHT.PURCHASE_BUTTON);
+        expect(parseInt(offset)).toBeLessThan(HEIGHT.BOTTOM_NAV + HEIGHT.PURCHASE_BUTTON);
+    });
+
+    it('clears the bottom nav and the Buy button on the logged-out trade page too', () => {
+        // The bottom nav renders for every mobile visitor (AppContent) and the params sheet keeps
+        // its `bottom: HEIGHT.BOTTOM_NAV` logged out, so the clearance is identical to logged in.
+        const offset = getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: false });
+
+        expect(offset).toBe('112px');
+        expect(parseInt(offset)).toBeGreaterThanOrEqual(HEIGHT.BOTTOM_NAV + HEIGHT.PURCHASE_BUTTON);
+    });
+
+    it('drops only the bottom-nav allowance when logged out and the chart is maximized', () => {
+        expect(
+            getErrorSnackbarBottomOffset({
+                pathname: routes.index,
+                is_logged_in: false,
+                is_chart_maximized: true,
+            })
+        ).toBe('56px');
+    });
+
+    it('applies the same offset on the automate page', () => {
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_automate, is_logged_in: true })).toEqual(
+            getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: true })
+        );
+    });
+
+    it('keeps the contract-details offset above a cancellable multiplier’s action', () => {
+        expect(
+            getErrorSnackbarBottomOffset({
+                pathname: '/contract/12345',
+                is_logged_in: true,
+                is_cancellable_multiplier: true,
+            })
+        ).toBe('104px');
+    });
+
+    it('falls back to the default offsets everywhere else', () => {
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_positions, is_logged_in: true })).toBe('48px');
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_positions, is_logged_in: false })).toBe('-8px');
     });
 });
 

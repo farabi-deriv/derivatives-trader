@@ -164,6 +164,37 @@ export const getProposalInfo = (
     };
 };
 
+/** Accumulators and Multipliers legitimately carry no expiry fields at all. */
+const takesNoExpiry = (contract_type: string) =>
+    contract_type === TRADE_TYPES.ACCUMULATOR || contract_type === TRADE_TYPES.MULTIPLIER;
+
+/**
+ * The absolute expiry timestamp an `endtime` expiry resolves to, or `undefined` when the store
+ * holds no usable expiry time — a state the mobile Duration sheet used to be able to commit
+ * (an expiry date with no time).
+ */
+const resolveDateExpiry = (store: TTradeStore) => {
+    if (store.expiry_type !== 'endtime' || !store.expiry_time) return undefined;
+    return convertToUnix(toMoment(store.expiry_date).unix(), store.expiry_time);
+};
+
+/** The duration the store still holds, when it is usable as a proposal expiry. */
+const resolveDuration = (store: TTradeStore) => {
+    const duration = parseInt(store.duration.toString());
+    return duration > 0 && store.duration_unit ? { duration, duration_unit: store.duration_unit } : undefined;
+};
+
+/**
+ * Whether an outgoing proposal request can carry an expiry the backend accepts: a duration with
+ * its unit, or an absolute `date_expiry`. A request carrying neither is answered with "Please
+ * specify either duration or date_expiry.", so `requestProposal` withholds it instead of sending
+ * a request it knows will be rejected.
+ */
+export const hasResolvableExpiry = (store: TTradeStore) => {
+    if (takesNoExpiry(store.contract_type)) return true;
+    return !!resolveDateExpiry(store) || !!resolveDuration(store);
+};
+
 export const createProposalRequests = (store: TTradeStore) => {
     const requests = {} as Record<string, ReturnType<typeof createProposalRequestForContract>>;
 
@@ -206,15 +237,14 @@ export const createProposalRequestForContract = (store: TTradeStore, type_of_con
     const obj_multiplier: TObjMultiplier = {};
     let limit_order;
 
-    if (store.expiry_type === 'endtime' && store.expiry_time) {
-        const expiry_date = toMoment(store.expiry_date);
-        obj_expiry.date_expiry = convertToUnix(expiry_date.unix(), store.expiry_time);
+    const date_expiry = resolveDateExpiry(store);
+    if (date_expiry) {
+        obj_expiry.date_expiry = date_expiry;
     }
 
-    // TODO: Fix mobile duration param intermittently showing invalid duration error
     const getDurationParams = () => {
         // ACCUMULATOR and MULTIPLIER contracts don't use duration parameters
-        if (store.contract_type === TRADE_TYPES.ACCUMULATOR || store.contract_type === TRADE_TYPES.MULTIPLIER) {
+        if (takesNoExpiry(store.contract_type)) {
             return {};
         }
 
@@ -234,7 +264,12 @@ export const createProposalRequestForContract = (store: TTradeStore, type_of_con
             return obj_expiry;
         }
 
-        return {};
+        // An `endtime` expiry that resolves no date_expiry (a date committed without a time) used
+        // to fall through to `{}`, sending a request with no expiry at all — the exact shape the
+        // backend rejects with "Please specify either duration or date_expiry.". Fall back to the
+        // duration the store still holds; when there is no usable duration either,
+        // `hasResolvableExpiry` is what stops the request from being sent at all.
+        return resolveDuration(store) ?? {};
     };
 
     if (store.contract_type === TRADE_TYPES.MULTIPLIER) {

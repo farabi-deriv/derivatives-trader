@@ -105,6 +105,7 @@ import {
     getProposalErrorField,
     getProposalInfo,
     getStakeLimitsFromResponse,
+    hasResolvableExpiry,
 } from './Helpers/proposal';
 
 import ServerTime from '_common/base/server_time';
@@ -1195,6 +1196,17 @@ export default class TradeStore extends BaseStore {
      * pre-processing (chart-loading flag, Vanilla/accumulator resets) intact.
      */
     async selectMarketAndTradeType(underlying_symbol: string, contract_type: string) {
+        // Every market tab shares this one store, so the outgoing tab's error state has to go
+        // before the incoming tab's cascade starts — otherwise an error raised for the tab being
+        // left is (re-)raised against a tab that is perfectly configured (issue #1246).
+        //
+        // Re-confirming the already-active pair is not a switch, and clearing there would drop the
+        // field errors for a market that is not changing while the toast retraction — which keys on
+        // the market actually changing — stays put, leaving the two out of step. Only this clear is
+        // skipped: the rest of the method also owns the tab strip, the long-press replace flow and
+        // the URL mirror, none of which are safe to bypass on a re-selection.
+        const is_reselecting_active_market = underlying_symbol === this.symbol && contract_type === this.contract_type;
+        if (!is_reselecting_active_market) this.clearTradeErrorState();
         // This call is now the newest selection intent: any older cascade still in flight must not
         // write symbol/contract_type past this point (each checks the epoch before its next write).
         const epoch = ++this.selection_seq;
@@ -2258,6 +2270,22 @@ export default class TradeStore extends BaseStore {
             });
             return;
         }
+
+        // A duration-taking contract whose parameters resolve to neither a duration nor a
+        // date_expiry would send a request the backend rejects with "Please specify either
+        // duration or date_expiry." — and that rejection is surfaced to the user as a red toast
+        // over the Buy button. Withhold the request instead, using the same forget-then-clear
+        // ordering the guards above require.
+        if (!hasResolvableExpiry(this)) {
+            this.forgetAllProposal();
+            runInAction(() => {
+                this.proposal_info = {};
+                this.purchase_info = {};
+                this.proposal_requests = {};
+            });
+            return;
+        }
+
         const requests = createProposalRequests(this);
         if (Object.values(this.validation_errors).some(e => e.length)) {
             this.forgetAllProposal();
@@ -2377,15 +2405,19 @@ export default class TradeStore extends BaseStore {
     async onProposalResponse(response: TResponse<TPriceProposalRequest, TProposalResponse, 'proposal'>) {
         const { contract_type, underlying_symbol } = response.echo_req;
 
-        // Ignore stale proposal responses from a previously selected symbol.
+        // Ignore stale proposal responses: one raised for a previously selected symbol, and one for
+        // a contract type with no outstanding request — the symbol check alone doesn't catch a
+        // same-symbol trade-type switch, which the tab strip supports.
         // underlying_symbol is always present in proposal echo_req (set in createProposalRequests).
-        // The falsy check is intentional: if absent for any reason, fall through and process normally.
+        // The falsy checks are intentional: if absent for any reason, fall through and process normally.
         if (underlying_symbol && underlying_symbol !== this.symbol) {
             return;
         }
         // Same staleness rule on the trade-type dimension: a type with no outstanding request is a
         // straggler from a tab the user left (forgotten subscription, response already in flight)
-        // and must not settle stake or choices for a contract no longer on screen.
+        // and must not settle stake or choices for a contract no longer on screen. This subsumes a
+        // `trade_types` check — createProposalRequests rebuilds the map for the current tab, so a
+        // type the tab no longer trades has no entry here either.
         if (contract_type && !(contract_type in this.proposal_requests)) {
             return;
         }
@@ -3435,6 +3467,35 @@ export default class TradeStore extends BaseStore {
         if (this.is_dtrader_v2) {
             this.validation_errors.barrier_1 = [];
             this.validation_errors.barrier_2 = [];
+        }
+    }
+
+    /**
+     * Per-field reset of the trade-parameter validation errors, mirroring
+     * `clearBarrierValidationErrors` above. The field list comes from `getValidationRules` so it
+     * cannot drift, and clearing field-by-field (rather than replacing `validation_errors`) leaves
+     * anything another owner put on the object untouched.
+     */
+    private clearTradeParamValidationErrors(): void {
+        Object.keys(getValidationRules()).forEach(field => {
+            if (this.validation_errors[field]?.length) this.validation_errors[field] = [];
+        });
+    }
+
+    /**
+     * Drops every error surface a market tab can leave behind: the cached proposal error, the
+     * trade-parameter validation errors, and any pending service error. Called before a tab's
+     * symbol/contract-type cascade so the window between the tap and the first `onChange` carries
+     * no error from the tab being left.
+     */
+    private clearTradeErrorState(): void {
+        this.proposal_info = {};
+        this.validation_params = {};
+        this.clearTradeParamValidationErrors();
+        // Guarded so a plain tab tap doesn't fire the action on every switch, matching the
+        // portfolio store's guarded reset.
+        if (!isEmptyObject(this.root_store.common.services_error)) {
+            this.root_store.common.resetServicesError();
         }
     }
 

@@ -1,12 +1,12 @@
 import React from 'react';
 
 import { ReportsStoreProvider } from '@deriv/reports/src/Stores/useReportsStores';
-import { CONTRACT_TYPES, mockContractInfo, TRADE_TYPES } from '@deriv/shared';
+import { CONTRACT_TYPES, mockContractInfo, routes, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { ERROR_SNACKBAR_DURATION } from 'AppV2/Utils/layout-utils';
+import { ERROR_SNACKBAR_DURATION, getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 import ModulesProvider from 'Stores/Providers/modules-providers';
 
 import TraderProviders from '../../../../trader-providers';
@@ -400,6 +400,7 @@ describe('PositionsContent', () => {
     });
 
     it('should show an error snackbar with an auto-dismiss delay when the proposal contains an error', () => {
+        default_mock_store.client.is_logged_in = true;
         default_mock_store.modules.trade.proposal_info = {
             CALL: {
                 ...default_mock_store.modules.trade.proposal_info.CALL,
@@ -420,6 +421,10 @@ describe('PositionsContent', () => {
             expect.objectContaining({
                 status: 'fail',
                 delay: ERROR_SNACKBAR_DURATION,
+                // Clear of the Buy button, not on top of it (issue #1246).
+                style: expect.objectContaining({
+                    marginBottom: getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: true }),
+                }),
             })
         );
     });
