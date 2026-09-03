@@ -367,7 +367,6 @@
         "types packages/trader/src/AppV2/Utils/market-selection-utils.ts TFavouriteMarket",
         "types packages/trader/src/AppV2/Utils/market-selection-utils.ts TListSection",
         "types packages/trader/src/AppV2/Utils/market-selection-utils.ts TSubmarketGroup",
-        "types packages/trader/src/AppV2/Utils/open-markets-utils.ts TOpenMarketsMode",
         "types packages/trader/src/AppV2/Utils/symbol-categories-utils.ts MarketGroup",
         "types packages/trader/src/Stores/Modules/Trading/trade-store.ts TChartLayout",
         "types packages/trader/src/Stores/Modules/Trading/trade-store.ts TChartStateChangeOption",

@@ -7,6 +7,12 @@ import { mockStore } from '@deriv/stores';
 import { TRADE_PANEL_TABS } from 'AppV2/Components/AutomationPanel/automation-config';
 import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import { OPEN_MARKETS_STORAGE_KEYS, TOpenMarket } from 'AppV2/Utils/open-markets-utils';
+import {
+    getMarketKey,
+    readTabTradeParams,
+    TAB_TRADE_PARAMS_STORAGE_KEYS,
+    type TTabTradeParams,
+} from 'AppV2/Utils/tab-trade-params-utils';
 import { getDerivedDefaultStake, getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { TRootStore } from 'Types';
 
@@ -76,6 +82,11 @@ jest.mock('../Helpers/contract-type', () => ({
             non_available_contract_types_list: {},
         }),
         getContractValues: () => ({}),
+        // The offering config is read per symbol now; these tests assert store bookkeeping, not
+        // barrier derivation, so an empty offering (every reader falls through) is the right stub.
+        // Absent entirely, `resolveInitialMarket` threw and skipped the stale-symbol correction.
+        getFullContractTypes: () => ({}),
+        getNextTradingDayDate: (_symbol: string, date: unknown) => date,
     },
 }));
 
@@ -162,6 +173,13 @@ describe('TradeStore', () => {
                 pushDataLayer: jest.fn(),
             },
         }) as unknown as TRootStore;
+
+        // A committed pair is mirrored into BOTH the URL (syncTradeURLParams) and this sessionStorage
+        // key (BaseStore's session sync). Without resetting them, every store inherits the PREVIOUS
+        // test's pair and its constructor queues a cold-load activation intent for it. Tests that want
+        // a deep link or a restored session seed these themselves and build their own store.
+        window.history.pushState({}, '', '/');
+        sessionStorage.removeItem('trade_store');
 
         tradeStore = new TradeStore({ root_store: mockRootStore });
         // onProposalResponse drops any response whose contract type has no outstanding request —
@@ -1106,7 +1124,10 @@ describe('TradeStore', () => {
             // The resolver persists symbol/contract_type via the store's session sync; clear it so a
             // later test's fresh store doesn't restore leaked state via retrieveFromStorage.
             sessionStorage.clear();
-            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
         });
 
         it('keeps a valid URL symbol and applies a URL trade type the market offers', async () => {
@@ -1244,7 +1265,7 @@ describe('TradeStore', () => {
             // Browser-restart field bug: the session/URL held a pair with no matching tab (hybrid
             // mirrors / half-loaded actives / default pick). A restore must never mint a tab — it
             // converges to the strip's most recent tab, the durable record of explicit intent.
-            localStorage.setItem(
+            sessionStorage.setItem(
                 OPEN_MARKETS_STORAGE_KEYS.manual,
                 JSON.stringify([
                     { symbol: '1HZ100V', contract_type: 'rise_fall' },
@@ -1266,12 +1287,67 @@ describe('TradeStore', () => {
             expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
         });
 
+        it('on an HONOURED deep link, shows ONLY the URL pair — restored tabs are dropped', async () => {
+            // Pasting a deep link into a browser tab that already traded restores that session's
+            // strip AND appends the URL pair — the strip must instead show only what the link named.
+            sessionStorage.setItem(
+                OPEN_MARKETS_STORAGE_KEYS.manual,
+                JSON.stringify([
+                    { symbol: '1HZ25V', contract_type: TRADE_TYPES.RISE_FALL },
+                    { symbol: 'R_50', contract_type: TRADE_TYPES.MULTIPLIER },
+                ])
+            );
+            sessionStorage.setItem(
+                'trade_store',
+                JSON.stringify({ symbol: '1HZ25V', contract_type: TRADE_TYPES.RISE_FALL })
+            );
+            setUrl(`?symbol=1HZ25V&trade_type=${TRADE_TYPES.VANILLA.CALL}`);
+            const { store, onChangeSpy } = buildStore();
+            // The honoured check reads the COMMITTED pair, so this test's onChange must apply it.
+            onChangeSpy.mockImplementation(async ({ target }) => {
+                (store as unknown as Record<string, unknown>)[target.name] = target.value;
+            });
+            feedSymbols(store, ['1HZ25V', 'R_50']);
+            store.contract_types_list_v2 = {
+                Vanillas: {
+                    name: 'Vanillas',
+                    categories: [{ value: TRADE_TYPES.VANILLA.CALL, text: 'Vanillas' }],
+                },
+            } as unknown as TradeStore['contract_types_list_v2'];
+
+            await flushPromises();
+
+            expect(store.open_markets).toEqual([{ symbol: '1HZ25V', contract_type: TRADE_TYPES.VANILLA.CALL }]);
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+        });
+
+        it('keeps the restored strip when the deep link dead-ends (unknown trade type)', async () => {
+            sessionStorage.setItem(
+                OPEN_MARKETS_STORAGE_KEYS.manual,
+                JSON.stringify([{ symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL }])
+            );
+            sessionStorage.setItem(
+                'trade_store',
+                JSON.stringify({ symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL })
+            );
+            setUrl('?symbol=1HZ100V&trade_type=not_a_real_trade_type');
+            const { store } = buildStore();
+            feedSymbols(store, ['1HZ100V']);
+            store.contract_types_list_v2 = rise_fall_list;
+
+            await flushPromises();
+
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).toHaveBeenCalledWith(true, 'trade_type');
+            // The link failed — the session's own tab stands as the fallback, nothing was cleared.
+            expect(store.open_markets).toEqual([{ symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL }]);
+        });
+
         it('on a RESTORE with a half-loaded actives list, prefers an open-tab symbol and shows no modal', async () => {
             // e.g. the first active_symbols response after a browser restart is the pre-auth list
             // and lacks the restored symbol. That is not user error (no modal), and the fallback
             // must come from the user's own tabs — not pickDefaultSymbol (which can dredge up chart
             // favourites the user never traded).
-            localStorage.setItem(
+            sessionStorage.setItem(
                 OPEN_MARKETS_STORAGE_KEYS.manual,
                 JSON.stringify([{ symbol: 'RDBULL', contract_type: 'match_diff' }])
             );
@@ -1291,8 +1367,8 @@ describe('TradeStore', () => {
             expect(store.open_markets).toHaveLength(1);
         });
 
-        it('a genuine DEEP LINK (URL ≠ session) still opens its own tab with a populated strip', async () => {
-            localStorage.setItem(
+        it('a genuine DEEP LINK (URL ≠ session) opens its own tab as the ONLY one on the strip', async () => {
+            sessionStorage.setItem(
                 OPEN_MARKETS_STORAGE_KEYS.manual,
                 JSON.stringify([{ symbol: '1HZ100V', contract_type: 'multiplier' }])
             );
@@ -1308,15 +1384,13 @@ describe('TradeStore', () => {
 
             await flushPromises();
 
-            expect(store.open_markets).toEqual([
-                { symbol: '1HZ100V', contract_type: 'multiplier' },
-                { symbol: 'RDBULL', contract_type: 'rise_fall' },
-            ]);
+            // The honoured link's pair replaces the restored strip — it never rides alongside it.
+            expect(store.open_markets).toEqual([{ symbol: 'RDBULL', contract_type: 'rise_fall' }]);
             expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
         });
 
         it('does not duplicate a category-sibling tab at init (restored strip has rise_fall_equal)', async () => {
-            localStorage.setItem(
+            sessionStorage.setItem(
                 OPEN_MARKETS_STORAGE_KEYS.manual,
                 JSON.stringify([{ symbol: '1HZ100V', contract_type: 'rise_fall_equal' }])
             );
@@ -1349,7 +1423,10 @@ describe('TradeStore', () => {
 
         afterEach(() => {
             window.history.pushState({}, '', '/');
-            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
             localStorage.removeItem('active_trade_panel_tab');
         });
 
@@ -1491,10 +1568,26 @@ describe('TradeStore', () => {
             expect(tradeStore.duration_unit).toBe('t');
         });
 
-        it('keeps a valid retained duration in preference to the configured default', async () => {
-            // Product decision: your last-used duration wins whenever it is usable for the contract.
-            // The configured preset is a starting point for a duration that does not fit, not an
-            // override. Genuine trade-type switches still apply the preset via applyDefaultDuration.
+        // The refresh bug: on a cold load nothing is pending, so a duration the user saved for this
+        // tab must survive. Previously `duration_default_applied_for` (session history, destroyed by
+        // the refresh) short-circuited the validity check and forced the default here.
+        it('preserves a valid saved duration on a cold load when no defaults intent is pending', async () => {
+            tradeStore.contract_type = TRADE_TYPES.RISE_FALL; // configured default: 5 ticks
+            tradeStore.duration = 8; // saved by the user, valid for the tick range
+            tradeStore.duration_unit = 't';
+            tradeStore.duration_min_max = { tick: { min: 1, max: 10 }, intraday: { min: 900, max: 86400 } };
+            tradeStore.duration_units_list = [
+                { value: 't', text: 'Ticks' },
+                { value: 'm', text: 'Minutes' },
+            ];
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.duration).toBe(8);
+            expect(tradeStore.duration_unit).toBe('t');
+        });
+
+        it('forces the configured default for a new tab even when the retained duration is valid', async () => {
             tradeStore.contract_type = TRADE_TYPES.RISE_FALL; // configured default: 5 ticks
             tradeStore.duration = 8; // valid tick duration, but not the configured default
             tradeStore.duration_unit = 't';
@@ -1503,9 +1596,12 @@ describe('TradeStore', () => {
                 { value: 't', text: 'Ticks' },
                 { value: 'm', text: 'Minutes' },
             ];
+            // A new tab was just opened -> an explicit "load defaults" intent is pending.
+            tradeStore.queueTabTradeParams({ symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL });
+
             await tradeStore.processContractsForV2();
 
-            expect(tradeStore.duration).toBe(8);
+            expect(tradeStore.duration).toBe(5);
             expect(tradeStore.duration_unit).toBe('t');
         });
 
@@ -1515,7 +1611,6 @@ describe('TradeStore', () => {
             tradeStore.duration_unit = 't';
             tradeStore.duration_min_max = { tick: { min: 1, max: 10 } };
             tradeStore.duration_units_list = [{ value: 't', text: 'Ticks' }];
-            // The default was already applied for this type on an earlier run.
 
             await tradeStore.processContractsForV2();
 
@@ -1525,7 +1620,6 @@ describe('TradeStore', () => {
 
         it('leaves a retained duration unchanged when it is valid for the new symbol', async () => {
             setStaleDurationState(30, 'm'); // 30 minutes is within [15 minutes, 1 day]
-            // Default already applied for this type -> a valid retained value is preserved.
 
             await tradeStore.processContractsForV2();
 
@@ -1587,16 +1681,23 @@ describe('TradeStore', () => {
                 expiry_time: null,
                 expiry_type: 'duration',
             });
-            // Tracked by trade-type group key, not the raw contract type.
         });
 
-        it('records the shared group for Up/Down turbos sub-types', async () => {
+        it('applies the shared group default for Up/Down turbos sub-types', async () => {
             tradeStore.contract_type = TRADE_TYPES.TURBOS.SHORT; // configured default: 10 ticks
             tradeStore.duration_min_max = { tick: { min: 5, max: 10 } };
             tradeStore.duration_units_list = [{ value: 't', text: 'Ticks' }];
-            jest.spyOn(tradeStore, 'onChangeMultiple').mockResolvedValue(undefined as never);
+            const on_change_multiple_spy = jest
+                .spyOn(tradeStore, 'onChangeMultiple')
+                .mockResolvedValue(undefined as never);
 
             await tradeStore.applyDefaultDuration();
+
+            expect(on_change_multiple_spy).toHaveBeenCalledWith(
+                expect.objectContaining({ duration_unit: 't', duration: 10 })
+            );
+            // Sub-types share one duration group, so the group key never splits Up from Down.
+            expect(tradeStore.current_duration_group).toBe('turbos');
         });
 
         it('does nothing when no contract type is set', async () => {
@@ -1789,6 +1890,47 @@ describe('TradeStore', () => {
             });
             expect(tradeStore.proposal_info[CONTRACT_TYPES.VANILLA.CALL]?.has_error).toBeFalsy();
             expect(tradeStore.validation_errors.amount ?? []).toEqual([]);
+        });
+
+        it('does not settle a stake restored from the tab’s saved parameters (refresh keeps it)', async () => {
+            // A refresh empties probed_stake_keys, so the probe re-fires — but the restored stake
+            // is the USER's saved value, not the platform's entry stake, and must stand.
+            setVanillasState();
+            const restore = (
+                tradeStore as unknown as { applyRestoredTabParams: (p: { amount: number }) => Promise<boolean> }
+            ).applyRestoredTabParams.bind(tradeStore);
+            await restore({ amount: 2 });
+            // The restore's own commit forgets outstanding requests — re-register the priced type
+            // so the injected response passes the trade-type staleness guard (as in beforeEach).
+            tradeStore.proposal_requests = { VANILLALONGCALL: {} } as typeof tradeStore.proposal_requests;
+
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+
+            expect(tradeStore.amount).toBe(2); // not reset to the derived default (10)
+            // The boundary is still recorded and the probe fence still closed.
+            expect(tradeStore.stake_boundary[`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`]).toEqual({
+                min_stake: 9,
+                max_stake: 5000,
+            });
+            expect(tradeStore.probed_stake_keys.has(`1HZ25V:${CONTRACT_TYPES.VANILLA.CALL}`)).toBe(true);
+        });
+
+        it('settles the platform default again once a defaults activation replaces the restored stake', async () => {
+            // Restore protects only the restored tab; a tab that starts from defaults is back on
+            // the platform-chosen stake and the probe may correct it.
+            setVanillasState();
+            const store_internals = tradeStore as unknown as {
+                applyRestoredTabParams: (p: { amount: number }) => Promise<boolean>;
+                applyTabDefaults: () => Promise<void>;
+            };
+            await store_internals.applyRestoredTabParams.call(tradeStore, { amount: 2 });
+            await store_internals.applyTabDefaults.call(tradeStore);
+            tradeStore.amount = 2; // the defaults commit reapplied the platform default
+            tradeStore.proposal_requests = { VANILLALONGCALL: {} } as typeof tradeStore.proposal_requests;
+
+            await tradeStore.onProposalResponse(stakeErrorResponse());
+
+            expect(tradeStore.amount).toBe(10); // derived default from the reported minimum
         });
 
         it('re-prices the corrected stake so the panel does not sit without a price', async () => {
@@ -2854,6 +2996,43 @@ describe('TradeStore', () => {
         });
     });
 
+    describe('construction before root_store.ui is attached', () => {
+        // The trader RootStore assigns `this.ui` AFTER it constructs ModulesStore (and therefore
+        // TradeStore), so anything the constructor reaches must tolerate a missing `ui`.
+        // `queueInitialTabTradeParams` runs synchronously in the constructor and resolves
+        // `tab_params_mode` -> `is_automation_mode`, which reads `root_store.ui.is_mobile`. Reading it
+        // unguarded threw `Cannot read properties of undefined (reading 'is_mobile')` and took the
+        // whole app to the error boundary on every cold load.
+        const buildStoreWithoutUi = () => {
+            const root_store = mockStore({}) as unknown as TRootStore;
+            (root_store as unknown as { ui?: unknown }).ui = undefined;
+            return new TradeStore({ root_store });
+        };
+
+        it('constructs without throwing when root_store.ui is not assigned yet', () => {
+            expect(() => buildStoreWithoutUi()).not.toThrow();
+        });
+
+        it('resolves is_automation_mode from the panel tab while ui is missing', () => {
+            const store = buildStoreWithoutUi();
+            store.active_trade_panel_tab = TRADE_PANEL_TABS.TRADE;
+            expect(store.is_automation_mode).toBe(false);
+            store.active_trade_panel_tab = TRADE_PANEL_TABS.AUTOMATION;
+            expect(store.is_automation_mode).toBe(true);
+        });
+
+        it('still reads is_mobile once ui is attached', () => {
+            const store = buildStoreWithoutUi();
+            (store.root_store as unknown as { ui: { is_mobile: boolean } }).ui = { is_mobile: true };
+            store.active_trade_panel_tab = TRADE_PANEL_TABS.AUTOMATION;
+            store.is_automation_page = false;
+            // Mobile reads the route flag, not the panel tab.
+            expect(store.is_automation_mode).toBe(false);
+            store.is_automation_page = true;
+            expect(store.is_automation_mode).toBe(true);
+        });
+    });
+
     describe('automation open-markets guard', () => {
         const rise_market: TOpenMarket = { symbol: 'R_100', contract_type: 'rise_fall' };
         const turbos_market: TOpenMarket = { symbol: 'R_100', contract_type: 'turboslong' };
@@ -2867,7 +3046,10 @@ describe('TradeStore', () => {
         // setActiveOpenMarkets persists to localStorage — clear it so a written collection can't leak
         // into a later test's store construction.
         afterEach(() => {
-            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
         });
 
         it('setActiveOpenMarkets drops unsupported trade types once the supported set is known', () => {
@@ -2972,10 +3154,14 @@ describe('TradeStore', () => {
             // The full validation pipeline needs prebuild DVRs unavailable in this harness; it's not
             // what these tests exercise.
             jest.spyOn(tradeStore, 'validateAllProperties').mockImplementation(() => undefined);
+            jest.spyOn(tradeStore, 'validateProperty').mockImplementation(() => undefined);
         });
 
         afterEach(() => {
-            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
             localStorage.removeItem('active_trade_panel_tab');
         });
 
@@ -2998,6 +3184,28 @@ describe('TradeStore', () => {
             ]);
             // The guard is a counter: it must only release once BOTH cascades have settled.
             expect(tradeStore.is_selecting_market).toBe(false);
+        });
+
+        it('applies only the latest activation’s params when two commits overlap', async () => {
+            tradeStore.symbol = '1HZ100V';
+            tradeStore.currency = 'USD';
+            tradeStore.default_stake = 10;
+            tradeStore.addOpenMarket({ symbol: 'R_50', contract_type: 'rise_fall' });
+            tradeStore.addOpenMarket({ symbol: 'R_50', contract_type: 'multiplier' });
+            tradeStore.tab_trade_params_manual = {
+                'R_50|rise_fall': { amount: 11 },
+                'R_50|multiplier': { amount: 22 },
+            };
+
+            const first = tradeStore.selectMarketAndTradeType('R_50', 'rise_fall');
+            const second = tradeStore.selectMarketAndTradeType('R_50', 'multiplier');
+            await Promise.all([first, second]);
+            await flushAsync();
+            // The incoming pair's contracts_for lands and settles the one surviving intent.
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.contract_type).toBe('multiplier');
+            expect(tradeStore.amount).toBe(22);
         });
 
         it('keeps the seed-effect guard up while any of two overlapping commits is still in flight', () => {
@@ -3107,6 +3315,26 @@ describe('TradeStore', () => {
             // The optimistic replace is reversed; the attempted new pair is not present.
             expect(tradeStore.open_markets).toEqual([gold_market, vol_market]);
         });
+
+        it('a failed in-place replace restores the replaced tab’s saved params along with the tab', async () => {
+            // The forward replace prunes the replaced tab's entry with it; the rollback must put
+            // the ENTRY back too, or the restored tab silently activates on defaults later.
+            tradeStore.tab_trade_params_manual = {
+                [getMarketKey(vol_market)]: { amount: 42, duration: 8, duration_unit: 't' },
+            };
+            const { processTradeParams } = jest.requireMock('../Helpers/process');
+            (processTradeParams as jest.Mock).mockRejectedValueOnce(new Error('socket dropped'));
+            tradeStore.setReplacingMarket(vol_market);
+
+            await expect(tradeStore.selectMarketAndTradeType('R_50', 'multiplier')).rejects.toThrow('socket dropped');
+
+            expect(tradeStore.open_markets).toEqual([gold_market, vol_market]);
+            expect(tradeStore.tab_trade_params_manual[getMarketKey(vol_market)]).toEqual({
+                amount: 42,
+                duration: 8,
+                duration_unit: 't',
+            });
+        });
     });
 
     describe('resolveContractTypeAvailability', () => {
@@ -3123,8 +3351,46 @@ describe('TradeStore', () => {
         });
 
         afterEach(() => {
-            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
             localStorage.removeItem('active_trade_panel_tab');
+        });
+
+        // `pending_tab_params` is private to the store; these two cases are specifically about how
+        // the availability hop treats a QUEUED intent, so they address it through a typed view.
+        type TIntent = { mode: 'restore'; params: { amount: number } } | { mode: 'defaults' } | null;
+        const intentView = () => tradeStore as unknown as { pending_tab_params: TIntent };
+
+        it('seeds the very first contract_type on a fresh visit (empty type, no queued intent)', async () => {
+            // First-ever load: nothing in the URL, nothing stored — the constructor had nothing to
+            // queue and the resolver only sets the SYMBOL. This fallback hop is the one path that
+            // seeds contract_type; skipping it left the page with no tab and no trade params.
+            tradeStore.contract_type = '';
+            intentView().pending_tab_params = null;
+            tradeStore.open_markets_manual = [];
+
+            tradeStore.resolveContractTypeAvailability('R_50', ['rise_fall', 'multiplier']);
+
+            expect(tradeStore.contract_type).toBe('rise_fall');
+            expect(tradeStore.open_markets).toEqual([{ symbol: 'R_50', contract_type: 'rise_fall' }]);
+            await flushAsync();
+        });
+
+        it('leaves a queued cold-load intent alone while the type is still empty (pre-rehydrate)', async () => {
+            // Refresh: the constructor queued a restore for the stored pair, but contracts_for beat
+            // BaseStore's rehydrate — contract_type is still ''. Hopping here used to clobber the
+            // restore intent with defaults, losing the tab's saved parameters on a plain refresh.
+            tradeStore.contract_type = '';
+            const restore_intent: TIntent = { mode: 'restore', params: { amount: 500 } };
+            intentView().pending_tab_params = restore_intent;
+
+            tradeStore.resolveContractTypeAvailability('R_50', ['rise_fall', 'multiplier']);
+
+            expect(tradeStore.contract_type).toBe('');
+            expect(intentView().pending_tab_params).toBe(restore_intent);
+            await flushAsync();
         });
 
         it('keeps the current type (and its tab) when the response offers it', () => {
@@ -3187,6 +3453,713 @@ describe('TradeStore', () => {
             // …so the deferred re-evaluation finds it available and leaves everything alone.
             expect(tradeStore.contract_type).toBe('rise_fall');
             expect(tradeStore.open_markets).toEqual([]);
+        });
+    });
+
+    describe('per-tab trade params', () => {
+        const flushAsync = () => new Promise(resolve => setTimeout(resolve, 0));
+        const rise_tab = { symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL };
+        const high_low_tab = { symbol: '1HZ100V', contract_type: TRADE_TYPES.HIGH_LOW };
+        const multiplier_tab = { symbol: 'R_50', contract_type: TRADE_TYPES.MULTIPLIER };
+
+        // Put a tab on the strip with parameters already saved against it, as if the user had
+        // customised it earlier in the session.
+        const seedTab = (market: TOpenMarket, params: TTabTradeParams) => {
+            tradeStore.addOpenMarket(market);
+            tradeStore.tab_trade_params_manual = {
+                ...tradeStore.tab_trade_params_manual,
+                [getMarketKey(market)]: params,
+            };
+        };
+
+        beforeEach(() => {
+            // Force manual mode (see the supersession describe above for why).
+            (tradeStore.root_store.ui as unknown as { is_mobile: boolean }).is_mobile = false;
+            tradeStore.is_automation_page = false;
+            tradeStore.active_trade_panel_tab = TRADE_PANEL_TABS.TRADE;
+            jest.spyOn(tradeStore, 'validateAllProperties').mockImplementation(() => undefined);
+            // The shared Validator isn't initialised in this unit context.
+            jest.spyOn(tradeStore, 'validateProperty').mockImplementation(() => undefined);
+            tradeStore.currency = 'USD';
+            tradeStore.default_stake = 10;
+            tradeStore.duration_min_max = { tick: { min: 1, max: 10 } };
+            tradeStore.duration_units_list = [{ value: 't', text: 'Ticks' }];
+        });
+
+        // Activate a pair as a settled tab: on the strip, and with its contracts_for already applied
+        // (assigning `symbol` re-arms the proposal hold via the store's symbol reaction).
+        const activateTab = (market: TOpenMarket) => {
+            tradeStore.symbol = market.symbol;
+            tradeStore.contract_type = market.contract_type;
+            tradeStore.addOpenMarket(market);
+            tradeStore.is_awaiting_contracts_for = false;
+        };
+
+        afterEach(() => {
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            Object.values(TAB_TRADE_PARAMS_STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+            localStorage.removeItem('active_trade_panel_tab');
+        });
+
+        // A manual↔automation flip where BOTH modes hold the same pair: the entered mode's own
+        // saved entry must be restored — without this, the leaving mode's live values stand and
+        // the next persistence fire writes them under the entered mode's key, breaking the
+        // "modes keep independent parameters" invariant.
+        it('restores the entered mode’s own values on a same-pair mode flip', async () => {
+            (tradeStore.root_store.ui as unknown as { is_mobile: boolean }).is_mobile = true;
+            activateTab(rise_tab);
+            tradeStore.open_markets_automation = [rise_tab];
+            tradeStore.tab_trade_params_manual = { [getMarketKey(rise_tab)]: { amount: 50 } };
+            tradeStore.tab_trade_params_automation = { [getMarketKey(rise_tab)]: { amount: 200 } };
+            tradeStore.amount = 50; // the MANUAL side's live value
+
+            tradeStore.setIsAutomationPage(true); // flip to automation — same (symbol, type) pair
+            await flushAsync();
+            await flushAsync();
+
+            // The entered mode restores its own saved stake; the leaving mode's live value
+            // must not survive the flip as automation's "current" state…
+            expect(tradeStore.amount).toBe(200);
+            // …and the leaving mode's entry recorded its own values on the way out.
+            expect(tradeStore.tab_trade_params_manual[getMarketKey(rise_tab)]?.amount).toBe(50);
+        });
+
+        // The issue's core repro: edit, then refresh — with no tab switch to trigger a save. The
+        // tab-scoped keys no longer ride BaseStore's localStorage reaction, so the store owns this.
+        it('persists the active tab’s params as the user edits them, with no tab switch', () => {
+            activateTab(rise_tab);
+
+            tradeStore.amount = 25;
+            tradeStore.duration = 8;
+            tradeStore.duration_unit = 't';
+
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)]).toEqual(
+                expect.objectContaining({ amount: 25, duration: 8, duration_unit: 't' })
+            );
+        });
+
+        it('does not persist the transient hybrid pair while a commit is in flight', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+            // Mid-cascade the store pairs the incoming symbol with the outgoing trade type; a save
+            // then would write the outgoing tab's values against whatever tab that hybrid matches.
+            tradeStore.startSelectingMarket();
+            tradeStore.amount = 99;
+            tradeStore.stopSelectingMarket();
+
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)].amount).toBe(25);
+        });
+
+        it('restores a tab’s saved values when switching away and back', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+            tradeStore.duration = 8;
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+            await tradeStore.processContractsForV2();
+            await tradeStore.selectMarketAndTradeType(rise_tab.symbol, rise_tab.contract_type);
+            // The symbol changed, so the restore waits for the incoming pair's contracts_for.
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe(25);
+            expect(tradeStore.duration).toBe(8);
+            expect(tradeStore.duration_unit).toBe('t');
+        });
+
+        // React Query holds each symbol's `contracts_for` response for 60s (`staleTime` in
+        // useContractsFor), so switching back to a symbol visited earlier in the session is answered
+        // from CACHE: the hook's effect runs the moment `symbol` changes — in the MIDDLE of the commit
+        // cascade, while `contract_type` is still the outgoing tab's. Settling the activation's intent
+        // there applied the saved values against the wrong trade type, and the trade-type write that
+        // followed reset the stake and re-applied the type default duration — so the tab landed on
+        // defaults (issue #1228). This mirrors that interleaving by driving processContractsForV2 off
+        // the symbol change, exactly as the hook's effect does.
+        const answerContractsForFromCache = () =>
+            reaction(
+                () => tradeStore.symbol,
+                () => {
+                    tradeStore.processContractsForV2();
+                }
+            );
+
+        it('restores a tab’s saved values when the incoming contracts_for is answered from cache mid-commit', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+            tradeStore.duration = 8;
+            tradeStore.duration_unit = 't';
+            const dispose = answerContractsForFromCache();
+
+            try {
+                await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+                await flushAsync();
+                await tradeStore.selectMarketAndTradeType(rise_tab.symbol, rise_tab.contract_type);
+                await flushAsync();
+            } finally {
+                dispose();
+            }
+
+            expect(tradeStore.amount).toBe(25);
+            expect(tradeStore.duration).toBe(8);
+            expect(tradeStore.duration_unit).toBe('t');
+        });
+
+        it('still starts a new pair from defaults when its contracts_for is answered from cache mid-commit', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+            tradeStore.duration = 8;
+            tradeStore.duration_unit = 't';
+            const dispose = answerContractsForFromCache();
+
+            try {
+                // A pair that has never been open: same trade type, different symbol.
+                await tradeStore.selectMarketAndTradeType('R_50', TRADE_TYPES.RISE_FALL);
+                await flushAsync();
+            } finally {
+                dispose();
+            }
+
+            expect(tradeStore.amount).toBe(10); // default_stake, not the 25 carried over
+            expect(tradeStore.duration).toBe(5); // Rise/Fall's configured default, not 8
+        });
+
+        // The deferred settle must not outlive its commit: leaving the intent set gates every save, so
+        // no edit would ever be persisted again for the rest of the session.
+        it('keeps persisting edits after a mid-commit cache answer has settled the intent', async () => {
+            activateTab(rise_tab);
+            const dispose = answerContractsForFromCache();
+
+            try {
+                await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+                await flushAsync();
+            } finally {
+                dispose();
+            }
+            tradeStore.amount = 42;
+
+            expect(readTabTradeParams('manual')[getMarketKey(multiplier_tab)].amount).toBe(42);
+        });
+
+        it('starts a newly opened pair from defaults even when another tab is customised', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+            tradeStore.duration = 8;
+            tradeStore.duration_unit = 't';
+
+            // A pair that has never been open: same trade type, different symbol.
+            await tradeStore.selectMarketAndTradeType('R_50', TRADE_TYPES.RISE_FALL);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe(10); // default_stake, not the 25 carried over
+            expect(tradeStore.duration).toBe(5); // Rise/Fall's configured default, not 8
+        });
+
+        it('restores a saved stake even though the activation resets the stake to the default', async () => {
+            activateTab(rise_tab);
+            // Changing BOTH symbol and trade type is the path that always resets the stake.
+            seedTab(multiplier_tab, { amount: 77 });
+
+            await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe(77);
+        });
+
+        it('restores take profit and stop loss despite the trade-type change clearing them', async () => {
+            activateTab(rise_tab);
+            seedTab(multiplier_tab, {
+                has_take_profit: true,
+                take_profit: '15',
+                has_stop_loss: true,
+                stop_loss: '5',
+            });
+
+            await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.has_take_profit).toBe(true);
+            expect(tradeStore.take_profit).toBe('15');
+            expect(tradeStore.has_stop_loss).toBe(true);
+            expect(tradeStore.stop_loss).toBe('5');
+        });
+
+        it('restores a saved duration on a same-symbol trade-type switch, over the type default', async () => {
+            activateTab(rise_tab);
+            seedTab(high_low_tab, { duration: 3, duration_unit: 't' }); // Higher/Lower's default is 10
+
+            // Same symbol: no contracts_for round trip, so the commit's own tail applies the restore
+            // — after applyDefaultDuration has already put the configured default in place.
+            await tradeStore.selectMarketAndTradeType(high_low_tab.symbol, high_low_tab.contract_type);
+
+            expect(tradeStore.duration).toBe(3);
+            expect(tradeStore.duration_unit).toBe('t');
+        });
+
+        it('preserves values the user deliberately set equal to the defaults', async () => {
+            activateTab(rise_tab);
+            // Deliberately chosen, and equal to the current defaults — "equals the default" must not
+            // be read as "the user never chose this".
+            tradeStore.amount = 10; // === default_stake
+            tradeStore.duration = 5; // === Rise/Fall's configured default
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.selectMarketAndTradeType(high_low_tab.symbol, high_low_tab.contract_type);
+            tradeStore.amount = 50;
+            tradeStore.duration = 9;
+            await tradeStore.selectMarketAndTradeType(rise_tab.symbol, rise_tab.contract_type);
+
+            expect(tradeStore.amount).toBe(10);
+            expect(tradeStore.duration).toBe(5);
+        });
+
+        it('keeps independent entries for the same symbol under two trade types', () => {
+            tradeStore.addOpenMarket(rise_tab);
+            tradeStore.addOpenMarket(high_low_tab);
+
+            tradeStore.amount = 25;
+            tradeStore.saveTabTradeParams(rise_tab);
+            tradeStore.amount = 40;
+            tradeStore.saveTabTradeParams(high_low_tab);
+
+            expect(tradeStore.tab_trade_params[getMarketKey(rise_tab)].amount).toBe(25);
+            expect(tradeStore.tab_trade_params[getMarketKey(high_low_tab)].amount).toBe(40);
+        });
+
+        it('saves against the tab’s recorded pair when a sub-toggle moved the contract type', () => {
+            tradeStore.addOpenMarket(rise_tab);
+            tradeStore.amount = 25;
+
+            // "Allow equals" moves contract_type without changing the tab's recorded pair.
+            tradeStore.saveTabTradeParams({ symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL_EQUAL });
+
+            expect(Object.keys(tradeStore.tab_trade_params)).toEqual([getMarketKey(rise_tab)]);
+            expect(tradeStore.tab_trade_params[getMarketKey(rise_tab)].amount).toBe(25);
+        });
+
+        it('drops a closed tab’s params so reopening the pair starts from defaults', () => {
+            tradeStore.addOpenMarket(rise_tab);
+            tradeStore.addOpenMarket(high_low_tab);
+            tradeStore.tab_trade_params_manual = {
+                [getMarketKey(rise_tab)]: { amount: 25 },
+                [getMarketKey(high_low_tab)]: { amount: 40 },
+            };
+
+            tradeStore.removeOpenMarket(rise_tab);
+
+            expect(tradeStore.tab_trade_params_manual).toEqual({ [getMarketKey(high_low_tab)]: { amount: 40 } });
+            // …and the pruned map is what a refresh would read back.
+            expect(readTabTradeParams('manual')).toEqual({ [getMarketKey(high_low_tab)]: { amount: 40 } });
+        });
+
+        it('starts the fallback pair from defaults when the tab’s trade type is not offered', async () => {
+            activateTab(multiplier_tab);
+            tradeStore.amount = 25;
+            // An entry already keyed to the fallback pair must NOT be resurrected — the fallback is a
+            // pair the user never committed, so it is a new tab.
+            tradeStore.tab_trade_params_manual = { 'R_50|accumulator': { amount: 99 } };
+
+            tradeStore.resolveContractTypeAvailability('R_50', [TRADE_TYPES.ACCUMULATOR]);
+            await flushAsync();
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.ACCUMULATOR);
+            expect(tradeStore.amount).toBe(10); // default_stake, not 25 and not 99
+        });
+
+        it('clears the pending intent when a commit fails, so it cannot leak into a later one', async () => {
+            tradeStore.symbol = rise_tab.symbol;
+            tradeStore.contract_type = rise_tab.contract_type;
+            seedTab(multiplier_tab, { amount: 77 });
+            jest.spyOn(tradeStore, 'onChange').mockRejectedValueOnce(new Error('WS dropped'));
+
+            await expect(
+                tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type)
+            ).rejects.toThrow('WS dropped');
+            tradeStore.amount = 25;
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe(25);
+        });
+
+        // Allow equals is priced by moving contract_type (rise_fall ↔ rise_fall_equal). The restore
+        // commits through onChangeMultiple, which does not carry that flip — leaving the toggle and
+        // the priced contract disagreeing.
+        it('restores Allow equals together with the sub-type it prices', async () => {
+            // The active tab prices Allow equals ON, i.e. as rise_fall_equal.
+            activateTab({ symbol: rise_tab.symbol, contract_type: TRADE_TYPES.RISE_FALL_EQUAL });
+            tradeStore.is_equal = 1;
+            // Another Rise/Fall tab that saved Allow equals OFF.
+            const other_rise_tab = { symbol: 'R_50', contract_type: TRADE_TYPES.RISE_FALL };
+            seedTab(other_rise_tab, { is_equal: 0, amount: 20 });
+
+            await tradeStore.selectMarketAndTradeType(other_rise_tab.symbol, other_rise_tab.contract_type);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.is_equal).toBe(0);
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+        });
+
+        it('does not let a new tab inherit the previous tab’s Allow equals', async () => {
+            activateTab({ symbol: rise_tab.symbol, contract_type: TRADE_TYPES.RISE_FALL_EQUAL });
+            tradeStore.is_equal = 1;
+
+            // A Rise/Fall pair that has never been open.
+            await tradeStore.selectMarketAndTradeType('R_50', TRADE_TYPES.RISE_FALL);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.is_equal).toBe(0);
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+        });
+
+        // On these symbols the market minimum is above default_stake, so a new tab put on
+        // `default_stake` opens below the minimum and its first proposal fails. The minimum comes
+        // from the pair's probed stake boundary, read only when probed_stake_keys proves it.
+        it('starts a new tab on the derived default stake for a high-min Turbos symbol', async () => {
+            activateTab(rise_tab);
+            const boundary_key = `1HZ25V:${CONTRACT_TYPES.TURBOS.LONG}`;
+            tradeStore.probed_stake_keys.add(boundary_key);
+            tradeStore.stake_boundary = {
+                ...tradeStore.stake_boundary,
+                [boundary_key]: { min_stake: 25, max_stake: 5000 },
+            };
+
+            await tradeStore.selectMarketAndTradeType('1HZ25V', TRADE_TYPES.TURBOS.LONG);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe(25); // derived from the probed minimum, not default_stake
+        });
+
+        it('falls back to the configured default when a saved duration no longer fits the pair', async () => {
+            activateTab(rise_tab);
+            // Saved in days; the incoming pair below only offers ticks, so the saved value is dropped.
+            const other_high_low_tab = { symbol: 'R_50', contract_type: TRADE_TYPES.HIGH_LOW };
+            seedTab(other_high_low_tab, { duration: 3, duration_unit: 'd' });
+            // A live duration that happens to be valid for the incoming pair — it belongs to the
+            // OUTGOING tab and must not be allowed to stand in place of the configured default.
+            tradeStore.duration = 5;
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.selectMarketAndTradeType(other_high_low_tab.symbol, other_high_low_tab.contract_type);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.duration_unit).toBe('t');
+            expect(tradeStore.duration).toBe(10); // Higher/Lower's configured default, not 5 and not 3
+        });
+
+        // An abandoned activation used to leave the intent set forever, and the intent gates every
+        // save — so no edit was ever persisted again for the rest of the session.
+        it('keeps persisting edits after an activation is abandoned with no contracts_for', async () => {
+            activateTab(rise_tab);
+            tradeStore.addOpenMarket(multiplier_tab);
+            tradeStore.queueTabTradeParams(multiplier_tab);
+            // How useContractsFor degrades on a failed/empty response: it releases the hold without
+            // ever reaching processContractsForV2, so nothing consumes the intent.
+            tradeStore.setIsAwaitingContractsFor(false);
+
+            tradeStore.amount = 25;
+
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)].amount).toBe(25);
+        });
+
+        // A rapid A→B→A switch. Once B's symbol has committed, the store holds B's PAIR while the
+        // values on screen are still A's (B's restore only lands when its contracts_for arrives), so
+        // the outgoing save resolved to B's tab and wrote A's stake over B's saved 77.
+        it('does not overwrite an incoming tab’s saved params when a switch is interrupted', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 10;
+            const other_rise_tab = { symbol: 'R_50', contract_type: TRADE_TYPES.RISE_FALL };
+            seedTab(other_rise_tab, { amount: 77 });
+
+            // Tap B: symbol commits and the intent is queued, but no contracts_for response follows.
+            await tradeStore.selectMarketAndTradeType(other_rise_tab.symbol, other_rise_tab.contract_type);
+            expect(tradeStore.is_awaiting_contracts_for).toBe(true);
+            // Tap A again before B has settled.
+            await tradeStore.selectMarketAndTradeType(rise_tab.symbol, rise_tab.contract_type);
+
+            expect(tradeStore.tab_trade_params_manual[getMarketKey(other_rise_tab)].amount).toBe(77);
+        });
+
+        // Dropping the intent on abandonment re-enabled saving while the store still held the OUTGOING
+        // tab's values against the INCOMING pair, so the next edit wrote them over that tab's entry.
+        it('settles an abandoned activation’s intent rather than stranding the outgoing values', async () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 10;
+            const other_rise_tab = { symbol: 'R_50', contract_type: TRADE_TYPES.RISE_FALL };
+            seedTab(other_rise_tab, { amount: 77 });
+
+            await tradeStore.selectMarketAndTradeType(other_rise_tab.symbol, other_rise_tab.contract_type);
+            // useContractsFor's degradation path: the request failed, so the hold is released without
+            // processContractsForV2 ever running.
+            tradeStore.setIsAwaitingContractsFor(false);
+            await flushAsync();
+
+            expect(tradeStore.amount).toBe(77);
+            expect(tradeStore.tab_trade_params_manual[getMarketKey(other_rise_tab)].amount).toBe(77);
+        });
+
+        // Allow equals prices Rise/Fall as `rise_fall_equal`, so the LIVE toggle moves contract_type
+        // through `setTradeSubType` — a sub-type flip on the SAME tab, not a trade-type switch. It must
+        // therefore leave every tab-scoped parameter alone (issue #1229). The stake is asserted as the
+        // STRING the stake action sheet actually commits (see `amount: 'numeric'` in
+        // tab-trade-params-utils), which is the representation the field bug lost.
+        const setUserStake = (value: string) => {
+            (tradeStore as unknown as { amount: string }).amount = value;
+        };
+
+        it('keeps a customised stake when Allow equals is toggled on the active tab', async () => {
+            activateTab(rise_tab);
+            setUserStake('25');
+            tradeStore.duration = 8;
+
+            await tradeStore.onChange({ target: { name: 'is_equal', value: 1 } });
+
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.RISE_FALL_EQUAL);
+            expect(tradeStore.amount).toBe('25');
+            expect(tradeStore.duration).toBe(8);
+            // Same tab throughout: the flip must not split the strip into a second Rise/Fall entry.
+            expect(tradeStore.open_markets).toEqual([rise_tab]);
+            expect(Object.keys(readTabTradeParams('manual'))).toEqual([getMarketKey(rise_tab)]);
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)]).toEqual(
+                expect.objectContaining({ amount: '25', duration: 8, is_equal: 1 })
+            );
+        });
+
+        it('keeps a customised stake when Allow equals is toggled back off', async () => {
+            // The tab is recorded as `rise_fall` and priced as `rise_fall_equal` — the state the
+            // toggle leaves behind when it is switched on.
+            activateTab(rise_tab);
+            tradeStore.contract_type = TRADE_TYPES.RISE_FALL_EQUAL;
+            tradeStore.is_equal = 1;
+            setUserStake('25');
+            tradeStore.duration = 8;
+
+            await tradeStore.onChange({ target: { name: 'is_equal', value: 0 } });
+
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+            expect(tradeStore.amount).toBe('25');
+            expect(tradeStore.duration).toBe(8);
+            expect(tradeStore.open_markets).toEqual([rise_tab]);
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)]).toEqual(
+                expect.objectContaining({ amount: '25', duration: 8, is_equal: 0 })
+            );
+        });
+
+        it('carries a stake customised before the Allow equals toggle through a tab round trip', async () => {
+            activateTab(rise_tab);
+            setUserStake('25');
+
+            await tradeStore.onChange({ target: { name: 'is_equal', value: 1 } });
+            await tradeStore.selectMarketAndTradeType(multiplier_tab.symbol, multiplier_tab.contract_type);
+            await tradeStore.processContractsForV2();
+            await tradeStore.selectMarketAndTradeType(rise_tab.symbol, rise_tab.contract_type);
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.amount).toBe('25');
+            expect(tradeStore.is_equal).toBe(1);
+            expect(tradeStore.contract_type).toBe(TRADE_TYPES.RISE_FALL_EQUAL);
+        });
+
+        it('saves the leaving mode’s params into that mode when switching manual ↔ automation', () => {
+            activateTab(rise_tab);
+            tradeStore.amount = 25;
+
+            // Enter automation through the real entry point: it flips the mode, then reconciles.
+            tradeStore.setActiveTradePanelTab(TRADE_PANEL_TABS.AUTOMATION);
+
+            expect(tradeStore.tab_trade_params_manual[getMarketKey(rise_tab)].amount).toBe(25);
+            expect(tradeStore.tab_trade_params_automation).toEqual({});
+        });
+    });
+
+    describe('per-tab trade params on load', () => {
+        // The resolver awaits a macrotask up-front (BaseStore's deferred storage restore) and then a
+        // chain of when()/promise hops — flush several full timer rounds so every hop settles.
+        const flushPromises = async () => {
+            const { setTimeout: realSetTimeout } = jest.requireActual<typeof import('timers')>('timers');
+            for (let i = 0; i < 10; i++) {
+                // eslint-disable-next-line no-await-in-loop -- rounds must run sequentially by design
+                await new Promise(resolve => realSetTimeout(resolve, 0));
+            }
+        };
+        const rise_tab = { symbol: '1HZ100V', contract_type: TRADE_TYPES.RISE_FALL };
+
+        // A browser tab mid-session: the strip and the active pair both live in sessionStorage, so
+        // this is what a REFRESH sees. Built BEFORE the store, since the resolver runs from the
+        // constructor. A genuine new browser tab has none of this — see the new-browser-tab cases.
+        const seedRestoredSession = () => {
+            sessionStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([rise_tab]));
+            sessionStorage.setItem(
+                'trade_store',
+                JSON.stringify({ symbol: rise_tab.symbol, contract_type: rise_tab.contract_type })
+            );
+        };
+        const buildStore = ({ with_active_symbols = true }: { with_active_symbols?: boolean } = {}) => {
+            // The resolver reads the URL when it starts; earlier tests' stores stamp the committed
+            // pair into it, which would make this load look like a deep link.
+            window.history.pushState({}, '', '/');
+            const store = new TradeStore({ root_store: mockRootStore });
+            store.active_trade_panel_tab = TRADE_PANEL_TABS.TRADE;
+            store.is_automation_page = false;
+            store.currency = 'USD';
+            store.default_stake = 10;
+            store.duration_min_max = { tick: { min: 1, max: 10 } };
+            store.duration_units_list = [{ value: 't', text: 'Ticks' }];
+            jest.spyOn(store, 'validateAllProperties').mockImplementation(() => undefined);
+            jest.spyOn(store, 'validateProperty').mockImplementation(() => undefined);
+            if (with_active_symbols) {
+                store.setActiveSymbolsV2([{ underlying_symbol: rise_tab.symbol, exchange_is_open: 1 }] as NonNullable<
+                    TActiveSymbolsResponse['active_symbols']
+                >);
+            }
+            return store;
+        };
+
+        afterEach(() => {
+            window.history.pushState({}, '', '/');
+            sessionStorage.clear();
+            Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            localStorage.removeItem('active_trade_panel_tab');
+            localStorage.removeItem('trade_store');
+        });
+
+        it('restores the active tab’s params after a refresh', async () => {
+            seedRestoredSession();
+            sessionStorage.setItem(
+                TAB_TRADE_PARAMS_STORAGE_KEYS.manual,
+                JSON.stringify({ [getMarketKey(rise_tab)]: { amount: 25, duration: 8, duration_unit: 't' } })
+            );
+            const store = buildStore();
+
+            await flushPromises();
+            await store.processContractsForV2();
+
+            expect(store.amount).toBe(25);
+            expect(store.duration).toBe(8);
+        });
+
+        it('opens a NEW BROWSER TAB with a single default tab, not the other tab’s strip', async () => {
+            // A new browser tab gets a fresh sessionStorage, so neither the strip nor the params are
+            // visible. Even with another browser tab's strip still sitting in localStorage from an
+            // older release, this load must not adopt it.
+            localStorage.setItem(
+                OPEN_MARKETS_STORAGE_KEYS.manual,
+                JSON.stringify([
+                    { symbol: 'R_75', contract_type: TRADE_TYPES.TURBOS.LONG },
+                    { symbol: 'R_50', contract_type: TRADE_TYPES.VANILLA.CALL },
+                ])
+            );
+            const store = buildStore();
+
+            await flushPromises();
+            await store.processContractsForV2();
+
+            // The inherited tabs are not adopted: the strip holds at most the pair THIS load
+            // resolved. (`contract_type` is only settled by `contracts_for`, which this harness does
+            // not feed, so the resolver records no tab at all here — the assertion that matters is
+            // that nothing from localStorage leaked in.)
+            expect(store.open_markets.map(m => m.symbol)).not.toContain('R_75');
+            expect(store.open_markets.map(m => m.symbol)).not.toContain('R_50');
+            expect(store.open_markets.length).toBeLessThanOrEqual(1);
+            // …and it starts from defaults.
+            expect(store.amount).toBe(10); // default_stake
+            expect(store.duration).toBe(5); // Rise/Fall's configured default
+        });
+
+        it('loads defaults in a browser tab whose strip survived but whose params did not', async () => {
+            // Same-session strip present, params map absent (e.g. it was pruned): each tab on the
+            // strip still starts from defaults.
+            seedRestoredSession();
+            const store = buildStore();
+
+            await flushPromises();
+            await store.processContractsForV2();
+
+            expect(store.amount).toBe(10); // default_stake
+            expect(store.duration).toBe(5); // Rise/Fall's configured default
+        });
+
+        // `contracts_for` is dispatched off the URL/session-seeded symbol, while `active_symbols` is a
+        // separate round trip — so the consumer of the activation intent routinely runs FIRST. The
+        // intent used to be queued only after the resolver had awaited `active_symbols`, so the
+        // restore was silently skipped and the orphaned intent then disabled per-edit persistence for
+        // the rest of the load.
+        it('restores the active tab’s params when contracts_for is answered before active_symbols', async () => {
+            seedRestoredSession();
+            sessionStorage.setItem(
+                TAB_TRADE_PARAMS_STORAGE_KEYS.manual,
+                JSON.stringify({ [getMarketKey(rise_tab)]: { amount: 25, duration: 8, duration_unit: 't' } })
+            );
+            const store = buildStore({ with_active_symbols: false });
+
+            // The resolver is parked on `when(() => has_symbols_for_v2)` for the whole test.
+            await flushPromises();
+            expect(store.has_symbols_for_v2).toBe(false);
+            await store.processContractsForV2();
+
+            expect(store.amount).toBe(25);
+            expect(store.duration).toBe(8);
+            // …and the intent was consumed, so the next edit is still persisted.
+            store.amount = 30;
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)].amount).toBe(30);
+        });
+
+        // The constructor queues an intent from a GUESS (URL param, else the sessionStorage snapshot)
+        // before `active_symbols` can say whether that symbol is tradeable. When the guess turns out
+        // to be stale the resolver corrects `symbol`, and `has_queued_resolved_pair` must notice the
+        // queued intent no longer describes the pair being activated and re-queue for the corrected
+        // one — otherwise the stale symbol's saved params get applied to a different market.
+        it('re-queues the intent when a stale restored symbol is corrected mid-load', async () => {
+            const stale_tab = { symbol: 'R_100', contract_type: TRADE_TYPES.RISE_FALL };
+            // The strip and the active pair point at a symbol that is NOT in `active_symbols`.
+            sessionStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([stale_tab, rise_tab]));
+            sessionStorage.setItem(
+                'trade_store',
+                JSON.stringify({ symbol: stale_tab.symbol, contract_type: stale_tab.contract_type })
+            );
+            // Distinct params per pair, so whichever one lands is unambiguous.
+            sessionStorage.setItem(
+                TAB_TRADE_PARAMS_STORAGE_KEYS.manual,
+                JSON.stringify({
+                    [getMarketKey(stale_tab)]: { amount: 77, duration: 9, duration_unit: 't' },
+                    [getMarketKey(rise_tab)]: { amount: 25, duration: 8, duration_unit: 't' },
+                })
+            );
+            // `buildStore` only offers `rise_tab`'s symbol, so the stale guess cannot be honoured.
+            const store = buildStore();
+
+            await flushPromises();
+            await store.processContractsForV2();
+
+            // The corrected pair's params, never the stale guess's.
+            expect(store.symbol).toBe(rise_tab.symbol);
+            expect(store.amount).toBe(25);
+            expect(store.duration).toBe(8);
+            // The intent was consumed exactly once, so per-edit persistence is live again and writes
+            // against the CORRECTED tab.
+            store.amount = 30;
+            expect(readTabTradeParams('manual')[getMarketKey(rise_tab)].amount).toBe(30);
+            // …and the stale tab's saved params were left untouched rather than overwritten.
+            expect(readTabTradeParams('manual')[getMarketKey(stale_tab)]?.amount).toBe(77);
+        });
+
+        it('drops tab-scoped params a previous release left in the global localStorage blob', () => {
+            localStorage.setItem(
+                'trade_store',
+                JSON.stringify({ currency: 'USD', is_trade_params_expanded: false, amount: 99, duration: 42 })
+            );
+
+            buildStore();
+
+            expect(JSON.parse(String(localStorage.getItem('trade_store')))).toEqual({
+                currency: 'USD',
+                is_trade_params_expanded: false,
+            });
         });
     });
 

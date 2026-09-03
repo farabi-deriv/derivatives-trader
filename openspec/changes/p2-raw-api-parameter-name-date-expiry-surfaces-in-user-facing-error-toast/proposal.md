@@ -1,6 +1,6 @@
 ## Why
 
-A retail user drafting a trade sees the toast **"Please specify either duration or date_expiry."** — `date_expiry` is a raw snake*case API parameter name, not English ([#1247](https://github.com/deriv-com/derivatives-trader/issues/1247), reported by Prakash from a Lagos/Nigeria VPN geo; Chris G in-thread: *"We need to ensure error messages have English statements too… not `date_expiry`"\_).
+A retail user drafting a trade sees the toast **"Please specify either duration or date_expiry."** — `date_expiry` is a raw `snake_case` API parameter name, not English ([#1247](https://github.com/deriv-com/derivatives-trader/issues/1247), reported by Prakash from a Lagos/Nigeria VPN geo; Chris G in-thread: _"We need to ensure error messages have English statements too… not `date_expiry`"_).
 
 The leak is structural, not a typo. `mapErrorMessage` (`packages/shared/src/utils/error-mapping/error-message-mapper.ts`) is the single funnel every user-facing backend error passes through — ~20 call sites across toasts, action sheets, modals, inline field errors and the Reports stores — and it has three paths that emit raw API identifiers verbatim:
 

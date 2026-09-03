@@ -1,8 +1,11 @@
 # proposal-request-integrity Specification
 
 ## Purpose
+
 TBD - created by archiving change p2-red-error-banner-persists-covers-buy-button-when-switching-between-gold-and-step200-tiles. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: A proposal request for a duration-taking contract always carries an expiry
 
 Every price-proposal request the client sends for a contract type that takes an expiry SHALL carry either a duration (a duration value together with its duration unit) or an absolute expiry timestamp. A request carrying neither SHALL NOT be sent. Contract types that take no expiry (Accumulators, Multipliers) SHALL continue to send no expiry fields.
@@ -63,4 +66,3 @@ The trade parameters SHALL NOT be left in a state where the expiry mode is "end 
 - **WHEN** a commit would set the expiry mode to end time without any usable expiry time
 - **THEN** the trade parameters record a duration-based expiry instead
 - **AND** the resulting proposal request carries a duration value and duration unit
-

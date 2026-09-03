@@ -126,19 +126,20 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
 
         // Safety net: reset to the configured default when the persisted duration is invalid for the
         // current constraints. Trade-type switches themselves are handled in the store (onChange), so
-        // this survives even if the component remounts on a switch.
-        const isPersistedDurationValid = isValidPersistedDuration(
-            duration,
-            duration_unit,
-            duration_min_max,
-            duration_units_list
-        );
+        // this survives even if the component remounts on a switch. An End Time tab is exempt,
+        // exactly as in the store's own checks (`applyRestoredTabParams`, `should_apply_default`):
+        // its duration/duration_unit are dormant leftovers (the proposal prices via date_expiry),
+        // and `applyDefaultDuration` force-writes `expiry_type: 'duration'` — firing here wiped a
+        // just-restored End Time selection ~10ms after the store had deliberately kept it.
+        const isPersistedDurationValid =
+            expiry_type === 'endtime' ||
+            isValidPersistedDuration(duration, duration_unit, duration_min_max, duration_units_list);
 
         if (!isPersistedDurationValid) {
             const start_duration = setTimeout(() => applyDefaultDuration(), 10);
             return () => clearTimeout(start_duration);
         }
-    }, [symbol, contract_type, duration_min_max, duration_units_list, duration, duration_unit]);
+    }, [symbol, contract_type, duration_min_max, duration_units_list, duration, duration_unit, expiry_type]);
 
     // The sheet can close inside the wheel's snap-back window, so clamp the time selection here too
     const clamped_time = duration_min_max?.intraday

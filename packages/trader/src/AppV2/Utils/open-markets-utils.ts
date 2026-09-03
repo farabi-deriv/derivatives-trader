@@ -11,6 +11,12 @@ export type TOpenMarket = {
 export type TOpenMarketsMode = 'manual' | 'automation';
 
 // Manual keeps the original key so existing users' tabs survive the split; automation gets its own.
+// Both the STRIP and each tab's trade PARAMETERS (`TAB_TRADE_PARAMS_STORAGE_KEYS` in
+// AppV2/Utils/tab-trade-params-utils, keyed by the same (symbol, contract_type) pair) live in
+// sessionStorage, so the whole Trade page is scoped to one browser tab: a refresh keeps your tabs
+// and their values, while a NEW browser tab starts from a single default tab rather than inheriting
+// the tabs another browser tab happens to have open. Deliberate consequence: the strip no longer
+// survives closing the browser.
 export const OPEN_MARKETS_STORAGE_KEYS: Record<TOpenMarketsMode, string> = {
     manual: 'open_markets_v2',
     automation: 'open_markets_automation_v2',
@@ -35,14 +41,66 @@ export const isSameMarket = (a: TOpenMarket, b: TOpenMarket) =>
 export const isSameOpenMarketList = (a: TOpenMarket[], b: TOpenMarket[]) =>
     a.length === b.length && a.every((market, index) => isSameMarket(market, b[index]));
 
-/** Read + validate a mode's persisted list (a plain cast would let stale/tampered values through). */
+let has_cleared_legacy_open_markets = false;
+
+/** MIGRATION of the strip a previous release persisted to localStorage, where it was shared by
+ * every browser tab. The strip now lives in sessionStorage; the legacy entry is ADOPTED into
+ * sessionStorage (when this browser tab has none of its own yet) before being removed, so the
+ * release is lossless for existing users — their tabs carry over once per browser tab — and a
+ * rollback still finds the strip where the reverted code expects it for any tab that hasn't
+ * migrated yet.
+ *
+ * Called from {@link readOpenMarkets} rather than from the store, so it cannot be sequenced wrong:
+ * `TradeStore` reads the strip in a FIELD INITIALISER, which runs after `super()` and therefore
+ * before any constructor-body statement could clean up. Runs at most once per module instance and
+ * writes nothing when there is nothing to migrate, so it stays off the hot path — `readOpenMarkets`
+ * is called on every market switch, and `barrier-reset.spec.ts` pins that switch's exact
+ * `localStorage.removeItem` count. Never touches `localStorage['trade_store']`, which still
+ * legitimately holds `currency` and `is_trade_params_expanded`. */
+const clearLegacyOpenMarketsFromLocalStorage = () => {
+    if (has_cleared_legacy_open_markets) return;
+    has_cleared_legacy_open_markets = true;
+    try {
+        Object.values(OPEN_MARKETS_STORAGE_KEYS).forEach(key => {
+            // Only touch storage when there is something to migrate, so the common case (every
+            // load after the first) performs no writes at all.
+            const legacy = localStorage.getItem(key);
+            if (legacy === null) return;
+            if (sessionStorage.getItem(key) === null) sessionStorage.setItem(key, legacy);
+            localStorage.removeItem(key);
+        });
+    } catch {
+        // Storage unavailable — the stale entries stay, which is no worse than before the cleanup.
+    }
+};
+
+/** Test seam: lets a spec exercise the one-time eviction more than once per module instance. */
+export const resetLegacyOpenMarketsCleanupForTesting = () => {
+    has_cleared_legacy_open_markets = false;
+};
+
+/** Read + validate a mode's persisted list (a plain cast would let stale/tampered values through).
+ * The read itself is guarded like every write: `getItem` THROWS (not returns null) when storage
+ * access is denied (Safari "Block all cookies", sandboxed iframes), and this runs in a TradeStore
+ * field initialiser — an unguarded throw would take down the whole trade page. */
 export const readOpenMarkets = (mode: TOpenMarketsMode): TOpenMarket[] => {
-    const stored = safeParse(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS[mode]) ?? '') as TOpenMarket[] | null;
-    return Array.isArray(stored) ? stored.filter(market => market?.symbol && market?.contract_type) : [];
+    try {
+        clearLegacyOpenMarketsFromLocalStorage();
+        const stored = safeParse(sessionStorage.getItem(OPEN_MARKETS_STORAGE_KEYS[mode]) ?? '') as TOpenMarket[] | null;
+        return Array.isArray(stored) ? stored.filter(market => market?.symbol && market?.contract_type) : [];
+    } catch {
+        return [];
+    }
 };
 
 export const writeOpenMarkets = (mode: TOpenMarketsMode, markets: TOpenMarket[]) => {
-    localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS[mode], JSON.stringify(markets));
+    // sessionStorage, matching the params map: a write can throw when the quota is exhausted or the
+    // storage is blocked, and losing the strip must never break the page. Degrades to "not saved".
+    try {
+        sessionStorage.setItem(OPEN_MARKETS_STORAGE_KEYS[mode], JSON.stringify(markets));
+    } catch {
+        // ignore — the in-memory collection stays authoritative for this session
+    }
 };
 
 /** Append a new pair (no-op if already open — keeps position), most-recent last, capped. */

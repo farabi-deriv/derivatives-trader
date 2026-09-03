@@ -231,6 +231,22 @@ describe('MarketTabs', () => {
         expect(mockSelect).toHaveBeenCalledWith('frxGBPUSD', 'rise_fall'); // left neighbour
     });
 
+    it('closing a tab touches only that tab, so the survivors keep their own params', () => {
+        mockOpenMarkets = [rise_market, gbp_market, jpy_market];
+        mockStoreSymbol = 'frxGBPUSD'; // the middle tab is active
+        render(<MarketTabs />);
+
+        fireEvent.click(screen.getByTestId('close-frxGBPUSD__rise_fall'));
+
+        // Per-tab params are keyed by the (symbol, contract_type) pair, so the neighbour is activated
+        // by ITS OWN pair — the store restores that tab's saved params, never the closed tab's…
+        expect(mockSelect).toHaveBeenCalledTimes(1);
+        expect(mockSelect).toHaveBeenCalledWith('frxUSDJPY', 'rise_fall');
+        // …and only the closed pair is removed, so only its entry is pruned from the params map.
+        expect(mockRemove).toHaveBeenCalledTimes(1);
+        expect(mockRemove).toHaveBeenCalledWith(gbp_market);
+    });
+
     it('switches to the most-recent tradeable tab when the active market becomes unsupported', () => {
         // Active market (Turbos) is unsupported in Automate, but a Rise/Fall tab is available.
         mockStoreSymbol = turbos_market.symbol;

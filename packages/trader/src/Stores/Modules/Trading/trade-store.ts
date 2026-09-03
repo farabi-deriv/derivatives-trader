@@ -1,5 +1,16 @@
 import debounce from 'lodash.debounce';
-import { action, computed, makeObservable, observable, override, reaction, runInAction, toJS, when } from 'mobx';
+import {
+    action,
+    comparer,
+    computed,
+    makeObservable,
+    observable,
+    override,
+    reaction,
+    runInAction,
+    toJS,
+    when,
+} from 'mobx';
 
 import {
     TActiveSymbolsRequest,
@@ -40,7 +51,6 @@ import {
     getTradeURLParams,
     hasBarrier,
     hasIntradayDurationUnit,
-    toMoment,
     isAccumulatorContract,
     isBarrierSupported,
     isCryptocurrency,
@@ -58,6 +68,7 @@ import {
     routes,
     setLimitOrderBarriers,
     setTradeURLParams,
+    toMoment,
     trackAnalyticsEvent,
     TRADE_TYPES,
     WS,
@@ -76,21 +87,32 @@ import {
     removeFromOpenMarkets,
     replaceInOpenMarkets,
     type TOpenMarket,
+    type TOpenMarketsMode,
     writeOpenMarkets,
 } from 'AppV2/Utils/open-markets-utils';
 import { isMultiplierOnlySymbol } from 'AppV2/Utils/symbol-categories-utils';
-import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import {
-    mapContractTypeToDurationPresetKey,
-    mapContractTypeToStakePresetKey,
-} from 'AppV2/Utils/trade-params-preset-utils';
+    getMarketKey,
+    isPlainObject,
+    pickTabTradeParams,
+    pruneTabTradeParams,
+    readTabTradeParams,
+    TAB_TRADE_PARAM_KEYS,
+    type TTabTradeParamKey,
+    type TTabTradeParams,
+    type TTabTradeParamsMap,
+    writeTabTradeParams,
+} from 'AppV2/Utils/tab-trade-params-utils';
+import { mapContractTypeToDurationPresetKey } from 'AppV2/Utils/trade-params-preset-utils';
 import {
     getDefaultDuration,
-    getInitialTradeTypeTab,
     getDerivedDefaultStake,
+    getInitialTradeTypeTab,
     isValidPersistedDuration,
 } from 'AppV2/Utils/trade-params-utils';
+import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { getMultiplierValidationRules, getValidationRules } from 'Stores/Modules/Trading/Constants/validation-rules';
+import { isRiseFallEqual } from 'Stores/Modules/Trading/Helpers/allow-equals';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { TContractTypesList, TRootStore, TTextValueNumber, TTextValueStrings } from 'Types';
 
@@ -130,6 +152,10 @@ const BARRIER_DEFAULTS = {
 } as const;
 
 type BarrierSupportType = 'relative' | 'absolute';
+
+/** Barrier-kind classification by sign: a leading `+`/`-` is a relative offset, a bare number an
+ * absolute price. The single definition — the same test used to be inlined per call site. */
+const toBarrierSupport = (barrier: string): BarrierSupportType => (/^[+-]/.test(barrier) ? 'relative' : 'absolute');
 type DurationSupportType = 'ticks' | 'endtime';
 
 // Local type definitions for compatibility
@@ -250,9 +276,30 @@ type TStakeBoundary = Record<
 >;
 type TTicksResponse = TTicksHistoryResponse | TTicksStreamResponse;
 type TBarriersData = Record<string, never> | { barrier: string; barrier_choices?: string[] };
+/** What the tab currently being activated should settle on — see `pending_tab_params`. */
+type TPendingTabParams = { mode: 'restore'; params: TTabTradeParams } | { mode: 'defaults' } | null;
 type TValidationParams = ReturnType<typeof getProposalInfo>['validation_params'];
 
+/** Deal-cancellation duration a Multiplier tab starts from, before the user picks one. */
+const DEFAULT_CANCELLATION_DURATION = '60m';
+
+// Persisted with the tab but ALSO rewritten by the proposal stream (turbos re-derive barrier_1
+// from barrier_spot_distance and payout_per_point from the response, per tick) — see the
+// persistence reaction in the constructor for why they must not trigger it. A USER edit of either
+// persists explicitly from `onChange`.
+const NON_TRIGGER_TAB_PARAM_KEYS: readonly string[] = ['barrier_1', 'payout_per_point'];
+
 const store_name = 'trade_store';
+
+/** Compile-time drift guard for the tab-scoped parameter whitelist. `pickTabTradeParams` reads these
+ * keys off the store BY NAME, so a field renamed on `TradeStore` without being renamed in
+ * `TAB_TRADE_PARAM_TYPES` would silently stop being persisted. Type-only (no runtime value): if a
+ * whitelisted key is absent from `TradeStore`, the alias resolves to the error branch and the
+ * `extends never` constraint below fails to compile, naming the offending keys. */
+type TUnknownTabTradeParamKeys = Exclude<TTabTradeParamKey, keyof TradeStore>;
+type TAssertTabTradeParamKeysExistOnStore<T extends never> = T;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- compile-time assertion only
+type TTabTradeParamKeysExistOnStore = TAssertTabTradeParamKeysExistOnStore<TUnknownTabTradeParamKeys>;
 const g_subscribers_map: Partial<Record<string, ReturnType<typeof WS.subscribeTicksHistory>>> = {}; // blame amin.m
 
 /**
@@ -297,6 +344,25 @@ export default class TradeStore extends BaseStore {
     // active one via `open_markets`; mutate it via add/remove/replaceOpenMarket.
     open_markets_manual: TOpenMarket[] = readOpenMarkets('manual');
     open_markets_automation: TOpenMarket[] = readOpenMarkets('automation');
+    // Per-tab trade parameters, keyed by the tab's (symbol, contract_type) pair — one map per mode,
+    // mirroring the collections above. These are the SINGLE owner of the parameters they cover: the
+    // same keys are deliberately absent from `local_storage_properties` below, so a tab's stake,
+    // duration, barriers etc. come from here and nowhere else. Read the active one via
+    // `tab_trade_params`; save/restore through saveTabTradeParams / queueTabTradeParams.
+    // Plain fields (not observable): read imperatively at commit time, never rendered — same
+    // rationale as `automation_supported_trade_types` below.
+    tab_trade_params_manual: TTabTradeParamsMap = readTabTradeParams('manual');
+    tab_trade_params_automation: TTabTradeParamsMap = readTabTradeParams('automation');
+    // What the tab being activated should settle on: its saved parameters, or this trade type and
+    // market's defaults. A per-activation INTENT, set before the commit cascade (which is where the
+    // outcome is known) and consumed exactly once by `applyPendingTabParams`, after every reset the
+    // cascade performs — so the restore is always the last write. Transient (not observable/
+    // persisted); a newer selection overwrites it, so a stale intent can never leak into a later one.
+    private pending_tab_params: TPendingTabParams = null;
+    // The pair the COLD-LOAD intent above was queued for, recorded by `queueInitialTabTradeParams`
+    // in the constructor. `resolveInitialMarket` compares its resolved pair against this to decide
+    // whether the queued intent still describes the tab actually being activated.
+    private initial_tab_params_market: TOpenMarket | null = null;
     // Trade types automation supports (resolved from server strategies, set by the automation tab
     // strip once loaded). While non-empty AND in automation mode, `setActiveOpenMarkets` filters the
     // automation collection to these — a true add-time guard so an unsupported pair can never enter
@@ -362,15 +428,39 @@ export default class TradeStore extends BaseStore {
     // Keys whose own proposal reported a band. Doubles as the once-per-key probe fence: after it,
     // a stake set on that key is the user's. A set, so one tab cannot un-fence another.
     probed_stake_keys = new Set<string>();
+    // The pair whose stake was restored from its tab's saved parameters — the USER's own value,
+    // not the platform-chosen entry stake. Read by the stake-limits probe, which settles only
+    // platform-chosen stakes and must never overwrite a restored one (a refresh empties
+    // `probed_stake_keys`, so without this the probe re-fires and resets the saved stake).
+    // A PAIR, not a boolean: activations that merely CLEAR an intent (a failed commit, the settle
+    // timeout) don't run the restore/defaults paths, and a lingering `true` from the previous
+    // activation suppressed the probe for every LATER pair — whose fence had already closed, so
+    // a new tab on a high-min symbol kept the too-low default for good. Group-compared, so a
+    // sub-toggle (Allow equals, Up/Down) keeps the restored stake protected.
+    private restored_stake_market: TOpenMarket | null = null;
+    // Raised only for the span of a tab activation that restores a saved barrier (a browser
+    // refresh, an internal market-tab switch). Restoring the duration/end time in the same batch
+    // can flip contract_expiry_type, whose reaction re-seeds the barrier from the offering default
+    // — which would overwrite the manually edited barrier being written back. A duration or
+    // end-time change made by the user outside a restore still re-seeds normally.
+    private is_restoring_tab_barrier = false;
+    // Whether a settleTabParamsAfterCommit watcher is already armed — see that method.
+    private is_settle_after_commit_scheduled = false;
+    // The load's URL explicitly named `rise_fall_equal` — a defaults activation honouring that
+    // deep link keeps Allow equals on instead of resetting it. One-shot, consumed by
+    // `applyTabDefaults`.
+    private url_requested_equal_variant =
+        new URLSearchParams(window.location.search).get('trade_type') === TRADE_TYPES.RISE_FALL_EQUAL;
 
     // Duration
     duration = 5;
     duration_min_max: TDurationMinMax = {};
     duration_unit = '';
     duration_units_list: Array<TTextValueStrings> = [];
-    // Trade-type group key (mapContractTypeToDurationPresetKey) the default duration was last applied
-    // for. Grouped so Up/Down sub-toggles (turboslong/turbosshort) don't reset it. Not observable/
-    // persisted: resets to '' on load so the default re-applies on a fresh session.
+    // "Apply the configured default duration" is NOT tracked as session history — a refresh destroys
+    // that by construction, which is how a saved duration used to be lost on reload. It is instead an
+    // explicit `{ mode: 'defaults' }` intent (set when a tab is genuinely new) plus a stateless
+    // validity check against the incoming pair's limits; see `processContractsForV2`.
     expiry_date: string | null = '';
     expiry_epoch: number | string = '';
     expiry_time: string | null = '';
@@ -445,7 +535,7 @@ export default class TradeStore extends BaseStore {
     stop_out_level?: string;
     expiration?: number;
     hovered_contract_type?: string | null;
-    cancellation_duration = '60m';
+    cancellation_duration = DEFAULT_CANCELLATION_DURATION;
     cancellation_range_list: Array<TTextValueStrings> = [];
     cached_multiplier_cancellation_list: Array<TTextValueStrings> = [];
     ref: React.RefObject<{
@@ -498,35 +588,48 @@ export default class TradeStore extends BaseStore {
     is_digits_widget_active = false;
     should_skip_prepost_lifecycle = false;
     reconnectHandler?: () => Promise<void>;
+
+    /** One-time, key-SUBTRACTIVE cleanup of the tab-scoped parameters a previous release wrote into
+     * the global `localStorage['trade_store']` blob. Never a `removeItem` of the whole store —
+     * `currency` and `is_trade_params_expanded` still live there. Skips silently on unparseable JSON
+     * (`retrieveFromStorage` would have thrown on it anyway). */
+    private static clearLegacyTabParamsFromLocalStorage() {
+        let stored: string | null = null;
+        try {
+            stored = localStorage.getItem(store_name);
+        } catch {
+            // getItem throws (not returns null) when storage access is denied; this runs during
+            // class initialisation, so it must never propagate.
+            return;
+        }
+        if (!stored) return;
+        const snapshot = safeParse(stored);
+        if (!isPlainObject(snapshot)) return;
+        const blob = snapshot;
+        const legacy_keys = TAB_TRADE_PARAM_KEYS.filter(key => key in blob);
+        if (!legacy_keys.length) return;
+        legacy_keys.forEach(key => delete blob[key]);
+        try {
+            localStorage.setItem(store_name, JSON.stringify(blob));
+        } catch {
+            // Storage unavailable — the stale keys stay, which is no worse than before the cleanup.
+        }
+    }
+
     constructor({ root_store }: { root_store: TRootStore }) {
-        const local_storage_properties = [
-            'amount',
-            'currency',
-            'barrier_1',
-            'barrier_2',
-            'basis',
-            'duration',
-            'duration_unit',
-            'expiry_date',
-            'expiry_type',
-            'growth_rate',
-            'has_take_profit',
-            'has_stop_loss',
-            'has_cancellation',
-            'short_barriers',
-            'long_barriers',
-            'strike_price_choices',
-            'is_equal',
-            'last_digit',
-            'multiplier',
-            'start_date',
-            'start_time',
-            'stop_loss',
-            'take_profit',
-            'is_trade_params_expanded',
-            'v2_params_initial_values',
-        ];
+        // Only what is genuinely GLOBAL lives here: the trading currency (account-scoped) and whether
+        // the trade-params panel is expanded (layout-scoped). Every user-editable trade parameter is
+        // tab-scoped instead — see `tab_trade_params_manual` and `TAB_TRADE_PARAM_KEYS`. One owner per
+        // parameter, so there are no precedence rules between the two stores to get wrong.
+        const local_storage_properties = ['currency', 'is_trade_params_expanded'];
+        // Kept in sessionStorage: `resolveInitialMarket` compares the URL params against this snapshot
+        // to tell a genuine deep link from a plain reload.
         const session_storage_properties = ['contract_type', 'symbol'];
+
+        // `retrieveFromStorage` blind-assigns EVERY key present in the stored blob, not just the
+        // configured list — so shrinking that list is not enough to evict values written by a previous
+        // release. Subtract them once, before BaseStore's `setTimeout(0)` rehydrate runs.
+        TradeStore.clearLegacyTabParamsFromLocalStorage();
 
         super({
             root_store,
@@ -702,6 +805,8 @@ export default class TradeStore extends BaseStore {
             addOpenMarket: action.bound,
             removeOpenMarket: action.bound,
             replaceOpenMarket: action.bound,
+            saveTabTradeParams: action.bound,
+            queueTabTradeParams: action.bound,
             setAutomationSupportedTradeTypes: action.bound,
             setReplacingMarket: action.bound,
             startSelectingMarket: action.bound,
@@ -756,6 +861,14 @@ export default class TradeStore extends BaseStore {
             }
         }
 
+        // Queue the cold-load activation intent SYNCHRONOUSLY, before anything can consume it.
+        // `resolveInitialMarket` can only refine the pair after awaiting `active_symbols`, but the
+        // intent's consumer (`processContractsForV2`) runs off the `contracts_for` response — which
+        // `useContractsFor` dispatches from the URL-seeded symbol above and which therefore routinely
+        // lands FIRST. Queuing here removes the race: whichever response wins, an intent is already
+        // waiting, so a refresh restores its tab and a fresh browser tab gets defaults.
+        if (this.is_dtrader_v2) this.queueInitialTabTradeParams();
+
         // The single owner of initial market/trade-type selection. Fire-and-forget: each phase waits for the
         // data it needs and aborts if a user selection supersedes it.
         this.resolveInitialMarket().catch((error: unknown) => {
@@ -763,6 +876,25 @@ export default class TradeStore extends BaseStore {
             console.error('[TradeStore] resolveInitialMarket failed:', error);
         });
 
+        // Tab-scoped parameters no longer ride BaseStore's localStorage reaction (they are not in
+        // `local_storage_properties` any more), so the store persists them itself — against the tab
+        // that owns them. Mirrors `setupReactionForLocalStorage`, and is what makes an edit survive a
+        // refresh with no tab switch in between.
+        reaction(
+            // The derived choice objects (strike/payout-per-point seed lists) are excluded from
+            // the TRIGGER set: the proposal stream re-assigns them per market tick, which made
+            // this reaction run a full-map stringify + synchronous sessionStorage write 1-2×/s
+            // for as long as the trade page sat open. They are still PERSISTED — every write
+            // picks all whitelisted keys off the live store, and any user edit or tab switch
+            // carries the latest lists with it. Structural equality drops the remaining
+            // identical re-assignments (same value written back) without delaying real writes.
+            () =>
+                TAB_TRADE_PARAM_KEYS.filter(key => !NON_TRIGGER_TAB_PARAM_KEYS.includes(key)).map(
+                    key => this[key as keyof this]
+                ),
+            () => this.persistActiveTabTradeParams(),
+            { equals: comparer.structural }
+        );
         reaction(
             () => [this.contract_expiry_type, this.duration_min_max, this.duration_unit, this.expiry_type],
             () => {
@@ -808,6 +940,12 @@ export default class TradeStore extends BaseStore {
                     // this observable, which stopped being a reliable signal once this reaction
                     // started deriving the value correctly.
                     if (!previous_expiry_type) return; // first resolve: the pipeline seeds it
+
+                    // A restore batch owns the barrier it is writing back (browser refresh,
+                    // internal tab switch): the flip observed here came from the restored
+                    // duration/end time, and re-seeding would overwrite the user's saved barrier
+                    // with the default.
+                    if (this.is_restoring_tab_barrier) return;
 
                     const { barrier_1, barrier_2, barrier_count } = ContractType.getBarriers(
                         this.symbol,
@@ -1035,6 +1173,31 @@ export default class TradeStore extends BaseStore {
     async processContractsForV2() {
         // So a symbol change mid-await can't release the proposal hold for the wrong symbol.
         const symbol_at_start = this.symbol;
+        // Everything below runs under a try/finally: several awaited calls in the body can throw
+        // (a socket drop rejecting processTradeParams, an Invalid Argument from onChangeMultiple),
+        // and useContractsFor invokes this fire-and-forget — an early exit that skipped the release
+        // left `is_awaiting_contracts_for` true forever: permanent skeleton, no proposals, and
+        // every per-tab save path disabled for the rest of the session.
+        try {
+            await this.processContractsForV2Body();
+        } finally {
+            // Release the hold — unless the symbol changed mid-flight (the new symbol's own run
+            // releases it).
+            if (this.symbol === symbol_at_start) {
+                this.is_awaiting_contracts_for = false;
+            }
+            // Explicitly trigger proposal after all contract values (barriers, duration, stake)
+            // are applied. The processNewValuesAsync calls in the body use is_changed_by_user=false
+            // and their keys don't always match the regex gate that triggers debouncedProposal.
+            this.debouncedProposal();
+        }
+    }
+
+    private async processContractsForV2Body() {
+        // Re-captured here (the wrapper holds its own copy for the hold release): every awaited
+        // lookup below is a gap a symbol change can slip through, and a write committed after one
+        // would carry the outgoing market's values.
+        const symbol_at_start = this.symbol;
         const contract_categories = ContractType.getContractCategories(this.symbol);
         // Await sequentially: first sets contract_types_list, second sets barrier/duration values.
         // Without await, these race each other and the second call's forgetAllProposal
@@ -1046,19 +1209,44 @@ export default class TradeStore extends BaseStore {
             null,
             false
         );
-        await this.processNewValuesAsync(ContractType.getContractValues(this), false, null, false);
+        await this.processNewValuesAsync(this.getContractValuesForActivation(), false, null, false);
 
-        // Apply the per-trade-type default duration the first time a trade-type group becomes
-        // active (initial load / a symbol whose contracts_for just resolved), or reconcile a
-        // retained duration that is out of range here. Tracking the group it was applied for
-        // means a manually-set duration survives a plain symbol change (same type), while the
-        // configured default still lands on first load — where the retained value may be valid.
-        const should_apply_default = !isValidPersistedDuration(
-            this.duration,
-            this.duration_unit,
-            this.duration_min_max,
-            this.duration_units_list
-        );
+        // The incoming pair's limits, units and default stake are current, so the activation's intent
+        // can settle here: restore the tab's saved parameters, or put a new tab on defaults.
+        //
+        // …unless a commit cascade is still writing that pair. A cached `contracts_for` (60s fresh in
+        // `useContractsFor`) is answered the moment `symbol` changes — HALFWAY through
+        // `selectMarketAndTradeType`, while `contract_type` is still the OUTGOING tab's. Settling
+        // against that wrong trade type lands the tab on defaults, since the trade-type write that
+        // follows resets stake, risk management and duration. Leave it queued until the pair is whole.
+        const is_pair_unsettled = this.is_selecting_market || this.is_reconciling_url_trade_type;
+        const pending = is_pair_unsettled ? null : this.consumePendingTabParams();
+        const has_deferred_intent = is_pair_unsettled && !!this.pending_tab_params;
+        if (has_deferred_intent) this.settleTabParamsAfterCommit();
+        let is_saved_duration_restored = false;
+        if (pending?.mode === 'restore') is_saved_duration_restored = await this.applyRestoredTabParams(pending.params);
+        else if (pending?.mode === 'defaults') await this.applyTabDefaults();
+
+        // Apply the per-trade-type default duration for a new tab (`defaults` intent), when a saved
+        // duration no longer fits the incoming pair (the dropped restore leaves the OUTGOING tab's
+        // duration in the store, which must not stand just because it happens to be in range), or
+        // when a retained duration is out of range. Operands are stateless so a saved duration
+        // survives a refresh. A DEFERRED intent owns the duration — its "out of range" check would
+        // read the transient pair (see above) and be undone by the settle, so leave it to the settle.
+        // End Time tabs are exempt: duration/duration_unit are dormant there (pricing goes via
+        // date_expiry) and the default force-writes `expiry_type: 'duration'`, so a range check on
+        // inert fields must never flip the tab's mode.
+        const should_apply_default =
+            pending?.mode === 'defaults' ||
+            (pending?.mode === 'restore' && !is_saved_duration_restored) ||
+            (!has_deferred_intent &&
+                this.expiry_type !== 'endtime' &&
+                !isValidPersistedDuration(
+                    this.duration,
+                    this.duration_unit,
+                    this.duration_min_max,
+                    this.duration_units_list
+                ));
         if (this.contract_type && should_apply_default) {
             const default_duration = getDefaultDuration(
                 this.contract_type,
@@ -1138,15 +1326,30 @@ export default class TradeStore extends BaseStore {
         ) {
             this.payout_per_point = String(this.payout_choices[Math.floor(this.payout_choices.length / 2)]);
         }
-        // Release the hold — unless the symbol changed mid-flight (the new symbol's
-        // own run releases it).
-        if (this.symbol === symbol_at_start) {
-            this.is_awaiting_contracts_for = false;
+    }
+
+    /** The contract offering's values (barriers, duration limits/units, ranges) for the current pair,
+     * with the BARRIER withheld unless this delivery is settling a tab activation.
+     *
+     * `contracts_for` re-delivers per pair (refetch, reconnect, new response object), but its barrier
+     * is only correct during an activation, where the intent picks default (new tab) vs saved
+     * (restore). Once settled, the on-screen barrier is the user's — re-seeding overwrote it, and
+     * `persistActiveTabTradeParams` then persisted that default, losing it for good (#1242). In End
+     * Time mode it WIPES rather than resets: `contract_expiry_type` derives as `daily`, which most
+     * offerings publish no barrier for, so the lookup blanks the field.
+     *
+     * `barrier_count` and the choice lists stay: they describe the offering, not the user's
+     * selection. */
+    private getContractValuesForActivation() {
+        const values = ContractType.getContractValues(this) as Partial<TradeStore>;
+        // Either barrier counts as "settled": on a two-barrier contract they are one value, and a
+        // barrier_2-only state (reconstructable from storage) must be withheld the same way.
+        if (!this.pending_tab_params && (this.barrier_1 || this.barrier_2)) {
+            // Both, always: on a two-barrier contract they are one value.
+            delete values.barrier_1;
+            delete values.barrier_2;
         }
-        // Explicitly trigger proposal after all contract values (barriers, duration, stake)
-        // are applied. The processNewValuesAsync calls above use is_changed_by_user=false
-        // and their keys don't always match the regex gate that triggers debouncedProposal.
-        this.debouncedProposal();
+        return values;
     }
 
     async prepareTradeStore() {
@@ -1195,16 +1398,17 @@ export default class TradeStore extends BaseStore {
      * desired behaviour. Uses per-field `onChange` (not `onChangeMultiple`) to keep each field's
      * pre-processing (chart-loading flag, Vanilla/accumulator resets) intact.
      */
-    async selectMarketAndTradeType(underlying_symbol: string, contract_type: string) {
-        // Every market tab shares this one store, so the outgoing tab's error state has to go
-        // before the incoming tab's cascade starts — otherwise an error raised for the tab being
-        // left is (re-)raised against a tab that is perfectly configured (issue #1246).
-        //
-        // Re-confirming the already-active pair is not a switch, and clearing there would drop the
-        // field errors for a market that is not changing while the toast retraction — which keys on
-        // the market actually changing — stays put, leaving the two out of step. Only this clear is
-        // skipped: the rest of the method also owns the tab strip, the long-press replace flow and
-        // the URL mirror, none of which are safe to bypass on a re-selection.
+    async selectMarketAndTradeType(
+        underlying_symbol: string,
+        contract_type: string,
+        { save_outgoing_params = true }: { save_outgoing_params?: boolean } = {}
+    ) {
+        // Every tab shares this store, so the outgoing tab's error state must go before the incoming
+        // tab's cascade starts — otherwise an error raised for the tab being left is re-raised
+        // against a perfectly configured one (#1246). Re-confirming the active pair is not a switch:
+        // clearing there would drop field errors for an unchanged market while the toast retraction
+        // (which keys on the market changing) stays put, leaving the two out of step. Only this clear
+        // is skipped — the rest of the method owns the tab strip, replace flow and URL mirror.
         const is_reselecting_active_market = underlying_symbol === this.symbol && contract_type === this.contract_type;
         if (!is_reselecting_active_market) this.clearTradeErrorState();
         // This call is now the newest selection intent: any older cascade still in flight must not
@@ -1214,8 +1418,23 @@ export default class TradeStore extends BaseStore {
         // cascade below (which transiently pairs the new symbol with the stale type, and may re-swap
         // the type via useContractsFor). The strip is thus never built from those transient values.
         const next_market = { symbol: underlying_symbol, contract_type };
+        // Snapshot the tab we're leaving BEFORE any strip mutation below, so switching away and back
+        // is lossless. Skipped on a mode flip (`reconcileTradeModeMarket` already saved them against
+        // the mode we left; saving again would write them into the ENTERED mode's map), and while the
+        // previous activation is unsettled — there the store names the incoming pair but still holds
+        // the outgoing tab's values, so saving overwrites the named tab (A→B→A losing B's stake).
+        // Lossless either way: those values were already saved against their own tab. Mirrors the
+        // guard in `persistActiveTabTradeParams`.
+        if (save_outgoing_params && !this.pending_tab_params && !this.is_awaiting_contracts_for) {
+            this.saveTabTradeParams({ symbol: this.symbol, contract_type: this.contract_type });
+        }
         // Captured before mutating so the optimistic tab change can be rolled back on failure below.
         const replaced_market = this.replacing_market;
+        // The replace prunes the replaced tab's saved-params entry along with the tab; captured so
+        // the failure rollback can put the ENTRY back too, not just the tab on the strip.
+        const replaced_market_params = replaced_market
+            ? this.tab_trade_params[getMarketKey(replaced_market)]
+            : undefined;
         // A tab whose (symbol, trade-type CATEGORY) already matches the commit — committing.
         const category_sibling_tab = this.open_markets.find(
             market =>
@@ -1237,6 +1456,13 @@ export default class TradeStore extends BaseStore {
         } else if (!category_sibling_tab) {
             this.addOpenMarket(next_market);
         }
+        // Decide restore-vs-defaults now, from the strip as it stands after the bookkeeping above.
+        // Gated on did_replace, NOT on replaced_market: a long-press whose target is already open
+        // as a different tab performs no replace — it is really a switch to that existing tab, and
+        // forcing `defaults` there wiped the existing tab's saved parameters. Only an ACTUAL
+        // replacement produces a new pair that starts from defaults.
+        if (did_replace) this.pending_tab_params = { mode: 'defaults' };
+        else this.queueTabTradeParams(next_market);
         // Guard the cascade so the tab strip's seed effect ignores the transient {new symbol, old
         // trade type} state and doesn't spawn a stale tab (the exact pair is already recorded above).
         this.startSelectingMarket();
@@ -1251,6 +1477,21 @@ export default class TradeStore extends BaseStore {
             if (contract_type && contract_type !== this.contract_type) {
                 await this.onChange({ target: { name: 'contract_type', value: contract_type } });
             }
+            // Same-symbol trade-type switch: no new contracts_for response arrives, so
+            // `useContractsFor`'s effect (deps `[response, isLoading, …]`) never re-runs and
+            // `processContractsForV2` never settles the intent — do it here instead. Re-check the
+            // epoch first so an overlapping cascade can't have its intent applied on top of ours.
+            // Own try/catch: the market commit above already SUCCEEDED, so a throw from the
+            // restore (an Invalid Argument from a corrupt saved key, a rejected re-price) must not
+            // reach the outer catch — that would roll the just-switched tab off the strip and
+            // prune its saved parameters over a failure unrelated to the commit.
+            if (this.selection_seq === epoch && !this.is_awaiting_contracts_for) {
+                try {
+                    await this.applyPendingTabParams();
+                } catch {
+                    this.clearPendingTabParams();
+                }
+            }
             // Commit fully settled — mirror the pair into the URL atomically.
             if (this.selection_seq === epoch) this.syncTradeURLParams();
         } catch (error) {
@@ -1259,8 +1500,21 @@ export default class TradeStore extends BaseStore {
             // (commitAndClose) keeps the selector open for retry. Skipped when superseded (a newer
             // selection owns the strip) and when nothing was added (a pre-existing tab must survive).
             if (this.selection_seq === epoch) {
-                if (did_replace && replaced_market) this.replaceOpenMarket(next_market, replaced_market);
-                else if (!category_sibling_tab) this.removeOpenMarket(next_market);
+                if (did_replace && replaced_market) {
+                    this.replaceOpenMarket(next_market, replaced_market);
+                    // The forward replace pruned the replaced tab's saved entry with it; a rollback
+                    // that restores the tab but not its parameters would leave it on defaults.
+                    if (replaced_market_params) {
+                        this.setTabTradeParams(this.tab_params_mode, {
+                            ...this.tab_trade_params,
+                            [getMarketKey(replaced_market)]: replaced_market_params,
+                        });
+                    }
+                } else if (!category_sibling_tab) {
+                    this.removeOpenMarket(next_market);
+                }
+                // A failed commit must leave no intent behind for a later, unrelated activation.
+                this.clearPendingTabParams();
             }
             throw error;
         } finally {
@@ -1333,7 +1587,15 @@ export default class TradeStore extends BaseStore {
         }
         const fallback = available_types[0];
         if (!fallback || fallback === current) return;
-        // Correct the strip before the state hop. The tab carrying the unavailable type is dead
+        // An empty contract_type with a QUEUED activation intent means the pair is not known yet
+        // (BaseStore's rehydrate hasn't run; the response was dispatched from the URL-seeded
+        // symbol) — not that the type is unavailable. Hopping here overwrote that cold-load
+        // restore intent with `defaults`, losing the tab's saved parameters on a plain refresh;
+        // the intent's own settle owns the pair, so leave it alone. With NO intent queued (a
+        // genuine first visit: nothing in the URL, nothing stored, so the constructor had nothing
+        // to queue), fall through — this fallback hop is what seeds the very first contract_type,
+        // and skipping it left the page with no tab and no trade params at all.
+        if (!current && this.pending_tab_params) return;
         // (its pair can never load a proposal) — replace it in place with the fallback pair, unless a
         // same-category tab for the fallback already exists (two tabs must never share a category).
         const dead_tab = current
@@ -1348,13 +1610,23 @@ export default class TradeStore extends BaseStore {
         if (dead_tab && !has_fallback_tab) this.replaceOpenMarket(dead_tab, fallback_market);
         else if (dead_tab && has_fallback_tab) this.removeOpenMarket(dead_tab);
         else if (!has_fallback_tab) this.addOpenMarket(fallback_market);
+        // The fallback is a different pair from the one the user committed, so the tab it produces is
+        // a new one and starts from defaults.
+        this.pending_tab_params = { mode: 'defaults' };
         // Commit the fallback under the guard. Deliberately not awaited: the store write inside
         // onChange is synchronous (callers like useContractsFor rely on reading the corrected type
         // right after), while the guard covers the async tail of the cascade.
         this.startSelectingMarket();
         this.onChange({ target: { name: 'contract_type', value: fallback } })
+            // Settle the intent here when nothing else will. Driven by a `contracts_for` response,
+            // `processContractsForV2` follows and owns it (hence the same hold check as the tail of
+            // `selectMarketAndTradeType`); driven by the deferred re-evaluation above, no refetch
+            // follows on this symbol, so this is the ONLY consumer — without it the intent would never
+            // clear and per-tab saving would stay disabled for the rest of the session.
+            .then(() => (this.is_awaiting_contracts_for ? undefined : this.applyPendingTabParams()))
             .then(() => this.syncTradeURLParams())
-            .catch(() => undefined)
+            // A rejected commit must not leave an intent behind for a later, unrelated activation.
+            .catch(() => this.clearPendingTabParams())
             .finally(() => this.stopSelectingMarket());
     }
 
@@ -1374,11 +1646,24 @@ export default class TradeStore extends BaseStore {
             if (isSameOpenMarketList(guarded, this.open_markets_automation)) return;
             this.open_markets_automation = guarded;
             writeOpenMarkets('automation', guarded);
+            this.pruneActiveTabTradeParams(guarded);
         } else {
             if (isSameOpenMarketList(next, this.open_markets_manual)) return;
             this.open_markets_manual = next;
             writeOpenMarkets('manual', next);
+            this.pruneActiveTabTradeParams(next);
         }
+    }
+
+    // Drop the parameters of tabs that just left the strip. Hooked to the single strip writer, so it
+    // covers every add, remove, replace and automation-guard filter — including reopening a pair that
+    // was closed earlier, which must start from defaults rather than resurrect the closed tab's values.
+    private pruneActiveTabTradeParams(next: TOpenMarket[]) {
+        const mode = this.tab_params_mode;
+        const current = this.getTabTradeParams(mode);
+        const pruned = pruneTabTradeParams(current, next);
+        if (pruned === current) return;
+        this.setTabTradeParams(mode, pruned);
     }
 
     addOpenMarket(market: TOpenMarket) {
@@ -1409,15 +1694,281 @@ export default class TradeStore extends BaseStore {
         if (this.is_automation_mode && supported_trade_types.size) this.setActiveOpenMarkets(this.open_markets);
     }
 
+    /** The strip entry that owns a pair's parameters, matched by trade-type GROUP so the Allow-equals
+     * and Up/Down sub-toggles resolve to the tab they were toggled on (`setTradeSubType` moves
+     * `contract_type` without changing the tab's recorded pair). Keying off the live `contract_type`
+     * instead would split one tab's parameters across two entries. */
+    private findMarketTab(symbol: string, contract_type: string, mode: TOpenMarketsMode = this.tab_params_mode) {
+        const markets = mode === 'automation' ? this.open_markets_automation : this.open_markets_manual;
+        return markets.find(
+            market => market.symbol === symbol && this.isSameTradeTypeGroup(market.contract_type, contract_type)
+        );
+    }
+
+    /** Snapshot the current parameters against the tab that owns `market`. No-op when the pair has no
+     * tab (nothing owns those values, so there is nothing to restore them to). */
+    saveTabTradeParams(market: TOpenMarket, mode: TOpenMarketsMode = this.tab_params_mode) {
+        const tab = this.findMarketTab(market.symbol, market.contract_type, mode);
+        if (!tab) return;
+        this.setTabTradeParams(mode, {
+            ...this.getTabTradeParams(mode),
+            [getMarketKey(tab)]: pickTabTradeParams(this),
+        });
+    }
+
+    /** Save the live parameters against the active tab, but only once the state they describe is the
+     * SETTLED state of a real pair. Skipped while a commit cascade is in flight (it transiently pairs
+     * the incoming symbol with the outgoing trade type), and while an activation's intent is still
+     * unconsumed or its `contracts_for` still in flight — at those points the values on screen are
+     * the pre-restore ones and would overwrite what the tab actually has saved. */
+    private persistActiveTabTradeParams() {
+        if (this.is_selecting_market || this.is_reconciling_url_trade_type) return;
+        if (this.is_awaiting_contracts_for || this.pending_tab_params) return;
+        this.saveTabTradeParams({ symbol: this.symbol, contract_type: this.contract_type });
+    }
+
+    /** Record what the tab being activated should settle on: its saved parameters when it is already
+     * on the strip, this trade type and market's defaults when it is new. */
+    queueTabTradeParams(market: TOpenMarket, mode: TOpenMarketsMode = this.tab_params_mode) {
+        const tab = this.findMarketTab(market.symbol, market.contract_type, mode);
+        const params = tab ? this.getTabTradeParams(mode)[getMarketKey(tab)] : undefined;
+        this.pending_tab_params = params ? { mode: 'restore', params } : { mode: 'defaults' };
+    }
+
+    /** The (symbol, contract_type) pair from BaseStore's sessionStorage snapshot. Read directly rather
+     * than off the fields because BaseStore's `setTimeout(0)` rehydrate has not run yet at cold-load
+     * time. Shared by the two readers so neither can drift from `store_name`. */
+    private readStoredSessionPair(): { symbol?: string; contract_type?: string } {
+        try {
+            return (safeParse(sessionStorage.getItem(store_name) ?? '') ?? {}) as {
+                symbol?: string;
+                contract_type?: string;
+            };
+        } catch {
+            // getItem throws when storage access is denied — degrade to "nothing stored".
+            return {};
+        }
+    }
+
+    /** Queue the cold load's intent from the pair the load will land on, as far as it is knowable
+     * before `active_symbols` arrive: a deep link's URL params, else the sessionStorage snapshot
+     * BaseStore is about to restore (its `setTimeout(0)` rehydrate hasn't populated the fields yet, so
+     * the snapshot is read directly), else whatever the constructor already seeded. Both inputs this
+     * needs — the strip and the params map — are read from storage in the field initialisers, so
+     * restore-vs-defaults is already decidable here. `resolveInitialMarket` re-queues if it ends up
+     * resolving a different pair. */
+    private queueInitialTabTradeParams() {
+        const search_params = new URLSearchParams(window.location.search);
+        const stored_session = this.readStoredSessionPair();
+        const symbol = search_params.get('symbol') || stored_session.symbol || this.symbol;
+        const contract_type = search_params.get('trade_type') || stored_session.contract_type || this.contract_type;
+        // Nothing to go on (first-ever visit): the resolver picks a default and queues in Phase 3,
+        // which it reaches before any `contracts_for` can be dispatched for that freshly-set symbol.
+        if (!symbol || !contract_type) return;
+        this.initial_tab_params_market = { symbol, contract_type };
+        // The mode is resolved EXPLICITLY, not via `tab_params_mode`: `root_store.ui` is undefined
+        // during construction, so `is_automation_mode` falls back to `is_automation_tab` — which is
+        // seeded from a persisted, non-device-scoped localStorage key. A mobile user whose last
+        // DESKTOP-width session left the panel on Automation would resolve 'automation' here, read
+        // the wrong strip/map, find no tab and drop the manual tab's saved parameters on every
+        // refresh. A cold load is manual unless the ROUTE says otherwise; a desktop load whose
+        // panel restores to Automation is re-queued by the reconcile the panel effect triggers.
+        const mode: TOpenMarketsMode = window.location.pathname.includes(routes.trader_automate)
+            ? 'automation'
+            : 'manual';
+        this.queueTabTradeParams(this.initial_tab_params_market, mode);
+    }
+
+    private clearPendingTabParams() {
+        this.pending_tab_params = null;
+    }
+
+    /** Settle the activation's intent as soon as the commit cascade has finished writing the pair —
+     * for the consumers that can be reached MID-cascade (a `contracts_for` response answered from
+     * React Query's cache, or that request failing), where `symbol` and `contract_type` still belong
+     * to different tabs. `applyPendingTabParams` consumes the intent atomically, so whichever of this
+     * and the commit's own tail runs first wins and the other is a no-op. Bounded: a cascade that
+     * never settles must not strand the intent, which gates every per-tab save. */
+    private settleTabParamsAfterCommit() {
+        // One outstanding watcher at a time: repeated mid-cascade triggers (e.g. a reconnect storm
+        // of degraded contracts_for releases) would otherwise stack parallel 30s when()s.
+        if (this.is_settle_after_commit_scheduled) return;
+        this.is_settle_after_commit_scheduled = true;
+        // The intent this watcher was armed for. On timeout, clear only if it is STILL the pending
+        // one — a newer activation queued meanwhile owns the slot, and clearing its intent would
+        // strand that activation on the outgoing tab's values.
+        const armed_intent = this.pending_tab_params;
+        when(() => !this.is_selecting_market && !this.is_reconciling_url_trade_type, { timeout: 30000 })
+            .then(() => this.applyPendingTabParams())
+            .catch(() => {
+                if (this.pending_tab_params === armed_intent) this.clearPendingTabParams();
+            })
+            .finally(() => {
+                this.is_settle_after_commit_scheduled = false;
+            });
+    }
+
+    /** Take the intent and clear it in one step, so whichever consumer runs first wins and a second
+     * call is a no-op. */
+    private consumePendingTabParams() {
+        const pending = this.pending_tab_params;
+        this.pending_tab_params = null;
+        return pending;
+    }
+
+    /** Rise/Fall is PRICED as `rise_fall_equal` while Allow equals is on, so `is_equal` and
+     * `contract_type` must move together. A single-field `is_equal` edit gets that flip from
+     * `onChange`; a restore/defaults write commits through `onChangeMultiple`, which would leave the
+     * toggle and the priced contract disagreeing. Returns the sub-type to commit IN THE SAME batch as
+     * `is_equal` — committing it separately would trip `processNewValuesAsync`'s trade-type-change
+     * reset and wipe the stake/risk-management values being restored. Empty for every other family.
+     */
+    private getEqualsSubType(is_equal?: number) {
+        // Exact family match (shared with the Allow-equals UI): a substring test would also claim
+        // any future contract type merely containing 'rise_fall' and rewrite its identity.
+        if (!this.contract_type || !isRiseFallEqual(this.contract_type)) return {};
+        const contract_type = is_equal ? TRADE_TYPES.RISE_FALL_EQUAL : TRADE_TYPES.RISE_FALL;
+        return contract_type === this.contract_type ? {} : { contract_type };
+    }
+
+    /** Write a tab's saved parameters back. Duration is re-validated against the INCOMING pair's
+     * limits and dropped when it no longer fits; the caller is told so it can put the configured
+     * default in its place (the live duration at this point is the OUTGOING tab's, which must never
+     * be allowed to stand). Returns whether the saved duration was restored. */
+    private async applyRestoredTabParams(params: TTabTradeParams) {
+        const { duration, duration_unit, ...rest } = params;
+        // A saved End Time wholly in the past is unpriceable — the proposal would be rejected on
+        // sight and the tab stuck on the error. Drop the tuple so the restore degrades to the
+        // duration fields (or the default), exactly like an out-of-range saved duration does.
+        // Date-granular on purpose: a same-day time is left to the End Time pipeline's own
+        // re-derivation, which already handles the intra-day case.
+        const server_time = this.root_store.common?.server_time;
+        const is_stale_end_time =
+            rest.expiry_type === 'endtime' && !!rest.expiry_date && !!server_time?.isAfter?.(rest.expiry_date, 'day');
+        if (is_stale_end_time) {
+            delete rest.expiry_type;
+            delete rest.expiry_date;
+            delete rest.expiry_time;
+            delete rest.saved_expiry_date_v2;
+        }
+        // Set before the commit below, so a probe answering mid-restore already sees it.
+        this.restored_stake_market =
+            rest.amount !== undefined ? { symbol: this.symbol, contract_type: this.contract_type } : null;
+        // Likewise before the commit: the restored duration/end time can flip
+        // contract_expiry_type inside the same batch, and its reaction must not re-seed the
+        // barrier being restored. Scoped to this batch (cleared in the finally) so a later
+        // user-driven duration change re-seeds as usual. Either barrier counts — on a two-barrier
+        // contract they are one value.
+        this.is_restoring_tab_barrier = rest.barrier_1 !== undefined || rest.barrier_2 !== undefined;
+        const is_duration_valid = isValidPersistedDuration(
+            duration,
+            duration_unit,
+            this.duration_min_max,
+            this.duration_units_list
+        );
+        const values = {
+            ...rest,
+            ...(is_duration_valid ? { duration, duration_unit } : {}),
+            ...this.getEqualsSubType(params.is_equal),
+        };
+        try {
+            if (Object.keys(values).length) {
+                await this.onChangeMultiple(values as Partial<TradeStore>);
+                this.root_store.common.setSelectedContractType(this.contract_type);
+            }
+        } finally {
+            // MobX reactions flush when the mutating action exits, i.e. inside the awaited call
+            // above — by the time it resolves, any expiry flip this restore caused has been seen.
+            this.is_restoring_tab_barrier = false;
+        }
+        // An End Time tab reports its duration as restored regardless of the dormant
+        // duration/duration_unit pair's range validity: those fields are inert while expiry_type
+        // is 'endtime' (the proposal prices via date_expiry), and returning false would send every
+        // caller to applyDefaultDuration(), which force-writes `expiry_type: 'duration'` and wipes
+        // the End Time selection this very restore just wrote back.
+        return is_duration_valid || rest.expiry_type === 'endtime';
+    }
+
+    /** Put a genuinely new tab on this trade type and market's defaults, so it cannot inherit the
+     * previously active tab's customised stake, Allow-equals state or risk-management selections. The
+     * default DURATION is applied by `processContractsForV2`, which owns that decision. */
+    private async applyTabDefaults() {
+        // A defaults activation starts from the platform-chosen stake — the probe may settle it.
+        this.restored_stake_market = null;
+        const default_amount = this.getDefaultStake();
+        // Allow equals is normally reset with the other customisations (a new tab must not inherit
+        // the previous tab's toggle) — EXCEPT when this very load's URL explicitly named the equal
+        // variant: that deep link is the tab's identity, and resetting it silently downgraded the
+        // shared link to plain rise_fall. One-shot: consumed here so later new tabs reset as usual.
+        const default_is_equal =
+            this.url_requested_equal_variant && this.contract_type === TRADE_TYPES.RISE_FALL_EQUAL ? 1 : 0;
+        this.url_requested_equal_variant = false;
+        await this.onChangeMultiple({
+            ...(default_amount ? { amount: default_amount } : {}),
+            has_take_profit: false,
+            take_profit: '',
+            has_stop_loss: false,
+            stop_loss: '',
+            has_cancellation: false,
+            cancellation_duration: DEFAULT_CANCELLATION_DURATION,
+            is_equal: default_is_equal,
+            ...this.getEqualsSubType(default_is_equal),
+        });
+        this.root_store.common.setSelectedContractType(this.contract_type);
+    }
+
+    /** The stake a pair starts from when nothing is saved for it: the pair's own derived default
+     * (its first quick pick). The boundary is read only when `probed_stake_keys` proves it came from
+     * this market; otherwise the `contracts_for` default stands and the probe corrects it. The
+     * SINGLE rule, shared by the symbol/trade-type reset in `processNewValuesAsync` and by
+     * `applyTabDefaults` — duplicating it is how a new tab on a high-min symbol ended up below that
+     * symbol's minimum. Key: tabs first (no mid-switch lag), displayed type for tab-less
+     * Accumulators. */
+    private getDefaultStake(symbol = this.symbol, contract_type = this.contract_type) {
+        if (isCryptocurrency(this.currency ?? '')) return getMinPayout(this.currency ?? '') ?? '';
+        const boundary_key =
+            getInitialTradeTypeTab(contract_type) ||
+            getDisplayedContractTypes(this.trade_types, this.contract_type, this.trade_type_tab)[0];
+        const target_stake_key = `${symbol}:${boundary_key}`;
+        const known_boundary = this.probed_stake_keys.has(target_stake_key)
+            ? this.stake_boundary[target_stake_key]
+            : undefined;
+        const derived_default = getDerivedDefaultStake(
+            this.default_stake,
+            known_boundary?.min_stake,
+            known_boundary?.max_stake
+        );
+        return derived_default ?? this.default_stake;
+    }
+
+    /** Consume the activation's intent and settle the tab on it. Called after every reset the commit
+     * cascade performs, so this is the last write. Self-sufficient — it settles the DURATION too, so a
+     * settle deferred out of `processContractsForV2` (which normally owns the default duration) leaves
+     * nothing behind. */
+    private async applyPendingTabParams() {
+        const pending = this.consumePendingTabParams();
+        if (!pending) return;
+        if (pending.mode === 'defaults') {
+            await this.applyTabDefaults();
+            await this.applyDefaultDuration();
+            return;
+        }
+        // A saved duration that no longer fits the incoming pair was dropped — fall back to this
+        // trade type's configured default rather than leaving the outgoing tab's duration standing.
+        const is_duration_restored = await this.applyRestoredTabParams(pending.params);
+        if (!is_duration_restored) await this.applyDefaultDuration();
+    }
+
     // Trade-type group of the current contract type — an Up/Down or Allow-equals sub-toggle
     // stays in the same group, a real trade-type switch changes it.
     get current_duration_group() {
         return mapContractTypeToDurationPresetKey(this.contract_type) ?? '';
     }
 
-    // Applies the configured per-trade-type default for the current contract type and records the
-    // trade-type group it was applied for, so processContractsForV2 won't re-force it on a later
-    // symbol change (a manual value survives). Returns early when the type has no configured default.
+    // Applies the configured per-trade-type default for the current contract type on a real
+    // trade-type switch. Returns early when the type has no configured default. When the activation
+    // is a switch BACK to an existing tab, the restore that follows overwrites this with that tab's
+    // saved duration — this only decides what a tab without saved parameters starts from.
     async applyDefaultDuration() {
         if (!this.contract_type) return;
         const default_duration = getDefaultDuration(
@@ -1432,12 +1983,17 @@ export default class TradeStore extends BaseStore {
         // knock a seeded daily contract back to expiry_type: 'duration'.
         const { values } = await this.getDefaultDurationValues(default_duration);
         // Same invariant as processContractsForV2: the daily seed's trading-times round trip can
-        // outlive a switch, and committing then applies the previous market's expiry. The applied-for
-        // flag is set only on the committing path, so a bail leaves the default still to be applied.
+        // outlive a switch, and committing then applies the previous market's expiry. Bailing writes
+        // nothing, so the incoming pair's own activation still applies its default.
         if (this.symbol !== symbol_at_start || this.current_duration_group !== group_at_start) {
             return;
         }
         await this.onChangeMultiple(values);
+        // Re-validate explicitly: the validation reaction fired against the stale duration when
+        // the new limits arrived and won't re-fire on a duration-only change — a leftover error
+        // would block requestProposal. processContractsForV2's inline default write does the same;
+        // without this here, the cache-answered/degraded settle paths stranded the stale error.
+        this.changeDurationValidationRules();
     }
 
     async onChange(e: { target: { name: string; value: unknown } }) {
@@ -1514,9 +2070,14 @@ export default class TradeStore extends BaseStore {
         // "Allow equals" flips the Rise/Fall sub-type (rise_fall ↔ rise_fall_equal). Done here in
         // the pipeline (not a store reaction) so the flip is an explicit step of the is_equal change
         // rather than an implicit reaction-driven contract_type write.
-        if (name === 'is_equal' && this.contract_type?.includes(TRADE_TYPES.RISE_FALL)) {
+        if (name === 'is_equal' && this.contract_type && isRiseFallEqual(this.contract_type)) {
             await this.setTradeSubType(this.is_equal ? TRADE_TYPES.RISE_FALL_EQUAL : TRADE_TYPES.RISE_FALL);
         }
+        // These two are excluded from the persistence reaction's trigger set (the proposal stream
+        // rewrites them per tick — NON_TRIGGER_TAB_PARAM_KEYS), so an edit arriving through
+        // onChange — the USER's path (barrier sheet, chart drag, payout-per-point picker) — must
+        // persist explicitly or it would only be saved when some other parameter next changed.
+        if (NON_TRIGGER_TAB_PARAM_KEYS.includes(name)) this.persistActiveTabTradeParams();
         this.validateAllProperties(); // then run validation before sending proposal
         this.root_store.common.setSelectedContractType(this.contract_type);
     }
@@ -1536,7 +2097,33 @@ export default class TradeStore extends BaseStore {
             );
             return;
         }
+        // A sub-toggle reprices the same tab, so the user's duration must stand. The pipeline
+        // re-derives duration/expiry from the incoming sub-type's own offering, and its fallback
+        // rewrites them when the offerings differ (e.g. Allow equals flipping ticks to minutes
+        // because the equals variant publishes no tick durations). Snapshot the fields and put
+        // back whatever the flip moved; if the sub-type genuinely cannot price them, the
+        // proposal's own duration error surfaces it — silent rewrites do not.
+        const kept_duration_fields = {
+            duration: this.duration,
+            duration_unit: this.duration_unit,
+            expiry_type: this.expiry_type,
+            expiry_date: this.expiry_date,
+            expiry_time: this.expiry_time,
+            // The End Time picker's seed travels with expiry_date — restoring one without the
+            // other is the desync that produces a server-rejected date_expiry.
+            saved_expiry_date_v2: this.saved_expiry_date_v2,
+        };
         await this.onChange({ target: { name: 'contract_type', value: contract_type } });
+        const moved_fields = Object.fromEntries(
+            Object.entries(kept_duration_fields).filter(
+                ([key, value]) => this[key as keyof typeof kept_duration_fields] !== value
+            )
+        );
+        if (Object.keys(moved_fields).length) {
+            // Not a pipeline run (is_changed_by_user=false, duration keys don't re-enter the
+            // contract-type processors), so the restored values stick.
+            await this.processNewValuesAsync(moved_fields as Partial<TradeStore>, false, null, false);
+        }
         this.syncTradeURLParams();
     }
 
@@ -1998,7 +2585,11 @@ export default class TradeStore extends BaseStore {
     ) {
         // To switch to rise_fall_equal contract type when allow equal is checked on first page refresh or
         // when switch back to Rise/Fall from another contract type i.e.
-        if (obj_new_values.contract_type && obj_new_values.contract_type === TRADE_TYPES.RISE_FALL && !!this.is_equal) {
+        // `obj_new_values.is_equal` first: a batch that sets both (a tab restore turning Allow equals
+        // OFF) means its own value, not the outgoing tab's still-live `this.is_equal` — reading the
+        // store here would flip the type back on and leave the toggle disagreeing with what is priced.
+        const next_is_equal = obj_new_values.is_equal ?? this.is_equal;
+        if (obj_new_values.contract_type === TRADE_TYPES.RISE_FALL && !!next_is_equal) {
             obj_new_values.contract_type = TRADE_TYPES.RISE_FALL_EQUAL;
         }
         // when accumulator is selected, we need to change chart type to mountain and granularity to 0
@@ -2092,26 +2683,12 @@ export default class TradeStore extends BaseStore {
                 !this.isSameTradeTypeGroup(obj_old_values.contract_type, obj_new_values.contract_type);
 
             if (has_symbol_changed || has_contract_type_changed) {
-                const is_crypto = isCryptocurrency(this.currency ?? '');
-                const default_crypto_value = getMinPayout(this.currency ?? '') ?? '';
                 // Every switch starts from the entered market's own derived default (its first
-                // quick pick) — a customised stake is not carried across, on any trade type. The
-                // boundary is read only when probed_stake_keys proves it came from this market;
-                // otherwise the contracts_for default stands and the probe corrects it.
-                // Key: tabs first (no mid-switch lag), displayed type for tab-less Accumulators.
-                const boundary_key =
-                    getInitialTradeTypeTab(obj_new_values.contract_type ?? this.contract_type) ||
-                    getDisplayedContractTypes(this.trade_types, this.contract_type, this.trade_type_tab)[0];
-                const target_stake_key = `${obj_new_values.symbol ?? this.symbol}:${boundary_key}`;
-                const known_boundary = this.probed_stake_keys.has(target_stake_key)
-                    ? this.stake_boundary[target_stake_key]
-                    : undefined;
-                const derived_default = getDerivedDefaultStake(
-                    this.default_stake,
-                    known_boundary?.min_stake,
-                    known_boundary?.max_stake
+                // quick pick) — a customised stake is not carried across, on any trade type.
+                obj_new_values.amount = this.getDefaultStake(
+                    obj_new_values.symbol ?? this.symbol,
+                    obj_new_values.contract_type ?? this.contract_type
                 );
-                obj_new_values.amount = is_crypto ? default_crypto_value : (derived_default ?? this.default_stake);
             }
             if (has_contract_type_changed) {
                 obj_new_values.has_take_profit = false;
@@ -2345,6 +2922,19 @@ export default class TradeStore extends BaseStore {
         const stake_key = `${this.symbol}:${contract_type}`;
         if (this.probed_stake_keys.has(stake_key)) return false;
         this.probed_stake_keys.add(stake_key);
+
+        // A stake restored from the tab's saved parameters is the USER's value, not the platform's
+        // entry stake — the probe must not settle it (a refresh would silently reset the saved
+        // stake). The boundary above is still recorded and the fence closed; a rejection then
+        // surfaces like any other user-entered stake error. Scoped to the restored PAIR
+        // (group-compared, so sub-toggles stay covered): any other pair's probe works normally.
+        if (
+            this.restored_stake_market &&
+            this.restored_stake_market.symbol === this.symbol &&
+            this.isSameTradeTypeGroup(this.restored_stake_market.contract_type, this.contract_type)
+        ) {
+            return false;
+        }
 
         const derived_default = getDerivedDefaultStake(this.default_stake, Number(min_stake), Number(max_stake));
 
@@ -2994,14 +3584,42 @@ export default class TradeStore extends BaseStore {
     // Whether the Trade page is currently in automated-trading mode (mobile uses the /automate route
     // flag, desktop the panel tab — mirrors `is_automation_params_locked`). Selects which open-markets
     // collection `open_markets` exposes so manual and automation keep independent tabs.
+    //
+    // `root_store.ui` is optional-chained because this is reachable from the constructor
+    // (`queueInitialTabTradeParams` resolves `tab_params_mode` synchronously, before RootStore
+    // assigns `this.ui`). Both branches are already accurate there, so the desktop fallback cannot
+    // mis-resolve a cold load — a mobile cold load is never on the automation route anyway.
     get is_automation_mode() {
-        return this.root_store.ui.is_mobile ? this.is_automation_page : this.is_automation_tab;
+        return this.root_store.ui?.is_mobile ? this.is_automation_page : this.is_automation_tab;
     }
 
     // The active mode's open-market tabs. Consumers read this; mutations go through
     // add/remove/replaceOpenMarket, which write back to whichever collection this reflects.
     get open_markets() {
         return this.is_automation_mode ? this.open_markets_automation : this.open_markets_manual;
+    }
+
+    // Which collection the tab-scoped reads/writes below address. Taken as a parameter rather than
+    // read off `is_automation_mode` at every call site because a mode flip updates that flag BEFORE
+    // the store reconciles, and the parameters still in the store then belong to the mode being left.
+    private get tab_params_mode(): TOpenMarketsMode {
+        return this.is_automation_mode ? 'automation' : 'manual';
+    }
+
+    // The active mode's per-tab parameters, mirroring `open_markets`. Not a computed: the underlying
+    // maps are plain fields, read imperatively at commit time.
+    get tab_trade_params() {
+        return this.getTabTradeParams(this.tab_params_mode);
+    }
+
+    private getTabTradeParams(mode: TOpenMarketsMode) {
+        return mode === 'automation' ? this.tab_trade_params_automation : this.tab_trade_params_manual;
+    }
+
+    private setTabTradeParams(mode: TOpenMarketsMode, next: TTabTradeParamsMap) {
+        if (mode === 'automation') this.tab_trade_params_automation = next;
+        else this.tab_trade_params_manual = next;
+        writeTabTradeParams(mode, next);
     }
 
     get is_turbos() {
@@ -3218,23 +3836,65 @@ export default class TradeStore extends BaseStore {
         const next_is_automation = this.is_automation_mode;
         if (prev_is_automation === next_is_automation) return;
         const leaving = { symbol: this.symbol, contract_type: this.contract_type };
+        // The mode flag has already flipped by the time this runs, but the parameters still in the
+        // store are the LEAVING mode's — save them against that mode explicitly, so a mode switch is
+        // lossless for the mode being left. Skipped while an activation is still unsettled (its
+        // intent unconsumed, or its contracts_for in flight): at that point the live values belong
+        // to the PREVIOUS tab, not the pair the store names, and saving would overwrite the named
+        // tab's entry with them — the same guard the two sibling save paths apply (see
+        // selectMarketAndTradeType and persistActiveTabTradeParams). Lossless to skip: those values
+        // were already saved against their own tab by the commit that left it.
+        if (!this.pending_tab_params && !this.is_awaiting_contracts_for) {
+            this.saveTabTradeParams(leaving, prev_is_automation ? 'automation' : 'manual');
+        }
         if (prev_is_automation) this.active_market_automation = leaving;
         else this.active_market_manual = leaving;
         const collection = next_is_automation ? this.open_markets_automation : this.open_markets_manual;
         const remembered = next_is_automation ? this.active_market_automation : this.active_market_manual;
         const target = remembered ?? collection[collection.length - 1];
         if (target && (target.symbol !== this.symbol || target.contract_type !== this.contract_type)) {
-            this.selectMarketAndTradeType(target.symbol, target.contract_type);
-        } else if (!next_is_automation) {
-            // Entering manual mode with nothing to restore (first visit, empty strip): materialise
-            // the carried-over pair as the manual tab explicitly — tabs are never derived from
-            // watched state. (Automation seeds its own supported default via the strip's effect.)
-            this.recordActiveMarketTab();
+            this.selectMarketAndTradeType(target.symbol, target.contract_type, { save_outgoing_params: false });
+        } else {
+            if (!next_is_automation) {
+                // Entering manual mode with nothing to restore (first visit, empty strip):
+                // materialise the carried-over pair as the manual tab explicitly — tabs are never
+                // derived from watched state. (Automation seeds its own supported default via the
+                // strip's effect.)
+                this.recordActiveMarketTab();
+            }
+            // Same pair in both modes — the common case. No selection runs, so nothing would
+            // restore the ENTERED mode's saved values: the live values are still the LEAVING
+            // mode's, and the next persistence fire would write them under the entered mode's key,
+            // breaking the modes' independence. Queue and settle the entered mode's own entry for
+            // the pair (defaults when it has none — a new tab in that mode starts from defaults).
+            // Deferred to the standard settle when a cascade is still writing the pair.
+            if (!this.pending_tab_params && !this.is_awaiting_contracts_for) {
+                this.queueTabTradeParams({ symbol: this.symbol, contract_type: this.contract_type });
+                if (this.is_selecting_market || this.is_reconciling_url_trade_type) {
+                    this.settleTabParamsAfterCommit();
+                } else {
+                    this.applyPendingTabParams().catch(() => this.clearPendingTabParams());
+                }
+            }
         }
     }
 
     setIsAwaitingContractsFor(is_awaiting: boolean) {
         this.is_awaiting_contracts_for = is_awaiting;
+        // Releasing the hold through this setter is always a DEGRADATION path in `useContractsFor`
+        // (failed request, empty response) — `processContractsForV2` clears the flag itself. The
+        // activation that queued an intent is abandoned and no consumer is coming, so SETTLE rather
+        // than drop it: dropping re-enables `persistActiveTabTradeParams` while the store still holds
+        // the OUTGOING tab's values against the INCOMING pair, and the next edit would overwrite the
+        // incoming tab's entry. Applying makes the values match the pair first, and clears either way.
+        // Degraded by definition — duration is re-validated against whatever limits are current. Not
+        // awaited; the restore's writes re-trigger persistence, so the entry converges. Deferred
+        // mid-cascade for the same reason `processContractsForV2` defers: `symbol` and
+        // `contract_type` belong to different tabs there.
+        if (!is_awaiting && this.pending_tab_params) {
+            if (this.is_selecting_market || this.is_reconciling_url_trade_type) this.settleTabParamsAfterCommit();
+            else this.applyPendingTabParams().catch(() => this.clearPendingTabParams());
+        }
     }
 
     clearUrlTradeType() {
@@ -3264,10 +3924,7 @@ export default class TradeStore extends BaseStore {
         // Only a genuine deep link may create a NEW tab, switch markets for a URL trade type, or
         // show the URL-unavailable modal; a restore CONVERGES to the tab strip instead of trusting
         // mirrors that can be stale (or an actives list that is only half-loaded pre-auth).
-        const stored_session = (safeParse(sessionStorage.getItem('trade_store') ?? '') ?? {}) as {
-            symbol?: string;
-            contract_type?: string;
-        };
+        const stored_session = this.readStoredSessionPair();
         const is_deep_link =
             (!!url_symbol && url_symbol !== stored_session.symbol) ||
             (!!url_trade_type && url_trade_type !== stored_session.contract_type);
@@ -3354,6 +4011,47 @@ export default class TradeStore extends BaseStore {
             const last_tab = this.open_markets[this.open_markets.length - 1];
             await this.selectMarketAndTradeType(last_tab.symbol, last_tab.contract_type);
             return;
+        }
+        // A deep link names exactly ONE pair — the strip must show only it, never tabs restored
+        // from the session alongside it (pasting a link into a browser tab that already traded
+        // used to show both). Only when the link was HONOURED: a dead-end deep link (unavailable
+        // symbol/trade type, reconcile timeout) leaves the resolved pair different from the
+        // requested one, and falls back to the existing strip + default-pair behaviour instead.
+        const is_deep_link_honoured =
+            is_deep_link &&
+            (!url_symbol || this.symbol === url_symbol) &&
+            (!url_trade_type || this.contract_type === url_trade_type);
+        if (is_deep_link_honoured && !this.is_automation_mode) {
+            const kept = this.open_markets.filter(
+                market =>
+                    market.symbol === this.symbol && this.isSameTradeTypeGroup(market.contract_type, this.contract_type)
+            );
+            // Routed through the single strip writer so the dropped tabs' saved parameters are
+            // pruned with them (reopening one later starts from defaults, as with a manual close).
+            if (kept.length !== this.open_markets.length) this.setActiveOpenMarkets(kept);
+        }
+        // Cold load: this path never goes through `selectMarketAndTradeType`, so the intent for the
+        // pair being activated is set here — the resolved tab's saved parameters on a refresh,
+        // defaults when it has none (a fresh browser tab, whose sessionStorage map is empty). Skipped
+        // when the constructor already queued this exact pair (the common case): the symbol never
+        // changed, so no further `contracts_for` follows and re-queuing would either re-apply the
+        // restore over values `processContractsForV2` has already settled, or leave an orphaned intent
+        // that keeps `persistActiveTabTradeParams` disabled for the rest of the load.
+        const has_queued_resolved_pair =
+            !!this.initial_tab_params_market &&
+            this.initial_tab_params_market.symbol === this.symbol &&
+            this.isSameTradeTypeGroup(this.initial_tab_params_market.contract_type, this.contract_type);
+        if (!has_queued_resolved_pair) {
+            this.queueTabTradeParams({ symbol: this.symbol, contract_type: this.contract_type });
+            // The resolved pair's contracts_for may already be fully processed by now (it races
+            // active_symbols on a symbol-only cold load, and a URL reconcile can consume the
+            // constructor's intent mid-resolve) — in which case no consumer is coming: the intent
+            // would sit pending, gating every per-tab save for the rest of the load, until a
+            // refetch consumed it as a mid-session reset. Settle it now when nothing is in
+            // flight; when a response IS coming, its own consumer wins (the consume is atomic).
+            if (!this.is_awaiting_contracts_for && !this.is_selecting_market && !this.is_reconciling_url_trade_type) {
+                await this.applyPendingTabParams().catch(() => this.clearPendingTabParams());
+            }
         }
         this.recordActiveMarketTab();
         this.syncTradeURLParams();
@@ -3534,12 +4232,34 @@ export default class TradeStore extends BaseStore {
     public getBarrierSupportFromApiDefault(
         contract_type: string = this.contract_type,
         expiry_type: string = this.contract_expiry_type,
-        symbol: string | null = this.symbol
+        symbol: string | null = this.symbol,
+        { use_live_barrier = true }: { use_live_barrier?: boolean } = {}
     ): BarrierSupportType | null {
         const default_barrier = this.getApiDefaultBarrier(contract_type, expiry_type, symbol);
-        if (!default_barrier) return null;
+        if (default_barrier) return toBarrierSupport(default_barrier);
 
-        return /^[+-]/.test(default_barrier) ? 'relative' : 'absolute';
+        // No default published for THIS expiry_type — common in End Time mode, where
+        // `contract_expiry_type` derives as `daily` and most offerings publish only `tick`/`intraday`.
+        // The market heuristic answered `relative` for a synthetic whose on-screen barrier was an
+        // absolute price, rendering the wrong control so the proposal never resolved (payout spinner).
+        //
+        // The stored barrier is better evidence: its sign says which kind it is, and it is what the
+        // proposal carries. Consulted only when the API has nothing for this expiry_type, so a
+        // published default still wins. Callers classifying the SYMBOL's offering opt out (the
+        // cross-symbol reset comparison) — the live value describes the user's selection, and using
+        // it as offering evidence suppressed the barrier reset a symbol switch relies on. Restricted
+        // to the ACTIVE symbol for the same reason.
+        if (use_live_barrier && symbol === this.symbol && this.barrier_1) return toBarrierSupport(this.barrier_1);
+
+        // Nothing to go on for this expiry_type — try the offering's OTHER expiry types before
+        // giving up, since barrier KIND does not vary by expiry_type within a contract.
+        const fallback_barrier = ['intraday', 'tick', 'daily']
+            .filter(fallback_expiry_type => fallback_expiry_type !== expiry_type)
+            .map(fallback_expiry_type => this.getApiDefaultBarrier(contract_type, fallback_expiry_type, symbol))
+            .find(Boolean);
+        if (fallback_barrier) return toBarrierSupport(fallback_barrier);
+
+        return null;
     }
 
     /**
@@ -3574,19 +4294,22 @@ export default class TradeStore extends BaseStore {
      * @param symbol - The symbol to check
      * @returns 'relative' for synthetic indices, 'absolute' for forex markets
      */
-    public getSymbolBarrierSupport(symbol: string): BarrierSupportType {
+    public getSymbolBarrierSupport(
+        symbol: string,
+        { use_live_barrier = true }: { use_live_barrier?: boolean } = {}
+    ): BarrierSupportType {
         if (!symbol || !this.active_symbols.length) return 'relative';
 
         const symbol_info = this.active_symbols.find(s => s.underlying_symbol === symbol);
 
         if (!symbol_info) return 'relative';
 
-        // Prefer the live API default-barrier sign for the currently selected symbol's contract
-        // type. A prospective symbol (one we haven't switched to yet) has no contracts_for
-        // loaded, so it falls through to the market-based heuristic below.
-        // Any symbol whose contracts_for is cached can answer for itself now that the cache is keyed
-        // by symbol — an unloaded one yields undefined and falls through to the heuristic below.
-        const api_default_support = this.getBarrierSupportFromApiDefault(undefined, undefined, symbol);
+        // Prefer the API default-barrier sign for this symbol's contract type. Any symbol whose
+        // contracts_for is cached can answer for itself now that the cache is keyed by symbol — an
+        // unloaded one yields null and falls through to the market-based heuristic below.
+        const api_default_support = this.getBarrierSupportFromApiDefault(undefined, undefined, symbol, {
+            use_live_barrier,
+        });
         if (api_default_support) return api_default_support;
 
         // Forex symbols typically only support absolute barriers
@@ -3639,8 +4362,12 @@ export default class TradeStore extends BaseStore {
     handleTradeParamsResetOnSymbolChange(old_symbol: string, new_symbol: string): Partial<TradeStore> | null {
         if (!old_symbol || !new_symbol || old_symbol === new_symbol) return null;
 
-        const old_barrier_support = this.getSymbolBarrierSupport(old_symbol);
-        const new_barrier_support = this.getSymbolBarrierSupport(new_symbol);
+        // Offering-level evidence only: the live barrier's sign describes the USER's selection on
+        // the old symbol, and counting it as the old symbol's support suppressed the cross-support
+        // reset (an absolute barrier on a synthetic End Time tab matched forex's 'absolute', so a
+        // synthetic price rode into the forex proposal).
+        const old_barrier_support = this.getSymbolBarrierSupport(old_symbol, { use_live_barrier: false });
+        const new_barrier_support = this.getSymbolBarrierSupport(new_symbol, { use_live_barrier: false });
         const old_duration_support = this.getSymbolDurationSupport(old_symbol);
         const new_duration_support = this.getSymbolDurationSupport(new_symbol);
 

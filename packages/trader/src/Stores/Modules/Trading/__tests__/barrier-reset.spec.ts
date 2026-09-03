@@ -224,9 +224,34 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.HIGH_LOW, 'intraday')).toBe('absolute');
         });
 
-        it('returns null when no API default barrier is available for the contract type + expiry_type', () => {
-            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH });
-            expect(trade_store.getBarrierSupportFromApiDefault(TRADE_TYPES.TOUCH, 'daily')).toBeNull();
+        // An expiry_type the offering publishes no barrier for — `daily` for Touch, which is what an
+        // End Time on a later date derives. Barrier KIND does not vary by expiry_type within a
+        // contract, so the offering's other entries still answer: returning null here sent the caller
+        // to the market heuristic, which answered `relative` for a synthetic while the barrier on
+        // screen was an absolute price, and the proposal never resolved.
+        it('falls back to another expiry type when this one has no API default barrier', () => {
+            trade_store.updateStore({ contract_type: TRADE_TYPES.TOUCH, contract_expiry_type: 'daily' });
+            expect(trade_store.getBarrierSupportFromApiDefault()).toBe('relative');
+        });
+
+        it('returns null when nothing at all is known — no offering entry and no live barrier', () => {
+            trade_store.updateStore({
+                contract_type: 'not_a_contract_type',
+                contract_expiry_type: 'daily',
+                barrier_1: '',
+            });
+            expect(trade_store.getBarrierSupportFromApiDefault()).toBeNull();
+        });
+
+        // The live barrier is consulted only AFTER the offering, and its own sign is the answer — it
+        // is the value the proposal will carry.
+        it('derives support from the live barrier when the offering has no entry', () => {
+            trade_store.updateStore({
+                contract_type: 'not_a_contract_type',
+                contract_expiry_type: 'daily',
+                barrier_1: '9847.42',
+            });
+            expect(trade_store.getBarrierSupportFromApiDefault()).toBe('absolute');
         });
     });
 

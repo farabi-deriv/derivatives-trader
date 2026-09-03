@@ -60,8 +60,14 @@ const doLogout = response => {
     localStorage.removeItem('new_email.system_email_change');
     localStorage.removeItem('account_id');
     SocketCache.clear();
+    // Trading state survives a logout: the active pair ('trade_store'), the tab strips and each
+    // tab's saved parameters ('open_markets_v2' / 'open_markets_automation_v2',
+    // 'tab_trade_params_v2' / 'tab_trade_params_automation_v2' — see trader's
+    // AppV2/Utils/open-markets-utils and tab-trade-params-utils). They are market configuration,
+    // not account state; wiping them cost a re-logging-in user every tab and every saved value.
+    const kept_session_keys = ['trade_store', 'open_markets', 'tab_trade_params'];
     Object.keys(sessionStorage)
-        .filter(key => key !== 'trade_store')
+        .filter(key => !kept_session_keys.some(kept => key === kept || key.startsWith(`${kept}_`)))
         .forEach(key => sessionStorage.removeItem(key));
     return response;
 };

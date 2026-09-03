@@ -1,8 +1,11 @@
 # trade-error-notifications Specification
 
 ## Purpose
+
 TBD - created by archiving change p2-red-error-banner-persists-covers-buy-button-when-switching-between-gold-and-step200-tiles. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: An error notification belongs to the market tab that raised it
 
 An error notification raised for one market tab SHALL NOT be shown while a different market tab is active. Switching market tabs SHALL clear the outgoing tab's pending error state — the cached proposal error, the trade-parameter validation errors, and any pending service error — before the incoming tab's market and trade type are applied, so no error from the previous tab can be raised (or re-raised) against the new one.
@@ -63,4 +66,3 @@ Preserving the behaviour established for immortal error toasts, every error noti
 
 - **WHEN** a single error condition is raised
 - **THEN** exactly one error notification is shown for it
-

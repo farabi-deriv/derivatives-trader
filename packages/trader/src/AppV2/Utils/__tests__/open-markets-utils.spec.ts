@@ -7,6 +7,7 @@ import {
     MAX_OPEN_MARKETS_MOBILE,
     MAX_OPEN_MARKETS_WEB,
     OPEN_MARKETS_STORAGE_KEYS,
+    resetLegacyOpenMarketsCleanupForTesting,
     readOpenMarkets,
     removeFromOpenMarkets,
     replaceInOpenMarkets,
@@ -17,7 +18,25 @@ const rise = { symbol: 'frxEURUSD', contract_type: 'rise_fall' };
 const high_low = { symbol: 'frxEURUSD', contract_type: 'high_low' };
 
 describe('open-markets-utils', () => {
-    beforeEach(() => localStorage.clear());
+    beforeEach(() => {
+        // Both stores: the strip lives in sessionStorage, and the legacy-eviction cases seed localStorage.
+        localStorage.clear();
+        sessionStorage.clear();
+        // The eviction is once-per-module-instance in production; re-arm it so each case sees it.
+        resetLegacyOpenMarketsCleanupForTesting();
+    });
+
+    it('readOpenMarkets degrades to [] when storage access throws (blocked storage)', () => {
+        // Safari "Block all cookies" / sandboxed iframes make getItem THROW rather than return
+        // null — and this read runs in a TradeStore field initialiser, so it must never propagate.
+        const spy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('SecurityError: The operation is insecure.');
+        });
+
+        expect(readOpenMarkets('manual')).toEqual([]);
+
+        spy.mockRestore();
+    });
 
     it('getMaxOpenMarkets returns the device-dependent cap (4 mobile / 7 web)', () => {
         expect(getMaxOpenMarkets(true)).toBe(MAX_OPEN_MARKETS_MOBILE);
@@ -85,7 +104,7 @@ describe('open-markets-utils', () => {
     it('read/write round-trips and filters out malformed entries', () => {
         writeOpenMarkets('manual', [rise, high_low]);
         expect(readOpenMarkets('manual')).toEqual([rise, high_low]);
-        localStorage.setItem(
+        sessionStorage.setItem(
             OPEN_MARKETS_STORAGE_KEYS.manual,
             JSON.stringify([rise, { symbol: 'x' }, { contract_type: 'y' }])
         );
@@ -94,8 +113,78 @@ describe('open-markets-utils', () => {
 
     it('readOpenMarkets returns [] when nothing (or garbage) is stored', () => {
         expect(readOpenMarkets('manual')).toEqual([]);
-        localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, 'not-json');
+        sessionStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, 'not-json');
         expect(readOpenMarkets('manual')).toEqual([]);
+    });
+
+    it('keeps the strip in sessionStorage, not localStorage', () => {
+        // The strip and the per-tab trade params (tab-trade-params-utils) are BOTH scoped to one
+        // browser tab, which is what makes a new browser tab open a single default tab instead of
+        // inheriting another browser tab's strip. Pinned so a move back to localStorage has to be a
+        // deliberate edit rather than a silent regression.
+        writeOpenMarkets('manual', [rise]);
+
+        expect(sessionStorage.getItem(OPEN_MARKETS_STORAGE_KEYS.manual)).toBe(JSON.stringify([rise]));
+        expect(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS.manual)).toBeNull();
+    });
+
+    it('migrates a strip a previous release left in localStorage into sessionStorage', () => {
+        // Upgrade path: before this change the strip lived in localStorage and was shared by every
+        // browser tab. Reading the strip ADOPTS those entries into sessionStorage (the release is
+        // lossless — existing users keep their tabs) and then removes the legacy copies so they
+        // cannot linger indefinitely.
+        localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([rise, high_low]));
+        localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.automation, JSON.stringify([high_low]));
+
+        expect(readOpenMarkets('manual')).toEqual([rise, high_low]);
+        expect(readOpenMarkets('automation')).toEqual([high_low]);
+        expect(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS.manual)).toBeNull();
+        expect(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS.automation)).toBeNull();
+    });
+
+    it('never lets a legacy localStorage strip overwrite one this browser tab already has', () => {
+        resetLegacyOpenMarketsCleanupForTesting();
+        sessionStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([rise]));
+        localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([high_low]));
+
+        expect(readOpenMarkets('manual')).toEqual([rise]);
+        expect(localStorage.getItem(OPEN_MARKETS_STORAGE_KEYS.manual)).toBeNull();
+    });
+
+    it('leaves the global trade_store blob alone when evicting the legacy strip', () => {
+        // currency / is_trade_params_expanded still legitimately live there.
+        localStorage.setItem('trade_store', JSON.stringify({ currency: 'USD' }));
+        localStorage.setItem(OPEN_MARKETS_STORAGE_KEYS.manual, JSON.stringify([rise]));
+
+        readOpenMarkets('manual');
+
+        expect(localStorage.getItem('trade_store')).toBe(JSON.stringify({ currency: 'USD' }));
+    });
+
+    it('gives a NEW browser tab an empty strip, while a refresh keeps it', () => {
+        // Browser tab A builds a strip.
+        writeOpenMarkets('manual', [rise, high_low]);
+        expect(readOpenMarkets('manual')).toHaveLength(2);
+
+        // A REFRESH re-runs module init, but sessionStorage survives — the strip comes back.
+        resetLegacyOpenMarketsCleanupForTesting();
+        expect(readOpenMarkets('manual')).toEqual([rise, high_low]);
+
+        // A NEW browser tab gets a fresh sessionStorage, so it sees no strip at all.
+        sessionStorage.clear();
+        resetLegacyOpenMarketsCleanupForTesting();
+        expect(readOpenMarkets('manual')).toEqual([]);
+    });
+
+    it('does not write to localStorage when there is no legacy strip to evict', () => {
+        // readOpenMarkets is on the market-switch path, so the eviction must stay free in the common
+        // case (barrier-reset.spec.ts pins that path's exact removeItem count).
+        const spy = jest.spyOn(Storage.prototype, 'removeItem');
+
+        readOpenMarkets('manual');
+
+        expect(spy.mock.contexts.filter(context => context === localStorage)).toHaveLength(0);
+        spy.mockRestore();
     });
 
     it('keeps manual and automation collections in separate storage keys', () => {
