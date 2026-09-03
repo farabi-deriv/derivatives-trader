@@ -71,7 +71,7 @@
     },
     "dependencies": {
         "@deriv-com/analytics": "1.42.1",
-        "@deriv-com/quill-ui": "1.24.9",
+        "@deriv-com/quill-ui": "1.24.12",
         "@deriv-com/translations": "1.4.0",
         "@deriv-com/ui": "1.36.4",
         "@deriv/api": "^1.0.0",
