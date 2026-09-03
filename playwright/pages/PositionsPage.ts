@@ -171,6 +171,87 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
+     * Empty state icon for positions (both open and closed tabs).
+     * Source: data-testid="dt_empty_state_icon"
+     */
+    get emptyStateIcon(): Locator {
+        return this.page.getByTestId('dt_empty_state_icon');
+    }
+
+    /**
+     * All open contract cards in positions.
+     * Source: data-testid="dt_contract_card"
+     */
+    get contractCards(): Locator {
+        return this.page.getByTestId('dt_contract_card');
+    }
+
+    /**
+     * Date section headers on the mobile Closed tab (e.g. "03 Sep 2026").
+     * Source: .contract-cards-section__title
+     */
+    get closedPositionsDateHeader(): Locator {
+        return this.page.locator('.contract-cards-section__title');
+    }
+
+    /**
+     * Trade types filter chip on Open positions (mobile).
+     */
+    get tradeTypeFilterChip(): Locator {
+        return this.page.locator('.filter__chip').filter({ hasText: 'Trade types' });
+    }
+
+    /**
+     * Time filter chip on Closed positions (mobile).
+     */
+    get timeFilterChip(): Locator {
+        return this.page.locator('.filter__chip').first();
+    }
+
+    /**
+     * Action sheet title for filters.
+     */
+    get filterActionSheetHeader(): Locator {
+        return this.page.locator('.action-sheet__header, .filter__item__wrapper');
+    }
+
+    /**
+     * Apply button inside filter action sheet.
+     */
+    get filterActionSheetApplyButton(): Locator {
+        return this.page.getByRole('button', { name: 'Apply' });
+    }
+
+    /**
+     * Clear All button inside filter action sheet.
+     */
+    get filterActionSheetClearAllButton(): Locator {
+        return this.page.getByRole('button', { name: 'Clear All' });
+    }
+
+    /**
+     * Reset button inside time filter action sheet.
+     */
+    get timeFilterResetButton(): Locator {
+        return this.page.getByRole('button', { name: 'Reset' }).or(this.page.getByText('All time'));
+    }
+
+    /**
+     * Cancel button revealed after swiping multiplier card left (mobile).
+     * Scoped to the specific contract card wrapper that contains a Cancel button.
+     */
+    get mobileContractCardCancelButton(): Locator {
+        return this.page
+            .locator('.contract-card-wrapper')
+            .filter({
+                has: this.page.locator('.buttons button.cancel-button, .buttons button:has-text("Cancel")'),
+            })
+            .first()
+            .locator('.buttons button.cancel-button, .buttons button:has-text("Cancel")')
+            .first();
+    }
+
+    /**
      * "Closed" status tag on the first contract card in the Closed tab.
      * Desktop only — Source: .status.tag > p.custom (text "Closed")
      */
@@ -960,5 +1041,65 @@ export class PositionsPage extends TradeBasePage {
             this.firstContractCard,
             'At least one open contract card should be visible in Positions'
         ).toBeVisible();
+    }
+
+    /**
+     * Open the trade type filter sheet on Open positions (mobile).
+     */
+    async openTradeTypeFilter(): Promise<void> {
+        await this.tradeTypeFilterChip.click();
+        await expect(this.filterActionSheetHeader.first(), 'Filter sheet header should open').toBeVisible();
+        await expect(
+            this.page.getByText('Filter by trade types'),
+            'Filter sheet title should be visible'
+        ).toBeVisible();
+    }
+
+    /**
+     * Select the first available trade type in the filter action sheet.
+     */
+    async selectFirstTradeTypeFilter(): Promise<void> {
+        await this.page.getByRole('checkbox').first().check();
+    }
+
+    /**
+     * Apply the selected filter options.
+     */
+    async applyFilter(): Promise<void> {
+        await this.filterActionSheetApplyButton.click();
+    }
+
+    /**
+     * Clear all selected filter options and apply.
+     */
+    async clearFilter(): Promise<void> {
+        await this.filterActionSheetClearAllButton.click();
+        await this.applyFilter();
+    }
+
+    /**
+     * Open the time filter action sheet on Closed positions (mobile).
+     */
+    async openTimeFilter(): Promise<void> {
+        await this.timeFilterChip.click();
+        await expect(
+            this.page.getByRole('heading', { name: 'Filter by time' }),
+            'Time filter sheet should open'
+        ).toBeVisible();
+    }
+
+    /**
+     * Select a specific radio option in the time filter (e.g. 'Today').
+     */
+    async selectTimeFilterOption(option: string): Promise<void> {
+        await this.page.getByRole('dialog').getByText(option, { exact: true }).click();
+    }
+
+    /**
+     * Reset the time filter back to default.
+     */
+    async resetTimeFilter(): Promise<void> {
+        await this.openTimeFilter();
+        await this.timeFilterResetButton.first().click();
     }
 }
