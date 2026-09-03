@@ -230,32 +230,86 @@ describe('MenuPage', () => {
         });
     });
 
-    describe('Theme toggle', () => {
-        it('keeps the Dark theme label while dark mode is active', () => {
-            const store = mockStore({
+    describe('Theme selection', () => {
+        const makeThemeStore = (ui_overrides: Record<string, unknown>) =>
+            mockStore({
                 ...default_mock_store,
-                ui: { is_dark_mode_on: true, setDarkMode: jest.fn() },
+                ui: { setThemePreference: jest.fn(), ...ui_overrides },
             });
-            renderMenuPage(store);
 
-            expect(screen.getByText('Dark theme')).toBeInTheDocument();
-            expect(screen.queryByText('Light theme')).not.toBeInTheDocument();
+        it('renders a Theme item in Settings that opens the theme drawer', async () => {
+            const user = userEvent.setup();
+            renderMenuPage(makeThemeStore({ theme_preference: 'system', is_dark_mode_on: false }));
+            const drawer = screen.getByTestId('dt_menu_theme_drawer');
+
+            expect(drawer).not.toHaveClass('menu-page__theme-drawer--open');
+
+            // 'Theme' appears in both the Settings item and the drawer header;
+            // click the first occurrence (the Settings section item)
+            await act(async () => {
+                await user.click(screen.getAllByText('Theme')[0]);
+            });
+
+            expect(drawer).toHaveClass('menu-page__theme-drawer--open');
         });
 
-        it('should call setDarkMode when the theme row is clicked', async () => {
-            const setDarkMode = jest.fn();
-            const store = mockStore({
-                ...default_mock_store,
-                ui: { is_dark_mode_on: false, setDarkMode },
-            });
+        it('closes the theme drawer when the back button is clicked', async () => {
             const user = userEvent.setup();
-            renderMenuPage(store);
+            renderMenuPage(makeThemeStore({ theme_preference: 'system', is_dark_mode_on: false }));
 
             await act(async () => {
-                await user.click(screen.getByText('Dark theme'));
+                await user.click(screen.getAllByText('Theme')[0]);
             });
 
-            expect(setDarkMode).toHaveBeenCalledWith(true);
+            const drawer = screen.getByTestId('dt_menu_theme_drawer');
+            expect(drawer).toHaveClass('menu-page__theme-drawer--open');
+
+            await act(async () => {
+                await user.click(screen.getByTestId('dt_menu_theme_close'));
+            });
+
+            expect(drawer).not.toHaveClass('menu-page__theme-drawer--open');
+        });
+
+        it('renders the Light, Dark and System options inside the theme drawer and no toggle switch', () => {
+            renderMenuPage(makeThemeStore({ theme_preference: 'system', is_dark_mode_on: false }));
+
+            const drawer = screen.getByTestId('dt_menu_theme_drawer');
+            expect(drawer).toContainElement(screen.getByRole('radio', { name: 'Light' }));
+            expect(drawer).toContainElement(screen.getByRole('radio', { name: 'Dark' }));
+            expect(drawer).toContainElement(screen.getByRole('radio', { name: 'System' }));
+            expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        });
+
+        it('marks the option matching the stored preference as selected', () => {
+            renderMenuPage(makeThemeStore({ theme_preference: 'dark', is_dark_mode_on: true }));
+
+            expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+            expect(screen.getByRole('radio', { name: 'Light' })).not.toBeChecked();
+            expect(screen.getByRole('radio', { name: 'System' })).not.toBeChecked();
+        });
+
+        it('keeps System selected while the app renders dark because the OS is dark', () => {
+            renderMenuPage(makeThemeStore({ theme_preference: 'system', is_dark_mode_on: true }));
+
+            expect(screen.getByRole('radio', { name: 'System' })).toBeChecked();
+            expect(screen.getByRole('radio', { name: 'Dark' })).not.toBeChecked();
+        });
+
+        it.each([
+            ['Light', 'light'],
+            ['Dark', 'dark'],
+            ['System', 'system'],
+        ])('calls setThemePreference with the matching value when %s is clicked', async (label, value) => {
+            const store = makeThemeStore({ theme_preference: 'system', is_dark_mode_on: false });
+            renderMenuPage(store);
+            const user = userEvent.setup();
+
+            await act(async () => {
+                await user.click(screen.getByRole('radio', { name: label }));
+            });
+
+            expect(store.ui.setThemePreference).toHaveBeenCalledWith(value);
         });
     });
 

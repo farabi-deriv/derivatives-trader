@@ -30,7 +30,7 @@ describe('getApiParameterLabels', () => {
         expect(calls_after_first).toBeGreaterThan(0);
 
         getApiParameterLabels();
-        expect((localize as jest.Mock).mock.calls.length).toBe(calls_after_first * 2);
+        expect((localize as jest.Mock).mock.calls).toHaveLength(calls_after_first * 2);
     });
 });
 

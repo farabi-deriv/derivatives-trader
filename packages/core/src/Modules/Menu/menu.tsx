@@ -3,7 +3,7 @@ import { Redirect, useHistory } from 'react-router-dom';
 import classNames from 'classnames';
 
 import { useMobileBridge } from '@deriv/api';
-import { Text, ToggleSwitch } from '@deriv/components';
+import { Text } from '@deriv/components';
 import {
     IllustrativeEtfIcon,
     StandaloneChevronLeftRegularIcon,
@@ -11,8 +11,10 @@ import {
     StandaloneClockThreeRegularIcon,
     StandaloneGlobeRegularIcon,
     StandaloneLifeRingRegularIcon,
+    StandaloneMobileNotchRegularIcon,
     StandaloneMoonRegularIcon,
     StandaloneRightFromBracketRegularIcon,
+    StandaloneSunBrightRegularIcon,
     StandaloneTableLayoutRegularIcon,
 } from '@deriv/quill-icons';
 import { getHelpCentreUrl, routes } from '@deriv/shared';
@@ -28,11 +30,36 @@ const MenuPage = observer(() => {
     const { isMobile } = useDevice();
     const { sendBridgeEvent, isMobileApp } = useMobileBridge();
     const { ui, client } = useStore();
-    const { is_dark_mode_on: is_dark_mode, setDarkMode: toggleTheme } = ui;
+    const { theme_preference, setThemePreference, is_dark_mode_on } = ui;
     const { is_logged_in, logout: logoutClient } = client;
     const { localize } = useTranslations();
 
+    // Memoized: MenuPage re-renders on every observed ui change (including live system-theme
+    // flips), and rebuilding the icon elements each time forces React to reconcile their subtrees.
+    const theme_options = React.useMemo(
+        () =>
+            [
+                {
+                    value: 'light',
+                    label: localize('Light'),
+                    icon: <StandaloneSunBrightRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+                },
+                {
+                    value: 'dark',
+                    label: localize('Dark'),
+                    icon: <StandaloneMoonRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+                },
+                {
+                    value: 'system',
+                    label: localize('System'),
+                    icon: <StandaloneMobileNotchRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+                },
+            ] as const,
+        [localize]
+    );
+
     const [show_language_selector, setShowLanguageSelector] = React.useState(false);
+    const [show_theme_selector, setShowThemeSelector] = React.useState(false);
 
     const handleLogout = React.useCallback(async () => {
         try {
@@ -57,7 +84,7 @@ const MenuPage = observer(() => {
             {/* Main menu view */}
             <div
                 className={classNames('menu-page__main', {
-                    'menu-page__main--hidden': show_language_selector,
+                    'menu-page__main--hidden': show_language_selector || show_theme_selector,
                 })}
             >
                 <div className='header__menu-mobile-body-wrapper'>
@@ -109,25 +136,18 @@ const MenuPage = observer(() => {
                                 />
                             </div>
                         )}
-                        <div className='menu-page__item' onClick={() => toggleTheme(!is_dark_mode)}>
-                            <div className={classNames('header__menu-mobile-link')}>
-                                <StandaloneMoonRegularIcon
-                                    className='header__menu-mobile-link-icon'
-                                    iconSize='sm'
-                                    fill='var(--color-text-primary)'
-                                />
-                                <div className='header__menu-mobile-link-text' onClick={e => e.preventDefault()}>
-                                    {/* Labels the switch, so it does not change with the switch's own state. */}
-                                    <Text size='s'>{localize('Dark theme')}</Text>
-                                    <div>
-                                        <ToggleSwitch
-                                            id='dt_menu_page_theme_toggler'
-                                            handleToggle={() => toggleTheme(!is_dark_mode)}
-                                            is_enabled={is_dark_mode}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className='menu-page__item' onClick={() => setShowThemeSelector(true)}>
+                            <MenuLink
+                                icon={
+                                    is_dark_mode_on ? (
+                                        <StandaloneMoonRegularIcon iconSize='sm' />
+                                    ) : (
+                                        <StandaloneSunBrightRegularIcon iconSize='sm' />
+                                    )
+                                }
+                                text={localize('Theme')}
+                                suffix_icon={<StandaloneChevronRightRegularIcon iconSize='sm' />}
+                            />
                         </div>
                     </div>
 
@@ -191,6 +211,51 @@ const MenuPage = observer(() => {
                     <MobileLanguageMenu toggleDrawer={() => setShowLanguageSelector(false)} />
                 </div>
             )}
+
+            {/* Theme selector — slides in from the right as a full-screen drawer */}
+            <div
+                className={classNames('menu-page__theme-drawer', {
+                    'menu-page__theme-drawer--open': show_theme_selector,
+                })}
+                data-testid='dt_menu_theme_drawer'
+            >
+                <div className='menu-page__header'>
+                    <div
+                        className='menu-page__header-close'
+                        data-testid='dt_menu_theme_close'
+                        onClick={() => setShowThemeSelector(false)}
+                    >
+                        <StandaloneChevronLeftRegularIcon iconSize='sm' fill='var(--color-text-primary)' />
+                    </div>
+                    <Text weight='bold' size='s'>
+                        {localize('Theme')}
+                    </Text>
+                </div>
+                <div
+                    className='menu-page__theme-options'
+                    role='radiogroup'
+                    aria-label={localize('Theme')}
+                    data-testid='dt_menu_theme_selection'
+                >
+                    {/* Selection reflects the stored preference, not the resolved theme: a user
+                        on System keeps System selected even while the app renders dark. */}
+                    {theme_options.map(({ value, label, icon }) => (
+                        <button
+                            key={value}
+                            type='button'
+                            className={classNames('menu-page__theme-option', {
+                                'menu-page__theme-option--active': theme_preference === value,
+                            })}
+                            role='radio'
+                            aria-checked={theme_preference === value}
+                            onClick={() => setThemePreference(value)}
+                        >
+                            {icon}
+                            <Text size='s'>{label}</Text>
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 });

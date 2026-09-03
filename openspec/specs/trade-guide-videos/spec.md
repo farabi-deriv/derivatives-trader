@@ -1,8 +1,11 @@
 # trade-guide-videos Specification
 
 ## Purpose
+
 TBD - created by archiving change migrate-videos-cloudflare-stream-r2. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [TGV-001] Video mp4 URLs are built against the R2 media host
 
 `getVideoMp4Url(video_id)` in `packages/trader/src/AppV2/Utils/video-config.ts` SHALL build the URL as `${getMediaUrl()}/stream/${video_id}.mp4`, using the brand-aware media host from [BMH-001]. The 35 existing video IDs SHALL remain unchanged — they are the R2 object keys. No occurrence of `cloudflarestream.com` or `CLOUDFLARE_CUSTOMER_CODE` SHALL remain anywhere in `packages/`.
@@ -54,4 +57,3 @@ Every surface that resolves a video ID — the trade-type guide/description moda
 
 - **WHEN** `video-config.ts` is read after this change
 - **THEN** the `AUTOMATION_ONBOARDING_VIDEO_ID` inline comments name `automation-guide-desktop-light.mp4`, `automation-guide-desktop-dark.mp4`, `automation-guide-mobile-light.mp4`, and `automation-guide-mobile-dark.mp4`
-

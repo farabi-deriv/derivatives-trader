@@ -1,6 +1,6 @@
-import { action, autorun, computed, makeObservable, observable } from 'mobx';
+import { action, autorun, computed, makeObservable, observable, override } from 'mobx';
 
-import { isMobile, isTouchDevice } from '@deriv/shared';
+import { isTouchDevice } from '@deriv/shared';
 
 import { MAX_MOBILE_WIDTH, MAX_TABLET_WIDTH } from 'Constants/ui';
 
@@ -8,12 +8,76 @@ import BaseStore from './base-store';
 
 const store_name = 'ui_store';
 
+const DARK_SCHEME_QUERY = '(prefers-color-scheme: dark)';
+
+// Fallback surfaces for the theme-color meta when the semantic tokens are not computable (jsdom in
+// tests, a stylesheet that failed to load). At runtime the meta colour is read from the resolved
+// `--color-surface-primary` token, so brand.config.json stays the single source of the real values.
+const FALLBACK_SURFACE_COLORS = {
+    dark: '#181c25',
+    light: '#ffffff',
+};
+
+const systemPrefersDark = () => !!window?.matchMedia?.(DARK_SCHEME_QUERY)?.matches;
+
+// Anything other than an explicit 'light'/'dark' — including a value from a newer build or a
+// hand-edited snapshot — resolves against the system preference.
+const resolvePreference = preference => {
+    if (preference === 'dark' || preference === 'light') return preference === 'dark';
+    return systemPrefersDark();
+};
+
+// Reads the persisted preference straight out of localStorage, synchronously.
+//
+// It cannot wait for BaseStore's rehydrate: that runs in a setTimeout(..., 0) and its localStorage
+// reaction writes the whole snapshot back — `theme_preference` included — before any timer queued
+// behind it could read storage. A legacy snapshot would therefore already look migrated, and the
+// stored theme would be lost. Reading here is also what lets the constructor's autorun paint the
+// right theme on the first frame instead of flashing the system one.
+const readStoredThemePreference = () => {
+    let snapshot = {};
+    try {
+        snapshot = JSON.parse(localStorage.getItem(store_name)) || {};
+    } catch (e) {
+        snapshot = {};
+    }
+
+    // Own-property checks: the snapshot is parsed from localStorage, so `in` would also match
+    // anything hanging off Object.prototype.
+    const has = key => Object.prototype.hasOwnProperty.call(snapshot, key);
+
+    if (has('theme_preference') && ['system', 'light', 'dark'].includes(snapshot.theme_preference)) {
+        return snapshot.theme_preference;
+    }
+
+    if (has('is_dark_mode_on') && typeof snapshot.is_dark_mode_on === 'boolean') {
+        // A stored boolean with no preference key predates `theme_preference`, and a boolean cannot
+        // tell a deliberate choice from a default. Read it as explicit so an upgrade never flips a
+        // returning user's theme.
+        return snapshot.is_dark_mode_on ? 'dark' : 'light';
+    }
+
+    return 'system';
+};
+
+// index.html ships a static theme-color; keep it on the resolved theme's surface colour so the
+// browser chrome matches. Created defensively so a host page without the tag still gets one.
+const setThemeColorMeta = color => {
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', color);
+};
+
 export default class UIStore extends BaseStore {
     url_hashed_values = '';
     is_reports_visible = false;
     reports_route_tab_index = 0;
     is_history_tab_active = false;
-    active_sidebar_flyout = null; // 'theme' | 'language' | 'positions' | 'account' | null
+    active_sidebar_flyout = null; // 'language' | 'positions' | 'account' | null
     // TODO: [cleanup ui-store]
     // Take profit, Stop loss & Deal cancellation checkbox
     should_show_cancellation_warning = true;
@@ -22,7 +86,11 @@ export default class UIStore extends BaseStore {
     settings_extension = undefined;
     notification_messages_ui = undefined;
 
-    is_dark_mode_on = window?.matchMedia?.('(prefers-color-scheme: dark)').matches && isMobile();
+    // 'system' | 'light' | 'dark'. Source of truth for the theme; `is_dark_mode_on` is its resolved
+    // output and stays the observable every consumer reads. Both are seeded from storage here rather
+    // than on rehydrate — see readStoredThemePreference().
+    theme_preference = readStoredThemePreference();
+    is_dark_mode_on = resolvePreference(this.theme_preference);
     is_settings_modal_on = false;
     is_mobile_language_menu_open = false;
 
@@ -139,7 +207,10 @@ export default class UIStore extends BaseStore {
             'is_chart_asset_info_visible',
             'is_chart_countdown_visible',
             'is_chart_layout_default',
-            'is_dark_mode_on',
+            // The theme persists as `theme_preference` alone. `is_dark_mode_on` is derived from it,
+            // and persisting the derived value too let rehydrate write back a stale boolean that
+            // contradicted a 'system' preference whose OS theme had changed since the last visit.
+            'theme_preference',
             'active_sidebar_flyout',
             'is_reports_visible',
             // 'is_purchase_confirm_on',
@@ -183,6 +254,9 @@ export default class UIStore extends BaseStore {
 
             is_closing_create_real_account_modal: observable,
             is_dark_mode_on: observable,
+            theme_preference: observable,
+            resolveTheme: action.bound,
+            onUnmount: override,
             is_from_signup_account: observable,
             is_redirected_from_email: observable,
 
@@ -243,6 +317,7 @@ export default class UIStore extends BaseStore {
             toggleChartMaximized: action.bound,
             setCurrentFocus: action.bound,
             setDarkMode: action.bound,
+            setThemePreference: action.bound,
             setHashedValue: action.bound,
             setIsForcedToExitPnv: action.bound,
             setIsPhoneVerificationCompleted: action.bound,
@@ -282,18 +357,101 @@ export default class UIStore extends BaseStore {
         });
 
         window.addEventListener('resize', this.handleResize);
-        autorun(() => {
+
+        this.system_theme_query = window?.matchMedia?.(DARK_SCHEME_QUERY) ?? null;
+        if (this.system_theme_query?.addEventListener) {
+            this.system_theme_query.addEventListener('change', this.resolveTheme);
+        } else if (this.system_theme_query?.addListener) {
+            // Safari < 14 and older Android WebViews only expose the deprecated MediaQueryList API.
+            this.system_theme_query.addListener(this.resolveTheme);
+        }
+
+        this.themeAutorunDisposer = autorun(() => {
             this.changeTheme();
         });
-    }
-    changeTheme = () => {
-        if (this.is_dark_mode_on) {
-            document.body.classList.remove('theme--light');
-            document.body.classList.add('theme--dark');
-        } else {
-            document.body.classList.remove('theme--dark');
-            document.body.classList.add('theme--light');
+
+        // Enforce the single-writer rule on the <html> light/dark class. Quill's ThemeProvider
+        // re-applies its previous theme class from a stale effect when the OS scheme flips while
+        // the preference is System (its own prefers-color-scheme hook fires before it has seen the
+        // new theme prop), overwriting changeTheme()'s correct class after the fact — the quill
+        // design tokens are scoped to this class, so half the app (and on Samsung the chart's
+        // token chain, issue #1177's follow-up) rendered in the old theme. Any late writer that
+        // disagrees with the resolved theme is corrected here; the correction re-fires the
+        // observer once, matches, and stops.
+        if (typeof MutationObserver !== 'undefined') {
+            this.theme_class_observer = new MutationObserver(() => {
+                const expected = this.applied_theme;
+                if (!expected) return;
+                const root = document.documentElement;
+                const wrong = expected === 'dark' ? 'light' : 'dark';
+                if (root.classList.contains(wrong) || !root.classList.contains(expected)) {
+                    root.classList.remove('light', 'dark');
+                    root.classList.add(expected);
+                }
+            });
+            this.theme_class_observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class'],
+            });
         }
+    }
+
+    /**
+     * Derives `is_dark_mode_on` from `theme_preference`, falling back to the system preference.
+     * Guarded so a no-change resolve (boot, a system `change` event matching the current theme)
+     * never dirties the observable — an unguarded write re-triggered the persistence reaction's
+     * full-store snapshot on every boot.
+     */
+    resolveTheme() {
+        const is_dark_mode_on = resolvePreference(this.theme_preference);
+        if (is_dark_mode_on !== this.is_dark_mode_on) this.is_dark_mode_on = is_dark_mode_on;
+    }
+
+    onUnmount() {
+        super.onUnmount();
+
+        this.themeAutorunDisposer?.();
+        this.theme_class_observer?.disconnect();
+
+        if (this.system_theme_query?.removeEventListener) {
+            this.system_theme_query.removeEventListener('change', this.resolveTheme);
+        } else if (this.system_theme_query?.removeListener) {
+            this.system_theme_query.removeListener(this.resolveTheme);
+        }
+    }
+
+    // The single runtime writer of theme DOM state. The pre-React boot script in index.html sets the
+    // same `<html>` class, inline loader colours and `color-scheme` before any bundle loads; keeping
+    // them all in step here is what stops them going stale on a theme switch.
+    changeTheme = () => {
+        const theme = this.is_dark_mode_on ? 'dark' : 'light';
+        // The autorun re-fires only when is_dark_mode_on flips, but guard anyway: every run below
+        // writes inline :root style, which invalidates style for the whole document.
+        if (this.applied_theme === theme) return;
+        this.applied_theme = theme;
+
+        const root = document.documentElement;
+
+        document.body.classList.remove('theme--light', 'theme--dark');
+        document.body.classList.add(`theme--${theme}`);
+
+        root.classList.remove('light', 'dark');
+        root.classList.add(theme);
+
+        // Declares which scheme is in use, so browser-painted surfaces match and automatic
+        // dark-theme features (Samsung Internet, Chrome auto dark) stop force-darkening the page —
+        // force-dark cannot reach the canvas-rendered chart, which is what made them disagree.
+        root.style.colorScheme = theme;
+        // The boot script inline-paints these two tokens for the pre-CSS loader frame. Once the
+        // stylesheets are in charge the `.theme--*` blocks own them — clear the inline copies
+        // rather than rewriting them, so hardcoded values can never shadow the brand tokens.
+        root.style.removeProperty('--color-surface-primary');
+        root.style.removeProperty('--color-text-primary');
+
+        // Browser chrome colour follows the resolved surface token (brand.config.json via the
+        // generated semantic tokens); the literal fallback only covers jsdom/broken-CSS cases.
+        const surface = getComputedStyle(document.body).getPropertyValue('--color-surface-primary').trim();
+        setThemeColorMeta(surface || FALLBACK_SURFACE_COLORS[theme]);
     };
 
     setFieldRefToFocus(field_ref) {
@@ -452,12 +610,24 @@ export default class UIStore extends BaseStore {
     //     this.is_purchase_confirm_on = !this.is_purchase_confirm_on;
     // }
 
-    setDarkMode(is_dark_mode_on) {
-        if (this.is_dark_mode_on !== is_dark_mode_on) {
-            this.is_dark_mode_on = is_dark_mode_on;
+    setThemePreference(preference) {
+        if (!['light', 'dark', 'system'].includes(preference)) return;
+
+        const was_dark_mode_on = this.is_dark_mode_on;
+        this.theme_preference = preference;
+        this.resolveTheme();
+
+        if (this.is_dark_mode_on !== was_dark_mode_on) {
             // This GTM call is here instead of the GTM store due to frequency of use
             this.root_store.gtm.pushDataLayer({ event: 'switch theme' });
         }
+    }
+
+    setDarkMode(is_dark_mode_on) {
+        // Choosing a theme (toggle, `?theme=` deep link, native mobile bridge) is an explicit
+        // preference: it wins over the system theme from here on, and the Theme menu shows it as
+        // the selected option.
+        this.setThemePreference(is_dark_mode_on ? 'dark' : 'light');
 
         return this.is_dark_mode_on;
     }
@@ -638,7 +808,7 @@ export default class UIStore extends BaseStore {
     }
 
     setSidebarFlyout(flyout_type) {
-        // flyout_type can be 'theme' | 'language' | 'positions' | 'account' | null
+        // flyout_type can be 'language' | 'positions' | 'account' | null
         this.active_sidebar_flyout = flyout_type;
     }
 

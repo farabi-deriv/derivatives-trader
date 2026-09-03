@@ -53,7 +53,11 @@ describe('useErrorSnackbar', () => {
     // The bug this hook exists for: quill appends every enqueue with a fresh id and renders
     // queue.slice(0, 1), so two enqueues of one sentence are two sequential toasts, not one.
     it('announces a repeated message only once, even from separate consumers', () => {
+        // Two independent consumers, so `first`/`second` name them more clearly than the rule's
+        // suggested `view`/`utils`, which read as one render result.
+        // eslint-disable-next-line testing-library/render-result-naming-convention
         const first = renderHook(() => useErrorSnackbar());
+        // eslint-disable-next-line testing-library/render-result-naming-convention
         const second = renderHook(() => useErrorSnackbar());
 
         expect(first.result.current({ message: 'Minimum stake of 0.35.' })).toBe(true);

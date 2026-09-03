@@ -197,6 +197,9 @@ function generateSemanticTokens() {
 
 :root {
   .theme--light {
+    // CSS-side backstop for the color-scheme declaration ui-store writes on :root
+    color-scheme: light;
+
     // Surface Colors
     --color-surface-primary: var(--brand-white);                        // Main backgrounds, cards
     --color-surface-overlay: #{transparentize($color-white, 0.04)};     // Modal/dialog overlays
@@ -249,6 +252,9 @@ function generateSemanticTokens() {
   }
 
   .theme--dark {
+    // CSS-side backstop for the color-scheme declaration ui-store writes on :root
+    color-scheme: dark;
+
     // Surface Colors
     --color-surface-primary: var(--brand-black);                        // Main backgrounds, cards
     --color-surface-overlay: #{transparentize($color-black, 0.04)};     // Modal/dialog overlays

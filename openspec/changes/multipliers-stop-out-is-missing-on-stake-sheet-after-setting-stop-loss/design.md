@@ -7,7 +7,7 @@ See `proposal.md` — Why. The relevant mechanics, in one place:
 - The two values reach the component by different routes, deliberately (documented at `stake-details.tsx:50-55`): the **amount** comes from `details.stop_out`, fed by the surface's own one-shot proposal so it tracks the stake being drafted; the **level** is read live from the store's `stop_out_level`, fed by the trade page's streaming proposal so it tracks the spot.
 - Neither route is conditioned on `has_stop_loss`. The store sets both from the proposal unconditionally (`trade-store.ts:2327-2336`), and the request only gains a `limit_order.stop_loss` field (`Helpers/proposal.ts:182-190`) — the response's `limit_order.stop_out` is unaffected. So the values exist in the SL case; only the render predicate suppresses one of them.
 
-Constraint worth naming: `has_stop_loss` is a *committed store* value, not a draft. The Stake surface never edits it, so within the surface it is a constant — there is no interaction between the drafted stake and the SL toggle to preserve.
+Constraint worth naming: `has_stop_loss` is a _committed store_ value, not a draft. The Stake surface never edits it, so within the surface it is a constant — there is no interaction between the drafted stake and the SL toggle to preserve.
 
 ## Goals / Non-Goals
 
@@ -22,7 +22,7 @@ Constraint worth naming: `has_stop_loss` is a *committed store* value, not a dra
 
 - Reworking `StakeDetails`'s row model (the `content` array + `is_displayed` predicates + `renderLabel` switch). It is small and readable; restructuring it would enlarge the diff and the review surface for no behavioural gain.
 - Deduplicating `stake-input.tsx` and `stake-input-desktop.tsx`, which are near-identical by history. Real, but a separate change.
-- Any change to what Stop out *means* alongside Stop loss — no relabelling, no "whichever comes first" annotation, no computing an effective loss cap. The issue asks for the figure back, nothing more.
+- Any change to what Stop out _means_ alongside Stop loss — no relabelling, no "whichever comes first" annotation, no computing an effective loss cap. The issue asks for the figure back, nothing more.
 
 ## Decisions
 
@@ -30,7 +30,7 @@ Constraint worth naming: `has_stop_loss` is a *committed store* value, not a dra
 
 The Stop out row's predicate becomes `is_multiplier && !should_show_payout_details`, identical to the Stop out level row's.
 
-*Alternatives considered:*
+_Alternatives considered:_
 
 - **Keep the term but flip it to a new prop** (e.g. `should_hide_stop_out_with_sl`, defaulted off) — an extension point for a behaviour nobody has asked for; YAGNI. The steering doc's KISS/YAGNI principles say the simplest thing that solves the current need, and the current need is "always show it".
 - **Show a different Stop out row when SL is set** (e.g. showing SL as the effective cap, or annotating the label) — a product change beyond the issue, and it would put a second interpretation of the same number in front of the trader. The desktop `MultipliersInformation` row is the in-repo precedent and it shows the plain figure with no annotation.
@@ -40,13 +40,13 @@ The Stop out row's predicate becomes `is_multiplier && !should_show_payout_detai
 
 With the term gone, the prop has no reader. Removing it keeps the component's contract honest and means TypeScript flags any future caller that tries to reintroduce the coupling. Both call sites also destructure `has_stop_loss` out of `useTraderStore()` purely to forward it; those destructurings go too (`stake-input.tsx:167`, `stake-input-desktop.tsx:149`) — after checking nothing else in each file reads it, which nothing currently does.
 
-*Alternative considered:* leave the prop in place and accept an unused parameter. It would keep the diff to one line, but leaves a prop that reads as if SL still matters here — precisely the misreading that produced the bug.
+_Alternative considered:_ leave the prop in place and accept an unused parameter. It would keep the diff to one line, but leaves a prop that reads as if SL still matters here — precisely the misreading that produced the bug.
 
 ### D3 — Do not substitute the store's committed `stop_out` when the drafted stake has no priced proposal
 
 When a drafted stake produces no proposal, `stake-input.tsx:334-339` sets `details.stop_out` to `0` and the row renders `-`. Now that the row is always visible, that `-` becomes reachable in a state it previously never was — notably when an SL committed against a larger stake is rejected against a much smaller drafted one, whose error is a `stop_loss`-field error and so is not even surfaced under the stake input.
 
-Falling back to the store's committed `stop_out` would fill the gap, but it would show the stop out for the *committed* stake next to a *drafted* one — contradicting the deliberate split recorded at `stake-details.tsx:50-55`, where the amount is kept on `details` precisely because it must scale with the drafted stake. A wrong-but-populated number is worse than an honest placeholder, and the placeholder already matches how the Stop out level row behaves when its value is unknown. So: `-` stands, and the spec states that visibility never depends on value availability.
+Falling back to the store's committed `stop_out` would fill the gap, but it would show the stop out for the _committed_ stake next to a _drafted_ one — contradicting the deliberate split recorded at `stake-details.tsx:50-55`, where the amount is kept on `details` precisely because it must scale with the drafted stake. A wrong-but-populated number is worse than an honest placeholder, and the placeholder already matches how the Stop out level row behaves when its value is unknown. So: `-` stands, and the spec states that visibility never depends on value availability.
 
 ### D4 — Test at the `StakeDetails` level, with one integration-level case for the mobile explanation page
 

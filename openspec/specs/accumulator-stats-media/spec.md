@@ -1,8 +1,11 @@
 # accumulator-stats-media Specification
 
 ## Purpose
+
 TBD - created by archiving change accumulators-stats-gif-not-converted-dark. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [ASM-001] Accumulators Stats animation follows the active theme
 
 The Accumulators Stats explainer animation (rendered by `AccumulatorStatsDescription` via `StreamIframe`) SHALL select its Cloudflare Stream source based on the active app theme: the dark asset when `ui.is_dark_mode_on` is true, and the light asset when it is false. The light/dark id pair SHALL be resolved through a pure helper (`getAccumulatorStatsVideoId(is_dark_theme)`) that mirrors the existing `getDescriptionVideoId` selection, so the rule lives in one unit-testable place in `video-config.ts`.
@@ -39,4 +42,3 @@ The Accumulators Stats animation SHALL have a dark-theme Cloudflare Stream / R2 
 
 - **WHEN** `getAccumulatorStatsVideoId(true)` is called
 - **THEN** it returns a non-empty Cloudflare Stream id distinct from the light id, resolvable by `getVideoMp4Url` to a `/stream/<id>.mp4` URL on the brand media host
-

@@ -43,13 +43,37 @@
             var ui_store = localStorage.getItem('ui_store');
             var is_dark_theme = false;
 
+            // Resolution order, mirrored by ui-store's resolveTheme():
+            // theme param -> stored theme_preference -> legacy is_dark_mode_on -> prefers-color-scheme.
             if (themeParam === 'dark') {
                 is_dark_theme = true;
             } else if (themeParam === 'light') {
                 is_dark_theme = false;
-            } else if (ui_store && ui_store.length > 0) {
-                // Fallback to localStorage if no URL parameter
-                is_dark_theme = JSON.parse(ui_store).is_dark_mode_on || false;
+            } else {
+                var stored_ui = null;
+                if (ui_store && ui_store.length > 0) {
+                    try {
+                        stored_ui = JSON.parse(ui_store);
+                    } catch (e) {
+                        stored_ui = null;
+                    }
+                }
+
+                if (stored_ui && (stored_ui.theme_preference === 'dark' || stored_ui.theme_preference === 'light')) {
+                    is_dark_theme = stored_ui.theme_preference === 'dark';
+                } else if (
+                    stored_ui &&
+                    stored_ui.theme_preference !== 'system' &&
+                    typeof stored_ui.is_dark_mode_on === 'boolean'
+                ) {
+                    // Legacy or unrecognised preference with a stored boolean: read the boolean as
+                    // an explicit choice, exactly as ui-store's readStoredThemePreference() does,
+                    // so an upgrade (or an unknown value from a newer build) never flips a
+                    // returning user's theme. Only 'system' skips this and asks the OS.
+                    is_dark_theme = stored_ui.is_dark_mode_on;
+                } else if (window.matchMedia) {
+                    is_dark_theme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
             }
 
             if (is_dark_theme) {
@@ -64,6 +88,11 @@
                 document.documentElement.classList.add('light');
                 document.documentElement.classList.remove('dark');
             }
+
+            // Declare the resolved scheme before React mounts, so browser-painted surfaces match and
+            // automatic dark-theme features do not force-darken the page. Kept in step afterwards by
+            // ui-store's changeTheme().
+            document.documentElement.style.colorScheme = is_dark_theme ? 'dark' : 'light';
 
             // Hide web app loader when inside native mobile app to prevent double loaders
             var isMobileApp = urlParams.get('is_mobile_app') === 'true';
@@ -142,6 +171,10 @@
         <!-- TODO: iOS zoom bug for input elements means we'll get a lower user accessibility score since we're not allowing dtrader.deriv.com to be scalable on mobile -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
         <meta name="theme-color" content="#414652" />
+        <!-- States that both schemes are supported from the first parsed bytes, which is the signal
+             automatic dark-theme features check before deciding to force-darken. Must stay static: the
+             resolved scheme is carried by the `color-scheme` property on :root instead. -->
+        <meta name="color-scheme" content="light dark" />
         <meta name="dcterms.rightsHolder" content="Deriv" />
         <meta name="dcterms.rights" content="Deriv" />
         <meta name="google-site-verification" content="g5u3TyEdmYJ_HKZ6EmpW1nlKwD4XPVeLMhN9leeMfuw" />

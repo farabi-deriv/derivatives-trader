@@ -301,6 +301,7 @@ type TUiStore = {
     is_closing_create_real_account_modal: boolean;
     is_from_signup_account: boolean;
     is_dark_mode_on: boolean;
+    theme_preference: 'light' | 'dark' | 'system';
     is_loading: boolean;
     is_reports_visible: boolean;
     is_reset_password_modal_visible: boolean;
@@ -311,7 +312,7 @@ type TUiStore = {
     is_mobile: boolean;
     is_tablet: boolean;
     is_mobile_language_menu_open: boolean;
-    active_sidebar_flyout: 'theme' | 'language' | 'positions' | 'account' | null;
+    active_sidebar_flyout: 'language' | 'positions' | 'account' | null;
     is_positions_drawer_on: boolean;
     is_reset_email_modal_visible: boolean;
     is_services_error_visible: boolean;
@@ -334,6 +335,7 @@ type TUiStore = {
     setAppContentsScrollRef: (ref: React.MutableRefObject<null | HTMLDivElement>) => void;
     setCurrentFocus: (value: string | null) => void;
     setDarkMode: (is_dark_mode_on: boolean) => boolean;
+    setThemePreference: (preference: 'light' | 'dark' | 'system') => void;
     setIsForcedToExitPnv: (value: boolean) => void;
     setIsPhoneVerificationCompleted: (value: boolean) => void;
     setRedirectFromEmail: (value: boolean) => void;
@@ -366,7 +368,7 @@ type TUiStore = {
     is_chart_loading: boolean;
     setIsChartLoading: (value: boolean) => void;
     toggleTryRealModal: (value: boolean) => void;
-    setSidebarFlyout: (flyout_type: 'theme' | 'language' | 'positions' | 'account' | null) => void;
+    setSidebarFlyout: (flyout_type: 'language' | 'positions' | 'account' | null) => void;
     closeSidebarFlyout: () => void;
     removeToast: (key: string) => void;
     reports_route_tab_index: number;

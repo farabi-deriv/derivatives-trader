@@ -1,8 +1,11 @@
 # store-member-cleanup Specification
 
 ## Purpose
+
 TBD - created by archiving change c1-c2-extraction-remnant-deletions-store-1. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [SMC-001] Store members are verified dead by member-grep before removal
 
 Every store member removed in C2 SHALL be re-verified dead immediately before removal using a `\bmember\b` word-boundary grep across ALL packages, because store members are consumed both via `useStore()` destructuring and via dynamic `this[name]` assignment — a dotted-access (`store.member`) grep alone is insufficient. A member with any surviving live consumer SHALL NOT be removed. Each C2 removal SHALL be a single, self-contained sub-diff that leaves the tree building and all tests, `check-imports` and `knip:check` green, and leaves `mockStore`/`types` compiling.
@@ -102,4 +105,3 @@ The route constants `callback_page` and `error404` in `packages/shared/src/utils
 
 - **WHEN** the routes phase lands
 - **THEN** `callback_page` and `error404` are removed from `routes.ts`, no importer references them, and the live redirect surfaces are untouched
-

@@ -1,8 +1,11 @@
 # cleanup-safety-net Specification
 
 ## Purpose
+
 TBD - created by archiving change c0-safety-net-knip-bundle-structural. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [CSN-001] Committed knip baseline of unused code
 
 The repository SHALL contain a committed knip baseline at `docs/baselines/knip-baseline.json` capturing knip's normalised findings (unused files, unused exports, unused dependencies) across the monorepo, produced by knip configured with per-workspace `entry`/`project` globs and alias resolution consistent with the webpack `ALIASES` and each package's `tsconfig.json` `paths`.
@@ -145,4 +148,3 @@ The repository SHALL contain `docs/baselines/README.md` documenting what each ba
 
 - **WHEN** the M0 pre-flight is recorded
 - **THEN** `docs/baselines/README.md` records that in-flight branches were confirmed merged or rebase-ready with the human, dated, so merge-dependent work (M1) can rely on it
-

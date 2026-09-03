@@ -1,8 +1,11 @@
 # analytics-event-versioning Specification
 
 ## Purpose
+
 TBD - created by archiving change stamp-app-version-every-analytics-event. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [AEV-001] Every analytics event carries app_version
 
 Every analytics event emitted through the central `trackAnalyticsEvent` funnel SHALL include a flat `app_version` property. The property SHALL sit alongside the existing `account_type` and `device_type` properties — a top-level key on the event, not a nested metadata object. The value SHALL be resolved once from the build-time `process.env.APP_VERSION` variable.
@@ -50,4 +53,3 @@ On a release deploy, the `app_version` stamped into events SHALL be identical to
 - **WHEN** the staging workflow runs (triggered by a `push` to `master`)
 - **THEN** `app_version` equals `staging_<sha>` for that commit
 - **AND** `/app-info.json` on staging serves that same `staging_<sha>` string rather than the literal `master`
-

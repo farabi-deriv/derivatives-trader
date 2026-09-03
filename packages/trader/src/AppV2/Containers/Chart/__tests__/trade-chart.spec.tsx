@@ -122,6 +122,43 @@ describe('TradeChart', () => {
         expect(mockSmartChartProps.isConnectionOpened).toBe(true);
     });
 
+    // The chart is a canvas: it reads nothing from the app's CSS, so `settings.theme` is the only
+    // thing that keeps it in the same theme as the page.
+    describe('chart theme', () => {
+        it.each([
+            [true, 'dark'],
+            [false, 'light'],
+        ])('passes the resolved theme to the chart when is_dark_mode_on is %s', async (is_dark_mode_on, theme) => {
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            store.ui.is_dark_mode_on = is_dark_mode_on;
+            mockedTradeChart(store);
+
+            expect(await screen.findByText(mock_chart)).toBeInTheDocument();
+            expect(mockSmartChartProps.settings.theme).toBe(theme);
+        });
+
+        it('re-themes the chart without a reload when the theme changes', async () => {
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            // The mock store is a plain object; make the flag observable so flipping it re-renders the
+            // observer component the way the real ui-store does on a system or selector theme change.
+            makeObservable(store.ui, { is_dark_mode_on: observable });
+            mockedTradeChart(store);
+
+            expect(await screen.findByText(mock_chart)).toBeInTheDocument();
+            expect(mockSmartChartProps.settings.theme).toBe('light');
+
+            act(() => {
+                runInAction(() => {
+                    store.ui.is_dark_mode_on = true;
+                });
+            });
+
+            await waitFor(() => expect(mockSmartChartProps.settings.theme).toBe('dark'));
+        });
+    });
+
     describe('granularity changes coming from the chart', () => {
         const mockedTradeChartWithToolbar = async (contract_type: string) => {
             const store = mockStore({});

@@ -11,7 +11,7 @@ None blocks implementation — the recommended answer is what the specs, `design
     - (b) Annotate the label or add a helper line when SL is set. New copy to translate, and it puts a second interpretation of the same number in front of the trader — a product decision beyond this bug.
 
 3. **When a drafted stake produces no priced proposal, should the Stop out row fall back to the store's committed value instead of showing `-`?**
-    - **(a) RECOMMENDED — Keep `-`.** The amount deliberately lives on `details` so it tracks the *drafted* stake (see the comment at `stake-details.tsx:50-55`); a committed-stake figure shown beside a different drafted stake would be wrong, not merely stale. `-` matches how the Stop out level row already behaves when unknown. See `design.md` D3.
+    - **(a) RECOMMENDED — Keep `-`.** The amount deliberately lives on `details` so it tracks the _drafted_ stake (see the comment at `stake-details.tsx:50-55`); a committed-stake figure shown beside a different drafted stake would be wrong, not merely stale. `-` matches how the Stop out level row already behaves when unknown. See `design.md` D3.
     - (b) Fall back to the store's `stop_out`, so a number is always present. Requires reversing the documented split between the two values.
 
 ---
@@ -43,7 +43,7 @@ None blocks implementation — the recommended answer is what the specs, `design
 - [x] 3.3 Add a case to `stake-details.spec.tsx` covering the placeholder path now reachable with SL set: with the multipliers variant and `details.stop_out` absent/zero, the Stop out row is still rendered showing `-` rather than being dropped. Verify it passes and that it fails if the row is made conditional on a truthy value.
     - Mutation check: `is_displayed: !!details.stop_out && …` failed exactly one case — `keeps the Stop out row visible with a placeholder when no stop out amount is priced` — with the other 79 green.
 - [x] 3.4 Extend the task 1.3 case in `stake.spec.tsx` to also assert the in-sheet explanation is reachable with Stop loss set: tap the `Stop out` label and verify the Stop out explanation page is shown (the percentage sentence when the mocked proposal supplies `limit_order.stop_out.order_amount` and `stake`, the generic sentence otherwise), then tap the `Stop out level` label and verify its explanation. Verify the whole file passes.
-    - Both explanation cases assert on the *active* carousel item, since every page is mounted at once and merely translated — page presence alone would prove nothing.
+    - Both explanation cases assert on the _active_ carousel item, since every page is mounted at once and merely translated — page presence alone would prove nothing.
 - [x] 3.5 Run `npm run test:jest -- packages/trader/src/AppV2/Components/TradeParameters/Stake` and verify every Stake suite is green, including the balance-hint, preset-ladder, stale-seed and header-save blocks — none of which this change should touch.
     - 2 suites, 80/80 passing.
 - [x] 3.6 Run `npm run test:jest -- packages/trader/src/AppV2/Components/TradeParameters/MultipliersInformation` and verify the desktop below-params suite is untouched and green, confirming the two surfaces now agree.

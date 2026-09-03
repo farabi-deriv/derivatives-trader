@@ -282,10 +282,13 @@ const Sidebar = observer(() => {
                 </nav>
             </aside>
 
-            {/* Single Flyout with conditional content - unmount when navigating away to avoid flash */}
+            {/* Single Flyout with conditional content - unmount when navigating away to avoid flash.
+                is_open keys on the resolved content, not the raw flyout value: `active_sidebar_flyout`
+                is persisted, so a value with no case in getFlyoutContent (e.g. 'theme' from a build
+                that had a theme flyout) must not rehydrate into an open-but-empty panel. */}
             {is_on_index && (
                 <Flyout
-                    is_open={active_sidebar_flyout !== null}
+                    is_open={flyoutContent !== null}
                     onClose={closeFlyout}
                     title={flyoutContent?.title}
                     footer_content={flyoutContent?.footer}

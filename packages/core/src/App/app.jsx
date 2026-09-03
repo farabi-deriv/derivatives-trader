@@ -26,8 +26,6 @@ const App = ({ root_store }) => {
     const base = l.pathname.split('/')[1];
     const has_base = /^\/(br_)/.test(l.pathname);
     const { preferred_language } = root_store.client;
-    const { is_dark_mode_on } = root_store.ui;
-    const is_dark_mode = is_dark_mode_on || JSON.parse(localStorage.getItem('ui_store'))?.is_dark_mode_on;
     const language = preferred_language ?? getInitialLanguage();
     const { isBridgeAvailable, sendBridgeEvent } = useMobileBridge();
 
@@ -44,7 +42,9 @@ const App = ({ root_store }) => {
             import('@deriv-com/smartcharts-champion/dist/smartcharts.css');
         };
 
-        // Check for theme query parameter and set theme accordingly
+        // `?theme=` deep link is applied as an explicit choice, exactly like tapping the theme
+        // switcher: it renders with first priority and the Theme menu shows it as the selected
+        // option (setDarkMode records it as theme_preference).
         const urlParams = new URLSearchParams(window.location.search);
         const themeParam = urlParams.get('theme');
         if (themeParam === 'dark') {
@@ -76,20 +76,6 @@ const App = ({ root_store }) => {
             Analytics.reset();
         }
     }, [root_store.client.email]);
-
-    React.useEffect(() => {
-        const html = document?.querySelector('html');
-
-        if (!html) return;
-        if (is_dark_mode) {
-            html.classList?.remove('light');
-            html.classList?.add('dark');
-        } else {
-            html.classList?.remove('dark');
-            html.classList?.add('light');
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     return (
         <Router basename={has_base ? `/${base}` : null}>

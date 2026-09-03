@@ -480,7 +480,6 @@ describe('PositionsContent', () => {
     });
 
     describe('balance-aware Buy gate', () => {
-
         beforeEach(() => {
             // The gate compares `proposal_info.CALL.stake` (`10.00` in the shared mock, i.e.
             // `proposal.ask_price`) against the account balance, so only the balance varies below.

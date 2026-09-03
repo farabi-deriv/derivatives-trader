@@ -270,6 +270,23 @@ describe('<Sidebar />', () => {
         expect(store.ui.setDarkMode).toHaveBeenCalledWith(false);
     });
 
+    it('flips relative to the resolved theme and records an explicit choice while following the OS', () => {
+        // Characterization: a user on the System preference with a dark OS clicks once — the toggle
+        // works off the resolved theme (dark), so it records light as the new explicit preference.
+        const store = mockStore({
+            ...defaultStoreConfig,
+            ui: {
+                ...defaultStoreConfig.ui,
+                theme_preference: 'system',
+                is_dark_mode_on: true,
+                setDarkMode: jest.fn(),
+            },
+        });
+        renderSidebar(store);
+        fireEvent.click(screen.getByTestId('dt_sidebar_theme'));
+        expect(store.ui.setDarkMode).toHaveBeenCalledWith(false);
+    });
+
     it('should call setSidebarFlyout when language button is clicked', () => {
         const store = mockStore(defaultStoreConfig);
         renderSidebar(store);
@@ -378,7 +395,7 @@ describe('<Sidebar />', () => {
             ...defaultStoreConfig,
             ui: {
                 ...defaultStoreConfig.ui,
-                active_sidebar_flyout: 'theme',
+                active_sidebar_flyout: 'language',
             },
         });
         renderSidebar(store);

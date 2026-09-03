@@ -97,6 +97,12 @@ export const initStore = async notification_messages => {
         window.__deriv_store = root_store;
     }
 
+    // initStore can re-run in the same page (dev HMR); dispose the previous store's global theme
+    // listeners (matchMedia 'change' + the changeTheme autorun) so orphaned instances can't keep
+    // writing <html>/<body> theme state after an OS theme flip. First run: no-op.
+    window.__deriv_prev_ui_store?.onUnmount?.();
+    window.__deriv_prev_ui_store = root_store.ui;
+
     setStorageEvents(root_store);
     root_store.common.init();
     root_store.ui.init(notification_messages);

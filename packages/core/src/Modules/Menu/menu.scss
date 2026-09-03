@@ -47,7 +47,41 @@
         }
     }
 
-    &__language-drawer {
+    &__theme-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0 1.6rem;
+    }
+
+    &__theme-option {
+        display: flex;
+        align-items: center;
+        gap: 1.6rem;
+        height: 6.4rem;
+        padding: 1.6rem;
+        border: 1px solid transparent;
+        border-radius: 0.8rem;
+        background-color: var(--semantic-color-monochrome-surface-normal-lowest);
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: border-color 0.2s ease;
+
+        &:active {
+            background-color: var(--color-interactive-hover);
+        }
+
+        &--active {
+            border-color: var(--color-text-primary);
+        }
+
+        svg {
+            flex-shrink: 0;
+        }
+    }
+
+    &__language-drawer,
+    &__theme-drawer {
         position: fixed;
         top: 0;
         left: 0;

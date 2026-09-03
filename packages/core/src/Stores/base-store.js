@@ -184,14 +184,21 @@ export default class BaseStore {
     /**
      * Retrieves saved snapshot of the store and assigns to the current instance.
      *
+     * Only properties the store declares in its `*_storage_properties` lists are assigned: a
+     * snapshot written by an older build can hold keys since removed from the lists (e.g. a
+     * derived value that stopped being persisted), and blindly assigning those would overwrite
+     * freshly derived state with stale data.
      */
     retrieveFromStorage() {
         const local_storage_snapshot = JSON.parse(localStorage.getItem(this.store_name, {}));
         const session_storage_snapshot = JSON.parse(sessionStorage.getItem(this.store_name, {}));
 
         const snapshot = { ...local_storage_snapshot, ...session_storage_snapshot };
+        const declared = [...this.local_storage_properties, ...this.session_storage_properties];
 
-        Object.keys(snapshot).forEach(k => (this[k] = snapshot[k]));
+        Object.keys(snapshot)
+            .filter(k => declared.includes(k))
+            .forEach(k => (this[k] = snapshot[k]));
     }
 
     /**

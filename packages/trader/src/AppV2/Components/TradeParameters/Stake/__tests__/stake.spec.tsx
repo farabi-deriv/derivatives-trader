@@ -757,7 +757,6 @@ describe('StakeInputDesktop', () => {
             }
         );
     });
-
 });
 
 describe('Stake - Mobile header actions', () => {
