@@ -79,6 +79,11 @@ export class TradeAutomatePage extends TradeParametersPage {
     private static readonly AUTOMATE_GUIDE_STRATEGY_INFO_TEXT =
         'Strategies are your automated trading rules. They read your chosen parameters to execute trades for you';
 
+    private static readonly LOSS_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE = 'Loss threshold reached. Automation stopped.';
+
+    private static readonly PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE =
+        'Profit threshold reached. Automation stopped.';
+
     private static readonly AUTOMATE_GUIDE_STRATEGIES = {
         Martingale: {
             description: () => TradeAutomatePage.AUTOMATE_GUIDE_MARTINGALE_DESCRIPTION,
@@ -343,6 +348,38 @@ export class TradeAutomatePage extends TradeParametersPage {
      */
     get automationStats(): Locator {
         return this.automationActionsStatus.getByText(/Contracts:\s*\d+\s*\|\s*P\/L:/);
+    }
+
+    /**
+     * Loss-threshold auto-stop snackbar message.
+     * Source: automation-stop-snackbar.tsx — StopLoss / `condition_triggered`.
+     */
+    get lossThresholdAutoStopSnackbar(): Locator {
+        return this.page
+            .locator('.snackbar--container')
+            .getByText(TradeAutomatePage.LOSS_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE, { exact: true });
+    }
+
+    /**
+     * Profit-threshold auto-stop snackbar message.
+     * Source: automation-stop-snackbar.tsx — TakeProfit / `condition_triggered`.
+     */
+    get profitThresholdAutoStopSnackbar(): Locator {
+        return this.page
+            .locator('.snackbar--container')
+            .getByText(TradeAutomatePage.PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE, { exact: true });
+    }
+
+    /** Dismiss control on automation threshold stop snackbars (quill `data-testid="close-button"`). */
+    get automationStopSnackbarCloseButton(): Locator {
+        return this.page
+            .locator('.snackbar--container')
+            .filter({
+                hasText: new RegExp(
+                    `${TradeAutomatePage.LOSS_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE}|${TradeAutomatePage.PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE}`
+                ),
+            })
+            .getByTestId('close-button');
     }
 
     /** Pause button (visible while running). */
@@ -693,11 +730,7 @@ export class TradeAutomatePage extends TradeParametersPage {
         await expect(this.stopButton, 'Stop button should no longer be visible after stopping').not.toBeVisible();
         await expect(this.runButton, 'Run button should reappear after stopping the run').toBeVisible();
         await expect(this.statusRunning, 'Running status should no longer be visible after stopping').not.toBeVisible();
-        await this.positionsPage.closeAllOpenContracts();
-        if (this.isMobile) {
-            await this.goToAutomatedTrading();
-        }
-        await this.verifyTradeAndAutomationParamsState(this.selectedTradeType, 'enabled');
+        await this.verifyAutomatePostIdleState(this.selectedTradeType);
     }
 
     /**
@@ -1638,6 +1671,9 @@ export class TradeAutomatePage extends TradeParametersPage {
                 break;
             case 'Accumulators':
                 await assertField(this.growthRateField, 'Growth rate field');
+                // Take profit is disabled while a run is active when an open accu contract exists
+                // (`has_open_accu_contract`), not via `is_automation_params_locked` — but the
+                // visible locked state matches during running/paused lifecycles.
                 await assertField(this.takeProfitField, 'Take profit field');
                 break;
             case 'Matches/Differs':
@@ -1838,36 +1874,101 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Verify the run auto-stopped once the loss threshold was reached — i.e. the controls
-     * returned to the idle Run button *by themselves*, with no manual Stop click.
+     * Post-idle cleanup — enabled Run, close any leftover open contracts, unlock trade + automation params.
+     */
+    private async verifyAutomatePostIdleState(tradeType: string): Promise<void> {
+        await expect(this.runButton, 'Run button should be enabled once the run is idle').toBeEnabled();
+        await this.positionsPage.closeAllOpenContracts();
+        if (this.isMobile) {
+            await this.goToAutomatedTrading();
+        }
+        await this.verifyTradeAndAutomationParamsState(tradeType, 'enabled');
+    }
+
+    /**
+     * Shared idle UI + param unlock checks after a loss- or profit-threshold auto-stop.
+     */
+    private async verifyThresholdAutoStopPostConditions(thresholdLabel: 'loss' | 'profit'): Promise<void> {
+        const context = `after ${thresholdLabel}-threshold auto-stop`;
+
+        if (this.isMobile) {
+            await this.goToAutomatedTrading();
+        }
+        await expect(
+            this.automationActionsStatus,
+            `Automation status block should be hidden ${context}`
+        ).not.toBeVisible();
+        await expect(this.statusRunning, `Running status should be hidden ${context}`).not.toBeVisible();
+        await expect(this.statusPaused, `Paused status should be hidden ${context}`).not.toBeVisible();
+        await expect(this.automationStatusInfoIcon, `Status info icon should be hidden ${context}`).not.toBeVisible();
+        await expect(this.automationStats, `Automation stats line should be hidden ${context}`).not.toBeVisible();
+        await expect(this.automationRunActions, `Pause/Stop action row should be hidden ${context}`).not.toBeVisible();
+        await expect(this.pauseButton, `Pause button should be hidden ${context}`).not.toBeVisible();
+        await expect(this.stopButton, `Stop button should be hidden ${context}`).not.toBeVisible();
+        await expect(this.runButton, `Run button should be visible ${context}`).toBeVisible();
+        await expect(this.runButton, `Run button should be enabled ${context}`).toBeEnabled();
+        await this.verifyTradeAndAutomationParamsState(this.selectedTradeType, 'enabled');
+    }
+
+    /**
+     * Verify the run auto-stopped once the loss threshold was reached — snackbar first, then idle
+     * Run with no manual Stop click.
      *
-     * Why the durable idle state and not the snackbar: the "Loss threshold reached. Automation
-     * stopped." snackbar is rendered with `hasCloseButton: false` and auto-dismisses after a few
-     * seconds, so asserting it directly is inherently racy — it can appear and vanish between
-     * polls (observed: caught on one run, already gone on the next). The return to the idle Run
-     * button (with Running/Pause cleared) is the reliable, durable proof that the run stopped on
-     * its own. The caller sets the profit threshold high (unreachable) and the loss threshold tiny,
-     * so a self-triggered stop can only be the loss threshold — the durable idle state is therefore
-     * sufficient to confirm a loss-threshold auto-stop without reading the transient snackbar.
+     * Waits for the dismissible "Loss threshold reached. Automation stopped." snackbar, then
+     * asserts the running status block, stats, info icon, and Pause/Stop are hidden, Run is
+     * visible and enabled, and trade-form plus automation-panel params are unlocked again.
      *
-     * Timing: the bot trades live contracts until cumulative loss ≥ the threshold, so a bounded
-     * (never fixed) wait is used to allow a few contracts to settle.
-     *
-     * @returns Promise that resolves once the auto-stop (idle state) is confirmed.
+     * @returns Promise that resolves once the auto-stop snackbar and idle state are confirmed.
      */
     async verifyLossThresholdAutoStop(): Promise<void> {
+        if (this.isMobile) {
+            await this.goToAutomatedTrading();
+        }
+
         await expect(
-            this.runButton,
-            'Run button should reappear once the run auto-stops at the loss threshold (no manual Stop)'
+            this.lossThresholdAutoStopSnackbar,
+            'Loss threshold auto-stop snackbar should appear when the threshold is reached'
         ).toBeVisible({ timeout: 120_000 });
         await expect(
-            this.statusRunning,
-            'Running status should no longer be visible after the auto-stop'
-        ).not.toBeVisible();
+            this.lossThresholdAutoStopSnackbar,
+            'Loss threshold auto-stop snackbar should show the expected message'
+        ).toHaveText(TradeAutomatePage.LOSS_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE);
         await expect(
-            this.pauseButton,
-            'Pause button should no longer be visible after the auto-stop'
-        ).not.toBeVisible();
-        await expect(this.stopButton, 'Stop button should no longer be visible after the auto-stop').not.toBeVisible();
+            this.automationStopSnackbarCloseButton,
+            'Loss threshold auto-stop snackbar should be dismissible'
+        ).toBeVisible();
+
+        await this.verifyThresholdAutoStopPostConditions('loss');
+    }
+
+    /**
+     * Verify the run auto-stopped once the profit threshold was reached — snackbar first, then idle
+     * Run with no manual Stop click.
+     *
+     * Waits for the dismissible "Profit threshold reached. Automation stopped." snackbar, then
+     * asserts idle controls and re-enabled trade-form plus automation-panel params. Caller sets
+     * loss threshold unreachable and profit threshold tiny so auto-stop can only mean profit threshold.
+     *
+     * @returns Promise that resolves once the auto-stop snackbar and idle state are confirmed.
+     */
+    async verifyProfitThresholdAutoStop(): Promise<void> {
+        if (this.isMobile) {
+            await this.goToAutomatedTrading();
+        }
+
+        await expect(
+            this.profitThresholdAutoStopSnackbar,
+            'Profit threshold auto-stop snackbar should appear when the threshold is reached'
+        ).toBeVisible({ timeout: 120_000 });
+        await expect(
+            this.profitThresholdAutoStopSnackbar,
+            'Profit threshold auto-stop snackbar should show the expected message'
+        ).toHaveText(TradeAutomatePage.PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE);
+        await expect(
+            this.automationStopSnackbarCloseButton,
+            'Profit threshold auto-stop snackbar should be dismissible'
+        ).toBeVisible();
+
+        await this.verifyThresholdAutoStopPostConditions('profit');
     }
 }

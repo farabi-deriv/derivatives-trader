@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-01
+Last updated: 2026-09-04
 
 ---
 
@@ -36,15 +36,15 @@ Each module section lists every documented flow with its current **status** and 
 
 | Module             | Total Flows | Documented | Automated |
 | ------------------ | ----------- | ---------- | --------- |
-| `trade`            | 34          | 34         | 29        |
-| `positions`        | 11          | 11         | 0         |
-| `reports`          | 8           | 8          | 0         |
-| `notifications`    | 9           | 9          | 0         |
+| `trade`            | 34          | 34         | 31        |
+| `positions`        | 11          | 11         | 11        |
+| `reports`          | 8           | 8          | 8         |
+| `notifications`    | 9           | 9          | 1         |
 | `auth`             | 3           | 3          | 3         |
-| `trade-automate`   | 26          | 26         | 23        |
+| `trade-automate`   | 27          | 27         | 24        |
 | `feed`             | 1           | 1          | 1         |
-| `market-selection` | 25          | 25         | 24        |
-| **Total**          | **117**     | **117**    | **80**    |
+| `market-selection` | 26          | 26         | 24        |
+| **Total**          | **119**     | **119**    | **103**   |
 
 > Status advances: `documented` → `automated`
 
@@ -79,8 +79,8 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 9.4  | P0       | Multipliers with TP — buy Down → close                     | authenticated, funded        | `automated`  |
 | Flow 9.5  | P1       | Multipliers with SL — buy Up → close                       | authenticated, funded        | `automated`  |
 | Flow 9.6  | P1       | Multipliers with SL — buy Down → close                     | authenticated, funded        | `automated`  |
-| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel       | authenticated, funded        | `documented` |
-| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel     | authenticated, funded        | `documented` |
+| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel       | authenticated, funded        | `automated`  |
+| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel     | authenticated, funded        | `automated`  |
 | Flow 10.1 | P1       | Turbos without TP — buy Up → verify in positions           | authenticated, funded        | `automated`  |
 | Flow 10.2 | P1       | Turbos without TP — buy Down → verify in positions         | authenticated, funded        | `automated`  |
 | Flow 10.3 | P1       | Turbos with TP — buy Up → verify TP set in positions       | authenticated, funded        | `automated`  |
@@ -97,19 +97,19 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/positions/` · **Test folder:** `playwright/tests/positions/`
 
-| Flow   | Priority | Description                                                                | User State                                                 | Status       |
-| ------ | -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------ |
-| Flow 1 | P0       | Open positions list loads (mobile full-page route)                         | authenticated, has open contracts (mobile)                 | `documented` |
-| Flow 2 | P0       | Open positions list loads (desktop sidebar flyout)                         | authenticated, has open contracts (desktop)                | `documented` |
-| Flow 3 | P2       | Empty state when no open contracts                                         | authenticated, no open contracts (mobile)                  | `documented` |
-| Flow 4 | P1       | Closed positions tab shows contracts grouped by date                       | authenticated, has closed contracts (mobile)               | `documented` |
-| Flow 5 | P2       | Filter open positions by trade type                                        | authenticated, multiple open contracts (mobile)            | `documented` |
-| Flow 6 | P2       | Filter closed positions by time range                                      | authenticated, closed contracts on multiple dates (mobile) | `documented` |
-| Flow 7 | P1       | Navigate from positions card to contract details                           | authenticated, has open contracts (mobile)                 | `documented` |
-| —      | P1       | Close open contract from positions list (swipe + Close button) (G1)        | authenticated, has open contracts (mobile)                 | `documented` |
-| —      | P2       | Cancel open multiplier with Deal Cancellation (swipe + Cancel button) (G2) | authenticated, funded multiplier open (mobile)             | `documented` |
-| —      | P3       | Empty state on Closed tab (no contract history) (G3)                       | authenticated, no contract history (mobile)                | `documented` |
-| —      | P3       | Filter yields no matches on open positions (G4)                            | authenticated, open contracts (mobile)                     | `documented` |
+| Flow   | Priority | Description                                                                | User State                                                 | Status      |
+| ------ | -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
+| Flow 1 | P0       | Open positions list loads (mobile full-page route)                         | authenticated, has open contracts (mobile)                 | `automated` |
+| Flow 2 | P0       | Open positions list loads (desktop sidebar flyout)                         | authenticated, has open contracts (desktop)                | `automated` |
+| Flow 3 | P2       | Empty state when no open contracts                                         | authenticated, no open contracts (mobile)                  | `automated` |
+| Flow 4 | P1       | Closed positions tab shows contracts grouped by date                       | authenticated, has closed contracts (mobile)               | `automated` |
+| Flow 5 | P2       | Filter open positions by trade type                                        | authenticated, multiple open contracts (mobile)            | `automated` |
+| Flow 6 | P2       | Filter closed positions by time range                                      | authenticated, closed contracts on multiple dates (mobile) | `automated` |
+| Flow 7 | P1       | Navigate from positions card to contract details                           | authenticated, has open contracts (mobile)                 | `automated` |
+| —      | P1       | Close open contract from positions list (swipe + Close button) (G1)        | authenticated, has open contracts (mobile)                 | `automated` |
+| —      | P2       | Cancel open multiplier with Deal Cancellation (swipe + Cancel button) (G2) | authenticated, funded multiplier open (mobile)             | `automated` |
+| —      | P3       | Empty state on Closed tab (no contract history) (G3)                       | authenticated, no contract history (mobile)                | `automated` |
+| —      | P3       | Filter yields no matches on open positions (G4)                            | authenticated, open contracts (mobile)                     | `automated` |
 
 ---
 
@@ -119,14 +119,14 @@ Each module section lists every documented flow with its current **status** and 
 
 | Flow   | Priority | Description                                                           | User State                                    | Status       |
 | ------ | -------- | --------------------------------------------------------------------- | --------------------------------------------- | ------------ |
-| Flow 1 | P0       | Reports page loads with default tab (Open positions)                  | authenticated                                 | `documented` |
-| Flow 2 | P1       | Open Positions tab — Options contracts visible                        | authenticated, has open Options contracts     | `documented` |
-| Flow 3 | P2       | Open Positions tab — Multipliers filter                               | authenticated, has open Multiplier contracts  | `documented` |
-| Flow 4 | P2       | Open Positions tab — Accumulators filter + growth rate sub-filter     | authenticated, has open Accumulator contracts | `documented` |
-| Flow 5 | P0       | Trade Table tab loads with date filter and data rows                  | authenticated, has closed contract history    | `documented` |
-| Flow 6 | P0       | Statement tab loads with transaction type filter                      | authenticated, has statement entries          | `documented` |
-| Flow 7 | P2       | Empty state — no trading activity (Trade Table)                       | authenticated, no trade history               | `documented` |
-| Flow 8 | P2       | Empty state — no transactions (Statement)                             | authenticated, no statement history           | `documented` |
+| Flow 1 | P0       | Reports page loads with default tab (Open positions)                  | authenticated                                 | `automated`  |
+| Flow 2 | P1       | Open Positions tab — Options contracts visible                        | authenticated, has open Options contracts     | `automated`  |
+| Flow 3 | P2       | Open Positions tab — Multipliers filter                               | authenticated, has open Multiplier contracts  | `automated`  |
+| Flow 4 | P2       | Open Positions tab — Accumulators filter + growth rate sub-filter     | authenticated, has open Accumulator contracts | `automated`  |
+| Flow 5 | P0       | Trade Table tab loads with date filter and data rows                  | authenticated, has closed contract history    | `automated`  |
+| Flow 6 | P0       | Statement tab loads with transaction type filter                      | authenticated, has statement entries          | `automated`  |
+| Flow 7 | P2       | Empty state — no trading activity (Trade Table)                       | authenticated, no trade history               | `automated`  |
+| Flow 8 | P2       | Empty state — no transactions (Statement)                             | authenticated, no statement history           | `automated`  |
 | —      | P1       | Navigate from Open Positions row to contract details (G1)             | authenticated, has open Options contracts     | `documented` |
 | —      | P3       | Archived Statement tab (conditional on `has_archived_statement`) (G2) | authenticated, account with archived history  | `documented` |
 
@@ -146,7 +146,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 6 | P2       | Notification centre lists items and Clear All enabled        | authenticated, has notifications | `documented` |
 | Flow 7 | P1       | Clear All removes all notifications                          | authenticated, has notifications | `documented` |
 | —      | P3       | Bell icon absent from DTrader trade page (G1)                | authenticated                    | `documented` |
-| —      | P3       | Trade banner CSS class locator fallback verified (G2)        | authenticated, funded (mobile)   | `documented` |
+| —      | P3       | Trade banner CSS class locator fallback verified (G2)        | authenticated, funded (mobile)   | `automated`  |
 
 ---
 
@@ -165,12 +165,13 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 2–3 panel specs · Flows 5–9 Martingale · Flows 10–14 D'Alembert)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 2.1–2.2 `verify-threshold-auto-stop.spec.ts` · Flow 3 panel spec · Flows 5–9 Martingale · Flows 10–14 D'Alembert)
 
 | Flow      | Priority | Description                                                                          | User State                                     | Status       |
 | --------- | -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
 | Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–14)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 2    | P1       | Risk threshold auto-stop (loss/profit threshold)                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 2.1  | P1       | Loss threshold auto-stop — `verify-threshold-auto-stop.spec.ts`                      | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 2.2  | P1       | Profit threshold auto-stop — `verify-threshold-auto-stop.spec.ts`                    | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 3    | P2       | Resync after account switch (stays Running) — `verify-account-switch-resync.spec.ts` | authenticated, funded real/staging, 2 accounts | `automated`  |
 | Flow 4    | P3       | Automation unavailable for EU account (gating)                                       | authenticated, EU/DIEL account                 | `documented` |
 | Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
@@ -195,8 +196,6 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
 | —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `documented` |
 | —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
-
----
 
 ---
 
@@ -241,19 +240,21 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 23 | P0       | Tab icon reflects its own market                                     | unauthenticated       | `automated`  |
 | Flow 24 | P0       | Max tab limit enforced (4 mobile / 7 desktop)                        | unauthenticated       | `automated`  |
 | —       | —        | No trade parameter is tab-scoped except (symbol, contract_type) (G1) | unauthenticated       | `documented` |
+| —       | P2       | Active tab's chevron cue marks it as the picker trigger (G2)         | unauthenticated       | `documented` |
 
 ---
 
 ## Implementation Priority Order
 
-| Priority | Module             | Key Flows to Implement First                                                        |
-| -------- | ------------------ | ----------------------------------------------------------------------------------- |
-| **Now**  | `trade`            | Flow 9.7/9.8 (Deal Cancellation)                                                    |
-| **Now**  | `positions`        | Flow 1 (open positions mobile), Flow 2 (desktop flyout)                             |
-| **Next** | `reports`          | Flow 1 (page load), Flow 5 (Trade Table), Flow 6 (Statement)                        |
-| **Next** | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1 (trade banner) |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) + G1 (already-running snackbar) + G2 (validation)                |
-| **Done** | `market-selection` | Flows 1–24 automated; G1 remains a product gap (tab-scoped params not built yet)    |
+| Priority | Module             | Key Flows to Implement First                                                           |
+| -------- | ------------------ | -------------------------------------------------------------------------------------- |
+| **Now**  | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1–2 (trade banners) |
+| **Next** | `trade`            | Flow 12 (closed market) + G1 (insufficient balance) + G2 (unauthenticated purchase)    |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) + G1 (already-running snackbar) + G2 (validation)                   |
+| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                       |
+| **Done** | `positions`        | All 11 flows/gaps automated                                                            |
+| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance       |
+| **Done** | `trade`            | Flows 1–11 + 9.1–9.8 automated; only Flow 12 + G1/G2 remain                            |
 
 ---
 

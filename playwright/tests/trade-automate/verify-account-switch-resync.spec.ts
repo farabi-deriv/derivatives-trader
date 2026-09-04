@@ -25,19 +25,22 @@ test.describe('Automate — Resync', { tag: ['@automate', '@desktop', '@mobile']
         accountPassword = account.password;
     });
 
-    test('VERIFY automation run is re-adopted as Running after switching account', async ({
-        page,
-        loginPage,
-        tradeAutomatePage,
-    }) => {
+    test.beforeEach(async ({ page, loginPage }) => {
         await TradeBasePage.seedLocalStorageOnOrigin(page);
         await loginPage.login(accountEmail, accountPassword);
+    });
 
+    test.afterEach(async ({ tradeAutomatePage }) => {
+        await tradeAutomatePage.stopAutomateRunIfActive();
+    });
+
+    test('VERIFY automation run is re-adopted as Running after switching account', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.goToAutomatedTrading();
         await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
         await tradeAutomatePage.verifyPanelDefaultState();
         // Low stake so the live bot cannot burn much before it is stopped.
         await tradeAutomatePage.setStake('1');
+        await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
         await tradeAutomatePage.startAutomateRun();
         await tradeAutomatePage.verifyAutomateBotIsRunning({
             market: 'Volatility 100 Index',
@@ -59,10 +62,5 @@ test.describe('Automate — Resync', { tag: ['@automate', '@desktop', '@mobile']
         });
 
         await tradeAutomatePage.stopAutomateRun();
-    });
-
-    // Stop the bot if the test fails after startAutomateRun().
-    test.afterEach(async ({ tradeAutomatePage }) => {
-        await tradeAutomatePage.stopAutomateRunIfActive();
     });
 });

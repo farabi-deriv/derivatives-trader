@@ -28,7 +28,8 @@
 | `stopAutomateRun()`                             | Click **Stop** and verify idle state (Run visible, Running status gone)                                                                                                                                                       |
 | `stopAutomateRunIfActive()`                     | `afterEach` cleanup — stop only if Stop is visible                                                                                                                                                                            |
 | `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                                                       |
-| `verifyLossThresholdAutoStop()`                 | Flow 2 — idle Run returns without manual Stop                                                                                                                                                                                 |
+| `verifyLossThresholdAutoStop()`                 | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                                                            |
+| `verifyProfitThresholdAutoStop()`               | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                                                          |
 
 > **Tick lifecycle order:** `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` → open-position/contract-details (via `verifyAutomateOpenPositionAndContractDetails()`) → `verifyPauseAndResumeWhileRunning()`. Sequential must run while `Contracts: 1` for the first phase — not after the slow open-details retry loop.
 
@@ -61,17 +62,39 @@
 
 ---
 
-### Flow 2 — Risk threshold auto-stop (loss/profit threshold)
+### Flow 2.1 — Loss threshold auto-stop
 
 **Display name:** Risk threshold auto-stop (loss threshold reached)
 
-**Prerequisites:** Shared prerequisites. Set a very small **Loss threshold** so the run auto-stops quickly.
+**Spec:** `playwright/tests/trade-automate/verify-threshold-auto-stop.spec.ts` · **Test:** `VERIFY loss threshold auto-stops the run`
 
-| #   | Step               | Action                                                                                     | Expected Result                              | Platform |
-| --- | ------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------- | -------- |
-| 1   | Set loss threshold | `setLossThreshold('1')`, `setProfitThreshold('1000')`, `setStake('1')`, `setDuration(...)` | Thresholds + stake saved                     | Both     |
-| 2   | Start a run        | `startAutomateRun()` → `verifyAutomateBotIsRunning()`                                      | "Status: Running"                            | Both     |
-| 3   | Wait for auto-stop | `verifyLossThresholdAutoStop()` (no manual Stop)                                           | Idle **Run** returns (snackbar is transient) | Both     |
+**Prerequisites:** Shared prerequisites. Set a very small **Loss threshold** so the run auto-stops quickly. Spec runs **serial** (profit test follows loss).
+
+**Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks · loss threshold `1` · profit threshold `1000` (unreachable — run can only auto-stop on loss).
+
+| #   | Step               | Action                                                                                                                                                          | Expected Result                        | Platform |
+| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------- |
+| 1   | Configure          | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both     |
+| 2   | Start a run        | `startAutomateRun()` → `verifyAutomateBotIsRunning()`                                                                                                           | "Status: Running"                      | Both     |
+| 3   | Wait for auto-stop | `verifyLossThresholdAutoStop()` (no manual Stop)                                                                                                                | Snackbar + idle Run; params unlocked   | Both     |
+
+---
+
+### Flow 2.2 — Profit threshold auto-stop
+
+**Display name:** Risk threshold auto-stop (profit threshold reached)
+
+**Spec:** `playwright/tests/trade-automate/verify-threshold-auto-stop.spec.ts` · **Test:** `VERIFY profit threshold auto-stops the run`
+
+**Prerequisites:** Shared prerequisites. Set a very small **Profit threshold** so the run auto-stops once cumulative wins reach it. Same spec as Flow 2.1, second test in **serial** order.
+
+**Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks · profit threshold `1` · loss threshold `1000` (unreachable — run can only auto-stop on profit).
+
+| #   | Step               | Action                                                                                                                                                          | Expected Result                        | Platform |
+| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------- |
+| 1   | Configure          | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both     |
+| 2   | Start a run        | `startAutomateRun()` → `verifyAutomateBotIsRunning()`                                                                                                           | "Status: Running"                      | Both     |
+| 3   | Wait for auto-stop | `verifyProfitThresholdAutoStop()` (no manual Stop)                                                                                                              | Snackbar + idle Run; params unlocked   | Both     |
 
 ---
 
@@ -81,16 +104,16 @@
 
 **Spec:** `playwright/tests/trade-automate/verify-account-switch-resync.spec.ts` · **Test:** `VERIFY automation run is re-adopted as Running after switching account`
 
-**Prerequisites:** Shared prerequisites; Account A = funded **real** (staging test); Account B = **demo** on the same login. `beforeAll` creates Account A via `createAccountV2viaJS('real', …)`; login runs inline in the single test. `afterEach` calls `stopAutomateRunIfActive()` if the test fails after `startAutomateRun()`.
+**Prerequisites:** Shared prerequisites; Account A = funded **real** (staging test); Account B = **demo** on the same login. `beforeAll` creates Account A via `createAccountV2viaJS('real', …)`; `beforeEach` logs in. `afterEach` calls `stopAutomateRunIfActive()` if the test fails after `startAutomateRun()`.
 
-**Params:** Volatility 100 Index · Rise/Fall · stake `1` (Martingale defaults; no strategy/threshold overrides).
+**Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks (longer than default 5 ticks so `verifyAutomateBotIsRunning()` contract-details checks survive the account round-trip).
 
-| #   | Step           | Action                                                                                                                                                           | Expected Result                                                                                    | Platform |
-| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Configure      | `goToAutomatedTrading()` → `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' })` → `verifyPanelDefaultState()` → `setStake('1')` | Automate panel ready on Account A                                                                  | Both     |
-| 2   | Start a run    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A                                                                                               | "Status: Running"                                                                                  | Both     |
-| 3   | Switch account | `switchToAccountType('demo')` → `goToAutomatedTrading()` → `verifyPanelDefaultState()` then `switchToAccountType('real')`                                        | Demo shows idle panel (Run enabled); real run re-adopted as **Running** (not stuck on "Starting…") | Both     |
-| 4   | Verify + Stop  | `verifyAutomateBotIsRunning()` → `stopAutomateRun()`                                                                                                             | Run stops; idle **Run** returns                                                                    | Both     |
+| #   | Step           | Action                                                                                                                                             | Expected Result                                                                                    | Platform |
+| --- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Configure      | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` | Automate panel ready on Account A                                                                  | Both     |
+| 2   | Start a run    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A                                                                                 | "Status: Running"                                                                                  | Both     |
+| 3   | Switch account | `switchToAccountType('demo')` → `goToAutomatedTrading()` → `verifyPanelDefaultState()` then `switchToAccountType('real')`                          | Demo shows idle panel (Run enabled); real run re-adopted as **Running** (not stuck on "Starting…") | Both     |
+| 4   | Verify + Stop  | `verifyAutomateBotIsRunning()` → `stopAutomateRun()`                                                                                               | Run stops; idle **Run** returns                                                                    | Both     |
 
 > Guards the known intermittent "stuck on Starting…" resync behaviour (GRWT-9318). Uses full `verifyAutomateBotIsRunning()` (controls + open position + contract details) before and after the account round-trip — not `verifyAutomateRunningControls()` alone.
 

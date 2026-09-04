@@ -12,7 +12,8 @@
 | Journey ID | Spec File                                                                                           | Tags                                            |
 | ---------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | Flow 1     | Embedded in Flows 5–14 · `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts` (canonical) | `@automate @martingale @smoke @desktop @mobile` |
-| Flow 2     | `trade-automate/verify-threshold-stop.spec.ts`                                                      | `@automate @desktop @mobile`                    |
+| Flow 2.1   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                                 | `@automate @desktop @mobile`                    |
+| Flow 2.2   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                                 | `@automate @desktop @mobile`                    |
 | Flow 3     | `trade-automate/verify-account-switch-resync.spec.ts`                                               | `@automate @desktop @mobile`                    |
 | Flow 4     | `trade-automate/verify-eu-gating.spec.ts`                                                           | `@automate @desktop @mobile`                    |
 | G1         | `trade-automate/verify-already-running.spec.ts`                                                     | `@automate @desktop @mobile`                    |
@@ -44,7 +45,7 @@
 
 ### Shared account setup
 
-**Panel / control specs (Flows 2–4, G1, G2)** — shared backup account:
+**Panel / control specs (Flows 2.1–2.2, 3–4, G1, G2)** — shared backup account:
 
 ```typescript
 const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_MOBILE' : 'TEST_EMAIL_AUTOMATE';
@@ -99,29 +100,57 @@ await this.stopAutomateRun();
 
 > **Flow 1** = pause/resume step embedded in each lifecycle spec (formerly `verify-pause-resume.spec.ts`)
 
-### Flow 2 — verify-threshold-stop.spec.ts
+### Flow 2.1 / 2.2 — verify-threshold-auto-stop.spec.ts
 
-Uses a short tick duration (5 ticks) and a tiny loss threshold (`1`) so auto-stop fires deterministically. Profit threshold is set high (`1000`) so the run cannot stop on profit.
+Single spec, **serial** — loss auto-stop (Flow 2.1) then profit auto-stop (Flow 2.2). Each test sets the opposite threshold unreachable so auto-stop is deterministic.
+
+**Flow 2.1** — 10 ticks, loss threshold `1`, profit threshold `1000`:
 
 ```typescript
 test('VERIFY loss threshold auto-stops the run', async ({ tradeAutomatePage }) => {
     await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
     await tradeAutomatePage.verifyPanelDefaultState();
-    await tradeAutomatePage.setDuration('Ticks', '5 ticks');
-    await tradeAutomatePage.setLossThreshold('1');
-    await tradeAutomatePage.setProfitThreshold('1000');
     await tradeAutomatePage.setStake('1');
+    await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
+    await tradeAutomatePage.setProfitThreshold('1000');
+    await tradeAutomatePage.setLossThreshold('1');
     await tradeAutomatePage.startAutomateRun();
-    await tradeAutomatePage.verifyAutomateBotIsRunning();
-    await tradeAutomatePage.verifyLossThresholdAutoStop(); // idle Run returns; no manual Stop
+    await tradeAutomatePage.verifyAutomateBotIsRunning({
+        market: 'Volatility 100 Index',
+        stake: '1',
+        tradeType: 'Rise/Fall',
+    });
+    await tradeAutomatePage.verifyLossThresholdAutoStop();
 });
 ```
 
-> **Flow 2** = `VERIFY loss threshold auto-stops the run`
+**Flow 2.2** — 10 ticks, profit threshold `1`, loss threshold `1000`:
+
+```typescript
+test('VERIFY profit threshold auto-stops the run', async ({ tradeAutomatePage }) => {
+    await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
+    await tradeAutomatePage.verifyPanelDefaultState();
+    await tradeAutomatePage.setStake('1');
+    await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
+    await tradeAutomatePage.setProfitThreshold('1');
+    await tradeAutomatePage.setLossThreshold('1000');
+    await tradeAutomatePage.startAutomateRun();
+    await tradeAutomatePage.verifyAutomateBotIsRunning({
+        market: 'Volatility 100 Index',
+        stake: '1',
+        tradeType: 'Rise/Fall',
+    });
+    await tradeAutomatePage.verifyProfitThresholdAutoStop();
+});
+```
+
+> **Flow 2.1** = `VERIFY loss threshold auto-stops the run` · **Flow 2.2** = `VERIFY profit threshold auto-stops the run`
 
 ### Flow 3 — verify-account-switch-resync.spec.ts
 
-Single test — Account B is the demo account every login carries. Guards GRWT-9318 (stuck on "Starting…" after account switch). No sequential purchase or pause/resume — only account-switch resync.
+Single test — Account B is the demo account every login carries. Guards GRWT-9318 (stuck on "Starting…" after account switch). No sequential purchase or pause/resume — only account-switch resync. Uses **10 ticks** (not the default 5) so open contract-details verification survives the round-trip.
 
 ```typescript
 test.beforeAll(async ({ }, testInfo) => {
@@ -130,18 +159,19 @@ test.beforeAll(async ({ }, testInfo) => {
     accountPassword = account.password;
 });
 
-test('VERIFY automation run is re-adopted as Running after switching account', async ({
-    page,
-    loginPage,
-    tradeAutomatePage,
-}) => {
+test.beforeEach(async ({ page, loginPage }) => {
     await TradeBasePage.seedLocalStorageOnOrigin(page);
     await loginPage.login(accountEmail, accountPassword);
+});
 
+test('VERIFY automation run is re-adopted as Running after switching account', async ({
+    tradeAutomatePage,
+}) => {
     await tradeAutomatePage.goToAutomatedTrading();
     await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
     await tradeAutomatePage.verifyPanelDefaultState();
     await tradeAutomatePage.setStake('1');
+    await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
     await tradeAutomatePage.startAutomateRun();
     await tradeAutomatePage.verifyAutomateBotIsRunning({
         market: 'Volatility 100 Index',
@@ -369,7 +399,8 @@ Each `run*AndVerify()`: `startAutomateRun()` → `verifyAutomateRunningControls(
 | `stopAutomateRun()`                             | Click **Stop** + verify idle (Run visible, Running status gone) — replaces separate stop + verify                                                                                             |
 | `stopAutomateRunIfActive()`                     | `afterEach` cleanup when Stop may or may not be present                                                                                                                                       |
 | `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                       |
-| `verifyLossThresholdAutoStop()`                 | Flow 2 auto-stop (no manual Stop)                                                                                                                                                             |
+| `verifyLossThresholdAutoStop()`                 | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                            |
+| `verifyProfitThresholdAutoStop()`               | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                          |
 
 **Panel verification helpers:**
 
