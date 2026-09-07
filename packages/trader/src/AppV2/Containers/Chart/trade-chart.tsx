@@ -3,6 +3,7 @@ import React from 'react';
 import { TTicksStreamResponse } from '@deriv/api';
 import { ChartBarrierStore, getSymbolDisplayName, isAccumulatorContract } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
+import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import useActiveSymbols from 'AppV2/Hooks/useActiveSymbols';
@@ -94,6 +95,25 @@ const TradeChart = observer(() => {
     // drift from the intervals the chart renders as disabled.
     const is_tick_chart_type_only = show_digits_stats || is_accumulator;
     const timeoutsMapRef = React.useRef<Map<number, NodeJS.Timeout>>(new Map());
+    const { localize } = useTranslations();
+
+    // Accumulators support only the Area chart on the 1-tick interval. Handing the chart the
+    // allow-lists plus the copy lets it disable everything else and explain why on hover, instead
+    // of the chart inferring a rule it has no way to name. Memoised because new array identities
+    // on every render would churn the chart's props.
+    const accumulator_restrictions = React.useMemo(
+        () =>
+            is_accumulator
+                ? {
+                    allowedChartTypes: ['line'],
+                    allowedGranularities: [0],
+                    restrictionMessage: localize(
+                        'Only "Area" chart and "1 tick" interval are available for Accumulator.'
+                    ),
+                }
+                : {},
+        [is_accumulator, localize]
+    );
 
     // SmartCharts memoises the `toolbarWidget` render prop on the chart's first render and keeps the
     // `onGranularity` callback it receives in its Timeperiod store, so the toolbar goes on calling the
@@ -129,9 +149,9 @@ const TradeChart = observer(() => {
             theme: is_dark_mode_on ? 'dark' : 'light',
             ...(is_accumulator
                 ? {
-                      whitespace: CHART_CONSTANTS.ACCUMULATOR_WHITESPACE,
-                      minimumLeftBars: isMobile ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
-                  }
+                    whitespace: CHART_CONSTANTS.ACCUMULATOR_WHITESPACE,
+                    minimumLeftBars: isMobile ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
+                }
                 : {}),
             ...(has_barrier ? { whitespace: CHART_CONSTANTS.BARRIER_WHITESPACE } : {}),
         }),
@@ -282,6 +302,7 @@ const TradeChart = observer(() => {
                 granularity={is_tick_chart_type_only ? 0 : granularity}
                 settings={settings}
                 allowTickChartTypeOnly={is_tick_chart_type_only}
+                {...accumulator_restrictions}
                 stateChangeListener={chartStateChange}
                 symbol={symbol}
                 // The redesigned market selector (MarketTabs) replaces the chart's native selector on

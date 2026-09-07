@@ -66,7 +66,6 @@
         "dependencies packages/shared/package.json object.fromentries",
         "dependencies packages/stores/package.json @deriv/api",
         "dependencies packages/trader/package.json @deriv-com/analytics",
-        "dependencies packages/trader/package.json @deriv-com/quill-tokens",
         "dependencies packages/trader/package.json @deriv/deriv-api",
         "dependencies packages/trader/package.json extend",
         "dependencies packages/trader/package.json formik",
