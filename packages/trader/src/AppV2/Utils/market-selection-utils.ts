@@ -1,6 +1,7 @@
 import { TActiveSymbolsResponse } from '@deriv/api';
 import { getSymbolDisplayName } from '@deriv/shared';
 
+import { DERIVED_SUBGROUP_ORDER } from 'AppV2/Utils/market-ordering-utils';
 import { AVAILABLE_CONTRACTS, TAvailableContract } from 'AppV2/Utils/trade-types-utils';
 import { type TFavouriteMarket } from 'Stores/Modules/Markets/markets-store';
 
@@ -89,14 +90,15 @@ export const groupSymbolsBySubmarket = (symbols: ActiveSymbols): TSubmarketGroup
 // heading at render (via getSubgroupLabel); both are empty for a market shown as a flat submarket list.
 export type TListSection = { subgroup: string; market: string; groups: TSubmarketGroup[] };
 
-// Derived (Baskets + Synthetics) is the only market split into subgroup sections; everything else is
-// a flat submarket list. Baskets is shown before Synthetics; any other subgroup follows in order.
+// Derived (Synthetics + Baskets) is the only market split into subgroup sections; everything else is
+// a flat submarket list. The section order comes from `DERIVED_SUBGROUP_ORDER` in
+// market-ordering-utils — the same table that ranks the submarkets, so the two cannot disagree; any
+// other subgroup follows in order.
 const DERIVED_MARKET = 'synthetic_index';
-const DERIVED_SUBGROUP_ORDER = ['baskets', 'synthetics'];
 
 /**
  * Groups a single-market symbol list for the category list view. For Derived, symbols split into
- * "Baskets" and "Synthetics" subgroup sections (each a set of submarket groups) — matching the
+ * "Synthetics" and "Baskets" subgroup sections (each a set of submarket groups) — matching the
  * two-level layout of the search/favourites lists. Every other market is one unlabelled section
  * holding its submarket groups (the flat list). Preserves the incoming symbol order within each group.
  */

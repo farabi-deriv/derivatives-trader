@@ -209,4 +209,189 @@ describe('sortSymbols', () => {
 
         expect((localize as jest.Mock).mock.calls.length).toBeLessThanOrEqual(28);
     });
+
+    describe('Derived submarket ordering', () => {
+        type ActiveSymbols = NonNullable<TActiveSymbolsResponse['active_symbols']>;
+
+        const derived = (underlying_symbol: string, submarket: string, subgroup = 'synthetics') =>
+            ({
+                underlying_symbol,
+                submarket,
+                subgroup,
+                market: 'synthetic_index',
+                display_order: 0,
+                exchange_is_open: 1,
+                is_trading_suspended: 0,
+            }) as ActiveSymbols[number];
+
+        const submarketsOf = (symbols: ActiveSymbols) => symbols.map(symbol => symbol.submarket);
+
+        // Verified against a live `active_symbols` response (wss://api-core.deriv.com/options/v1/ws/public):
+        // the API sends the alias spellings — `step_index`, `jump_index`, `crash_index`, `forex_basket`,
+        // `commodity_basket` — and `range_index` carries `subgroup: 'synthetics'`.
+        const CURATED_ORDER_PRIMARY = [
+            'random_index',
+            'step_indices',
+            'jump_indices',
+            'crash_boom',
+            'random_daily',
+            'basket_forex',
+            'basket_commodities',
+        ];
+        const CURATED_ORDER_ALIAS = [
+            'random_index',
+            'step_index',
+            'jump_index',
+            'crash_index',
+            'random_daily',
+            'forex_basket',
+            'commodity_basket',
+        ];
+
+        const basketsOf = (keys: string[]) => keys.slice(5);
+
+        const buildShuffled = (keys: string[]) =>
+            [keys[6], keys[3], keys[0], keys[5], keys[4], keys[1], keys[2]].map((submarket, index) =>
+                derived(`SYM_${index}`, submarket, basketsOf(keys).includes(submarket) ? 'baskets' : 'synthetics')
+            );
+
+        afterEach(() => {
+            (localize as jest.Mock).mockImplementation((text: string) => text);
+        });
+
+        it('[DMO-001] orders the seven curated Derived submarkets by rank, whatever order they arrive in', () => {
+            const sorted = sortSymbols(buildShuffled(CURATED_ORDER_PRIMARY));
+
+            expect(submarketsOf(sorted)).toEqual(CURATED_ORDER_PRIMARY);
+        });
+
+        it('[DMO-001] places every synthetics submarket ahead of every baskets submarket', () => {
+            const sorted = sortSymbols(buildShuffled(CURATED_ORDER_PRIMARY));
+            const subgroups = sorted.map(symbol => symbol.subgroup);
+
+            expect(subgroups).toEqual([
+                'synthetics',
+                'synthetics',
+                'synthetics',
+                'synthetics',
+                'synthetics',
+                'baskets',
+                'baskets',
+            ]);
+        });
+
+        it('[DMO-001] keeps the curated relative order when only a subset of the submarkets is tradeable', () => {
+            const sorted = sortSymbols([
+                derived('WLDUSD', 'basket_forex', 'baskets'),
+                derived('BOOM1000', 'crash_boom'),
+                derived('R_100', 'random_index'),
+            ]);
+
+            expect(submarketsOf(sorted)).toEqual(['random_index', 'crash_boom', 'basket_forex']);
+        });
+
+        it('[DMO-003] ranks alias submarket keys identically to their primary spellings', () => {
+            const sorted = sortSymbols(buildShuffled(CURATED_ORDER_ALIAS));
+
+            expect(submarketsOf(sorted)).toEqual(CURATED_ORDER_ALIAS);
+        });
+
+        it('[DMO-003] ranks both spellings of one submarket at the same position within a mixed list', () => {
+            const sorted = sortSymbols([
+                derived('WLDXAU', 'commodity_basket', 'baskets'),
+                derived('BOOM1000', 'crash_index'),
+                derived('CRASH500', 'crash_boom'),
+                derived('RDBULL', 'random_daily'),
+                derived('R_100', 'random_index'),
+            ]);
+
+            expect(submarketsOf(sorted)).toEqual([
+                'random_index',
+                'crash_index',
+                'crash_boom',
+                'random_daily',
+                'commodity_basket',
+            ]);
+        });
+
+        it('[DMO-004] keeps an uncurated Derived submarket and places it after every curated one', () => {
+            const sorted = sortSymbols([
+                derived('RB100', 'range_index'),
+                derived('WLDXAU', 'commodity_basket', 'baskets'),
+                derived('RDBULL', 'random_daily'),
+                derived('R_100', 'random_index'),
+            ]);
+
+            expect(submarketsOf(sorted)).toEqual(['random_index', 'random_daily', 'commodity_basket', 'range_index']);
+            expect(submarketsOf(sorted).indexOf('range_index')).toBeGreaterThan(
+                submarketsOf(sorted).indexOf('random_daily')
+            );
+        });
+
+        it('[DMO-004] drops no symbol and duplicates none while ordering', () => {
+            const input = [...buildShuffled(CURATED_ORDER_ALIAS), derived('RB100', 'range_index')];
+
+            const sorted = sortSymbols(input);
+
+            expect(sorted).toHaveLength(input.length);
+            expect(new Set(sorted.map(symbol => symbol.underlying_symbol))).toEqual(
+                new Set(input.map(symbol => symbol.underlying_symbol))
+            );
+        });
+
+        it('[DMO-002] orders Derived identically under a locale whose translations collate the other way', () => {
+            // Translations chosen so locale-aware comparison of the display names yields the exact
+            // reverse of the curated order — an ordering that consulted them could not pass.
+            const translations: Record<string, string> = {
+                'Volatility indices': 'Zzz Volatilitaetsindizes',
+                'Step indices': 'Yyy Stufenindizes',
+                'Jump indices': 'Xxx Sprungindizes',
+                'Crash/Boom': 'Www Crash/Boom',
+                'Daily reset indices': 'Vvv Taegliche Indizes',
+                'Forex basket': 'Uuu Forex-Korb',
+                'Commodities basket': 'Ttt Rohstoff-Korb',
+                'Range break indices': 'Sss Bereichsindizes',
+            };
+            (localize as jest.Mock).mockImplementation((text: string) => translations[text] ?? text);
+
+            const sorted = sortSymbols([...buildShuffled(CURATED_ORDER_ALIAS), derived('RB100', 'range_index')]);
+
+            expect(submarketsOf(sorted)).toEqual([...CURATED_ORDER_ALIAS, 'range_index']);
+        });
+
+        it('[DMO-006] leaves the submarket order of every non-Derived market untouched', () => {
+            const symbol = (underlying_symbol: string, market: string, submarket: string) =>
+                ({
+                    underlying_symbol,
+                    market,
+                    submarket,
+                    subgroup: 'none',
+                    display_order: 0,
+                    exchange_is_open: 1,
+                    is_trading_suspended: 0,
+                }) as ActiveSymbols[number];
+
+            const sorted = sortSymbols([
+                symbol('frxXAUUSD', 'commodities', 'metals'),
+                symbol('OTC_SPC', 'indices', 'americas_OTC'),
+                symbol('WTI_OIL', 'commodities', 'energy'),
+                symbol('frxEURUSD', 'forex', 'major_pairs'),
+                symbol('OTC_AEX', 'indices', 'europe_OTC'),
+                symbol('cryBTCUSD', 'cryptocurrency', 'non_stable_coin'),
+                symbol('frxAUDCAD', 'forex', 'minor_pairs'),
+                symbol('OTC_N225', 'indices', 'asia_oceania_OTC'),
+            ]);
+
+            expect(sorted.map(item => item.underlying_symbol)).toEqual([
+                'frxEURUSD',
+                'frxAUDCAD',
+                'OTC_SPC',
+                'OTC_N225',
+                'OTC_AEX',
+                'cryBTCUSD',
+                'WTI_OIL',
+                'frxXAUUSD',
+            ]);
+        });
+    });
 });

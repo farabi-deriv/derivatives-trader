@@ -1,6 +1,8 @@
 import { TActiveSymbolsResponse } from '@deriv/api';
 import { localize } from '@deriv-com/translations';
 
+import { CURATED_RANK_ABSENT, getDerivedSubmarketRank } from 'AppV2/Utils/market-ordering-utils';
+
 type ActiveSymbols = NonNullable<TActiveSymbolsResponse['active_symbols']>;
 
 type MarketOrderMap = {
@@ -58,17 +60,24 @@ const sortSymbols = (symbolsList: ActiveSymbols) => {
     };
 
     // Decorate each symbol with its precomputed sort keys so the comparator does no work per
-    // comparison. `market_order` preserves the exact "unknown market sorts after curated markets"
-    // fallback (rank = list length); `submarket_name` falls back to the raw submarket key.
+    // comparison. Ordering runs market rank → curated submarket rank → localized-name comparison:
+    // `market_order` preserves the exact "unknown market sorts after curated markets" fallback
+    // (rank = list length); `submarket_rank` orders the curated Derived submarkets by key, so it is
+    // language-independent, and every uncurated submarket shares `CURATED_RANK_ABSENT` and falls
+    // through to `submarket_name`, which falls back to the raw submarket key.
     return symbolsList
         .map(symbol => ({
             symbol,
             market_order: marketOrderMap[symbol.market] ?? symbolsList.length,
+            submarket_rank: getDerivedSubmarketRank(symbol.submarket) ?? CURATED_RANK_ABSENT,
             submarket_name: submarket_display_names[symbol.submarket] || symbol.submarket,
         }))
         .sort((a, b) => {
             if (a.market_order !== b.market_order) {
                 return a.market_order - b.market_order;
+            }
+            if (a.submarket_rank !== b.submarket_rank) {
+                return a.submarket_rank - b.submarket_rank;
             }
             return a.submarket_name.localeCompare(b.submarket_name);
         })

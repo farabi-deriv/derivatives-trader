@@ -111,20 +111,48 @@ describe('market-selection-utils', () => {
             expect(sections[0].groups[0].items).toHaveLength(2);
         });
 
-        it('splits Derived into Baskets then Synthetics subgroup sections, each grouped by submarket', () => {
+        it('[DMO-001] splits Derived into Synthetics then Baskets subgroup sections, each grouped by submarket', () => {
             const sections = groupSymbolsForList([
                 derived('R_100', 'synthetics', 'random_index'),
                 derived('WLDUSD', 'baskets', 'forex_basket'),
                 derived('R_50', 'synthetics', 'random_index'),
                 derived('BOOM500', 'synthetics', 'crash_boom'),
             ]);
-            // Baskets is ordered before Synthetics regardless of the incoming order.
-            expect(sections.map(section => section.subgroup)).toEqual(['baskets', 'synthetics']);
-            const [baskets, synthetics] = sections;
+            expect(sections.map(section => section.subgroup)).toEqual(['synthetics', 'baskets']);
+            const [synthetics, baskets] = sections;
             expect(baskets.groups.map(group => group.submarket)).toEqual(['forex_basket']);
             // Two synthetic submarkets, preserving encounter order.
             expect(synthetics.groups.map(group => group.submarket)).toEqual(['random_index', 'crash_boom']);
             expect(synthetics.groups[0].items.map(item => item.underlying_symbol)).toEqual(['R_100', 'R_50']);
+        });
+
+        it('[DMO-001] orders the subgroup sections independently of the incoming symbol order', () => {
+            const synthetics_first = groupSymbolsForList([
+                derived('R_100', 'synthetics', 'random_index'),
+                derived('WLDUSD', 'baskets', 'forex_basket'),
+            ]);
+            const baskets_first = groupSymbolsForList([
+                derived('WLDUSD', 'baskets', 'forex_basket'),
+                derived('R_100', 'synthetics', 'random_index'),
+            ]);
+
+            expect(synthetics_first.map(section => section.subgroup)).toEqual(['synthetics', 'baskets']);
+            expect(baskets_first.map(section => section.subgroup)).toEqual(['synthetics', 'baskets']);
+        });
+
+        it('[DMO-004] keeps an uncurated Derived submarket at the end of its own subgroup section', () => {
+            const [synthetics] = groupSymbolsForList([
+                derived('R_100', 'synthetics', 'random_index'),
+                derived('RDBULL', 'synthetics', 'random_daily'),
+                derived('RB100', 'synthetics', 'range_index'),
+                derived('WLDXAU', 'baskets', 'commodity_basket'),
+            ]);
+
+            expect(synthetics.groups.map(group => group.submarket)).toEqual([
+                'random_index',
+                'random_daily',
+                'range_index',
+            ]);
         });
     });
 });
