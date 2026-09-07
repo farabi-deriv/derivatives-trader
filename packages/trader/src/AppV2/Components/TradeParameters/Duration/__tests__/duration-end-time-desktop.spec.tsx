@@ -35,10 +35,29 @@ jest.mock('Stores/Modules/Trading/Helpers/contract-type', () => ({
     },
 }));
 
+// Must stay before the 14:30 the same-day test picks — the grid disables past slots. UTC, not
+// local: a local literal is a different instant per machine.
+const FROZEN_NOW = new Date('2026-09-03T06:00:00.000Z');
+
 describe('DurationEndTimeDesktop', () => {
     let default_trade_store: TCoreStores, mockOnChangeMultiple: jest.Mock;
 
     beforeEach(() => {
+        // Only `Date` is faked; faking timers hangs `userEvent`.
+        jest.useFakeTimers({
+            doNotFake: [
+                'performance',
+                'setTimeout',
+                'clearTimeout',
+                'setInterval',
+                'clearInterval',
+                'queueMicrotask',
+                'nextTick',
+                'setImmediate',
+                'clearImmediate',
+            ],
+        });
+        jest.setSystemTime(FROZEN_NOW);
         mockOnChangeMultiple = jest.fn();
         default_trade_store = mockStore({
             modules: {
@@ -64,6 +83,10 @@ describe('DurationEndTimeDesktop', () => {
                 server_time: dayjs(),
             },
         });
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     const mockDurationEndTimeDesktop = () =>

@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
-import { Localize, localize } from '@deriv-com/translations';
+import { Localize, useTranslations } from '@deriv-com/translations';
 
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { addUnit } from 'AppV2/Utils/trade-params-utils';
@@ -63,6 +63,12 @@ const RiskManagementDesktop: React.FC<RiskManagementDesktopProps> = observer(({ 
         stop_loss,
     } = useTraderStore();
 
+    // See duration-desktop.tsx: hook `localize` for the `languageChanged` re-render, pinned to the
+    // language so its per-render identity doesn't defeat `getRiskManagementText`'s memo.
+    const { localize: localizeForLanguage, instance } = useTranslations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const localize = useCallback(localizeForLanguage, [instance.language]);
+
     const should_show_deal_cancellation = cancellation_range_list?.length > 0;
     const [selectedUnit, setSelectedUnit] = useState<string>(has_cancellation ? 'dc' : 'tp_sl');
     const [is_open, setIsOpen] = useState(false);
@@ -88,7 +94,16 @@ const RiskManagementDesktop: React.FC<RiskManagementDesktopProps> = observer(({ 
         if (has_take_profit) return `TP: ${symbol}${take_profit}`;
         if (has_stop_loss) return `SL: ${symbol}${stop_loss}`;
         return '-';
-    }, [has_cancellation, has_take_profit, has_stop_loss, take_profit, stop_loss, currency, cancellation_duration]);
+    }, [
+        has_cancellation,
+        has_take_profit,
+        has_stop_loss,
+        take_profit,
+        stop_loss,
+        currency,
+        cancellation_duration,
+        localize,
+    ]);
 
     // Calculate popover width based on whether DC is available
     const popoverWidth = should_show_deal_cancellation ? 360 : 280;

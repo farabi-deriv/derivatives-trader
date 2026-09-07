@@ -47,6 +47,18 @@ jest.mock('../day', () => ({
     default: jest.fn(() => <div>Mocked DayInput</div>),
 }));
 
+// The shared translations mock is identity-like, so it cannot express one key in two languages.
+// `createLanguageAwareTranslationsMock` layers language awareness over it; see that helper for why
+// each part of it matters to this fix. Required lazily because `jest.mock` is hoisted above imports.
+jest.mock('@deriv-com/translations', () =>
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('../../../../../../../../__mocks__/language-aware-translations.mock').createLanguageAwareTranslationsMock()
+);
+
+const { fireLanguageChanged } = jest.requireActual('@deriv-com/translations') as {
+    fireLanguageChanged: (lang?: string) => void;
+};
+
 describe('Duration', () => {
     let default_trade_store: TCoreStores, mockOnChangeMultiple: jest.Mock;
 
@@ -347,10 +359,8 @@ describe('Duration - Mobile', () => {
         );
     };
 
-    // The "endtime expiry carrying no expiry_time" guard that used to sit here asserted a write this
-    // component no longer performs: TradeStore seeds the daily expiry and Duration only reads it.
-    // Covered by trade-store.spec.ts, 'falls back to a duration expiry when an endtime commit
-    // carries no expiry_time'.
+    // The old "endtime with no expiry_time" guard moved to trade-store.spec.ts — TradeStore seeds
+    // the daily expiry now and Duration only reads it.
 
     it('should render durations with an hour component in clock format (mobile)', () => {
         default_trade_store.modules.trade.duration = 125;
@@ -371,10 +381,8 @@ describe('Duration - Mobile', () => {
     });
 
     it('seeds a usable end-time date when none was ever received from a proposal (mobile)', async () => {
-        // `saved_expiry_date_v2` is only filled from `expiry_epoch`, which arrives on a *successful*
-        // proposal. When the proposal errors — e.g. a contract advertising a tick duration the
-        // backend then rejects — it stays ''. The End time tab renders regardless, and an empty
-        // string reaches the date picker as `new Date('')`, which it throws on.
+        // `saved_expiry_date_v2` stays '' when the proposal errors, and `new Date('')` throws in the
+        // date picker — which still renders.
         default_trade_store.modules.trade.saved_expiry_date_v2 = '';
         mockDurationMobile();
 
@@ -548,6 +556,177 @@ describe('Duration - Mobile', () => {
         await userEvent.click(save_button);
 
         expect(mockOnChangeMultiple).toHaveBeenCalledWith(expect.objectContaining({ expiry_type: 'endtime' }));
+    });
+});
+
+describe('DurationDesktop language switch', () => {
+    const buildStore = (
+        trade_overrides: Record<string, unknown> = {},
+        common_overrides: Record<string, unknown> = {}
+    ) =>
+        mockStore({
+            modules: {
+                trade: {
+                    onChange: jest.fn(),
+                    validation_errors: { duration: [] },
+                    onChangeMultiple: jest.fn(),
+                    duration: 10,
+                    duration_unit: 't',
+                    duration_units_list: [
+                        { value: 't', text: 'ticks' },
+                        { value: 's', text: 'seconds' },
+                        { value: 'm', text: 'minutes' },
+                        { value: 'h', text: 'hours' },
+                    ],
+                    expiry_type: 'duration',
+                    expiry_time: '',
+                    expiry_date: '',
+                    duration_min_max: {
+                        tick: { min: 1, max: 10 },
+                        intraday: { min: 60, max: 3600 },
+                    },
+                    start_time: null,
+                    symbol: 'EURUSD',
+                    contract_type: 'rise_fall',
+                    active_symbols: [],
+                    ...trade_overrides,
+                },
+            },
+            common: { server_time: dayjs('2024-10-10T11:23:10.895Z'), ...common_overrides },
+        });
+
+    const renderDuration = (store: TCoreStores) =>
+        render(
+            <TraderProviders store={store}>
+                <DurationDesktop />
+            </TraderProviders>
+        );
+
+    const value_cases: { label: string; trade: Record<string, unknown>; english: string; spanish: string }[] = [
+        {
+            label: 'a tick duration',
+            trade: { duration: 10, duration_unit: 't' },
+            english: '10 ticks',
+            spanish: '10 ES_ticks',
+        },
+        {
+            label: 'a seconds duration',
+            trade: { duration: 45, duration_unit: 's' },
+            english: '45 sec',
+            spanish: '45 ES_sec',
+        },
+        {
+            label: 'whole hours stored in minutes',
+            trade: { duration: 120, duration_unit: 'm' },
+            english: '2 hours',
+            spanish: '2 ES_hours',
+        },
+        {
+            label: 'hours plus minutes',
+            trade: { duration: 125, duration_unit: 'm' },
+            english: '2 hours 5 minutes',
+            spanish: '2 ES_hours 5 ES_minutes',
+        },
+        {
+            // Under an hour, so the `'m'` branch falls through to `formatMinutesValue`. The >= 120
+            // entries above never reach it, leaving its `[localize]` dep unguarded.
+            label: 'minutes under an hour (reaches the minutes formatter)',
+            trade: { duration: 45, duration_unit: 'm' },
+            english: '45 min',
+            spanish: '45 ES_min',
+        },
+    ];
+
+    it.each(value_cases)(
+        '[TPL-001] re-translates $label once the new language is available',
+        ({ trade, english, spanish }) => {
+            renderDuration(buildStore(trade));
+
+            expect(screen.getByDisplayValue(english)).toBeInTheDocument();
+
+            act(() => fireLanguageChanged('ES'));
+
+            expect(screen.getByDisplayValue(spanish)).toBeInTheDocument();
+        }
+    );
+
+    it('[TPL-001] re-translates the field label in the same update as its value', () => {
+        renderDuration(buildStore());
+
+        act(() => fireLanguageChanged('ES'));
+
+        expect(screen.getByLabelText('ES_Duration')).toHaveValue('10 ES_ticks');
+        expect(screen.queryByLabelText('Duration')).not.toBeInTheDocument();
+    });
+
+    it('[TPL-003] does not settle the text on a re-render that precedes the translations', () => {
+        const { rerender } = renderDuration(buildStore());
+
+        // The selected language flips before the bundle loads, and `TradeDesktop` is an observer on
+        // it, so the panel re-renders at that too-early moment. It must not settle the text there.
+        rerender(
+            <TraderProviders store={buildStore({}, { current_language: 'ES' })}>
+                <DurationDesktop />
+            </TraderProviders>
+        );
+
+        expect(screen.getByDisplayValue('10 ticks')).toBeInTheDocument();
+
+        act(() => fireLanguageChanged('ES'));
+
+        expect(screen.getByDisplayValue('10 ES_ticks')).toBeInTheDocument();
+    });
+
+    it('[TPL-003] keeps an end-time value in the same date and time format', () => {
+        renderDuration(buildStore({ expiry_type: 'endtime', expiry_date: '2024-10-15', expiry_time: '12:30:00' }));
+
+        expect(screen.getByDisplayValue('15 Oct, 12:30')).toBeInTheDocument();
+
+        act(() => fireLanguageChanged('ES'));
+
+        expect(screen.getByDisplayValue('15 Oct, 12:30')).toBeInTheDocument();
+    });
+
+    it('[TPL-004] lands on the second language after two consecutive switches', () => {
+        renderDuration(buildStore());
+
+        act(() => fireLanguageChanged('ES'));
+        act(() => fireLanguageChanged('FR'));
+
+        expect(screen.getByDisplayValue('10 FR_ticks')).toBeInTheDocument();
+    });
+
+    // Behavioural only — `VerticalTabSelector`'s own `<Localize>` re-translates either way, so this
+    // passes pre-fix too. `duration-unit-selector.spec.tsx` guards the selector itself.
+    it('[TPL-004] re-translates the duration-unit options while the popover stays open', async () => {
+        renderDuration(buildStore());
+
+        await userEvent.click(screen.getByLabelText('Duration'));
+
+        expect(screen.getByRole('tab', { name: 'Ticks' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('tab', { name: 'Seconds' })).toBeInTheDocument();
+
+        act(() => fireLanguageChanged('ES'));
+
+        expect(screen.getByRole('tab', { name: 'ES_Ticks' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('tab', { name: 'ES_Seconds' })).toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: 'Ticks' })).not.toBeInTheDocument();
+    });
+
+    // Covers the hour chip labels, previously unreached. Not a dep-array guard: the chips come from
+    // `config`, which lists the formatter, so freezing it freezes `config` too and nothing re-renders.
+    it('[TPL-001] re-translates the hour chip labels while the hours tab stays open', async () => {
+        renderDuration(buildStore());
+
+        await userEvent.click(screen.getByLabelText('Duration'));
+        await userEvent.click(screen.getByRole('tab', { name: 'Hours' }));
+
+        expect(screen.getByText('1 hr')).toBeInTheDocument();
+
+        act(() => fireLanguageChanged('ES'));
+
+        expect(screen.getByText('1 ES_hr')).toBeInTheDocument();
+        expect(screen.queryByText('1 hr')).not.toBeInTheDocument();
     });
 });
 

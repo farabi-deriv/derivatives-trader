@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
-import { localize } from '@deriv-com/translations';
+import { useTranslations } from '@deriv-com/translations';
 
 import type { VerticalTabItem } from '../../InputPopover/vertical-tab-selector';
 import VerticalTabSelector from '../../InputPopover/vertical-tab-selector';
@@ -18,23 +18,22 @@ const DurationUnitSelector: React.FC<DurationUnitSelectorProps> = ({
     availableUnits,
     className,
 }) => {
-    const ALL_DURATION_UNITS: VerticalTabItem[] = useMemo(
-        () => [
-            { value: 't', label: localize('Ticks') },
-            { value: 's', label: localize('Seconds') },
-            { value: 'm', label: localize('Minutes') },
-            { value: 'h', label: localize('Hours') },
-            { value: 'end_time', label: localize('End time') },
-        ],
-        []
-    );
+    // Hook, not the module export: its own `languageChanged` subscription, not an ancestor's (#960).
+    // Deliberately unmemoised — `useMemo(…, [])` would pin the labels to the mount language.
+    const { localize } = useTranslations();
 
-    const DURATION_UNITS = useMemo(() => {
-        if (!availableUnits || availableUnits.length === 0) {
-            return ALL_DURATION_UNITS;
-        }
-        return ALL_DURATION_UNITS.filter(unit => availableUnits.includes(unit.value));
-    }, [availableUnits, ALL_DURATION_UNITS]);
+    const ALL_DURATION_UNITS: VerticalTabItem[] = [
+        { value: 't', label: localize('Ticks') },
+        { value: 's', label: localize('Seconds') },
+        { value: 'm', label: localize('Minutes') },
+        { value: 'h', label: localize('Hours') },
+        { value: 'end_time', label: localize('End time') },
+    ];
+
+    const DURATION_UNITS =
+        !availableUnits || availableUnits.length === 0
+            ? ALL_DURATION_UNITS
+            : ALL_DURATION_UNITS.filter(unit => availableUnits.includes(unit.value));
 
     return (
         <VerticalTabSelector

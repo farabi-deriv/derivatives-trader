@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 
 import { dayjs, hasIntradayDurationUnit, trackAnalyticsEvent } from '@deriv/shared';
 import { Text } from '@deriv-com/quill-ui';
-import { Localize, localize } from '@deriv-com/translations';
+import { Localize, useTranslations } from '@deriv-com/translations';
 
 import {
     type DurationPresetsByUnit,
@@ -280,6 +280,13 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         active_symbols,
     } = useTraderStore();
 
+    // Hook, not the module export: only this re-renders on `languageChanged` (#960), and it must
+    // stay in every dep array below. Pinned to the language because the hook returns a fresh
+    // identity per render, which would defeat those memos and rebuild the datepicker each time.
+    const { localize: localizeForLanguage, instance } = useTranslations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const localize = React.useCallback(localizeForLanguage, [instance.language]);
+
     // Get market category for duration preset filtering
     const marketCategory = React.useMemo(() => {
         const symbolData = getSymbolMarketData(symbol, active_symbols);
@@ -296,12 +303,8 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         // We should NOT filter these out based on presets - presets are only for chip values
         const units = duration_units_list.map(unit => unit.value);
 
-        // Add end_time for contracts that support it
-        // (it's an expiry type, not a duration unit, so it's not in duration_units_list)
-        // Match mobile behavior: only show end_time when duration_units_list.length > 1
-        // This ensures forex markets (or any market with only 1 duration unit) don't show end time option
-        // HOWEVER: If the current state is using endtime expiry, we must include it
-        // regardless of duration_units_list.length to avoid breaking the modal
+        // end_time is an expiry type, not a duration unit, so it isn't in duration_units_list.
+        // Shown only when there's more than one unit (matching mobile), or when already in use.
         const show_end_time = duration_units_list.length > 1;
         const is_currently_using_endtime = expiry_type === 'endtime';
         // Special case: 'd' (days) is a duration_unit that maps to end_time (combined date+time picker)
@@ -371,10 +374,8 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
 
     const [selectedUnit, setSelectedUnit] = useState(() => getInitialUnit());
     const [selectedDuration, setSelectedDuration] = useState(duration);
-    // Local state tracking which unit the selectedDuration belongs to.
-    // Unlike a store-derived useMemo, this only updates at controlled moments
-    // (popover open + chip selection), preventing brief flashes when the async
-    // store processing in onChangeMultiple temporarily reverts duration_unit.
+    // Updated only on popover open and chip selection, not derived from the store — that would
+    // flash while `onChangeMultiple`'s async processing transiently reverts duration_unit.
     const [selectedDurationUnit, setSelectedDurationUnit] = useState(() => getEffectiveStoredUnit());
     const [activeTab, setActiveTab] = useState<'chips' | 'input'>('chips');
 
@@ -467,32 +468,47 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         [onChangeMultiple]
     );
 
-    const formatTickValue = useCallback((value: number) => {
-        return localize('{{count}} {{tick_label}}', {
-            count: value,
-            tick_label: value === 1 ? localize('tick') : localize('ticks'),
-        });
-    }, []);
+    const formatTickValue = useCallback(
+        (value: number) => {
+            return localize('{{count}} {{tick_label}}', {
+                count: value,
+                tick_label: value === 1 ? localize('tick') : localize('ticks'),
+            });
+        },
+        [localize]
+    );
 
-    const formatSecondsValue = useCallback((value: number) => {
-        return localize('{{count}} {{second_label}}', {
-            count: value,
-            second_label: localize('sec'),
-        });
-    }, []);
+    const formatSecondsValue = useCallback(
+        (value: number) => {
+            return localize('{{count}} {{second_label}}', {
+                count: value,
+                second_label: localize('sec'),
+            });
+        },
+        [localize]
+    );
 
-    const formatMinutesValue = useCallback((value: number) => {
-        return localize('{{count}} {{minute_label}}', {
-            count: value,
-            minute_label: localize('min'),
-        });
-    }, []);
+    const formatMinutesValue = useCallback(
+        (value: number) => {
+            return localize('{{count}} {{minute_label}}', {
+                count: value,
+                minute_label: localize('min'),
+            });
+        },
+        [localize]
+    );
 
-    const formatHoursValue = useCallback((value: number) => {
-        return localize('{{count}} hr', {
-            count: value,
-        });
-    }, []);
+    const formatHoursValue = useCallback(
+        (value: number) => {
+            // `hr` goes through its own slot: baked into the key it sat outside the interpolation
+            // and could never be translated.
+            return localize('{{count}} {{hour_label}}', {
+                count: value,
+                hour_label: localize('hr'),
+            });
+        },
+        [localize]
+    );
 
     const formatEndTimeValue = useCallback((value: string) => {
         return value; // Time is already formatted as HH:MM
@@ -581,6 +597,7 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         formatTickValue,
         formatSecondsValue,
         formatMinutesValue,
+        localize,
     ]);
 
     return (

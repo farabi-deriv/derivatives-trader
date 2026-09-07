@@ -95,21 +95,15 @@ const instance = {
     }),
 };
 
-/**
- * Fires the i18next `languageChanged` event on the stubbed `instance`, the same way
- * i18next does once a translation bundle has finished loading. Use it in specs to
- * assert what happens after a language switch completes.
- */
+/** Fires `languageChanged` on the stub, as i18next does once a bundle finishes loading. */
 const fireLanguageChanged = (lang = instance.language) => {
     instance.language = lang;
     (i18n_listeners.languageChanged || []).forEach(listener => listener(lang));
 };
 
 /**
- * Drops every registered listener and restores the default language. `instance` is a module-level
- * singleton shared by all tests in a spec file, so without this the isolation between them rests
- * entirely on RTL's unmount cleanup calling the hook's `instance.off()`. Wired into a global
- * `afterEach` in `setupTests.js`.
+ * Drops listeners and restores the default language. `instance` is a module-level singleton shared
+ * across a spec file, so tests would otherwise leak into each other. Wired into `setupTests.js`.
  */
 const resetTranslationMock = () => {
     Object.keys(i18n_listeners).forEach(event => delete i18n_listeners[event]);
@@ -144,4 +138,7 @@ export {
     fireLanguageChanged,
     resetTranslationMock,
     switchLanguage,
+    // Exported so layers on top of this mock can reach the stub without calling the hook
+    // off-render (see `language-aware-translations.mock.js`).
+    instance,
 };
