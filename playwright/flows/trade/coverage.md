@@ -58,19 +58,19 @@
 
 ## Section 3 — Priority List
 
-| Priority | Spec file                                                        | Flow                           | Reason                                             |
-| -------- | ---------------------------------------------------------------- | ------------------------------ | -------------------------------------------------- |
-| P0       | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | Flow 8.1                       | Top-traffic trade type; without TP                 |
-| P0       | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | Flow 8.2                       | Top-traffic trade type; with TP                    |
-| P0       | `trade/matches-differs/verify-matches-differs.spec.ts`           | Flow 5.1 + 5.2                 | Most popular Digit type                            |
-| P1       | `trade/higher-lower/verify-higher-lower.spec.ts`                 | Flow 3.1 + 3.2                 | Core directional type with barrier                 |
-| P1       | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | Flow 9.5 + 9.6                 | SL is a critical risk control path                 |
-| P1       | `trade/turbos/verify-turbos.spec.ts`                             | Flow 10.1 + 10.2 + 10.3 + 10.4 | Unique payout per point param; without and with TP |
-| P1       | `trade/vanillas/verify-vanillas.spec.ts`                         | Flow 11.1 + 11.2               | Unique strike price param; full open + close chain |
-| P2       | `trade/touch-no-touch/verify-touch-no-touch.spec.ts`             | Flow 4.1 + 4.2                 | Directional with barrier — lower traffic           |
-| P2       | `trade/over-under/verify-over-under.spec.ts`                     | Flow 6.1 + 6.2                 | Secondary Digit type                               |
-| P2       | `trade/even-odd/verify-even-odd.spec.ts`                         | Flow 7.1 + 7.2                 | Secondary Digit type; simplest params              |
-| P2       | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | Flow 9.7 + 9.8                 | DC less-used; symbol availability varies           |
-| P2       | `trade/verify-closed-market.spec.ts`                             | Flow 12                        | Important edge case; environment-dependent         |
-| P2       | `trade/verify-insufficient-balance.spec.ts`                      | G1                             | Important error path; needs account state setup    |
-| P3       | `trade/verify-unauthenticated-purchase.spec.ts`                  | G2                             | Edge case — most users are logged in               |
+| Priority | Spec file                                                                                                                                          | Flow                           | Reason                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------- |
+| P0       | `trade/accumulators/verify-accumulators-no-tp.spec.ts`                                                                                             | Flow 8.1                       | Top-traffic trade type; without TP                 |
+| P0       | `trade/accumulators/verify-accumulators-with-tp.spec.ts`                                                                                           | Flow 8.2                       | Top-traffic trade type; with TP                    |
+| P0       | `trade/matches-differs/verify-matches.spec.ts` · `verify-differs.spec.ts`                                                                          | Flow 5.1 + 5.2                 | Most popular Digit type                            |
+| P1       | `trade/higher-lower/verify-higher.spec.ts` · `verify-lower.spec.ts`                                                                                | Flow 3.1 + 3.2                 | Core directional type with barrier                 |
+| P1       | `trade/multipliers/verify-multipliers-with-sl.spec.ts`                                                                                             | Flow 9.5 + 9.6                 | SL is a critical risk control path                 |
+| P1       | `trade/turbos/verify-turbos-up.spec.ts` · `verify-turbos-down.spec.ts` · `verify-turbos-up-with-tp.spec.ts` · `verify-turbos-down-with-tp.spec.ts` | Flow 10.1 + 10.2 + 10.3 + 10.4 | Unique payout per point param; without and with TP |
+| P1       | `trade/vanillas/verify-vanillas-call.spec.ts` · `verify-vanillas-put.spec.ts`                                                                      | Flow 11.1 + 11.2               | Unique strike price param; full open + close chain |
+| P2       | `trade/touch-no-touch/verify-touch.spec.ts` · `verify-no-touch.spec.ts`                                                                            | Flow 4.1 + 4.2                 | Directional with barrier — lower traffic           |
+| P2       | `trade/over-under/verify-over.spec.ts` · `verify-under.spec.ts`                                                                                    | Flow 6.1 + 6.2                 | Secondary Digit type                               |
+| P2       | `trade/even-odd/verify-even.spec.ts` · `verify-odd.spec.ts`                                                                                        | Flow 7.1 + 7.2                 | Secondary Digit type; simplest params              |
+| P2       | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts`                                                                                   | Flow 9.7 + 9.8                 | DC less-used; symbol availability varies           |
+| P2       | `trade/verify-closed-market.spec.ts`                                                                                                               | Flow 12                        | Important edge case; environment-dependent         |
+| P2       | `trade/verify-insufficient-balance.spec.ts`                                                                                                        | G1                             | Important error path; needs account state setup    |
+| P3       | `trade/verify-unauthenticated-purchase.spec.ts`                                                                                                    | G2                             | Edge case — most users are logged in               |

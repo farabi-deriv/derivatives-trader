@@ -44,7 +44,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
     }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
+            market: 'Volatility 10 Index',
             growthRate: '5%',
             stake: '3',
             automation: {
@@ -63,7 +63,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
     }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
-            market: 'Volatility 100 (1s) Index',
+            market: 'Volatility 10 Index',
             growthRate: '4%',
             stake: '5',
             automation: {

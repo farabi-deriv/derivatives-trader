@@ -1,7 +1,7 @@
 /**
- * @name     Rise/Fall — Allow Equals: Buy Rise → Close + Buy Fall → Close
- * @id       flow-2.3, flow-2.4
- * @flow     playwright/flows/trade/flow.md#flow-21--risefall-buy-rise--close-contract
+ * @name     Rise/Fall — Allow Equals: Buy Fall → Close
+ * @id       flow-2.4
+ * @flow     playwright/flows/trade/flow.md#flow-24--risefall-allow-equals-buy-fall--close-contract
  * @coverage playwright/flows/trade/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Trade — Rise/Fall', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+test.describe('Trade — Rise/Fall — Fall Allow Equals', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -33,35 +33,7 @@ test.describe('Trade — Rise/Fall', { tag: ['@desktop', '@mobile', '@trade'] },
     });
 
     /**
-     * Flow 2.3 — Rise/Fall with Allow Equals: buy Rise with Allow Equals enabled → verify positions → close
-     * Allow Equals submits the contract as Rise/Fall Equals (RISEEQUAL), paying out also when exit spot = entry spot.
-     */
-    test('VERIFY Buy "Rise" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyRiseAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-            allowEquals: true,
-        });
-    });
-
-    test('VERIFY Buy "Rise" Contract with Allow Equals Enabled (Real Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyRiseAndVerify({
-            accountType: 'real',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-            allowEquals: true,
-        });
-    });
-
-    /**
-     * Flow 2.4 — Rise/Fall with Allow Equals: buy Fall with Allow Equals enabled → verify positions → close
+     * Flow 2.4 — Rise/Fall with Allow Equals: buy Fall with Allow Equals enabled → verify positions → close.
      * Allow Equals submits the contract as Rise/Fall Equals (FALLEQUAL), paying out also when exit spot = entry spot.
      */
     test('VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {

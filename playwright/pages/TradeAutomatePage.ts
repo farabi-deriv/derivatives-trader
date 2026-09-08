@@ -84,6 +84,43 @@ export class TradeAutomatePage extends TradeParametersPage {
     private static readonly PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE =
         'Profit threshold reached. Automation stopped.';
 
+    /** Source: ThresholdInput + MaxTradeStake — FE guard for non-positive amounts. */
+    private static readonly AUTOMATION_POSITIVE_AMOUNT_ERROR = /Please enter .*amount greater than 0/;
+
+    /** Source: StakeMultiplier — Martingale custom multiplier below minimum (desktop ≥ 1, mobile ≥ 2). */
+    private static readonly STAKE_MULTIPLIER_MIN_ERROR = /Multiplier must be at least \d+/;
+
+    /** Source: StakeMultiplier — Martingale custom multiplier above MULTIPLIER_MAX (10). */
+    private static readonly STAKE_MULTIPLIER_MAX_ERROR = /Multiplier cannot exceed \d+/;
+
+    /** Source: StakeMultiplier — D'Alembert custom increment below minimum (1). */
+    private static readonly STAKE_INCREMENT_MIN_ERROR = 'Increment must be at least 1';
+
+    /** Source: MaxTradeStake — cap below trade-form initial stake (Flow 15 baseline stake is `1`). */
+    private static readonly MAX_STAKE_BELOW_INITIAL_ERROR = 'Max. stake must be equal or greater than 1';
+
+    /** Source: stake-input proposal validation — stake below market minimum (min varies by symbol). */
+    private static readonly STAKE_MIN_AMOUNT_ERROR = /Please enter a stake amount that(?:'s| is) at least [\d.]+/;
+
+    /** Source: stake-input onSave — empty custom stake draft (stake-input.tsx / stake-input-desktop.tsx). */
+    private static readonly STAKE_REQUIRED_ERROR = 'Amount is a required field.';
+
+    /** Source: stake-input onInputChange — trailing decimal/comma separator (fe_stake_error). */
+    private static readonly STAKE_INVALID_NUMBER_ERROR = 'Should be a valid number.';
+
+    /** Source: error-message-mapper PayoutLimits — stake draft exceeds max payout (proposal validation). */
+    private static readonly STAKE_MAX_PAYOUT_ERROR =
+        /Minimum stake of .+ and maximum payout of .+\. Current payout is .+\./;
+
+    /** Source: insufficient-balance-utils getInsufficientBalanceMessage — drafted stake above balance. */
+    private static formatInsufficientBalanceHint(balanceAmount: string, currency: string): string {
+        const formatted = Number(balanceAmount.replace(/,/g, '')).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `You only have ${formatted} ${currency} left. Try a lower stake.`;
+    }
+
     private static readonly AUTOMATE_GUIDE_STRATEGIES = {
         Martingale: {
             description: () => TradeAutomatePage.AUTOMATE_GUIDE_MARTINGALE_DESCRIPTION,
@@ -179,6 +216,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         return this.isMobile
             ? this.automationInputSheet(sheetTitle).locator('.automation-popover__input-wrapper input')
             : this.page.locator('.automation-popover:visible .automation-popover__input-wrapper input');
+    }
+
+    /**
+     * Sets a draft in an open automation popover/sheet input.
+     * Quill TextField floating labels intercept clicks on an empty input — use fill(), not click()+clear().
+     */
+    private async fillAutomationDraft(input: Locator, value: string): Promise<void> {
+        await input.fill(value);
     }
 
     /**
@@ -424,7 +469,7 @@ export class TradeAutomatePage extends TradeParametersPage {
      * Mobile callers should use `actionSheetSaveButton(automationInputSheet(title))`.
      */
     get automationPopoverSaveButton(): Locator {
-        return this.page.locator('.automation-popover__save-button');
+        return this.page.locator('.automation-popover:visible .automation-popover__save-button');
     }
 
     /** Desktop automation popover — Custom tab when the value is not a Quick picks preset. */
@@ -1671,10 +1716,8 @@ export class TradeAutomatePage extends TradeParametersPage {
                 break;
             case 'Accumulators':
                 await assertField(this.growthRateField, 'Growth rate field');
-                // Take profit is disabled while a run is active when an open accu contract exists
-                // (`has_open_accu_contract`), not via `is_automation_params_locked` — but the
-                // visible locked state matches during running/paused lifecycles.
-                await assertField(this.takeProfitField, 'Take profit field');
+                // Take profit is disabled only while an open accu contract exists (`has_open_accu_contract`),
+                // not via `is_automation_params_locked` — it stays enabled while the run is paused.
                 break;
             case 'Matches/Differs':
             case 'Matches':
@@ -1874,14 +1917,15 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Post-idle cleanup — enabled Run, close any leftover open contracts, unlock trade + automation params.
+     * Post-idle cleanup — close leftover open contracts, then assert Run is enabled and params unlock.
+     * Accumulators keep Run disabled while an open accu contract exists (`has_open_accu_contract`).
      */
     private async verifyAutomatePostIdleState(tradeType: string): Promise<void> {
-        await expect(this.runButton, 'Run button should be enabled once the run is idle').toBeEnabled();
         await this.positionsPage.closeAllOpenContracts();
         if (this.isMobile) {
             await this.goToAutomatedTrading();
         }
+        await expect(this.runButton, 'Run button should be enabled once the run is idle').toBeEnabled();
         await this.verifyTradeAndAutomationParamsState(tradeType, 'enabled');
     }
 
@@ -1970,5 +2014,450 @@ export class TradeAutomatePage extends TradeParametersPage {
         ).toBeVisible();
 
         await this.verifyThresholdAutoStopPostConditions('profit');
+    }
+
+    private get stakeValidationMessage(): Locator {
+        const root = this.isMobile ? this.stakeContainer : this.stakePopover;
+        return root.locator('.message__container__text');
+    }
+
+    /** Max payout / Payout rows — desktop: `.stake-input-desktop__details`; mobile: stake sheet. */
+    private get stakeDetailsRoot(): Locator {
+        return this.isMobile
+            ? this.stakeContainer.locator('.stake-content__details')
+            : this.stakePopover.locator('.stake-input-desktop__details .stake-content__details');
+    }
+
+    private stakeDetailsRow(label: 'Max payout' | 'Payout'): Locator {
+        // Mobile Rise/Fall appends the outcome — "Payout (Rise)" — desktop is plain "Payout".
+        const labelLocator =
+            label === 'Payout' ? this.page.getByText(/^Payout(\s|\(|$)/) : this.page.getByText(label, { exact: true });
+        return this.stakeDetailsRoot.locator('.stake-content__details-row').filter({ has: labelLocator });
+    }
+
+    /** Parses a currency amount from a stake-details row (e.g. Max payout → 10000 from "$10,000.00"). */
+    private async readStakeDetailsAmount(label: 'Max payout' | 'Payout'): Promise<number> {
+        const row = this.stakeDetailsRow(label);
+        await expect(row.locator('p').last(), `${label} value should load in stake details`).not.toHaveText('-', {
+            timeout: 20_000,
+        });
+        const text = await row.locator('p').last().innerText();
+        const amount = parseFloat(text.replace(/,/g, '').replace(/[^\d.]/g, ''));
+        if (!Number.isFinite(amount)) {
+            throw new Error(`Could not parse ${label} from stake details text "${text}"`);
+        }
+        return amount;
+    }
+
+    private get automationPopoverVisible(): Locator {
+        return this.page.locator('.automation-popover:visible');
+    }
+
+    private maxStakeToggleHost(sheet: Locator): Locator {
+        return this.isMobile ? sheet : this.automationPopoverVisible;
+    }
+
+    private async ensureToggleOn(toggle: Locator): Promise<void> {
+        const isOn =
+            (await toggle.getAttribute('aria-checked')) === 'true' ||
+            (await toggle.getAttribute('aria-pressed')) === 'true';
+        if (!isOn) {
+            await toggle.click();
+        }
+    }
+
+    /** Dismiss an open automation/stake editor — mobile ActionSheet close or desktop overlay click. */
+    private async dismissAutomationEditor(sheet: Locator, popover: Locator, label = 'Editor'): Promise<void> {
+        if (this.isMobile) {
+            await this.actionSheetCloseButton(sheet).click();
+            await expect(sheet, `${label} sheet should close after dismiss`).not.toBeVisible();
+        } else {
+            await this.page.locator('.input-popover-overlay').click();
+            await expect(popover, `${label} popover should close after dismiss`).not.toBeVisible();
+        }
+    }
+
+    private async dismissStakeEditor(): Promise<void> {
+        await this.dismissAutomationEditor(this.stakeContainer, this.stakePopover, 'Stake');
+    }
+
+    private async dismissAutomationSheet(sheet: Locator, label: string): Promise<void> {
+        await this.dismissAutomationEditor(sheet, this.automationPopoverVisible, label);
+    }
+
+    /** Flow 15 — initial stake rejects below-min, empty, invalid format, max-payout, and above-balance drafts. */
+    async verifyInitialStakeRejectsInvalidAmount(): Promise<void> {
+        const priorValue = (await this.initialStakeField.inputValue()).trim();
+
+        // Below market minimum — proposal validation blocks Save.
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+        await this.stakePopoverInput.fill('0.01');
+        await expect(
+            this.stakeValidationMessage,
+            'Stake editor should show a validation error after proposal validation'
+        ).toHaveText(TradeAutomatePage.STAKE_MIN_AMOUNT_ERROR, { timeout: 20_000 });
+        await expect(
+            this.stakeSaveButton,
+            'Stake Save should stay disabled while the draft fails proposal validation'
+        ).toBeDisabled();
+        await this.dismissStakeEditor();
+        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Empty draft — desktop: Save-click FE error; mobile: Save gated while empty.
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+        if (this.isMobile) {
+            await expect(
+                this.stakeSaveButton,
+                'Stake Save should stay disabled while the draft is empty'
+            ).toBeDisabled();
+        } else {
+            await expect(this.stakeSaveButton, 'Stake Save should enable after clearing the draft').toBeEnabled();
+            await this.stakeSaveButton.click();
+            await expect(this.stakeValidationMessage, 'Stake editor should show required-field error').toHaveText(
+                TradeAutomatePage.STAKE_REQUIRED_ERROR
+            );
+        }
+        await this.dismissStakeEditor();
+        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Trailing decimal — FE format error (e.g. "1." ends with ".").
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+        await this.stakePopoverInput.fill('1.');
+        await expect(this.stakeValidationMessage, 'Stake editor should show invalid-number format error').toHaveText(
+            TradeAutomatePage.STAKE_INVALID_NUMBER_ERROR
+        );
+        await expect(
+            this.stakeSaveButton,
+            'Stake Save should stay disabled while the draft is not a valid number'
+        ).toBeDisabled();
+        await this.dismissStakeEditor();
+        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Above max payout — read cap from stake details (e.g. "$10,000.00"), draft stake at
+        // that ceiling until the Payout row errors (stake 10000 → payout $18,681.03 > max $10,000).
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        const maxPayout = await this.readStakeDetailsAmount('Max payout');
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+
+        const stakeCandidates = [String(Math.ceil(maxPayout)), String(Math.ceil(maxPayout * 2))];
+        let payoutExceeded = false;
+        for (const stakeDraft of stakeCandidates) {
+            await this.stakePopoverInput.clear();
+            await this.stakePopoverInput.fill(stakeDraft);
+            try {
+                await expect(
+                    this.stakeDetailsRow('Payout'),
+                    'Payout row should gain .error when payout exceeds max payout'
+                ).toHaveClass(/error/, { timeout: 20_000 });
+                await expect(
+                    this.stakeValidationMessage,
+                    'Stake input should show PayoutLimits validation after proposal'
+                ).toHaveText(TradeAutomatePage.STAKE_MAX_PAYOUT_ERROR, { timeout: 5_000 });
+                payoutExceeded = true;
+                break;
+            } catch (error) {
+                const isExpectTimeout =
+                    error instanceof Error &&
+                    (error.name === 'TimeoutError' ||
+                        /timed out \d+ms/i.test(error.message) ||
+                        /Timeout \d+ms exceeded/i.test(error.message));
+                if (!isExpectTimeout) {
+                    throw error;
+                }
+                // Payout may scale sub-linearly on some trade types — try a higher draft.
+            }
+        }
+        expect(payoutExceeded, `Stake drafts ${stakeCandidates.join(', ')} should exceed max payout ${maxPayout}`).toBe(
+            true
+        );
+        await expect(
+            this.stakeSaveButton,
+            'Stake Save should stay disabled while payout exceeds the maximum'
+        ).toBeDisabled();
+        await this.dismissStakeEditor();
+        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Above current balance — balance hint (mobile also gates Save).
+        const balanceHeader = (await this.balance.innerText()).replace(/,/g, '').trim();
+        const balanceMatch = balanceHeader.match(/^([\d.]+)\s+([A-Z]+)$/);
+        if (!balanceMatch) {
+            throw new Error(`Could not parse balance header "${balanceHeader}"`);
+        }
+        const [, balanceAmount, currency] = balanceMatch;
+        const expectedBalanceHint = TradeAutomatePage.formatInsufficientBalanceHint(balanceAmount, currency);
+        const stakeAboveBalance = (parseFloat(balanceAmount) + 0.01).toFixed(2);
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+        await this.stakePopoverInput.fill(stakeAboveBalance);
+        await expect(this.stakeValidationMessage, 'Stake editor should show insufficient-balance hint').toHaveText(
+            expectedBalanceHint,
+            { timeout: 20_000 }
+        );
+        if (this.isMobile) {
+            await expect(
+                this.stakeSaveButton,
+                'Stake Save should stay disabled while the draft exceeds balance'
+            ).toBeDisabled();
+        }
+        await this.dismissStakeEditor();
+        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+    }
+
+    /** Flow 15 — profit and loss threshold editors reject empty and zero (`ThresholdInput`). */
+    async verifyAutomationThresholdsRejectInvalidAmount(): Promise<void> {
+        const thresholds = [
+            { field: this.profitThresholdField, sheetTitle: 'Profit threshold' as const },
+            { field: this.lossThresholdField, sheetTitle: 'Loss threshold' as const },
+        ];
+
+        for (const { field, sheetTitle } of thresholds) {
+            const priorValue = (await field.inputValue()).trim();
+            const sheet = this.automationInputSheet(sheetTitle);
+            const input = this.automationInputField(sheetTitle);
+            const validationMessage = this.isMobile
+                ? sheet.locator('.message__container__text')
+                : this.page.locator('.automation-popover:visible .message__container__text');
+            const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
+
+            // Empty draft — desktop gates Save; mobile Save-click surfaces the same FE error as zero.
+            await field.click();
+            await expect(input, `${sheetTitle} input should be visible`).toBeVisible();
+            await this.fillAutomationDraft(input, '');
+            if (this.isMobile) {
+                await expect(saveButton, `${sheetTitle} Save should enable for a cleared draft`).toBeEnabled();
+                await saveButton.click();
+                await expect(
+                    validationMessage,
+                    `${sheetTitle} should show positive-amount validation error`
+                ).toHaveText(TradeAutomatePage.AUTOMATION_POSITIVE_AMOUNT_ERROR);
+            } else {
+                await expect(
+                    saveButton,
+                    `${sheetTitle} Save should stay disabled while the draft is empty`
+                ).toBeDisabled();
+            }
+            await this.dismissAutomationSheet(sheet, sheetTitle);
+            await expect(field, `${sheetTitle} should keep its prior committed value`).toHaveValue(priorValue);
+
+            // Zero — Save-click surfaces positive-amount validation error.
+            await field.click();
+            await expect(input, `${sheetTitle} input should be visible`).toBeVisible();
+            await this.fillAutomationDraft(input, '0');
+            await expect(saveButton, `${sheetTitle} Save should enable for a changed draft`).toBeEnabled();
+            await saveButton.click();
+            await expect(validationMessage, `${sheetTitle} should show positive-amount validation error`).toHaveText(
+                TradeAutomatePage.AUTOMATION_POSITIVE_AMOUNT_ERROR
+            );
+            if (!this.isMobile) {
+                await expect(
+                    saveButton,
+                    `${sheetTitle} Save should stay disabled after validation error`
+                ).toBeDisabled();
+            }
+            await this.dismissAutomationSheet(sheet, sheetTitle);
+            await expect(field, `${sheetTitle} should keep its prior committed value`).toHaveValue(priorValue);
+        }
+    }
+
+    /** Flow 15 — Martingale stake multiplier custom value rejects empty, zero, and above max (`StakeMultiplier`). */
+    async verifyStakeMultiplierRejectsInvalidAmount(): Promise<void> {
+        const priorValue = (await this.stakeMultiplierField.inputValue()).trim();
+        const sheet = this.automationInputSheet('Stake multiplier');
+        const input = this.automationInputField('Stake multiplier');
+        const validationMessage = this.isMobile
+            ? sheet.locator('.message__container__text')
+            : this.page.locator('.automation-popover:visible .message__container__text');
+        const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
+
+        // Empty draft — Save gated while the field is empty (both viewports).
+        await this.stakeMultiplierField.click();
+        if (!this.isMobile) {
+            await this.automationPopoverCustomTab.click();
+            await expect(input, 'Stake multiplier input should be visible').toBeVisible();
+        }
+        await this.fillAutomationDraft(input, '');
+        await expect(saveButton, 'Stake multiplier Save should stay disabled while the draft is empty').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Stake multiplier');
+        await expect(this.stakeMultiplierField, 'Stake multiplier should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Below minimum — Save-click surfaces inline validation error.
+        await this.stakeMultiplierField.click();
+        if (!this.isMobile) {
+            await this.automationPopoverCustomTab.click();
+            await expect(input, 'Stake multiplier input should be visible').toBeVisible();
+        }
+        await this.fillAutomationDraft(input, '0');
+        await expect(saveButton, 'Stake multiplier Save should enable for a changed draft').toBeEnabled();
+        await saveButton.click();
+        await expect(validationMessage, 'Stake multiplier should show minimum validation error').toHaveText(
+            TradeAutomatePage.STAKE_MULTIPLIER_MIN_ERROR
+        );
+        await expect(saveButton, 'Stake multiplier Save should stay disabled after validation error').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Stake multiplier');
+        await expect(this.stakeMultiplierField, 'Stake multiplier should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Above maximum — MULTIPLIER_MAX is 10.
+        await this.stakeMultiplierField.click();
+        if (!this.isMobile) {
+            await this.automationPopoverCustomTab.click();
+            await expect(input, 'Stake multiplier input should be visible').toBeVisible();
+        }
+        await this.fillAutomationDraft(input, '11');
+        await expect(saveButton, 'Stake multiplier Save should enable for a changed draft').toBeEnabled();
+        await saveButton.click();
+        await expect(validationMessage, 'Stake multiplier should show maximum validation error').toHaveText(
+            TradeAutomatePage.STAKE_MULTIPLIER_MAX_ERROR
+        );
+        await expect(saveButton, 'Stake multiplier Save should stay disabled after validation error').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Stake multiplier');
+        await expect(this.stakeMultiplierField, 'Stake multiplier should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+    }
+
+    /** Flow 15 — D'Alembert stake increment custom value rejects empty and zero (`StakeMultiplier`). */
+    async verifyStakeIncrementRejectsInvalidAmount(): Promise<void> {
+        const priorValue = (await this.stakeIncrementField.inputValue()).trim();
+        const sheet = this.automationInputSheet('Stake increment');
+        const input = this.automationInputField('Stake increment');
+        const validationMessage = this.isMobile
+            ? sheet.locator('.message__container__text')
+            : this.page.locator('.automation-popover:visible .message__container__text');
+        const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
+
+        // Empty draft — Save gated while the field is empty (both viewports).
+        await this.stakeIncrementField.click();
+        if (!this.isMobile) {
+            await this.automationPopoverCustomTab.click();
+            await expect(input, 'Stake increment input should be visible').toBeVisible();
+        }
+        await this.fillAutomationDraft(input, '');
+        await expect(saveButton, 'Stake increment Save should stay disabled while the draft is empty').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Stake increment');
+        await expect(this.stakeIncrementField, 'Stake increment should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+
+        // Below minimum — Save-click surfaces inline validation error.
+        await this.stakeIncrementField.click();
+        if (!this.isMobile) {
+            await this.automationPopoverCustomTab.click();
+            await expect(input, 'Stake increment input should be visible').toBeVisible();
+        }
+        await this.fillAutomationDraft(input, '0');
+        await expect(saveButton, 'Stake increment Save should enable for a changed draft').toBeEnabled();
+        await saveButton.click();
+        await expect(validationMessage, 'Stake increment should show minimum validation error').toHaveText(
+            TradeAutomatePage.STAKE_INCREMENT_MIN_ERROR
+        );
+        await expect(saveButton, 'Stake increment Save should stay disabled after validation error').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Stake increment');
+        await expect(this.stakeIncrementField, 'Stake increment should keep its prior committed value').toHaveValue(
+            priorValue
+        );
+    }
+
+    /**
+     * Flow 15 — Max. stake rejects empty, zero, and a cap below the trade-form initial stake (`MaxTradeStake`).
+     * Expects initial stake `1` (set in the spec before this call).
+     */
+    async verifyMaxStakeRejectsInvalidAmount(): Promise<void> {
+        const priorValue = (await this.maxStakeField.inputValue()).trim();
+        const sheet = this.automationInputSheet('Max. stake');
+        const input = this.automationInputField('Max. stake');
+        const validationMessage = this.isMobile
+            ? sheet.locator('.message__container__text')
+            : this.page.locator('.automation-popover:visible .message__container__text');
+        const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
+
+        // Empty draft — toggle on, Save gated while the amount field is empty.
+        await this.maxStakeField.click();
+        await expect(input, 'Max. stake input should be visible').toBeVisible();
+        await this.ensureToggleOn(this.maxStakeToggle(this.maxStakeToggleHost(sheet)));
+        await this.fillAutomationDraft(input, '');
+        await expect(saveButton, 'Max. stake Save should stay disabled while the draft is empty').toBeDisabled();
+        await this.dismissAutomationSheet(sheet, 'Max. stake');
+        await expect(this.maxStakeField, 'Max. stake should keep its prior committed value').toHaveValue(priorValue);
+
+        // Zero — Save-click surfaces positive-amount validation error.
+        await this.maxStakeField.click();
+        await expect(input, 'Max. stake input should be visible').toBeVisible();
+        await this.ensureToggleOn(this.maxStakeToggle(this.maxStakeToggleHost(sheet)));
+        await this.fillAutomationDraft(input, '0');
+        await expect(saveButton, 'Max. stake Save should enable for a changed draft').toBeEnabled();
+        await saveButton.click();
+        await expect(validationMessage, 'Max. stake should show positive-amount validation error').toHaveText(
+            TradeAutomatePage.AUTOMATION_POSITIVE_AMOUNT_ERROR
+        );
+        if (!this.isMobile) {
+            await expect(saveButton, 'Max. stake Save should stay disabled after validation error').toBeDisabled();
+        }
+        await this.dismissAutomationSheet(sheet, 'Max. stake');
+        await expect(this.maxStakeField, 'Max. stake should keep its prior committed value').toHaveValue(priorValue);
+
+        // Below initial stake — cap must be ≥ trade-form initial stake.
+        await this.maxStakeField.click();
+        await expect(input, 'Max. stake input should be visible').toBeVisible();
+        await this.ensureToggleOn(this.maxStakeToggle(this.maxStakeToggleHost(sheet)));
+        await this.fillAutomationDraft(input, '0.5');
+        await expect(saveButton, 'Max. stake Save should enable for a changed draft').toBeEnabled();
+        await saveButton.click();
+        await expect(validationMessage, 'Max. stake should show below-initial validation error').toHaveText(
+            TradeAutomatePage.MAX_STAKE_BELOW_INITIAL_ERROR
+        );
+        if (!this.isMobile) {
+            await expect(saveButton, 'Max. stake Save should stay disabled after validation error').toBeDisabled();
+        }
+        await this.dismissAutomationSheet(sheet, 'Max. stake');
+        await expect(this.maxStakeField, 'Max. stake should keep its prior committed value').toHaveValue(priorValue);
+    }
+
+    /** Flow 15 — automation panel stays idle after rejected param drafts (Run visible, no active run). */
+    async verifyAutomatePanelIdleAfterParamValidation(): Promise<void> {
+        await expect(this.runButton, 'Run button should remain visible after param validation').toBeVisible();
+        await expect(this.runButton, 'Run button should stay enabled after param validation').toBeEnabled();
+        await expect(this.statusRunning, 'Automation should not be running after param validation').not.toBeVisible();
     }
 }

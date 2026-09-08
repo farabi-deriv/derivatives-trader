@@ -3,41 +3,42 @@
 > Source of truth: `playwright/pages/TradeAutomatePage.ts` (extends `TradeParametersPage → TradeBasePage`)
 > Source components: `packages/trader/src/AppV2/Components/AutomationPanel/` · `packages/trader/src/AppV2/Containers/Automate/` · `packages/trader/src/AppV2/Hooks/useRunControls.ts` · `packages/trader/src/Stores/Modules/Trading/automation-store.ts` · `packages/trader/src/AppV2/Components/TradePanelTabs/trade-panel-tabs.tsx` · `packages/trader/src/AppV2/Routes/AutomateSwitch.tsx`
 > Fixture: `tradeAutomatePage` in `playwright/fixtures/fixtures.ts`
-> Last updated: 2026-09-02
+> Last updated: 2026-09-07
 
 ---
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                                                           | Tags                                            |
-| ---------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Flow 1     | Embedded in Flows 5–14 · `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts` (canonical) | `@automate @martingale @smoke @desktop @mobile` |
-| Flow 2.1   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                                 | `@automate @desktop @mobile`                    |
-| Flow 2.2   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                                 | `@automate @desktop @mobile`                    |
-| Flow 3     | `trade-automate/verify-account-switch-resync.spec.ts`                                               | `@automate @desktop @mobile`                    |
-| Flow 4     | `trade-automate/verify-eu-gating.spec.ts`                                                           | `@automate @desktop @mobile`                    |
-| G1         | `trade-automate/verify-already-running.spec.ts`                                                     | `@automate @desktop @mobile`                    |
-| G2         | `trade-automate/verify-validation.spec.ts`                                                          | `@automate @desktop @mobile`                    |
-| Flow 5.1   | `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts`                                      | `@automate @martingale @smoke @desktop @mobile` |
-| Flow 5.2   | `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts`                                      | `@automate @martingale @smoke @desktop @mobile` |
-| Flow 6.1   | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`                                | `@automate @martingale @desktop @mobile`        |
-| Flow 6.2   | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`                                | `@automate @martingale @desktop @mobile`        |
-| Flow 7.1   | `trade-automate/matches-differs/verify-matches-differs-martingale.spec.ts`                          | `@automate @martingale @desktop @mobile`        |
-| Flow 7.2   | `trade-automate/matches-differs/verify-matches-differs-martingale.spec.ts`                          | `@automate @martingale @desktop @mobile`        |
-| Flow 8.1   | `trade-automate/over-under/verify-over-under-martingale.spec.ts`                                    | `@automate @martingale @desktop @mobile`        |
-| Flow 8.2   | `trade-automate/over-under/verify-over-under-martingale.spec.ts`                                    | `@automate @martingale @desktop @mobile`        |
-| Flow 9.1   | `trade-automate/even-odd/verify-even-odd-martingale.spec.ts`                                        | `@automate @martingale @desktop @mobile`        |
-| Flow 9.2   | `trade-automate/even-odd/verify-even-odd-martingale.spec.ts`                                        | `@automate @martingale @desktop @mobile`        |
-| Flow 10.1  | `trade-automate/rise-fall/verify-rise-fall-dalembert.spec.ts`                                       | `@automate @dalembert @desktop @mobile`         |
-| Flow 10.2  | `trade-automate/rise-fall/verify-rise-fall-dalembert.spec.ts`                                       | `@automate @dalembert @desktop @mobile`         |
-| Flow 11.1  | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`                                 | `@automate @dalembert @desktop @mobile`         |
-| Flow 11.2  | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`                                 | `@automate @dalembert @desktop @mobile`         |
-| Flow 12.1  | `trade-automate/matches-differs/verify-matches-differs-dalembert.spec.ts`                           | `@automate @dalembert @desktop @mobile`         |
-| Flow 12.2  | `trade-automate/matches-differs/verify-matches-differs-dalembert.spec.ts`                           | `@automate @dalembert @desktop @mobile`         |
-| Flow 13.1  | `trade-automate/over-under/verify-over-under-dalembert.spec.ts`                                     | `@automate @dalembert @desktop @mobile`         |
-| Flow 13.2  | `trade-automate/over-under/verify-over-under-dalembert.spec.ts`                                     | `@automate @dalembert @desktop @mobile`         |
-| Flow 14.1  | `trade-automate/even-odd/verify-even-odd-dalembert.spec.ts`                                         | `@automate @dalembert @desktop @mobile`         |
-| Flow 14.2  | `trade-automate/even-odd/verify-even-odd-dalembert.spec.ts`                                         | `@automate @dalembert @desktop @mobile`         |
+| Journey ID | Spec File                                                                                     | Tags                                                        |
+| ---------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Flow 1     | Embedded in Flows 5–14 · `trade-automate/even-odd/verify-even-martingale.spec.ts` (canonical) | `@automate @martingale @smoke @desktop @mobile @production` |
+| Flow 2.1   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                           | `@automate @desktop @mobile`                                |
+| Flow 2.2   | `trade-automate/verify-threshold-auto-stop.spec.ts`                                           | `@automate @desktop @mobile`                                |
+| Flow 3     | `trade-automate/verify-account-switch-resync.spec.ts`                                         | `@automate @desktop @mobile`                                |
+| Flow 4     | `trade-automate/verify-eu-gating.spec.ts`                                                     | `@automate @desktop @mobile`                                |
+| Flow 5.1   | `trade-automate/rise-fall/verify-rise-martingale.spec.ts`                                     | `@automate @martingale @desktop @mobile`                    |
+| Flow 5.2   | `trade-automate/rise-fall/verify-fall-martingale.spec.ts`                                     | `@automate @martingale @desktop @mobile`                    |
+| Flow 6.1   | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`                          | `@automate @martingale @desktop @mobile`                    |
+| Flow 6.2   | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`                          | `@automate @martingale @desktop @mobile`                    |
+| Flow 7.1   | `trade-automate/matches-differs/verify-matches-martingale.spec.ts`                            | `@automate @martingale @desktop @mobile`                    |
+| Flow 7.2   | `trade-automate/matches-differs/verify-differs-martingale.spec.ts`                            | `@automate @martingale @desktop @mobile`                    |
+| Flow 8.1   | `trade-automate/over-under/verify-over-martingale.spec.ts`                                    | `@automate @martingale @desktop @mobile`                    |
+| Flow 8.2   | `trade-automate/over-under/verify-under-martingale.spec.ts`                                   | `@automate @martingale @desktop @mobile`                    |
+| Flow 9.1   | `trade-automate/even-odd/verify-even-martingale.spec.ts`                                      | `@automate @martingale @smoke @desktop @mobile @production` |
+| Flow 9.2   | `trade-automate/even-odd/verify-odd-martingale.spec.ts`                                       | `@automate @martingale @smoke @desktop @mobile`             |
+| Flow 10.1  | `trade-automate/rise-fall/verify-rise-dalembert.spec.ts`                                      | `@automate @dalembert @desktop @mobile`                     |
+| Flow 10.2  | `trade-automate/rise-fall/verify-fall-dalembert.spec.ts`                                      | `@automate @dalembert @desktop @mobile`                     |
+| Flow 11.1  | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`                           | `@automate @dalembert @desktop @mobile`                     |
+| Flow 11.2  | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`                           | `@automate @dalembert @desktop @mobile`                     |
+| Flow 12.1  | `trade-automate/matches-differs/verify-matches-dalembert.spec.ts`                             | `@automate @dalembert @desktop @mobile`                     |
+| Flow 12.2  | `trade-automate/matches-differs/verify-differs-dalembert.spec.ts`                             | `@automate @dalembert @desktop @mobile`                     |
+| Flow 13.1  | `trade-automate/over-under/verify-over-dalembert.spec.ts`                                     | `@automate @dalembert @desktop @mobile`                     |
+| Flow 13.2  | `trade-automate/over-under/verify-under-dalembert.spec.ts`                                    | `@automate @dalembert @desktop @mobile`                     |
+| Flow 14.1  | `trade-automate/even-odd/verify-even-dalembert.spec.ts`                                       | `@automate @dalembert @desktop @mobile`                     |
+| Flow 14.2  | `trade-automate/even-odd/verify-odd-dalembert.spec.ts`                                        | `@automate @dalembert @desktop @mobile`                     |
+| Flow 15    | `trade-automate/verify-trade-param-validation.spec.ts`                                        | `@automate @desktop @mobile`                                |
+| G1         | `trade-automate/verify-already-running.spec.ts`                                               | `@automate @desktop @mobile`                                |
+| G2         | `trade-automate/verify-validation.spec.ts`                                                    | `@automate @desktop @mobile`                                |
 
 ---
 
@@ -45,7 +46,7 @@
 
 ### Shared account setup
 
-**Panel / control specs (Flows 2.1–2.2, 3–4, G1, G2)** — shared backup account:
+**Panel / control specs (Flows 2.1–2.2, 3–4, 15, G1, G2)** — shared backup account:
 
 ```typescript
 const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_MOBILE' : 'TEST_EMAIL_AUTOMATE';
@@ -87,7 +88,7 @@ test.afterEach(async ({ tradeAutomatePage }) => {
 
 ### Flow 1 — Pause and Resume (embedded in Flows 5–14)
 
-No dedicated spec — pause/resume is exercised via `verifyPauseAndResumeWhileRunning()` inside every trade-type lifecycle (`run*AndVerify()`). Canonical reference: `verify-rise-fall-martingale.spec.ts` (Flow 5.1 / 5.2).
+No dedicated spec — pause/resume is exercised via `verifyPauseAndResumeWhileRunning()` inside every trade-type lifecycle (`run*AndVerify()`). Canonical reference: `verify-even-martingale.spec.ts` (Flow 9.1).
 
 ```typescript
 // Inside runRiseFallAndVerify() — tick types; Accumulators skip sequential step
@@ -206,7 +207,7 @@ See `flow.md` for step tables. Flow 4 requires a dedicated EU/DIEL account. G1 a
 
 ### Flows 5–14 — supported trade type lifecycle runs
 
-One spec per trade type **and strategy** under `playwright/tests/trade-automate/<trade-type>/` (`*-martingale.spec.ts`, `*-dalembert.spec.ts`). Each test passes a **full inline params object** to its POM method.
+Dual-outcome trade types use **one spec per outcome and strategy** under `playwright/tests/trade-automate/<trade-type>/` — `verify-{outcome}-martingale.spec.ts` / `verify-{outcome}-dalembert.spec.ts` (demo + real serial per file). Accumulators use **one spec per strategy** — `verify-accumulators-martingale.spec.ts` / `verify-accumulators-dalembert.spec.ts`. Each test passes a **full inline params object** to its POM method.
 
 | Flow | Strategy   | POM method                     | Child flows                 |
 | ---- | ---------- | ------------------------------ | --------------------------- |
@@ -332,20 +333,20 @@ await tradeAutomatePage.runRiseFallAndVerify({
 });
 ```
 
-| Parent | Spec                                                                       | Backup env vars (desktop / mobile)                |
-| ------ | -------------------------------------------------------------------------- | ------------------------------------------------- |
-| 5      | `trade-automate/rise-fall/verify-rise-fall-martingale.spec.ts`             | `TEST_EMAIL_AUTOMATE_RISE_FALL` / `_MOBILE`       |
-| 6      | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`       | `TEST_EMAIL_AUTOMATE_ACCUMULATORS` / `_MOBILE`    |
-| 7      | `trade-automate/matches-differs/verify-matches-differs-martingale.spec.ts` | `TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS` / `_MOBILE` |
-| 8      | `trade-automate/over-under/verify-over-under-martingale.spec.ts`           | `TEST_EMAIL_AUTOMATE_OVER_UNDER` / `_MOBILE`      |
-| 9      | `trade-automate/even-odd/verify-even-odd-martingale.spec.ts`               | `TEST_EMAIL_AUTOMATE_EVEN_ODD` / `_MOBILE`        |
-| 10     | `trade-automate/rise-fall/verify-rise-fall-dalembert.spec.ts`              | `TEST_EMAIL_AUTOMATE_RISE_FALL` / `_MOBILE`       |
-| 11     | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`        | `TEST_EMAIL_AUTOMATE_ACCUMULATORS` / `_MOBILE`    |
-| 12     | `trade-automate/matches-differs/verify-matches-differs-dalembert.spec.ts`  | `TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS` / `_MOBILE` |
-| 13     | `trade-automate/over-under/verify-over-under-dalembert.spec.ts`            | `TEST_EMAIL_AUTOMATE_OVER_UNDER` / `_MOBILE`      |
-| 14     | `trade-automate/even-odd/verify-even-odd-dalembert.spec.ts`                | `TEST_EMAIL_AUTOMATE_EVEN_ODD` / `_MOBILE`        |
+| Parent | Spec                                                                                                     | Backup env vars (desktop / mobile)                |
+| ------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 5      | `trade-automate/rise-fall/verify-rise-martingale.spec.ts` · `verify-fall-martingale.spec.ts`             | `TEST_EMAIL_AUTOMATE_RISE_FALL` / `_MOBILE`       |
+| 6      | `trade-automate/accumulators/verify-accumulators-martingale.spec.ts`                                     | `TEST_EMAIL_AUTOMATE_ACCUMULATORS` / `_MOBILE`    |
+| 7      | `trade-automate/matches-differs/verify-matches-martingale.spec.ts` · `verify-differs-martingale.spec.ts` | `TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS` / `_MOBILE` |
+| 8      | `trade-automate/over-under/verify-over-martingale.spec.ts` · `verify-under-martingale.spec.ts`           | `TEST_EMAIL_AUTOMATE_OVER_UNDER` / `_MOBILE`      |
+| 9      | `trade-automate/even-odd/verify-even-martingale.spec.ts` · `verify-odd-martingale.spec.ts`               | `TEST_EMAIL_AUTOMATE_EVEN_ODD` / `_MOBILE`        |
+| 10     | `trade-automate/rise-fall/verify-rise-dalembert.spec.ts` · `verify-fall-dalembert.spec.ts`               | `TEST_EMAIL_AUTOMATE_RISE_FALL` / `_MOBILE`       |
+| 11     | `trade-automate/accumulators/verify-accumulators-dalembert.spec.ts`                                      | `TEST_EMAIL_AUTOMATE_ACCUMULATORS` / `_MOBILE`    |
+| 12     | `trade-automate/matches-differs/verify-matches-dalembert.spec.ts` · `verify-differs-dalembert.spec.ts`   | `TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS` / `_MOBILE` |
+| 13     | `trade-automate/over-under/verify-over-dalembert.spec.ts` · `verify-under-dalembert.spec.ts`             | `TEST_EMAIL_AUTOMATE_OVER_UNDER` / `_MOBILE`      |
+| 14     | `trade-automate/even-odd/verify-even-dalembert.spec.ts` · `verify-odd-dalembert.spec.ts`                 | `TEST_EMAIL_AUTOMATE_EVEN_ODD` / `_MOBILE`        |
 
-Dual-outcome specs map to child flows **5.1 / 5.2**, **7.1 / 7.2**, etc. (Martingale) and **10.1 / 10.2**, **12.1 / 12.2**, etc. (D'Alembert; demo + real per outcome). Accumulators map to **6.1** demo · **6.2** real (Martingale) and **11.1** demo · **11.2** real (D'Alembert). Params vary per test (unique stakes/thresholds avoid cross-contamination on closed-position lookup):
+Dual-outcome specs map one file per child flow — **5.1** `verify-rise-martingale.spec.ts` · **5.2** `verify-fall-martingale.spec.ts`, **7.1** `verify-matches-martingale.spec.ts` · **7.2** `verify-differs-martingale.spec.ts`, etc. (D'Alembert: **10.1**–**14.2** same pattern). Accumulators map to **6.1** demo · **6.2** real (Martingale) and **11.1** demo · **11.2** real (D'Alembert) in a single spec each. Params vary per test (unique stakes/thresholds avoid cross-contamination on closed-position lookup):
 
 ```typescript
 test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ tradeAutomatePage }) => {
@@ -387,20 +388,64 @@ test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({
 
 Each `run*AndVerify()`: `startAutomateRun()` → `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` (tick types) or skip (Accumulators) → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`.
 
+### Flow 15 — verify-trade-param-validation.spec.ts
+
+Two tests — full negative validation for trade-form **Stake** and automation-panel fields on Rise/Fall automate.
+
+**15.1 Martingale** — stake below-min, empty, max-payout, above-balance; loss/profit threshold zero; multiplier zero and above max (`11`); max stake zero and below initial stake.
+
+**15.2 D'Alembert** — `selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 })` then stake increment zero.
+
+```typescript
+test('VERIFY automate trade params reject invalid drafts — Martingale', async ({ tradeAutomatePage }) => {
+    await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
+    await tradeAutomatePage.verifyPanelDefaultState();
+    await tradeAutomatePage.setStake('1');
+    await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
+
+    await tradeAutomatePage.verifyInitialStakeRejectsInvalidAmount();
+    await tradeAutomatePage.verifyAutomationThresholdsRejectInvalidAmount();
+    await tradeAutomatePage.verifyStakeMultiplierRejectsInvalidAmount();
+    await tradeAutomatePage.verifyMaxStakeRejectsInvalidAmount();
+    await tradeAutomatePage.verifyAutomatePanelIdleAfterParamValidation();
+});
+
+test("VERIFY automate trade params reject invalid drafts — D'Alembert", async ({ tradeAutomatePage }) => {
+    await tradeAutomatePage.goToAutomatedTrading();
+    await tradeAutomatePage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { mode: 'automate' });
+    await tradeAutomatePage.verifyPanelDefaultState();
+    await tradeAutomatePage.setStake('1');
+    await tradeAutomatePage.selectDuration('Ticks', '10 ticks');
+    await tradeAutomatePage.selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 });
+
+    await tradeAutomatePage.verifyStakeIncrementRejectsInvalidAmount();
+    await tradeAutomatePage.verifyAutomatePanelIdleAfterParamValidation();
+});
+```
+
+> **Flow 15** = negative in-editor validation before Run — Martingale full matrix + D'Alembert increment
+
 **Run control API:**
 
-| Method                                          | Purpose                                                                                                                                                                                       |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `startAutomateRun()`                            | Click **Run** (asserts visible + enabled first)                                                                                                                                               |
-| `verifyAutomateBotIsRunning()`                  | Full running check: controls + exactly one open position + contract details; tolerates **Starting…**                                                                                          |
-| `verifyAutomateRunningControls()`               | Fast running check only (private; tick lifecycles before sequential purchase)                                                                                                                 |
-| `verifyAutomateSequentialContractPurchase()`    | Tick types: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). Run right after running controls, before open-position details |
-| `verifyPauseAndResumeWhileRunning()`            | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–14 lifecycles)                                                                                                        |
-| `stopAutomateRun()`                             | Click **Stop** + verify idle (Run visible, Running status gone) — replaces separate stop + verify                                                                                             |
-| `stopAutomateRunIfActive()`                     | `afterEach` cleanup when Stop may or may not be present                                                                                                                                       |
-| `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                       |
-| `verifyLossThresholdAutoStop()`                 | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                            |
-| `verifyProfitThresholdAutoStop()`               | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                          |
+| Method                                            | Purpose                                                                                                                                                                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `startAutomateRun()`                              | Click **Run** (asserts visible + enabled first)                                                                                                                                               |
+| `verifyAutomateBotIsRunning()`                    | Full running check: controls + exactly one open position + contract details; tolerates **Starting…**                                                                                          |
+| `verifyAutomateRunningControls()`                 | Fast running check only (private; tick lifecycles before sequential purchase)                                                                                                                 |
+| `verifyAutomateSequentialContractPurchase()`      | Tick types: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). Run right after running controls, before open-position details |
+| `verifyPauseAndResumeWhileRunning()`              | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–14 lifecycles)                                                                                                        |
+| `stopAutomateRun()`                               | Click **Stop** + verify idle (Run visible, Running status gone) — replaces separate stop + verify                                                                                             |
+| `stopAutomateRunIfActive()`                       | `afterEach` cleanup when Stop may or may not be present                                                                                                                                       |
+| `pauseRun()` / `resumeRun()` / `verifyPaused()`   | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                       |
+| `verifyLossThresholdAutoStop()`                   | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                            |
+| `verifyProfitThresholdAutoStop()`                 | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                          |
+| `verifyInitialStakeRejectsInvalidAmount()`        | Flow 15 — stake below min · empty · invalid format (`1.`) · max payout (reads **Max payout** from stake details) · above balance; prior value restored on dismiss each time                   |
+| `verifyAutomationThresholdsRejectInvalidAmount()` | Flow 15 — profit and loss threshold editors block empty · zero                                                                                                                                |
+| `verifyStakeMultiplierRejectsInvalidAmount()`     | Flow 15 — Martingale multiplier Custom tab blocks empty · zero · values above 10                                                                                                              |
+| `verifyStakeIncrementRejectsInvalidAmount()`      | Flow 15 — D'Alembert increment Custom tab blocks empty · zero                                                                                                                                 |
+| `verifyMaxStakeRejectsInvalidAmount()`            | Flow 15 — Max. stake toggle on blocks empty · zero · cap below initial stake `1`                                                                                                              |
+| `verifyAutomatePanelIdleAfterParamValidation()`   | Flow 15 — Run visible/enabled; no active run after rejected drafts                                                                                                                            |
 
 **Panel verification helpers:**
 
@@ -416,16 +461,17 @@ Supported trade types are defined in `automation-guide-config.ts` and gated at r
 
 ## Section 3 — Tags Reference
 
-| Tag           | When to apply                                           |
-| ------------- | ------------------------------------------------------- |
-| `@automate`   | All Automate (automated trading) tests in this module   |
-| `@martingale` | Martingale strategy lifecycle specs (Flows 5–9)         |
-| `@dalembert`  | D'Alembert strategy lifecycle specs (Flows 10–14)       |
-| `@smoke`      | Critical path — Rise/Fall Martingale lifecycle (Flow 5) |
-| `@desktop`    | Desktop viewport (chromium project)                     |
-| `@mobile`     | Mobile viewport (chromium-mobile project)               |
+| Tag           | When to apply                                                                                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@automate`   | All Automate (automated trading) tests in this module                                                                                                |
+| `@martingale` | Martingale strategy lifecycle specs (Flows 5–9)                                                                                                      |
+| `@dalembert`  | D'Alembert strategy lifecycle specs (Flows 10–14)                                                                                                    |
+| `@smoke`      | Critical path — Even/Odd Martingale lifecycle (Flow 9); embeds Flow 1 pause/resume                                                                   |
+| `@production` | Production smoke — Flow 9.1 Even Martingale (`verify-even-martingale.spec.ts`; real uses minimum stake `0.35` on production, mandatory Stop cleanup) |
+| `@desktop`    | Desktop viewport (chromium project)                                                                                                                  |
+| `@mobile`     | Mobile viewport (chromium-mobile project)                                                                                                            |
 
-> **Note:** Automate specs intentionally do not carry `@production` — they place live (staging test) contracts via the automation bot.
+> **Note:** Most automate lifecycle specs do not carry `@production` — they place contracts via the automation bot on disposable staging accounts. **Exception:** Flow **9.1** Even Martingale (`verify-even-martingale.spec.ts`) is tagged `@production` for production smoke (real uses minimum stake `0.35` on production, same pattern as manual Rise/Fall; `stopAutomateRunIfActive()` in `afterEach`).
 
 ---
 
@@ -522,11 +568,11 @@ Automation supports five UI trade types (source: `automation-guide-config.ts`, r
 
 | Trade type      | Flow (Martingale / D'Alembert) | Automatable market (example) | Notes                                                 |
 | --------------- | ------------------------------ | ---------------------------- | ----------------------------------------------------- |
-| Rise/Fall       | 5.1–5.2 / 10.1–10.2            | Volatility 100 Index         | Primary lifecycle smoke (`@smoke` on Martingale spec) |
+| Even/Odd        | 9.1–9.2 / 14.1–14.2            | Volatility 10 Index          | Primary lifecycle smoke (`@smoke` on Martingale spec) |
+| Rise/Fall       | 5.1–5.2 / 10.1–10.2            | Volatility 100 Index         | Covered in manual trade smoke                         |
 | Accumulators    | 6.1–6.2 / 11.1–11.2            | Volatility 10 Index          | Demo + real per strategy                              |
 | Matches/Differs | 7.1–7.2 / 12.1–12.2            | Volatility 10 Index          | Matches / Differs per strategy                        |
 | Over/Under      | 8.1–8.2 / 13.1–13.2            | Volatility 10 Index          | Over / Under per strategy                             |
-| Even/Odd        | 9.1–9.2 / 14.1–14.2            | Volatility 10 Index          | Even / Odd per strategy                               |
 
 Crypto and Crash/Boom symbols are **not** automatable (`is_symbol_automatable` is false) even when they offer a supported trade type — always pick Volatility indices.
 

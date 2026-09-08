@@ -1,6 +1,6 @@
 /**
- * @name     Matches/Differs — Buy Matches → Verify + Buy Differs → Verify
- * @id       flow-5.1, flow-5.2
+ * @name     Matches/Differs — Buy Matches → Verify
+ * @id       flow-5.1
  * @flow     playwright/flows/trade/flow.md#matchesdiffers
  * @coverage playwright/flows/trade/coverage.md
  */
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string = undefined!;
 let accountPassword: string = undefined!;
 
-test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
+test.describe('Trade — Matches/Differs — Matches', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async () => {
@@ -30,11 +30,7 @@ test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trad
         await loginPage.login(accountEmail, accountPassword);
     });
 
-    /**
-     * Flow 5.1 — Matches/Differs: set last digit prediction → buy Matches → open the position's
-     * contract details, wait for the tick contract to auto-expire in place, then verify the settled
-     * contract details, balance, and Reports (Trade table + Statement).
-     */
+    /** Flow 5.1 — Matches/Differs: set last digit → buy Matches → settle in place → verify closed */
     test('VERIFY Buy "Matches" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
         await tradeMatchesDiffersPage.buyMatchesAndVerify({
             accountType: 'demo',
@@ -54,33 +50,6 @@ test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trad
             stake: '10.00',
             currency: 'USD',
             digit: '4',
-        });
-    });
-
-    /**
-     * Flow 5.2 — Matches/Differs: set last digit prediction → buy Differs → open the position's
-     * contract details, wait for the tick contract to auto-expire in place, then verify the settled
-     * contract details, balance, and Reports (Trade table + Statement).
-     */
-    test('VERIFY Buy "Differs" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
-        await tradeMatchesDiffersPage.buyDiffersAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '6',
-        });
-    });
-
-    test('VERIFY Buy "Differs" Contract (Real Account)', async ({ tradeMatchesDiffersPage }) => {
-        await tradeMatchesDiffersPage.buyDiffersAndVerify({
-            accountType: 'real',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '8',
         });
     });
 });

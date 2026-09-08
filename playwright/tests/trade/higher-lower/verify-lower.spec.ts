@@ -1,7 +1,7 @@
 /**
- * @name     Higher/Lower — Buy Higher → Verify + Buy Lower → Verify
- * @id       flow-3.1, flow-3.2
- * @flow     playwright/flows/trade/flow.md#flow-31--higherlower-buy-higher--close-contract
+ * @name     Higher/Lower — Buy Lower → Verify
+ * @id       flow-3.2
+ * @flow     playwright/flows/trade/flow.md#flow-32--higherlower-buy-lower--close-contract
  * @coverage playwright/flows/trade/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string = undefined!;
 let accountPassword: string = undefined!;
 
-test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+test.describe('Trade — Higher/Lower — Lower', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -31,40 +31,7 @@ test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade']
         await loginPage.login(accountEmail, accountPassword);
     });
 
-    /**
-     * Flow 3.1 — Higher/Lower: verify Barrier + Duration params, buy Higher → verify positions, reports,
-     * contract details, balance, and closed contract.
-     */
-    test('VERIFY Buy "Higher" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
-        await tradeHigherLowerPage.buyHigherAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
-            durationUnit: 'Hours',
-            durationValue: '1 hr',
-            barrierType: 'Above spot',
-            barrier: '5.11',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Higher" Contract and Close (Real Account)', async ({ tradeHigherLowerPage }) => {
-        await tradeHigherLowerPage.buyHigherAndVerify({
-            accountType: 'real',
-            market: 'Volatility 100 (1s) Index',
-            durationUnit: 'Hours',
-            durationValue: '1 hr',
-            barrierType: 'Above spot',
-            barrier: '5.11',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    /**
-     * Flow 3.2 — Higher/Lower: buy Lower → verify positions, reports, contract details, balance,
-     * and closed contract.
-     */
+    /** Flow 3.2 — Higher/Lower: buy Lower → verify positions, reports, contract details, balance, closed */
     test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
         await tradeHigherLowerPage.buyLowerAndVerify({
             accountType: 'demo',

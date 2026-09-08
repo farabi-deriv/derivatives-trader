@@ -1,7 +1,7 @@
 /**
- * @name     Rise/Fall — Buy Rise → Close + Buy Fall → Close
- * @id       flow-2.1, flow-2.2
- * @flow     playwright/flows/trade/flow.md#flow-21--risefall-buy-rise--close-contract
+ * @name     Rise/Fall — Buy Fall → Close
+ * @id       flow-2.2
+ * @flow     playwright/flows/trade/flow.md#flow-22--risefall-buy-fall--close-contract
  * @coverage playwright/flows/trade/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Trade — Rise/Fall', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
+test.describe('Trade — Rise/Fall — Fall', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -41,40 +41,7 @@ test.describe('Trade — Rise/Fall', { tag: ['@desktop', '@mobile', '@trade', '@
         await loginPage.login(accountEmail, accountPassword);
     });
 
-    /**
-     * Flow 2.1 — Rise/Fall: buy Rise → navigate to positions → open contract → close
-     * Kept on the real account (with a minimal stake in production) — this is the one test in the
-     * suite deliberately exercising real-account trading in production.
-     */
-    test(
-        'VERIFY Buy "Rise" Contract and Close (Real Account)',
-        { tag: ['@production'] },
-        async ({ tradeRiseFallPage }) => {
-            await tradeRiseFallPage.buyRiseAndVerify({
-                accountType: 'real',
-                market: 'Volatility 100 Index',
-                durationUnit: 'Minutes',
-                durationValue: '15 min',
-                stake: process.env.TEST_ENV === 'production' ? '0.35' : '10.50',
-                currency: 'USD',
-            });
-        }
-    );
-
-    test('VERIFY Buy "Rise" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyRiseAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-        });
-    });
-
-    /**
-     * Flow 2.2 — Rise/Fall: buy Fall → navigate to positions → open contract → close
-     */
+    /** Flow 2.2 — Rise/Fall: buy Fall → navigate to positions → open contract → close */
     test('VERIFY Buy "Fall" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
         await tradeRiseFallPage.buyFallAndVerify({
             accountType: 'demo',

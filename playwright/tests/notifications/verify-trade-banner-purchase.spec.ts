@@ -2,14 +2,14 @@
  * @name Notifications — Trade banner: purchase notification appears after buy
  * @id notifications/verify-trade-banner-purchase
  * @flow Flow 1 — Trade banner: purchase notification appears after contract buy
- * @coverage @notifications @smoke @mobile
+ * @coverage @notifications @mobile
  */
 
 import { expect, test } from '../../fixtures/fixtures';
 import { NavigationUtils } from '../../e2e-tests-core/utils';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
-test.describe('Notifications — Trade banner purchase', { tag: ['@notifications', '@smoke', '@mobile'] }, () => {
+test.describe('Notifications — Trade banner purchase', { tag: ['@notifications', '@mobile'] }, () => {
     let testEmail: string = undefined!;
 
     test.beforeAll(async ({}, testInfo) => {

@@ -1,6 +1,6 @@
 /**
- * @name     Touch/No Touch — Buy Touch → Verify + Buy No Touch → Verify
- * @id       flow-4.1, flow-4.2
+ * @name     Touch/No Touch — Buy Touch → Verify
+ * @id       flow-4.1
  * @flow     playwright/flows/trade/flow.md#flow-41--touchno-touch-buy-touch--close-contract
  * @coverage playwright/flows/trade/coverage.md
  */
@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string = undefined!;
 let accountPassword: string = undefined!;
 
-test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+test.describe('Trade — Touch/No Touch — Touch', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -31,10 +31,7 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
         await loginPage.login(accountEmail, accountPassword);
     });
 
-    /**
-     * Flow 4.1 — Touch/No Touch: verify Barrier + Duration params, buy Touch → verify positions, reports,
-     * contract details, balance, and closed contract.
-     */
+    /** Flow 4.1 — Touch/No Touch: verify Barrier + Duration params, buy Touch → verify closed contract */
     test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
         await tradeTouchNoTouchPage.buyTouchAndVerify({
             accountType: 'demo',
@@ -57,36 +54,6 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
             barrierType: 'Above spot',
             barrier: '8.60',
             stake: '5.01',
-            currency: 'USD',
-        });
-    });
-
-    /**
-     * Flow 4.2 — Touch/No Touch: buy No Touch → verify positions, reports, contract details, balance,
-     * and closed contract.
-     */
-    test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
-        await tradeTouchNoTouchPage.buyNoTouchAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 (1s) Index',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            barrierType: 'Below spot',
-            barrier: '6.05',
-            stake: '6.09',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "No Touch" Contract and Close (Real Account)', async ({ tradeTouchNoTouchPage }) => {
-        await tradeTouchNoTouchPage.buyNoTouchAndVerify({
-            accountType: 'real',
-            market: 'Volatility 10 (1s) Index',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            barrierType: 'Below spot',
-            barrier: '6.05',
-            stake: '6.09',
             currency: 'USD',
         });
     });

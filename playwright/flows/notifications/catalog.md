@@ -9,7 +9,7 @@
 
 | Journey ID | Spec File                                                    | Tags                              |
 | ---------- | ------------------------------------------------------------ | --------------------------------- |
-| Flow 1     | `notifications/verify-trade-banner-purchase.spec.ts`         | `@notifications @smoke @mobile`   |
+| Flow 1     | `notifications/verify-trade-banner-purchase.spec.ts`         | `@notifications @mobile`          |
 | Flow 2     | `notifications/verify-trade-banner-sell.spec.ts`             | `@notifications @mobile`          |
 | Flow 3     | `notifications/verify-notification-centre-desktop.spec.ts`   | `@notifications @smoke @desktop`  |
 | Flow 4     | `notifications/verify-notification-centre-mobile.spec.ts`    | `@notifications @smoke @mobile`   |
@@ -35,7 +35,7 @@
 **Test pattern:**
 
 ```typescript
-test.describe('Notifications — Trade banner purchase', { tag: ['@notifications', '@smoke', '@mobile'] }, () => {
+test.describe('Notifications — Trade banner purchase', { tag: ['@notifications', '@mobile'] }, () => {
     test.beforeEach(async ({ loginPage, tradePage, page }) => {
         await loginPage.login();
         await tradePage.goto();

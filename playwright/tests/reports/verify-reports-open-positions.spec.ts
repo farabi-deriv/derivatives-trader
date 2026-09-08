@@ -9,7 +9,7 @@ import { expect, test, redirectionHelpers } from '../../fixtures/fixtures';
 import { NavigationUtils } from '../../utils';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
-test.describe('Reports — Open Positions', { tag: ['@reports', '@smoke', '@regression', '@desktop', '@mobile'] }, () => {
+test.describe('Reports — Open Positions', { tag: ['@reports', '@regression', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     let testEmail: string = undefined!;

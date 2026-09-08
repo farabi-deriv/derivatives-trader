@@ -8,7 +8,7 @@ import { test, expect, redirectionHelpers } from '../../fixtures/fixtures';
 import { NavigationUtils } from '../../utils';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
-test.describe('Positions — Page Load & Navigation', { tag: ['@positions', '@smoke', '@desktop', '@mobile'] }, () => {
+test.describe('Positions — Page Load & Navigation', { tag: ['@positions', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     let testEmail: string = undefined!;

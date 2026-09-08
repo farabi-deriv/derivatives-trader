@@ -10,22 +10,22 @@
 | Journey ID | Spec File                                                        | Tags                                         |
 | ---------- | ---------------------------------------------------------------- | -------------------------------------------- |
 | Flow 1     | `trade/verify-trade-form-loads.spec.ts`                          | `@trade @smoke @desktop @mobile @production` |
-| Flow 2.1   | `trade/rise-fall/verify-rise-fall.spec.ts`                       | `@trade @smoke @desktop @mobile @production` |
-| Flow 2.2   | `trade/rise-fall/verify-rise-fall.spec.ts`                       | `@trade @smoke @desktop @mobile`             |
-| Flow 2.3   | `trade/rise-fall/verify-rise-fall-allow-equals.spec.ts`          | `@trade @desktop @mobile`                    |
-| Flow 2.4   | `trade/rise-fall/verify-rise-fall-allow-equals.spec.ts`          | `@trade @desktop @mobile`                    |
-| Flow 3.1   | `trade/higher-lower/verify-higher-lower.spec.ts`                 | `@trade @desktop @mobile`                    |
-| Flow 3.2   | `trade/higher-lower/verify-higher-lower.spec.ts`                 | `@trade @desktop @mobile`                    |
-| Flow 4.1   | `trade/touch-no-touch/verify-touch-no-touch.spec.ts`             | `@trade @desktop @mobile`                    |
-| Flow 4.2   | `trade/touch-no-touch/verify-touch-no-touch.spec.ts`             | `@trade @desktop @mobile`                    |
-| Flow 5.1   | `trade/matches-differs/verify-matches-differs.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 5.2   | `trade/matches-differs/verify-matches-differs.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 6.1   | `trade/over-under/verify-over-under.spec.ts`                     | `@trade @desktop @mobile`                    |
-| Flow 6.2   | `trade/over-under/verify-over-under.spec.ts`                     | `@trade @desktop @mobile`                    |
-| Flow 7.1   | `trade/even-odd/verify-even-odd.spec.ts`                         | `@trade @desktop @mobile`                    |
-| Flow 7.2   | `trade/even-odd/verify-even-odd.spec.ts`                         | `@trade @desktop @mobile`                    |
+| Flow 2.1   | `trade/rise-fall/verify-rise.spec.ts`                            | `@trade @smoke @desktop @mobile @production` |
+| Flow 2.2   | `trade/rise-fall/verify-fall.spec.ts`                            | `@trade @smoke @desktop @mobile`             |
+| Flow 2.3   | `trade/rise-fall/verify-rise-allow-equals.spec.ts`               | `@trade @desktop @mobile`                    |
+| Flow 2.4   | `trade/rise-fall/verify-fall-allow-equals.spec.ts`               | `@trade @desktop @mobile`                    |
+| Flow 3.1   | `trade/higher-lower/verify-higher.spec.ts`                       | `@trade @desktop @mobile`                    |
+| Flow 3.2   | `trade/higher-lower/verify-lower.spec.ts`                        | `@trade @desktop @mobile`                    |
+| Flow 4.1   | `trade/touch-no-touch/verify-touch.spec.ts`                      | `@trade @desktop @mobile`                    |
+| Flow 4.2   | `trade/touch-no-touch/verify-no-touch.spec.ts`                   | `@trade @desktop @mobile`                    |
+| Flow 5.1   | `trade/matches-differs/verify-matches.spec.ts`                   | `@trade @smoke @desktop @mobile`             |
+| Flow 5.2   | `trade/matches-differs/verify-differs.spec.ts`                   | `@trade @smoke @desktop @mobile`             |
+| Flow 6.1   | `trade/over-under/verify-over.spec.ts`                           | `@trade @desktop @mobile`                    |
+| Flow 6.2   | `trade/over-under/verify-under.spec.ts`                          | `@trade @desktop @mobile`                    |
+| Flow 7.1   | `trade/even-odd/verify-even.spec.ts`                             | `@trade @desktop @mobile`                    |
+| Flow 7.2   | `trade/even-odd/verify-odd.spec.ts`                              | `@trade @desktop @mobile`                    |
 | Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @smoke @desktop @mobile`             |
+| Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @desktop @mobile`                    |
 | Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`             |
 | Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`             |
 | Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`             |
@@ -34,12 +34,12 @@
 | Flow 9.6   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                    |
 | Flow 9.7   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                    |
 | Flow 9.8   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                    |
-| Flow 10.1  | `trade/turbos/verify-turbos.spec.ts`                             | `@trade @desktop @mobile`                    |
-| Flow 10.2  | `trade/turbos/verify-turbos.spec.ts`                             | `@trade @desktop @mobile`                    |
-| Flow 10.3  | `trade/turbos/verify-turbos-tp.spec.ts`                          | `@trade @desktop @mobile`                    |
-| Flow 10.4  | `trade/turbos/verify-turbos-tp.spec.ts`                          | `@trade @desktop @mobile`                    |
-| Flow 11.1  | `trade/vanillas/verify-vanillas.spec.ts`                         | `@trade @desktop @mobile`                    |
-| Flow 11.2  | `trade/vanillas/verify-vanillas.spec.ts`                         | `@trade @desktop @mobile`                    |
+| Flow 10.1  | `trade/turbos/verify-turbos-up.spec.ts`                          | `@trade @desktop @mobile`                    |
+| Flow 10.2  | `trade/turbos/verify-turbos-down.spec.ts`                        | `@trade @desktop @mobile`                    |
+| Flow 10.3  | `trade/turbos/verify-turbos-up-with-tp.spec.ts`                  | `@trade @desktop @mobile`                    |
+| Flow 10.4  | `trade/turbos/verify-turbos-down-with-tp.spec.ts`                | `@trade @desktop @mobile`                    |
+| Flow 11.1  | `trade/vanillas/verify-vanillas-call.spec.ts`                    | `@trade @desktop @mobile`                    |
+| Flow 11.2  | `trade/vanillas/verify-vanillas-put.spec.ts`                     | `@trade @desktop @mobile`                    |
 | Flow 12    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                    |
 | G1         | `trade/verify-insufficient-balance.spec.ts`                      | `@trade`                                     |
 | G2         | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade`                                     |
@@ -74,39 +74,32 @@ test.describe('Trade — Form Loads', { tag: ['@trade', '@smoke', '@desktop', '@
 
 ---
 
-### Flow 2.1 — Rise/Fall: buy Rise → close contract
+### Flow 2.1 / 2.2 — Rise/Fall: buy → close contract
 
-### Flow 2.2 — Rise/Fall: buy Fall → close contract
+> **Split by outcome:** `verify-rise.spec.ts` (Flow **2.1** Rise) · `verify-fall.spec.ts` (Flow **2.2** Fall) — demo + real each. Flow 2.1 carries `@production` (real uses minimal stake on production).
 
 ```typescript
-test.describe('Trade — Rise/Fall', { tag: ['@trade', '@smoke', '@desktop', '@mobile'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(process.env.TEST_EMAIL_RISE_FALL);
+// verify-rise.spec.ts — Flow 2.1
+test('VERIFY Buy "Rise" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
+    await tradeRiseFallPage.buyRiseAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        durationUnit: 'Minutes',
+        durationValue: '15 min',
+        stake: '10.50',
+        currency: 'USD',
     });
+});
 
-    test('VERIFY Buy "Rise" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyRiseAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Fall" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyFallAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-        });
+// verify-fall.spec.ts — Flow 2.2
+test('VERIFY Buy "Fall" Contract and Close (Demo Account)', async ({ tradeRiseFallPage }) => {
+    await tradeRiseFallPage.buyFallAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        durationUnit: 'Minutes',
+        durationValue: '18 min',
+        stake: '20.50',
+        currency: 'USD',
     });
 });
 ```
@@ -125,62 +118,40 @@ test.describe('Trade — Rise/Fall', { tag: ['@trade', '@smoke', '@desktop', '@m
 
 > **Fixture:** `tradeRiseFallPage` from `playwright/fixtures/fixtures.ts`
 > **Env var:** `TEST_EMAIL_RISE_FALL` — dedicated funded staging account for this suite
-> **Serial mode:** tests run sequentially (shared account state between Rise and Fall)
+> **Serial mode:** each spec runs sequentially on a shared account
 > **Flow 2.1** = `VERIFY Buy "Rise" Contract and Close` · **Flow 2.2** = `VERIFY Buy "Fall" Contract and Close`
 
 ---
 
-### Flow 2.3 — Rise/Fall Allow Equals: enable toggle → buy Rise → close
+### Flow 2.3 / 2.4 — Rise/Fall Allow Equals: enable toggle → buy → close
 
-### Flow 2.4 — Rise/Fall Allow Equals: enable toggle → buy Fall → close
+> **Split by outcome:** `verify-rise-allow-equals.spec.ts` (Flow **2.3** Rise) · `verify-fall-allow-equals.spec.ts` (Flow **2.4** Fall) — demo + real each. No `@production` tests.
 
 ```typescript
-// Own spec file (verify-rise-fall-allow-equals.spec.ts) — split out from verify-rise-fall.spec.ts
-// since Allow Equals never runs in production (no @production-tagged test here).
-test.describe('Trade — Rise/Fall — Allow Equals', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeAll(async ({}, testInfo) => {
-        const isMobile = testInfo.project.name.includes('mobile');
-        const emailVar = isMobile ? 'TEST_EMAIL_RISE_FALL_MOBILE' : 'TEST_EMAIL_RISE_FALL';
-        const account = await createAccountV2viaJS('real', {
-            currency: 'USD',
-            trading: true,
-            backupAccount: process.env[emailVar],
-        });
-        accountEmail = account.email;
-        accountPassword = account.password;
+// verify-rise-allow-equals.spec.ts — Flow 2.3
+test('VERIFY Buy "Rise" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {
+    await tradeRiseFallPage.buyRiseAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        durationUnit: 'Minutes',
+        durationValue: '15 min',
+        stake: '10.50',
+        currency: 'USD',
+        allowEquals: true,
     });
+});
 
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
+// verify-fall-allow-equals.spec.ts — Flow 2.4
+test('VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {
+    await tradeRiseFallPage.buyFallAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        durationUnit: 'Minutes',
+        durationValue: '18 min',
+        stake: '20.50',
+        currency: 'USD',
+        allowEquals: true,
     });
-
-    test('VERIFY Buy "Rise" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyRiseAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            stake: '10.50',
-            currency: 'USD',
-            allowEquals: true,
-        });
-    });
-
-    test('VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)', async ({ tradeRiseFallPage }) => {
-        await tradeRiseFallPage.buyFallAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            durationUnit: 'Minutes',
-            durationValue: '18 min',
-            stake: '20.50',
-            currency: 'USD',
-            allowEquals: true,
-        });
-    });
-    // (Real Account) counterparts follow the same pattern with accountType: 'real'
 });
 ```
 
@@ -190,61 +161,43 @@ test.describe('Trade — Rise/Fall — Allow Equals', { tag: ['@desktop', '@mobi
 2. Contract type submitted as `RISEEQUAL` / `FALLEQUAL` (pays out when exit spot = entry spot too)
 3. Same full verification chain as Flow 2.1/2.2: open positions → reports → contract details → close → closed card → balance → reports
 
-> **Spec:** `playwright/tests/trade/rise-fall/verify-rise-fall-allow-equals.spec.ts`
 > **Fixture:** `tradeRiseFallPage` from `playwright/fixtures/fixtures.ts`
-> **Serial mode:** all four tests share the same funded account; order matters
+> **Serial mode:** each spec runs demo then real on a shared account
 > **No `@production` test:** unlike Flow 2.1, none of these run against production — `beforeAll` always creates a fresh account
 > **Flow 2.3** = `VERIFY Buy "Rise" Contract with Allow Equals Enabled` · **Flow 2.4** = `VERIFY Buy "Fall" Contract with Allow Equals Enabled`
 
 ---
 
-### Flow 3.1 — Higher/Lower: buy Higher → close
+### Flow 3.1 / 3.2 — Higher/Lower: buy → close → verify
+
+> **Split by outcome:** `verify-higher.spec.ts` (Flow **3.1** Higher) · `verify-lower.spec.ts` (Flow **3.2** Lower) — demo + real each.
 
 ```typescript
-test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeAll(async ({}, testInfo) => {
-        const isMobile = testInfo.project.name.includes('mobile');
-        const backupEmailVar = isMobile ? 'TEST_EMAIL_HIGHER_LOWER_MOBILE' : 'TEST_EMAIL_HIGHER_LOWER';
-        const account = await createAccountV2viaJS('real', {
-            currency: 'USD',
-            trading: true,
-            backupAccount: process.env[backupEmailVar],
-        });
-        accountEmail = account.email;
-        accountPassword = account.password;
+// verify-higher.spec.ts — Flow 3.1
+test('VERIFY Buy "Higher" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
+    await tradeHigherLowerPage.buyHigherAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        durationUnit: 'Hours',
+        durationValue: '1 hr',
+        barrierType: 'Above spot',
+        barrier: '5.11',
+        stake: '10.00',
+        currency: 'USD',
     });
+});
 
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
-    });
-
-    test('VERIFY Buy "Higher" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
-        await tradeHigherLowerPage.buyHigherAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
-            durationUnit: 'Hours',
-            durationValue: '1 hr',
-            barrierType: 'Above spot',
-            barrier: '5.11',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
-        await tradeHigherLowerPage.buyLowerAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
-            durationUnit: 'Hours',
-            durationValue: '1h 30m',
-            barrierType: 'Below spot',
-            barrier: '5.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
+// verify-lower.spec.ts — Flow 3.2
+test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
+    await tradeHigherLowerPage.buyLowerAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        durationUnit: 'Hours',
+        durationValue: '1h 30m',
+        barrierType: 'Below spot',
+        barrier: '5.00',
+        stake: '10.00',
+        currency: 'USD',
     });
 });
 ```
@@ -253,53 +206,36 @@ test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade']
 
 ---
 
-### Flow 4.1 — Touch/No Touch: buy Touch → close
+### Flow 4.1 / 4.2 — Touch/No Touch: buy → close → verify
+
+> **Split by outcome:** `verify-touch.spec.ts` (Flow **4.1** Touch) · `verify-no-touch.spec.ts` (Flow **4.2** No Touch) — demo + real each.
 
 ```typescript
-test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeAll(async ({}, testInfo) => {
-        const isMobile = testInfo.project.name.includes('mobile');
-        const backupEmailVar = isMobile ? 'TEST_EMAIL_TOUCH_NO_TOUCH_MOBILE' : 'TEST_EMAIL_TOUCH_NO_TOUCH';
-        const account = await createAccountV2viaJS('real', {
-            currency: 'USD',
-            trading: true,
-            backupAccount: process.env[backupEmailVar],
-        });
-        accountEmail = account.email;
-        accountPassword = account.password;
+// verify-touch.spec.ts — Flow 4.1
+test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
+    await tradeTouchNoTouchPage.buyTouchAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 (1s) Index',
+        durationUnit: 'Minutes',
+        durationValue: '15 min',
+        barrierType: 'Above spot',
+        barrier: '8.60',
+        stake: '5.01',
+        currency: 'USD',
     });
+});
 
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
-    });
-
-    test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
-        await tradeTouchNoTouchPage.buyTouchAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 75 Index',
-            durationUnit: 'Minutes',
-            durationValue: '15 min',
-            barrierType: 'Above spot',
-            barrier: '5.11',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
-        await tradeTouchNoTouchPage.buyNoTouchAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 75 Index',
-            durationUnit: 'Minutes',
-            durationValue: '18 min',
-            barrierType: 'Below spot',
-            barrier: '5.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
+// verify-no-touch.spec.ts — Flow 4.2
+test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
+    await tradeTouchNoTouchPage.buyNoTouchAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 (1s) Index',
+        durationUnit: 'Minutes',
+        durationValue: '5 min',
+        barrierType: 'Below spot',
+        barrier: '6.05',
+        stake: '6.09',
+        currency: 'USD',
     });
 });
 ```
@@ -315,39 +251,30 @@ position's contract details right after buy, captures its buy reference ID, wait
 settle in place, then verifies the settled contract in Positions, contract details, balance, and Reports.
 All locators live in `TradeMatchesDiffersPage` / `ContractDetailsPage` (no inline locators in the test).
 
+> **Split by outcome:** `verify-matches.spec.ts` (Flow **5.1** Matches) · `verify-differs.spec.ts` (Flow **5.2** Differs) — demo + real each.
+
 ```typescript
-import { test } from '../../../fixtures/fixtures';
-import { TradeBasePage } from '../../../pages/TradeBasePage';
-
-test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    // Dedicated funded real USD account (custom password) — logs in directly.
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
+// verify-matches.spec.ts — Flow 5.1
+test('VERIFY Buy "Matches" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
+    await tradeMatchesDiffersPage.buyMatchesAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
+        digit: '2',
     });
+});
 
-    test('VERIFY Buy "Matches" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
-        await tradeMatchesDiffersPage.buyMatchesAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '5',
-        });
-    });
-
-    test('VERIFY Buy "Differs" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
-        await tradeMatchesDiffersPage.buyDiffersAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '5',
-        });
+// verify-differs.spec.ts — Flow 5.2
+test('VERIFY Buy "Differs" Contract (Demo Account)', async ({ tradeMatchesDiffersPage }) => {
+    await tradeMatchesDiffersPage.buyDiffersAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
+        digit: '6',
     });
 });
 ```
@@ -365,40 +292,32 @@ test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trad
 
 Same digit-contract pattern as Matches/Differs (Flow 5.1/5.2). The `TradeOverUnderPage` fixture shares
 its logic with `TradeMatchesDiffersPage` via the common `TradeDigitsPage` base; only the outcome labels
-differ. **Invalid digits:** Over cannot predict 9, Under cannot predict 0 — use a middle digit (e.g. 5).
+differ. **Invalid digits:** Over cannot predict 9, Under cannot predict 0.
+
+> **Split by outcome:** `verify-over.spec.ts` (Flow **6.1** Over) · `verify-under.spec.ts` (Flow **6.2** Under) — demo + real each.
 
 ```typescript
-import { test } from '../../../fixtures/fixtures';
-import { TradeBasePage } from '../../../pages/TradeBasePage';
-
-test.describe('Trade — Over/Under', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
+// verify-over.spec.ts — Flow 6.1
+test('VERIFY Buy "Over" Contract (Demo Account)', async ({ tradeOverUnderPage }) => {
+    await tradeOverUnderPage.buyOverAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
+        digit: '1',
     });
+});
 
-    test('VERIFY Buy "Over" Contract (Demo Account)', async ({ tradeOverUnderPage }) => {
-        await tradeOverUnderPage.buyOverAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '5',
-        });
-    });
-
-    test('VERIFY Buy "Under" Contract (Demo Account)', async ({ tradeOverUnderPage }) => {
-        await tradeOverUnderPage.buyUnderAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-            digit: '5',
-        });
+// verify-under.spec.ts — Flow 6.2
+test('VERIFY Buy "Under" Contract (Demo Account)', async ({ tradeOverUnderPage }) => {
+    await tradeOverUnderPage.buyUnderAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
+        digit: '9',
     });
 });
 ```
@@ -415,36 +334,28 @@ Simplest digit type — **no last-digit selector** (the outcome is even vs odd).
 fixture shares its logic with the other digit types via the common `TradeDigitsPage` base; `buyEvenAndVerify`
 / `buyOddAndVerify` take no `digit`, and the audit Target row reads "Even" / "Odd".
 
+> **Split by outcome:** `verify-even.spec.ts` (Flow **7.1** Even) · `verify-odd.spec.ts` (Flow **7.2** Odd) — demo + real each.
+
 ```typescript
-import { test } from '../../../fixtures/fixtures';
-import { TradeBasePage } from '../../../pages/TradeBasePage';
-
-test.describe('Trade — Even/Odd', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
+// verify-even.spec.ts — Flow 7.1
+test('VERIFY Buy "Even" Contract (Demo Account)', async ({ tradeEvenOddPage }) => {
+    await tradeEvenOddPage.buyEvenAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
     });
+});
 
-    test('VERIFY Buy "Even" Contract (Demo Account)', async ({ tradeEvenOddPage }) => {
-        await tradeEvenOddPage.buyEvenAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Odd" Contract (Demo Account)', async ({ tradeEvenOddPage }) => {
-        await tradeEvenOddPage.buyOddAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 10 Index',
-            durationValue: '10 ticks',
-            stake: '10.00',
-            currency: 'USD',
-        });
+// verify-odd.spec.ts — Flow 7.2
+test('VERIFY Buy "Odd" Contract (Demo Account)', async ({ tradeEvenOddPage }) => {
+    await tradeEvenOddPage.buyOddAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 10 Index',
+        durationValue: '10 ticks',
+        stake: '10.00',
+        currency: 'USD',
     });
 });
 ```
@@ -789,41 +700,55 @@ duration + `verifyContractCardDetails` (remaining-time works), then closes early
 chain (Closed tab → balance → Reports). TP flows also assert the TP amount on the open contract details.
 No inline locators — all via `TradeTurbosPage`.
 
+> **Split by direction (no TP):** `verify-turbos-up.spec.ts` (Flow **10.1** Up) · `verify-turbos-down.spec.ts` (Flow **10.2** Down) — demo + real each.
+> **Split by direction (with TP):** `verify-turbos-up-with-tp.spec.ts` (Flow **10.3** Up) · `verify-turbos-down-with-tp.spec.ts` (Flow **10.4** Down) — demo + real each.
+
 ```typescript
-import { test } from '../../../fixtures/fixtures';
-import { TradeBasePage } from '../../../pages/TradeBasePage';
-
-// verify-turbos.spec.ts (Flow 10.1 / 10.2 — no Take Profit)
-test.describe('Trade — Turbos', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
-    });
-
-    test('VERIFY Buy "Up" Turbos Contract (Demo Account)', async ({ tradeTurbosPage }) => {
-        await tradeTurbosPage.buyTurbosAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
-            direction: 'Up',
-            stake: '10.50',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Down" Turbos Contract (Demo Account)', async ({ tradeTurbosPage }) => {
-        await tradeTurbosPage.buyTurbosAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
-            direction: 'Down',
-            stake: '10.50',
-            currency: 'USD',
-        });
+// verify-turbos-up.spec.ts — Flow 10.1 (no Take Profit)
+test('VERIFY Buy "Up" Turbos Contract (Demo Account)', async ({ tradeTurbosPage }) => {
+    await tradeTurbosPage.buyTurbosAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        direction: 'Up',
+        stake: '10.50',
+        currency: 'USD',
     });
 });
 
-// verify-turbos-tp.spec.ts (Flow 10.3 / 10.4 — Take Profit 20.00) — same as above with `takeProfit: '20.00'`.
+// verify-turbos-down.spec.ts — Flow 10.2 (no Take Profit)
+test('VERIFY Buy "Down" Turbos Contract (Demo Account)', async ({ tradeTurbosPage }) => {
+    await tradeTurbosPage.buyTurbosAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        direction: 'Down',
+        stake: '10.50',
+        currency: 'USD',
+    });
+});
+
+// verify-turbos-up-with-tp.spec.ts — Flow 10.3 (Take Profit 20.00)
+test('VERIFY Buy "Up" Turbos Contract With Take Profit (Demo Account)', async ({ tradeTurbosPage }) => {
+    await tradeTurbosPage.buyTurbosAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        direction: 'Up',
+        stake: '10.50',
+        currency: 'USD',
+        takeProfit: '20.00',
+    });
+});
+
+// verify-turbos-down-with-tp.spec.ts — Flow 10.4 (Take Profit 20.00)
+test('VERIFY Buy "Down" Turbos Contract With Take Profit (Demo Account)', async ({ tradeTurbosPage }) => {
+    await tradeTurbosPage.buyTurbosAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 (1s) Index',
+        direction: 'Down',
+        stake: '10.50',
+        currency: 'USD',
+        takeProfit: '20.00',
+    });
+});
 ```
 
 > `buyTurbosAndVerify` covers (in order): select market → select Turbos (asserts Duration / Payout per point / Take profit / Barrier info visible) → `selectDirection` → (TP flows) `setTakeProfit('20.00')` asserted on the form → `selectDuration('Minutes','5 min')` → `setStake` → `clickTurbosBuy` → verify open card + balance → open details `getBuyReferenceId` (+ TP flows assert TP on details) → `sellContract()` (early close, slippage-tolerant) → Closed tab `verifyClosedPositionsTab` + `getSellReferenceId` → `verifyBalanceAfterContractClose` → `verifyClosedContractInReports`.
@@ -832,86 +757,43 @@ test.describe('Trade — Turbos', { tag: ['@desktop', '@mobile', '@trade'] }, ()
 
 ---
 
-### Flow 11.1 — Vanillas: buy Call → close contract
+### Flow 11.1 / 11.2 — Vanillas: buy → close contract
+
+> **Split by direction:** `verify-vanillas-call.spec.ts` (Flow **11.1** Call) · `verify-vanillas-put.spec.ts` (Flow **11.2** Put) — demo + real each.
 
 ```typescript
-test.describe('Trade — Vanillas', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
-    test.describe.configure({ mode: 'serial' });
-
-    test.beforeAll(async ({}, testInfo) => {
-        const isMobile = testInfo.project.name.includes('mobile');
-        const backupEmailVar = isMobile ? 'TEST_EMAIL_VANILLAS_MOBILE' : 'TEST_EMAIL_VANILLAS';
-        const account = await createAccountV2viaJS('real', {
-            currency: 'USD',
-            trading: true,
-            backupAccount: process.env[backupEmailVar],
-        });
-        accountEmail = account.email;
-        accountPassword = account.password;
+// verify-vanillas-call.spec.ts — Flow 11.1
+test('VERIFY Buy "Call" Vanillas Contract (Demo Account)', async ({ tradeVanillasPage }) => {
+    await tradeVanillasPage.buyVanillasAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        direction: 'Call',
+        durationUnit: 'Minutes',
+        durationValue: '5 min',
+        strike: '+0.00',
+        stake: '10.00',
+        currency: 'USD',
     });
+});
 
-    test.beforeEach(async ({ page, loginPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(accountEmail, accountPassword);
-    });
-
-    test('VERIFY Buy "Call" Vanillas Contract (Demo Account)', async ({ tradeVanillasPage }) => {
-        await tradeVanillasPage.buyVanillasAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            direction: 'Call',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            strike: '+0.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Call" Vanillas Contract (Real Account)', async ({ tradeVanillasPage }) => {
-        await tradeVanillasPage.buyVanillasAndVerify({
-            accountType: 'real',
-            market: 'Volatility 100 Index',
-            direction: 'Call',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            strike: '+0.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Put" Vanillas Contract (Demo Account)', async ({ tradeVanillasPage }) => {
-        await tradeVanillasPage.buyVanillasAndVerify({
-            accountType: 'demo',
-            market: 'Volatility 100 Index',
-            direction: 'Put',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            strike: '+0.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
-    });
-
-    test('VERIFY Buy "Put" Vanillas Contract (Real Account)', async ({ tradeVanillasPage }) => {
-        await tradeVanillasPage.buyVanillasAndVerify({
-            accountType: 'real',
-            market: 'Volatility 100 Index',
-            direction: 'Put',
-            durationUnit: 'Minutes',
-            durationValue: '5 min',
-            strike: '+0.00',
-            stake: '10.00',
-            currency: 'USD',
-        });
+// verify-vanillas-put.spec.ts — Flow 11.2
+test('VERIFY Buy "Put" Vanillas Contract (Demo Account)', async ({ tradeVanillasPage }) => {
+    await tradeVanillasPage.buyVanillasAndVerify({
+        accountType: 'demo',
+        market: 'Volatility 100 Index',
+        direction: 'Put',
+        durationUnit: 'Minutes',
+        durationValue: '5 min',
+        strike: '+0.00',
+        stake: '10.00',
+        currency: 'USD',
     });
 });
 ```
 
 > **Fixture:** `tradeVanillasPage` from `playwright/fixtures/fixtures.ts`
 > **Env vars:** `TEST_EMAIL_VANILLAS` / `TEST_EMAIL_VANILLAS_MOBILE` — backup accounts for `createAccountV2viaJS`
-> **Serial mode:** four tests share one account; each `buyVanillasAndVerify` closes its contract before the next run
+> **Serial mode:** each spec runs demo then real on a shared account; each `buyVanillasAndVerify` closes its contract before the next run
 
 > `buyVanillasAndVerify` covers (in order): switch account type → select market → select Vanillas (asserts Strike price / Duration / Stake / Payout per point info / Buy) → `selectDirection` → `selectStrike('+0.00')` → `verifyPayoutPerPointInfo` (desktop) → `selectDuration('Minutes','5 min')` → `setStake` → `clickVanillasBuy` → verify open card + balance → `verifyOpenPositionsInReportsForVanillas` (captures `buyId`) → `verifyVanillasOpenContractDetailsPage` → `closeFirstContract` → `verifyClosedPositionsTab` → `verifyVanillasClosedContractDetailsPage` (captures `sellId`) → `verifyBalanceAfterContractClose` → `verifyClosedContractInReports`.
 > **Vanillas buttons are "Call" / "Put"** — Positions cards and mobile contract details use the combined label (`"Vanillas Call"` / `"Vanillas Put"`). Desktop contract-details drawer shows direction only (`"Call"` / `"Put"`). Source: `getContractTypeDisplay()` with `showMainTitle` only on Positions AppV2 cards, not on desktop `ContractTypeCell`.

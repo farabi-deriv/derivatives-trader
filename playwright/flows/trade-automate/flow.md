@@ -39,7 +39,7 @@
 
 **Demo and real accounts (Flows 5–14):** Dual-outcome trade types use `.1`/`.2` per outcome tab (demo + real each). Accumulators use `.1` demo · `.2` real. Flows **5–9** = Martingale; **10–14** = D'Alembert (same trade-type order). The `beforeAll` account is always `'real'`; demo/real switching happens in-app. Each test uses **distinct inline params** so strategy-adjusted stakes do not collide on closed-position lookup.
 
-**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts`. Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/` (`*-martingale.spec.ts`, `*-dalembert.spec.ts`), mirroring `playwright/tests/trade/`.
+**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts`. Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/`. Dual-outcome types (Rise/Fall, Matches/Differs, Over/Under, Even/Odd) use **one file per outcome and strategy** — `verify-{outcome}-martingale.spec.ts` / `verify-{outcome}-dalembert.spec.ts` (e.g. `verify-rise-martingale.spec.ts`, Flow **5.1**). Accumulators keep **one file per strategy** — `verify-accumulators-martingale.spec.ts` / `verify-accumulators-dalembert.spec.ts` (demo + real in each).
 
 > **No manual close of individual contracts** — stop the run via **Stop**; the bot manages its own contracts.
 
@@ -51,7 +51,7 @@
 
 **Display name:** Pause and Resume a running automation
 
-**Prerequisites:** Shared prerequisites; a run is active (Running). Covered per trade type in Flows 5–14 lifecycles via `verifyPauseAndResumeWhileRunning()` (after sequential contract purchase on tick types, or after first contract on Accumulators). No dedicated spec — see `verify-rise-fall-martingale.spec.ts` as canonical reference.
+**Prerequisites:** Shared prerequisites; a run is active (Running). Covered per trade type in Flows 5–14 lifecycles via `verifyPauseAndResumeWhileRunning()` (after sequential contract purchase on tick types, or after first contract on Accumulators). No dedicated spec — see `verify-even-martingale.spec.ts` as canonical reference.
 
 > **Removed:** Former standalone `verify-pause-resume.spec.ts` — pause/resume is embedded in every trade-type lifecycle (Flows 5–14).
 
@@ -160,13 +160,13 @@
 
 > **Accumulators (Flows 6, 11):** skip `verifyAutomateSequentialContractPurchase()`; call `verifyPauseAndResumeWhileRunning()` after the first contract is running.
 
-| Trade type      | Martingale | D'Alembert | Spec(s)                                                                                  |
-| --------------- | ---------- | ---------- | ---------------------------------------------------------------------------------------- |
-| Rise/Fall       | 5.1–5.2    | 10.1–10.2  | `verify-rise-fall-martingale.spec.ts` · `verify-rise-fall-dalembert.spec.ts`             |
-| Accumulators    | 6.1–6.2    | 11.1–11.2  | `verify-accumulators-martingale.spec.ts` · `verify-accumulators-dalembert.spec.ts`       |
-| Matches/Differs | 7.1–7.2    | 12.1–12.2  | `verify-matches-differs-martingale.spec.ts` · `verify-matches-differs-dalembert.spec.ts` |
-| Over/Under      | 8.1–8.2    | 13.1–13.2  | `verify-over-under-martingale.spec.ts` · `verify-over-under-dalembert.spec.ts`           |
-| Even/Odd        | 9.1–9.2    | 14.1–14.2  | `verify-even-odd-martingale.spec.ts` · `verify-even-odd-dalembert.spec.ts`               |
+| Trade type      | Martingale | D'Alembert | Spec(s)                                                                                                                                             |
+| --------------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rise/Fall       | 5.1–5.2    | 10.1–10.2  | `verify-rise-martingale.spec.ts` · `verify-fall-martingale.spec.ts` · `verify-rise-dalembert.spec.ts` · `verify-fall-dalembert.spec.ts`             |
+| Accumulators    | 6.1–6.2    | 11.1–11.2  | `verify-accumulators-martingale.spec.ts` · `verify-accumulators-dalembert.spec.ts`                                                                  |
+| Matches/Differs | 7.1–7.2    | 12.1–12.2  | `verify-matches-martingale.spec.ts` · `verify-differs-martingale.spec.ts` · `verify-matches-dalembert.spec.ts` · `verify-differs-dalembert.spec.ts` |
+| Over/Under      | 8.1–8.2    | 13.1–13.2  | `verify-over-martingale.spec.ts` · `verify-under-martingale.spec.ts` · `verify-over-dalembert.spec.ts` · `verify-under-dalembert.spec.ts`           |
+| Even/Odd        | 9.1–9.2    | 14.1–14.2  | `verify-even-martingale.spec.ts` · `verify-odd-martingale.spec.ts` · `verify-even-dalembert.spec.ts` · `verify-odd-dalembert.spec.ts`               |
 
 > For D'Alembert, use `strategy: "D'Alembert"` and `stakeIncrement` instead of `stakeMultiplier`. D'Alembert flows use distinct stakes/thresholds to avoid closed-position lookup collisions with Martingale runs on the same backup accounts.
 
@@ -174,9 +174,7 @@
 
 ### Flow 5 — Rise/Fall
 
-**Spec:** `rise-fall/verify-rise-fall-martingale.spec.ts` · **POM:** `runRiseFallAndVerify()` · **Tags:** `@automate @martingale @smoke @desktop @mobile`
-
-**Child flows:** **5.1** Rise (demo + real) · **5.2** Fall (demo + real)
+**Specs:** `rise-fall/verify-rise-martingale.spec.ts` (Flow **5.1** Rise) · `rise-fall/verify-fall-martingale.spec.ts` (Flow **5.2** Fall) — demo + real each · **POM:** `runRiseFallAndVerify()` · **Tags:** `@automate @martingale @desktop @mobile`
 
 **Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_RISE_FALL`).
 
@@ -247,9 +245,7 @@ await tradeAutomatePage.runAccumulatorsAndVerify({
 
 ### Flow 7 — Matches/Differs
 
-**Spec:** `matches-differs/verify-matches-differs-martingale.spec.ts` · **POM:** `runMatchesDiffersAndVerify()`
-
-**Child flows:** **7.1** Matches (demo + real) · **7.2** Differs (demo + real)
+**Specs:** `matches-differs/verify-matches-martingale.spec.ts` (Flow **7.1** Matches) · `matches-differs/verify-differs-martingale.spec.ts` (Flow **7.2** Differs) — demo + real each · **POM:** `runMatchesDiffersAndVerify()`
 
 **Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_MATCHES_DIFFERS`).
 
@@ -277,9 +273,7 @@ await tradeAutomatePage.runMatchesDiffersAndVerify({
 
 ### Flow 8 — Over/Under
 
-**Spec:** `over-under/verify-over-under-martingale.spec.ts` · **POM:** `runOverUnderAndVerify()`
-
-**Child flows:** **8.1** Over (demo + real) · **8.2** Under (demo + real)
+**Specs:** `over-under/verify-over-martingale.spec.ts` (Flow **8.1** Over) · `over-under/verify-under-martingale.spec.ts` (Flow **8.2** Under) — demo + real each · **POM:** `runOverUnderAndVerify()`
 
 **Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_OVER_UNDER`).
 
@@ -307,9 +301,7 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 ### Flow 9 — Even/Odd
 
-**Spec:** `even-odd/verify-even-odd-martingale.spec.ts` · **POM:** `runEvenOddAndVerify()`
-
-**Child flows:** **9.1** Even (demo + real) · **9.2** Odd (demo + real)
+**Specs:** `even-odd/verify-even-martingale.spec.ts` (Flow **9.1** Even) · `even-odd/verify-odd-martingale.spec.ts` (Flow **9.2** Odd) — demo + real each · **POM:** `runEvenOddAndVerify()` · **Tags:** `@automate @martingale @smoke @desktop @mobile` (Flow **9.1** also `@production` — real uses minimum stake `0.35` on production, same as manual Rise/Fall)
 
 **Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_EVEN_ODD`).
 
@@ -336,9 +328,7 @@ await tradeAutomatePage.runEvenOddAndVerify({
 
 ### Flow 10 — Rise/Fall (D'Alembert)
 
-**Spec:** `rise-fall/verify-rise-fall-dalembert.spec.ts` · **POM:** `runRiseFallAndVerify()`
-
-**Child flows:** **10.1** Rise (demo + real) · **10.2** Fall (demo + real)
+**Specs:** `rise-fall/verify-rise-dalembert.spec.ts` (Flow **10.1** Rise) · `rise-fall/verify-fall-dalembert.spec.ts` (Flow **10.2** Fall) — demo + real each · **POM:** `runRiseFallAndVerify()`
 
 Same step table as Flow 5; `strategy: "D'Alembert"`, `stakeIncrement: 3`, distinct stakes/thresholds.
 
@@ -374,19 +364,64 @@ await tradeAutomatePage.runRiseFallAndVerify({
 
 ### Flow 12 — Matches/Differs (D'Alembert)
 
-**Spec:** `matches-differs/verify-matches-differs-dalembert.spec.ts` · **Child flows:** **12.1** Matches · **12.2** Differs (demo + real each). Same steps as Flow 7; D'Alembert params.
+**Specs:** `matches-differs/verify-matches-dalembert.spec.ts` (Flow **12.1** Matches) · `matches-differs/verify-differs-dalembert.spec.ts` (Flow **12.2** Differs) — demo + real each. Same steps as Flow 7; D'Alembert params.
 
 ---
 
 ### Flow 13 — Over/Under (D'Alembert)
 
-**Spec:** `over-under/verify-over-under-dalembert.spec.ts` · **Child flows:** **13.1** Over · **13.2** Under (demo + real each). Same steps as Flow 8; D'Alembert params.
+**Specs:** `over-under/verify-over-dalembert.spec.ts` (Flow **13.1** Over) · `over-under/verify-under-dalembert.spec.ts` (Flow **13.2** Under) — demo + real each. Same steps as Flow 8; D'Alembert params.
 
 ---
 
 ### Flow 14 — Even/Odd (D'Alembert)
 
-**Spec:** `even-odd/verify-even-odd-dalembert.spec.ts` · **Child flows:** **14.1** Even · **14.2** Odd (demo + real each). Same steps as Flow 9; D'Alembert params.
+**Specs:** `even-odd/verify-even-dalembert.spec.ts` (Flow **14.1** Even) · `even-odd/verify-odd-dalembert.spec.ts` (Flow **14.2** Odd) — demo + real each. Same steps as Flow 9; D'Alembert params.
+
+---
+
+### Flow 15 — Invalid trade and automation param validation
+
+**Display name:** Invalid trade/automation param validation (zero, min/max, and invalid drafts)
+
+**Spec:** `playwright/tests/trade-automate/verify-trade-param-validation.spec.ts`
+
+**Prerequisites:** Shared prerequisites (non-EU funded account).
+
+**Params:** Volatility 100 Index · Rise/Fall · valid stake `1` · 10 ticks · then attempt invalid drafts.
+
+#### Flow 15.1 — Martingale (trade form + automation panel)
+
+| #   | Step                           | Action                                                                                             | Expected Result                                                                                                               | Platform |
+| --- | ------------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Configure valid baseline       | `goToAutomatedTrading()` → Rise/Fall automate → `verifyPanelDefaultState()` → stake `1` → 10 ticks | Martingale defaults; panel ready with valid committed params                                                                  | Both     |
+| 2   | Initial stake below minimum    | Open **Stake** Custom, enter `0.01` (below market min, e.g. `0.35`)                                | **"Please enter a stake amount that's at least …"**; **Save** disabled; dismiss restores prior stake                          | Both     |
+| 3   | Initial stake empty            | Re-open **Stake** Custom, clear field, **Save** (desktop)                                          | Desktop: **"Amount is a required field."**; Mobile: **Save** disabled; dismiss restores prior stake                           | Both     |
+| 4   | Initial stake invalid format   | Re-open **Stake** Custom, enter `1.` (trailing decimal)                                            | **"Should be a valid number."**; **Save** disabled; dismiss restores prior stake                                              | Both     |
+| 5   | Initial stake above max payout | Re-open **Stake** Custom → read **Max payout** from details → draft until **Payout** row errors    | **Payout** row `.error`; proposal min/max payout message; **Save** disabled; dismiss restores prior stake                     | Both     |
+| 6   | Initial stake above balance    | Enter `{balance + 0.01}` (computed from header balance)                                            | **"You only have {balance} {currency} left. Try a lower stake."**; Mobile: **Save** disabled; dismiss restores prior stake    | Both     |
+| 7   | Profit threshold empty         | Open **Profit threshold**, clear field                                                             | Desktop: **Save** disabled; Mobile: **Save** → **"Please enter a valid amount greater than 0"**; dismiss restores prior value | Both     |
+| 8   | Profit threshold zero          | Re-open **Profit threshold**, enter `0`, **Save**                                                  | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value                                          | Both     |
+| 9   | Loss threshold empty           | Open **Loss threshold**, clear field                                                               | Desktop: **Save** disabled; Mobile: **Save** → positive-amount error; dismiss restores prior value                            | Both     |
+| 10  | Loss threshold zero            | Re-open **Loss threshold**, enter `0`, **Save**                                                    | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value                                          | Both     |
+| 11  | Stake multiplier empty         | Open **Stake multiplier** Custom, clear field                                                      | **Save** disabled; dismiss restores prior multiplier                                                                          | Both     |
+| 12  | Stake multiplier zero          | Re-open **Stake multiplier** Custom, enter `0`, **Save**                                           | **"Multiplier must be at least …"**; **Save** disabled; dismiss restores prior multiplier                                     | Both     |
+| 13  | Stake multiplier above max     | Custom enter `11`, **Save**                                                                        | **"Multiplier cannot exceed 10"**; **Save** disabled; dismiss restores prior multiplier                                       | Both     |
+| 14  | Max. stake empty               | Open **Max. stake**, enable toggle, clear amount field                                             | **Save** disabled; dismiss restores `-`                                                                                       | Both     |
+| 15  | Max. stake zero                | Re-open, enable toggle, enter `0`, **Save**                                                        | **"Please enter a valid amount greater than 0"**; Desktop: **Save** disabled; dismiss restores `-`                            | Both     |
+| 16  | Max. stake below initial       | Enable toggle, enter `0.5` (initial stake `1`), **Save**                                           | **"Max. stake must be equal or greater than 1"**; Desktop: **Save** disabled; dismiss restores `-`                            | Both     |
+| 17  | Panel stays idle               | `verifyAutomatePanelIdleAfterParamValidation()`                                                    | **Run** visible and enabled; no **Status: Running**                                                                           | Both     |
+
+#### Flow 15.2 — D'Alembert (stake increment)
+
+| #   | Step                  | Action                                                                                  | Expected Result                                                                         | Platform |
+| --- | --------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------- |
+| 1   | Switch strategy       | Same baseline as 15.1 → `selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 })` | **Stake increment** field visible (`2 unit`); multiplier field replaced                 | Both     |
+| 2   | Stake increment empty | Open **Stake increment** Custom, clear field                                            | **Save** disabled; dismiss restores prior increment (`2 unit`)                          | Both     |
+| 3   | Stake increment zero  | Re-open **Stake increment** Custom, enter `0`, **Save**                                 | **"Increment must be at least 1"**; **Save** disabled; dismiss restores prior increment | Both     |
+| 4   | Panel stays idle      | `verifyAutomatePanelIdleAfterParamValidation()`                                         | **Run** visible and enabled; no active run                                              | Both     |
+
+> Numeric automation editors strip non-digit input (`regex={/[^0-9.,]/g}`), so minus signs cannot be typed. Run-click validation for unsupported trade types remains **G2**.
 
 ---
 
@@ -406,3 +441,5 @@ await tradeAutomatePage.runRiseFallAndVerify({
 | --- | ---------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | 1   | Unsupported trade type | Select a trade type the strategy doesn't support, click **Run**          | Inline error banner (e.g. strategy does not support this trade type); run does not start |
 | 2   | Invalid params         | Enter an invalid strategy parameter (e.g. multiplier ≤ 1), click **Run** | Validation error shown; run does not start                                               |
+
+> **Flow 15** covers in-editor validation for trade-form stake (below-min, empty, max payout, above balance) and automation thresholds/multiplier — drafts blocked or surfaced before Run. G2 case 2 (Run-click invalid params) remains a separate gap if needed.

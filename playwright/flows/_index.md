@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-07
 
 ---
 
@@ -41,10 +41,10 @@ Each module section lists every documented flow with its current **status** and 
 | `reports`          | 8           | 8          | 8         |
 | `notifications`    | 9           | 9          | 1         |
 | `auth`             | 3           | 3          | 3         |
-| `trade-automate`   | 27          | 27         | 24        |
+| `trade-automate`   | 28          | 28         | 24        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
-| **Total**          | **119**     | **119**    | **103**   |
+| **Total**          | **120**     | **120**    | **103**   |
 
 > Status advances: `documented` → `automated`
 
@@ -165,7 +165,7 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (Flows 2.1–2.2 `verify-threshold-auto-stop.spec.ts` · Flow 3 panel spec · Flows 5–9 Martingale · Flows 10–14 D'Alembert)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flow 15 param validation)
 
 | Flow      | Priority | Description                                                                          | User State                                     | Status       |
 | --------- | -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
@@ -194,6 +194,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 13.2 | P1       | Over/Under — D'Alembert Under (demo + real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 15   | P1       | Invalid trade/automation param validation — `verify-trade-param-validation.spec.ts`  | authenticated, funded real/staging (non-EU)    | `automated`  |
 | —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `documented` |
 | —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
 
@@ -250,7 +251,7 @@ Each module section lists every documented flow with its current **status** and 
 | -------- | ------------------ | -------------------------------------------------------------------------------------- |
 | **Now**  | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1–2 (trade banners) |
 | **Next** | `trade`            | Flow 12 (closed market) + G1 (insufficient balance) + G2 (unauthenticated purchase)    |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) + G1 (already-running snackbar) + G2 (validation)                   |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G1 · G2 (unsupported trade type)                                  |
 | **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                       |
 | **Done** | `positions`        | All 11 flows/gaps automated                                                            |
 | **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance       |
