@@ -510,6 +510,44 @@ describe('Proposal Helper Functions', () => {
 
             expect(result.ONETOUCH.barrier).toBeUndefined();
         });
+
+        // Issue #1384: Higher/Lower -> Digit Over/Under left `barrier_1` holding the price barrier
+        // it was seeded with, and the request preferred it over the selected digit. The API answered
+        // every proposal with "Barrier is not an integer in range of 0 to 9.", so Buy never priced.
+        it.each([
+            ['a relative barrier from Higher/Lower', '+2.00'],
+            ['an absolute barrier from a forex symbol', '1234.567'],
+        ])('sends the selected digit, not %s, for a digit contract', (_label, stale_barrier) => {
+            const store = {
+                ...mockTradeStore,
+                trade_types: { DIGITOVER: 'Over' },
+                form_components: ['duration', 'amount', 'last_digit'],
+                // `contracts_for` reports barriers: 1 for Over/Under with no barrier value of its own.
+                barrier_count: 1,
+                barrier_1: stale_barrier,
+                last_digit: '7',
+            };
+
+            const result = createProposalRequests(store);
+
+            expect(result.DIGITOVER).toHaveProperty('barrier', '7');
+        });
+
+        it('sends the selected digit even when a stale barrier is set on Matches/Differs', () => {
+            const store = {
+                ...mockTradeStore,
+                trade_types: { DIGITMATCH: 'Matches' },
+                form_components: ['duration', 'amount', 'last_digit'],
+                barrier_count: 1,
+                barrier: '+0.1',
+                barrier_1: '+0.1',
+                last_digit: '0',
+            };
+
+            const result = createProposalRequests(store);
+
+            expect(result.DIGITMATCH).toHaveProperty('barrier', '0');
+        });
     });
 
     // A duration-taking contract must never go on the wire without an expiry: a request carrying

@@ -284,6 +284,15 @@ export const createProposalRequestForContract = (store: TTradeStore, type_of_con
         limit_order = { take_profit: +store.take_profit || 0 };
     }
 
+    /**
+     * A digit contract (Matches/Differs, Over/Under) prices against the last digit the user picked,
+     * and the API carries it in the same `barrier` field a price-barrier contract uses. The two are
+     * never both meaningful: a type offering `last_digit` has no price barrier of its own —
+     * `contracts_for` reports `barriers: 1` with no `barrier` value, because the digit is the user's
+     * to supply.
+     */
+    const takes_last_digit = store.form_components.indexOf('last_digit') !== -1;
+
     return {
         proposal: 1,
         subscribe: 1,
@@ -294,14 +303,21 @@ export const createProposalRequestForContract = (store: TTradeStore, type_of_con
         underlying_symbol: store.symbol,
         ...(store.start_date && store.start_time && { date_start: convertToUnix(store.start_date, store.start_time) }),
         ...getDurationParams(),
-        ...((store.barrier_count > 0 || store.form_components.indexOf('last_digit') !== -1) &&
+        ...((store.barrier_count > 0 || takes_last_digit) &&
             !isAccumulatorContract(type_of_contract) &&
             !isTurbosContract(type_of_contract) &&
             !isRiseFallContractType(type_of_contract) && {
-                barrier:
-                    store.barrier ||
-                    store.barrier_1 ||
-                    (store.form_components.indexOf('last_digit') !== -1 ? store.last_digit : undefined),
+                // The digit wins outright rather than acting as a last-resort fallback. `barrier_1`
+                // outlives the trade type that owned it — nothing blanks it when the store enters a
+                // digit type (`getContractValues` deliberately leaves a barrier it cannot re-derive),
+                // and a symbol switch across barrier-support types re-seeds it regardless of the
+                // trade type in play. Preferring it here sent the previous contract's price barrier
+                // (`+0.1`, a spot price) on a digit proposal, which the backend rejects with
+                // "Barrier is not an integer in range of 0 to 9." — leaving Buy unpriced with a
+                // perfectly valid digit selected.
+                // `|| undefined` keeps a blank barrier off the wire as an absent field rather than
+                // an empty string, the way the old fallback chain's trailing `undefined` did.
+                barrier: takes_last_digit ? store.last_digit : store.barrier || store.barrier_1 || undefined,
             }),
         ...(store.barrier_count === 2 &&
             !isAccumulatorContract(type_of_contract) &&
