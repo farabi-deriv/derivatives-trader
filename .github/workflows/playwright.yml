@@ -1,6 +1,6 @@
 name: Playwright Tests
 
-run-name: "Playwright | ${{ (github.event.schedule == '45 1 * * *' && 'production') || github.event.inputs.test_env || 'staging' }} | ${{ (github.event.schedule == '30 1 * * *' && 'smoke') || (github.event.schedule == '45 1 * * *' && 'smoke') || github.event.inputs.test_suite || (github.event_name == 'schedule' && 'regression') || 'smoke' }} | ${{ ((github.event.schedule == '30 1 * * *' || github.event.schedule == '45 1 * * *') && 'chromium-mobile') || github.event.inputs.platform || 'all' }}"
+run-name: "Playwright | ${{ (github.event.schedule == '45 1 * * *' && 'production') || ((github.event.inputs.preview_url || inputs.preview_url) != '' && 'preview') || github.event.inputs.test_env || inputs.test_env || 'staging' }} | ${{ (github.event.schedule == '30 1 * * *' && 'smoke') || (github.event.schedule == '45 1 * * *' && 'smoke') || github.event.inputs.test_suite || inputs.test_suite || (github.event_name == 'schedule' && 'regression') || 'smoke' }} | ${{ ((github.event.schedule == '30 1 * * *' || github.event.schedule == '45 1 * * *') && 'chromium-mobile') || github.event.inputs.platform || inputs.platform || 'all' }}"
 
 on:
   schedule:
@@ -27,6 +27,10 @@ on:
         type: string
       notify:
         description: 'Who to notify on failure'
+        required: false
+        type: string
+      preview_url:
+        description: 'PR preview URL (pages.dev). Uses staging credentials; overrides BASE_URL from .env.staging'
         required: false
         type: string
   workflow_dispatch:
@@ -80,6 +84,11 @@ on:
           - regression-team-2
           - regression-team-3
           - regression-team-4
+      preview_url:
+        description: 'PR preview URL (e.g. https://fix-qa-test.derivatives-trader.pages.dev). Staging credentials; overrides BASE_URL'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   validate-inputs:
@@ -87,6 +96,7 @@ jobs:
     runs-on: github-hosted-playwright01
     outputs:
       resolved_spec: ${{ steps.resolve-spec.outputs.resolved_spec }}
+      resolved_preview_url: ${{ steps.resolve-preview-url.outputs.resolved_preview_url }}
       cron_env: ${{ steps.resolve-cron.outputs.cron_env }}
       cron_suite: ${{ steps.resolve-cron.outputs.cron_suite }}
       matrix: ${{ steps.resolve-matrix.outputs.matrix }}
@@ -103,6 +113,31 @@ jobs:
         run: |
           echo "::error::Regression suite is not supported on production. Use smoke instead."
           exit 1
+
+      - name: Validate preview URL
+        id: resolve-preview-url
+        env:
+          PREVIEW_URL_INPUT: ${{ github.event.inputs.preview_url || inputs.preview_url || '' }}
+          TEST_ENV_INPUT: ${{ github.event.inputs.test_env || inputs.test_env || 'staging' }}
+        run: |
+          PREVIEW_URL_INPUT="${PREVIEW_URL_INPUT//[[:space:]]/}"
+          if [ -z "$PREVIEW_URL_INPUT" ]; then
+            exit 0
+          fi
+          if [ "$TEST_ENV_INPUT" = "production" ]; then
+            echo "::error::preview_url cannot be used with test_env=production. Use test_env=staging."
+            exit 1
+          fi
+          case "$PREVIEW_URL_INPUT" in
+            https://*) ;;
+            *)
+              echo "::error::preview_url must start with https:// (got: $PREVIEW_URL_INPUT)"
+              exit 1
+              ;;
+          esac
+          PREVIEW_URL_INPUT="${PREVIEW_URL_INPUT%/}"
+          echo "resolved_preview_url=${PREVIEW_URL_INPUT}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Preview mode — BASE_URL=${PREVIEW_URL_INPUT} (staging credentials from .env.staging)"
 
       - name: Resolve cron schedule
         id: resolve-cron
@@ -181,7 +216,7 @@ jobs:
           echo "max_parallel=${MAX_PARALLEL}" >> "$GITHUB_OUTPUT"
 
   playwright-tests:
-    name: Playwright Tests - ${{ matrix.name }} (${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
+    name: Playwright Tests - ${{ matrix.name }} (${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
     needs: validate-inputs
     timeout-minutes: 120
     strategy:
@@ -191,7 +226,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.validate-inputs.outputs.matrix) }}
     runs-on: github-hosted-playwright01
-    environment: ${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+    environment: ${{ needs.validate-inputs.outputs.resolved_preview_url && 'staging' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
     permissions:
       contents: read
 
@@ -214,7 +249,7 @@ jobs:
       - name: Decrypt Playwright env files
         env:
           ENV_ENCRYPTION_KEY: ${{ secrets.ENV_ENCRYPTION_KEY }}
-          TEST_ENV: ${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+          TEST_ENV: ${{ needs.validate-inputs.outputs.resolved_preview_url && 'staging' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
         run: |
           case "$TEST_ENV" in
             staging|production) ;;
@@ -224,12 +259,17 @@ jobs:
 
       - name: Run Playwright tests (${{ matrix.name }})
         env:
-          TEST_ENV: ${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+          TEST_ENV: ${{ needs.validate-inputs.outputs.resolved_preview_url && 'staging' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
           TEST_SUITE: ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }}
           RESOLVED_SPEC: ${{ needs.validate-inputs.outputs.resolved_spec }}
+          PREVIEW_BASE_URL: ${{ needs.validate-inputs.outputs.resolved_preview_url }}
           GREP_TAG: ${{ matrix.grep_tag }}
           TESTDINO_TOKEN: ${{ secrets.TESTDINO_TOKEN }}
         run: |
+          if [ -n "$PREVIEW_BASE_URL" ]; then
+            export BASE_URL="$PREVIEW_BASE_URL"
+            echo "::notice::Running against preview BASE_URL=$BASE_URL"
+          fi
           RESOLVED_SPEC="${RESOLVED_SPEC//[[:space:]]/}"
           if [ -n "$RESOLVED_SPEC" ]; then
             npx playwright test --project=${{ matrix.platform }} "$RESOLVED_SPEC"
@@ -239,7 +279,7 @@ jobs:
             else
               GREP_PATTERN="(?=.*@${GREP_TAG})(?=.*@${TEST_SUITE})"
             fi
-            if [ "$TEST_ENV" = "production" ]; then
+            if [ "$TEST_ENV" = "production" ] && [ -z "$BASE_URL" ]; then
               GREP_PATTERN="${GREP_PATTERN}(?=.*@production)"
             fi
             npx playwright test --project=${{ matrix.platform }} --grep "$GREP_PATTERN"
@@ -259,7 +299,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         if: always()
         with:
-          name: playwright-report-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+          name: playwright-report-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
           path: playwright/playwright-report/
           retention-days: 30
 
@@ -267,7 +307,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         if: failure()
         with:
-          name: playwright-test-results-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+          name: playwright-test-results-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
           path: playwright/test-results/
           retention-days: 7
 

@@ -392,14 +392,16 @@ playwright/
 
 ## Key Conventions
 
-| Convention               | Rule                                                       |
-| ------------------------ | ---------------------------------------------------------- |
-| Default email domain     | `@webapps.mailisk.net`                                     |
-| Env var for Mailisk      | `MAILISK_API_KEY`                                          |
-| Login env vars           | `TEST_EMAIL`, `TEST_PASSWORD`, `LOGIN_URL`                 |
-| Run env                  | `TEST_ENV=staging` (default) or `TEST_ENV=production`      |
-| Base URL                 | `BASE_URL` env var or `https://staging-dtrader.deriv.com`  |
-| Login flow               | Single-step OAuth via Deriv login page → redirect to app   |
-| Full login shortcut      | `loginPage.login()` — reads `TEST_EMAIL` / `TEST_PASSWORD` |
-| Mobile detection in POM  | `(this.page.viewportSize()?.width ?? 1024) < 1024`         |
-| Mobile detection in test | `testInfo.project.name.includes("mobile")`                 |
+| Convention               | Rule                                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Default email domain     | `@webapps.mailisk.net`                                                                                                             |
+| Env var for Mailisk      | `MAILISK_API_KEY`                                                                                                                  |
+| Login env vars           | `TEST_EMAIL`, `TEST_PASSWORD`, `LOGIN_URL`                                                                                         |
+| Run env                  | `TEST_ENV=staging` (default) or `TEST_ENV=production`                                                                              |
+| Base URL                 | `BASE_URL` env var or `https://staging-dtrader.deriv.com`                                                                          |
+| PR preview (local)       | `TEST_ENV=staging BASE_URL=https://…pages.dev/ npx playwright test …` — staging credentials, preview frontend                      |
+| PR preview (CI)          | Playwright workflow `preview_url` input — decrypts `.env.staging`, sets `BASE_URL` override (not valid with `test_env=production`) |
+| Login flow               | Single-step OAuth via Deriv login page → redirect to app                                                                           |
+| Full login shortcut      | `loginPage.login()` — reads `TEST_EMAIL` / `TEST_PASSWORD`                                                                         |
+| Mobile detection in POM  | `(this.page.viewportSize()?.width ?? 1024) < 1024`                                                                                 |
+| Mobile detection in test | `testInfo.project.name.includes("mobile")`                                                                                         |
