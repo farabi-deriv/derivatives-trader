@@ -580,7 +580,8 @@ describe('Duration - Mobile', () => {
             </TraderProviders>
         );
 
-        expect(screen.getByDisplayValue(/28 Aug 2026, 20:55:00 GMT/)).toBeInTheDocument();
+        expect(screen.getByDisplayValue('28 Aug 2026, 20:55:00 GMT')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue(/Ends on/)).not.toBeInTheDocument();
         expect(screen.queryByDisplayValue(/23:59:59/)).not.toBeInTheDocument();
     });
 

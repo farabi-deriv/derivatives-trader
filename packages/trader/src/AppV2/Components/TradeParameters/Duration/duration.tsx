@@ -261,7 +261,7 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
                 const time_display = is_today
                     ? saved_expiry_time.substring(0, 5) // HH:mm
                     : saved_expiry_time; // HH:mm:ss
-                return `${localize('Ends on')} ${formatted_date}, ${time_display} GMT`;
+                return `${formatted_date}, ${time_display} GMT`;
             }
             return `${duration} ${duration_unit_text}`;
         }
@@ -270,7 +270,7 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
             const time_display = is_today
                 ? expiry_time.substring(0, 5) // HH:mm
                 : `${expiry_time}`; // HH:mm:ss
-            return `${localize('Ends on')} ${formatted_date}, ${time_display} GMT`;
+            return `${formatted_date}, ${time_display} GMT`;
         }
     };
 
