@@ -142,6 +142,9 @@ const ReplayChart = observer(
                 id='replay'
                 barriers={barriers_array}
                 bottomWidgets={isBottomWidgetVisible() ? ChartBottomWidgets : undefined}
+                // Matches the trade chart: a digit contract is decided by the
+                // quote's last digit, so the current-spot label emphasises it.
+                shouldEmphasizeLastDigit={is_digit_contract}
                 chartControlsWidgets={null}
                 chartType={effective_chart_type}
                 endEpoch={end_epoch}

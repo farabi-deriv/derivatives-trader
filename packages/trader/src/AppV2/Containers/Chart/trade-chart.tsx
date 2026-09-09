@@ -286,6 +286,10 @@ const TradeChart = observer(() => {
                 contracts_array={markers_array}
                 bottomWidgets={BottomWidgetsMobile}
                 showLastDigitStats
+                // Digit trade types settle on the quote's last digit, so the
+                // chart renders it larger and bolder inside the current-spot
+                // label. Toggling this does not re-create the chart.
+                shouldEmphasizeLastDigit={show_digits_stats}
                 chartControlsWidgets={null}
                 chartStatusListener={(v: boolean) => setChartStatus(!v, true)}
                 chartType={chart_type}
