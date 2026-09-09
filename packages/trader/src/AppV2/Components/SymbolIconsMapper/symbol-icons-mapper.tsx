@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { marketIcons } from 'AppV2/Utils/market-icons';
+import { marketIcons } from '@deriv/shared';
 
 type TSymbolIconsMapper = {
     symbol: string;

@@ -13,7 +13,6 @@ import {
     LocalStore,
     removeCookies,
     routes,
-    SessionStore,
     urlForLanguage,
 } from '@deriv/shared';
 import { Analytics } from '@deriv-com/analytics';
@@ -267,7 +266,7 @@ export default class ClientStore extends BaseStore {
 
         let search = '';
         try {
-            search = SessionStore?.get?.('signup_query_param') || window?.location?.search || '';
+            search = window?.location?.search || '';
         } catch (error) {
             search = '';
         }

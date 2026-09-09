@@ -54,11 +54,7 @@ Object.defineProperty(window, 'location', {
 afterEach(() => jest.clearAllMocks());
 
 const createMockStore = (clientState: { is_logged_in: boolean; is_logging_in: boolean }) => {
-    const store = mockStore({
-        feature_flags: {
-            data: {},
-        },
-    });
+    const store = mockStore({});
     store.client.is_logging_in = clientState.is_logging_in;
     store.client.is_logged_in = clientState.is_logged_in;
     return store;

@@ -402,12 +402,6 @@ const mock = (): TStores & { is_mock: boolean } => {
                 v2_params_initial_values: {},
             },
         },
-        feature_flags: {
-            data: undefined,
-            update: jest.fn(),
-            unmount: jest.fn(),
-            cleanup: jest.fn(),
-        },
         gtm: {
             is_gtm_applicable: false,
             visitorId: 'visitorId',

@@ -30,10 +30,10 @@ jest.mock('@deriv/shared', () => ({
                         },
                         {
                             barriers: 2,
-                            contract_category: 'endsinout',
-                            contract_category_display: 'Ends Between/Ends Outside',
-                            contract_display: 'Ends Outside',
-                            contract_type: 'EXPIRYMISS',
+                            contract_category: 'touchnotouch',
+                            contract_category_display: 'Touch/No Touch',
+                            contract_display: 'Touch',
+                            contract_type: 'ONETOUCH',
                             exchange_name: 'FOREX',
                             expiry_type: 'daily',
                             forward_starting_options: [
@@ -235,7 +235,7 @@ describe('ContractType Helper Functions', () => {
 
     describe('getBarriers', () => {
         it('should return barriers based on contract type and expiry type', () => {
-            const result = ContractType.getBarriers('frxAUDJPY', 'end', 'daily', undefined);
+            const result = ContractType.getBarriers('frxAUDJPY', 'touch', 'daily', undefined);
 
             expect(result.barrier_count).toBe(2);
             expect(result.barrier_1).toBe('98.745');
@@ -244,7 +244,7 @@ describe('ContractType Helper Functions', () => {
 
         it('should use stored barrier value when provided', () => {
             const stored_barrier = '100.000';
-            const result = ContractType.getBarriers('frxAUDJPY', 'end', 'daily', stored_barrier);
+            const result = ContractType.getBarriers('frxAUDJPY', 'touch', 'daily', stored_barrier);
 
             expect(result.barrier_count).toBe(2);
             expect(result.barrier_1).toBe(stored_barrier);
@@ -343,7 +343,7 @@ describe('ContractType Helper Functions', () => {
             // price as a barrier-less request before the correct cascade repaired it.
             const result = ContractType.getContractValues({
                 ...trade_store,
-                contract_type: 'end', // daily bucket only in the fixture (barriers 98.745/97.672)
+                contract_type: 'touch', // daily bucket only in the fixture (barriers 98.745/97.672)
                 contract_expiry_type: 'tick', // stale: left behind by a tick tab
                 duration_unit: 'd',
                 expiry_type: 'duration',
@@ -357,7 +357,7 @@ describe('ContractType Helper Functions', () => {
         it('derives daily from a stale intraday duration_unit, not just a stale bucket', () => {
             const result = ContractType.getContractValues({
                 ...trade_store,
-                contract_type: 'end',
+                contract_type: 'touch',
                 contract_expiry_type: 'intraday',
                 duration_unit: 'm', // stale: the outgoing intraday tab's unit
                 expiry_type: 'duration',
@@ -369,12 +369,12 @@ describe('ContractType Helper Functions', () => {
 
         it('never blanks an existing barrier when the resolved bucket offers none', () => {
             // Without server_time the bucket re-derivation is skipped and the stale 'tick' bucket
-            // survives; 'end' offers no tick barriers. The old shape returned barrier_1: '' next to
+            // survives; 'touch' offers no tick barriers. The old shape returned barrier_1: '' next to
             // barrier_count: 2 — the blank the proposal then priced. Now the keys are dropped so the
             // store's existing value is left alone.
             const result = ContractType.getContractValues({
                 ...trade_store,
-                contract_type: 'end',
+                contract_type: 'touch',
                 contract_expiry_type: 'tick',
                 duration_unit: 'd',
                 expiry_type: 'duration',
@@ -437,12 +437,12 @@ describe('ContractType Helper Functions', () => {
 
     describe('getDurationMinMax', () => {
         it('should return empty duration_min_max when contract_expiry_type is provided', () => {
-            const result = ContractType.getDurationMinMax('frxAUDJPY', 'end', 'daily');
+            const result = ContractType.getDurationMinMax('frxAUDJPY', 'touch', 'daily');
             expect(result).toEqual({ duration_min_max: {} });
         });
 
         it('should return duration_min_max from config when no contract_expiry_type', () => {
-            const result = ContractType.getDurationMinMax('frxAUDJPY', 'end');
+            const result = ContractType.getDurationMinMax('frxAUDJPY', 'touch');
             // Returns whatever is in the config, which may be empty for this contract type
             expect(result).toHaveProperty('duration_min_max');
             expect(typeof result.duration_min_max).toBe('object');
@@ -494,7 +494,7 @@ describe('ContractType Helper Functions', () => {
 
     describe('getDurationUnitsList', () => {
         it('should return duration units list for valid contract type', () => {
-            const result = ContractType.getDurationUnitsList('frxAUDJPY', 'end');
+            const result = ContractType.getDurationUnitsList('frxAUDJPY', 'touch');
             expect(result).toHaveProperty('duration_units_list');
             expect(Array.isArray(result.duration_units_list)).toBe(true);
         });
@@ -669,7 +669,7 @@ describe('ContractType Helper Functions', () => {
 
     describe('getSessions', () => {
         it('should always return sessions as undefined', () => {
-            const result = ContractType.getSessions('frxAUDJPY', 'end', 1701388800);
+            const result = ContractType.getSessions('frxAUDJPY', 'touch', 1701388800);
             expect(result).toEqual({ sessions: undefined });
         });
 

@@ -7,7 +7,6 @@ import {
     ChartBarrierStore,
     contractCancelled,
     contractSold,
-    filterDisabledPositions,
     formatMoney,
     formatPortfolioPosition,
     getContractPath,
@@ -151,7 +150,6 @@ export default class PortfolioStore extends BaseStore {
         this.error = '';
         if (response.portfolio.contracts) {
             this.positions = response.portfolio.contracts
-                .filter(filterDisabledPositions)
                 .map(pos => formatPortfolioPosition(pos))
                 .sort((pos1, pos2) => pos2.reference - pos1.reference); // new contracts first
 

@@ -70,14 +70,6 @@
         flex-direction: column;
     }
 
-    &__panel-right {
-        flex: 1 1 500px;
-        display: flex;
-        flex-direction: column;
-        overflow: auto;
-        height: 100%;
-    }
-
     &__close-button {
         appearance: none;
         font-size: 0.9em;
@@ -101,11 +93,6 @@
         position: sticky;
         top: 0px;
         z-index: 1;
-    }
-
-    &__checkbox-container {
-        display: flex;
-        flex-wrap: wrap;
     }
 
     &__checkbox {

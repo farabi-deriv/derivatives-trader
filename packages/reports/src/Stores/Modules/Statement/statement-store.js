@@ -1,7 +1,7 @@
 import debounce from 'lodash.debounce';
 import { action, computed, makeObservable, observable, override, reaction } from 'mobx';
 
-import { filterDisabledPositions, mapErrorMessage, toMoment, WS } from '@deriv/shared';
+import { mapErrorMessage, toMoment, WS } from '@deriv/shared';
 
 import BaseStore from '../../base-store';
 import getDateBoundaries from '../Profit/Helpers/format-request';
@@ -117,9 +117,9 @@ export default class StatementStore extends BaseStore {
             return;
         }
 
-        const formatted_transactions = response.statement.transactions
-            .map(transaction => formatStatementTransaction(transaction, this.root_store.client.currency))
-            .filter(filterDisabledPositions);
+        const formatted_transactions = response.statement.transactions.map(transaction =>
+            formatStatementTransaction(transaction, this.root_store.client.currency)
+        );
 
         if (should_load_partially) {
             this.data = [...formatted_transactions, ...this.data];

@@ -16,9 +16,6 @@ module.exports = {
     // Token functions
     getToken: jest.fn(() => 'mock_token'),
 
-    // Feature flag functions
-    getFeatureFlag: jest.fn(() => false),
-
     // URL and link functions
     isExternalLink: jest.fn(url => {
         if (!url) return false;

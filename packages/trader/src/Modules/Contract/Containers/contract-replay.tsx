@@ -3,12 +3,9 @@ import { useHistory, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 
 import { FadeWrapper, PageOverlay } from '@deriv/components';
-import { useFeatureFlags } from '@deriv/api';
 import {
-    getContractTypeFeatureFlag,
     isAccumulatorContract,
     isEmptyObject,
-    isHighLow,
     isLookBacksContract,
     isMultiplierContract,
     isResetContract,
@@ -39,12 +36,6 @@ const ContractReplay = observer(({ contract_id }: { contract_id: number }) => {
         notification_messages_ui: NotificationMessages,
         toggleHistoryTab,
     } = ui;
-    const trade_type_feature_flag =
-        contract_info.shortcode &&
-        getContractTypeFeatureFlag(contract_info.contract_type ?? '', isHighLow(contract_info));
-    const is_trade_type_disabled =
-        useFeatureFlags()[`is_${trade_type_feature_flag}_enabled` as keyof ReturnType<typeof useFeatureFlags>] ===
-        false;
     const [is_visible, setIsVisible] = React.useState(false);
     const history = useHistory();
 
@@ -69,13 +60,6 @@ const ContractReplay = observer(({ contract_id }: { contract_id: number }) => {
         return is_from_table_row ? history.goBack() : routeBackInApp(history);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [history, routeBackInApp]);
-
-    React.useEffect(() => {
-        // don't open Contract details page for trade types with disabled feature flag:
-        if (is_trade_type_disabled && is_visible) {
-            onClickClose();
-        }
-    }, [is_trade_type_disabled, is_visible, onClickClose]);
 
     const is_accumulator = isAccumulatorContract(contract_info.contract_type);
     const is_multiplier = isMultiplierContract(contract_info.contract_type);

@@ -1,15 +1,19 @@
 import {
     getCardLabels,
+    getCardLabelsV2,
     getMarketNamesMap,
     getUnsupportedContracts,
     getSupportedContracts,
     getContractConfig,
     getContractTypeDisplay,
     getContractCategoriesConfig,
+    getContractTypesConfig,
     getContractTypePosition,
+    unsupported_contract_types_list,
     getCleanedUpCategories,
     getLocalizedBasis,
 } from '../contract';
+import { tradeTypeIcons } from '../trade-type-icons';
 import { CONTRACT_TYPES, TRADE_TYPES } from '../../contract';
 
 type TGetSupportedContractsKey = keyof ReturnType<typeof getSupportedContracts>;
@@ -18,6 +22,7 @@ const card_labels = {
     MULTIPLIER: 'Multiplier:',
     TAKE_PROFIT_IS_NOT_AVAILABLE: "Take profit can't be adjusted for ongoing accumulator contracts.",
 };
+const dead_card_labels = ['BUY_PRICE', 'CURRENT_STAKE', 'DONT_SHOW_THIS_AGAIN', 'INITIAL_STAKE', 'LOST', 'WON'];
 const markets_name = 'AUD/CAD';
 const unsupported_contract = {
     name: 'Spread Up',
@@ -32,13 +37,6 @@ const supported_non_high_low_contract = {
     position: 'top',
 };
 
-jest.mock('../../storage', () => ({
-    ...jest.requireActual('../../storage'),
-    LocalStore: {
-        getObject: jest.fn(() => ({ data: {} })),
-    },
-}));
-
 describe('getLocalizedBasis', () => {
     it('should return an object with localized basis', () => {
         expect(getLocalizedBasis().accumulator).toEqual('Accumulators');
@@ -50,6 +48,27 @@ describe('getCardLabels', () => {
         expect(getCardLabels().APPLY).toEqual(card_labels.APPLY);
         expect(getCardLabels().MULTIPLIER).toEqual(card_labels.MULTIPLIER);
         expect(getCardLabels().TAKE_PROFIT_IS_NOT_AVAILABLE).toEqual(card_labels.TAKE_PROFIT_IS_NOT_AVAILABLE);
+    });
+
+    it('[DCR-011] should have dropped the six dead labels from both label maps', () => {
+        expect.assertions(dead_card_labels.length * 2);
+        dead_card_labels.forEach(label => {
+            expect(getCardLabels()).not.toHaveProperty(label);
+            expect(getCardLabelsV2()).not.toHaveProperty(label);
+        });
+    });
+
+    it('[DCR-011] should keep the destructured and computed-key labels the contract cards read', () => {
+        const labels = getCardLabels();
+        expect(labels.PAYOUT).toEqual('Sell price:');
+        expect(labels.INDICATIVE_PRICE).toEqual('Indicative price:');
+        expect(labels.PROFIT_LOSS).toEqual('Profit/Loss:');
+        expect(labels.POTENTIAL_PROFIT_LOSS).toEqual('Potential profit/loss:');
+        expect(labels.PURCHASE_PRICE).toEqual('Buy price:');
+        expect(labels.TAKE_PROFIT_IS_NOT_AVAILABLE).toEqual(card_labels.TAKE_PROFIT_IS_NOT_AVAILABLE);
+        expect(labels.TAKE_PROFIT_LOSS_NOT_AVAILABLE).toEqual(
+            'Take profit and/or stop loss are not available while deal cancellation is active.'
+        );
     });
 });
 
@@ -164,7 +183,7 @@ describe('getContractTypePosition', () => {
 });
 
 describe('getCleanedUpCategories', () => {
-    it('should return only those trade categories that are objects containing value & text', () => {
+    it('[DCR-013] should return only those trade categories that are objects containing value & text', () => {
         const initial_categories = {
             'Ups & Downs': {
                 name: 'Ups & Downs',
@@ -198,7 +217,7 @@ describe('getCleanedUpCategories', () => {
         };
         expect(getCleanedUpCategories(initial_categories)).toEqual(resulting_categories);
     });
-    it('should return all trade categories when there are no feature flags to filter', () => {
+    it('[DCR-013] should return all trade categories when every entry is an object', () => {
         const initial_categories = {
             Multipliers: {
                 name: 'Multipliers',
@@ -244,30 +263,17 @@ describe('getCleanedUpCategories', () => {
 });
 
 describe('getContractCategoriesConfig', () => {
-    it('should return object with categories', () => {
+    it('[DCR-016] should return object with categories', () => {
         const categories = {
             Turbos: { name: 'Turbos', categories: [TRADE_TYPES.TURBOS.LONG, TRADE_TYPES.TURBOS.SHORT] },
             Multipliers: { name: 'Multipliers', categories: [TRADE_TYPES.MULTIPLIER] },
             'Ups & Downs': {
                 name: 'Ups & Downs',
-                categories: [
-                    TRADE_TYPES.RISE_FALL,
-                    TRADE_TYPES.RISE_FALL_EQUAL,
-                    TRADE_TYPES.HIGH_LOW,
-                    TRADE_TYPES.RUN_HIGH_LOW,
-                    TRADE_TYPES.RESET,
-                    TRADE_TYPES.ASIAN,
-                    TRADE_TYPES.CALL_PUT_SPREAD,
-                ],
+                categories: [TRADE_TYPES.RISE_FALL, TRADE_TYPES.RISE_FALL_EQUAL, TRADE_TYPES.HIGH_LOW],
             },
             'Touch & No Touch': {
                 name: 'Touch & No Touch',
-                categories: [TRADE_TYPES.TOUCH, TRADE_TYPES.TICK_HIGH_LOW],
-            },
-            'Ins & Outs': { name: 'Ins & Outs', categories: [TRADE_TYPES.END, TRADE_TYPES.STAY] },
-            'Look Backs': {
-                name: 'Look Backs',
-                categories: [TRADE_TYPES.LB_HIGH_LOW, TRADE_TYPES.LB_PUT, TRADE_TYPES.LB_CALL],
+                categories: [TRADE_TYPES.TOUCH],
             },
             Digits: {
                 name: 'Digits',
@@ -278,5 +284,27 @@ describe('getContractCategoriesConfig', () => {
         };
 
         expect(getContractCategoriesConfig()).toEqual(categories);
+    });
+
+    it('[DCR-016] should reference only trade types that still have a config entry', () => {
+        const config = getContractTypesConfig();
+        Object.values(getContractCategoriesConfig()).forEach(({ categories }) => {
+            categories.forEach(trade_type => expect(config).toHaveProperty(trade_type));
+        });
+    });
+
+    it('[DCR-016] should have dropped every permanently-unsupported trade type from the config', () => {
+        const config = getContractTypesConfig();
+        unsupported_contract_types_list.forEach(trade_type => expect(config).not.toHaveProperty(trade_type));
+    });
+
+    it('[DCR-016] should keep the guard list and the icon map intact', () => {
+        expect(unsupported_contract_types_list).toHaveLength(10);
+        expect(Object.keys(tradeTypeIcons)).toHaveLength(37);
+    });
+
+    it('[DCR-016] should still name a historical contract of a removed type', () => {
+        expect(getContractTypeDisplay(CONTRACT_TYPES.ASIAN.UP)).toBe('Asian Up');
+        expect(getContractTypeDisplay(CONTRACT_TYPES.LB_CALL)).toBe('Close-Low');
     });
 });

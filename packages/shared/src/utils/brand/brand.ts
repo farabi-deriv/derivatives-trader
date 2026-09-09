@@ -10,10 +10,6 @@ export const getBrandName = () => {
     return config_data.brand_name;
 };
 
-export const getBrandLogo = () => {
-    return config_data.brand_logo;
-};
-
 /**
  * Runtime production check based on window.location.hostname.
  */
@@ -24,11 +20,6 @@ export const isProduction = (): boolean => {
         const pattern = new RegExp(`^(www\\.)?(beta-)?dtrader\\.${domain.replaceAll('.', '\\.')}$`, 'i');
         return pattern.test(hostname);
     });
-};
-
-export const getBrandHostname = () => {
-    const hostname = isProduction() ? config_data.brand_hostname.production : config_data.brand_hostname.staging;
-    return substituteDerivDomain(hostname);
 };
 
 export const getBrandUrl = () => {
@@ -59,25 +50,11 @@ export const getBrandHomeUrl = (language?: string) => {
     return appendLangParam(baseUrl, language);
 };
 
-export const getBrandLoginUrl = (language?: string) => {
-    const baseUrl = `${getBrandUrl()}/login`;
-    return appendLangParam(baseUrl, language);
-};
-
-export const getBrandSignupUrl = (language?: string) => {
-    const baseUrl = `${getBrandUrl()}/signup`;
-    return appendLangParam(baseUrl, language);
-};
-
 export const getPlatformName = () => {
     return config_data.platform.name;
 };
 
-export const getPlatformLogo = () => {
-    return config_data.platform.logo;
-};
-
-export const getDomainName = () => {
+const getDomainName = () => {
     if (typeof window === 'undefined') return '';
     const hostname = window.location.hostname;
     if (!hostname) return '';
@@ -170,7 +147,7 @@ export const getLogoutURL = (): string => {
  * Gets the API Core URL based on environment
  * @returns API Core base URL (without protocol)
  */
-export const getApiCoreUrl = (): string => {
+const getApiCoreUrl = (): string => {
     const url = isProduction() ? config_data.api_core.production : config_data.api_core.staging;
     return substituteDerivDomain(url);
 };
@@ -181,23 +158,6 @@ export const getApiCoreUrl = (): string => {
  */
 export const getApiCoreBaseUrl = (): string => {
     return `https://${getApiCoreUrl()}`;
-};
-
-/**
- * Gets the API URL for account_list based on environment
- * @returns API base URL (without protocol), e.g. "api.deriv.be"
- */
-export const getApiUrl = (): string => {
-    const url = isProduction() ? config_data.api.production : config_data.api.staging;
-    return substituteDerivDomain(url);
-};
-
-/**
- * Gets the full API URL for account_list with protocol
- * @returns Full API URL with https://, e.g. "https://api.deriv.be"
- */
-export const getApiBaseUrl = (): string => {
-    return `https://${getApiUrl()}`;
 };
 
 /**

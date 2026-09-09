@@ -1,7 +1,7 @@
 import debounce from 'lodash.debounce';
 import { action, computed, makeObservable, observable, override, reaction } from 'mobx';
 
-import { filterDisabledPositions, mapErrorMessage, toMoment, WS } from '@deriv/shared';
+import { mapErrorMessage, toMoment, WS } from '@deriv/shared';
 
 import BaseStore from '../../base-store';
 
@@ -96,9 +96,9 @@ export default class ProfitTableStore extends BaseStore {
             return;
         }
 
-        const formatted_transactions = response.profit_table.transactions
-            .map(transaction => formatProfitTableTransactions(transaction, this.root_store.client.currency))
-            .filter(filterDisabledPositions);
+        const formatted_transactions = response.profit_table.transactions.map(transaction =>
+            formatProfitTableTransactions(transaction, this.root_store.client.currency)
+        );
 
         this.data = [...this.data, ...formatted_transactions];
         this.has_loaded_all = formatted_transactions.length < batch_size;

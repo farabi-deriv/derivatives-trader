@@ -49,3 +49,6 @@ test-results/
 playwright/.env.*
 # Allow encrypted env files to be committed
 !playwright/.env.*.enc
+
+# spec-to-pr run state
+.spec-to-pr/

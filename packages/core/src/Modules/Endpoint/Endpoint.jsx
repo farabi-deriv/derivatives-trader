@@ -2,7 +2,6 @@ import React from 'react';
 import { Field, Form, Formik } from 'formik';
 import { Button, Checkbox, Input, Text } from '@deriv/components';
 import { getDebugServiceWorker, getSocketURL } from '@deriv/shared';
-import { FeatureFlagsSection } from './FeatureFlagsSection';
 
 const InputField = props => {
     return (
@@ -92,7 +91,6 @@ const Endpoint = () => {
                         text='Reset to original settings'
                         secondary
                     />
-                    <FeatureFlagsSection />
                 </Form>
             )}
         </Formik>

@@ -30,11 +30,6 @@ jest.mock('@deriv/components', () => ({
 
 jest.mock('../replay-chart', () => jest.fn(() => <div>ReplayChart</div>));
 
-jest.mock('@deriv/api', () => ({
-    ...jest.requireActual('@deriv/api'),
-    useFeatureFlags: jest.fn(() => ({})),
-}));
-
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
 }));

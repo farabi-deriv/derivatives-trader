@@ -3,9 +3,6 @@ import { routes } from '../routes';
 
 let location_url: Location, default_language: string;
 
-export const legacyUrlForLanguage = (target_language: string, url: string = window.location.href) =>
-    url.replace(new RegExp(`/${default_language}/`, 'i'), `/${(target_language || 'EN').trim().toLowerCase()}/`);
-
 export const urlForLanguage = (lang: string, url: string = window.location.href) => {
     const current_url = new URL(url);
 
@@ -36,7 +33,7 @@ export const params = (href?: string | URL) => {
 /**
  * @deprecated Please use 'URLUtils.normalizePath' from '@deriv-com/utils' instead of this.
  */
-export const normalizePath = (path: string) => (path ? path.replace(/(^\/|\/$|[^a-zA-Z0-9-_./()#])/g, '') : '');
+const normalizePath = (path: string) => (path ? path.replace(/(^\/|\/$|[^a-zA-Z0-9-_./()#])/g, '') : '');
 
 export const getUrlBase = (path = '') => {
     const l = window.location;

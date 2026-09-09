@@ -1,18 +1,6 @@
 /* eslint-disable */
 const extend = require('extend');
 
-export const removeObjProperties = (property_arr: string[], { ...obj }) => {
-    property_arr.forEach(property => delete obj[property]);
-    return obj;
-};
-
-export const filterObjProperties = ({ ...obj }, property_arr: string[]) =>
-    Object.fromEntries(
-        Object.entries(obj)
-            // eslint-disable-next-line no-unused-vars
-            .filter(([key, _]) => property_arr.includes(key))
-    );
-
 export const isEmptyObject = (obj: any) => {
     let is_empty = true;
     if (obj && obj instanceof Object) {
@@ -40,7 +28,7 @@ export const isDeepEqual = (a: any, b: any) => {
     return a === b;
 };
 
-export const isEqualArray = (arr1: any[], arr2: any[]): boolean =>
+const isEqualArray = (arr1: any[], arr2: any[]): boolean =>
     arr1 === arr2 || (arr1.length === arr2.length && arr1.every((value, idx) => isDeepEqual(value, arr2[idx])));
 
 export const isEqualObject = (obj1: any, obj2: any): boolean =>
@@ -62,18 +50,6 @@ export const getPropertyValue = (obj: any, k: string | string[]): any => {
     return obj ? cloneObject(obj[keys[0]]) : undefined;
 };
 
-export const removeEmptyPropertiesFromObject = (obj: any) => {
-    const clone = { ...obj };
-
-    Object.getOwnPropertyNames(obj).forEach(key => {
-        if ([undefined, null, ''].includes(obj[key])) {
-            delete clone[key];
-        }
-    });
-
-    return clone;
-};
-
 export const sequence = (n: number) => Array.from(Array(n).keys());
 
 export const pick = (source: any, fields: any) => {
@@ -81,32 +57,6 @@ export const pick = (source: any, fields: any) => {
         if (Object.prototype.hasOwnProperty.call(source, prop)) target[prop] = source[prop];
         return target;
     }, {});
-};
-
-export const findValueByKeyRecursively = (obj: any, key: string) => {
-    let return_value;
-
-    Object.keys(obj).some(obj_key => {
-        const value = obj[obj_key];
-
-        if (obj_key === key) {
-            return_value = obj[key];
-            return true;
-        }
-
-        if (typeof value === 'object') {
-            const nested_value = findValueByKeyRecursively(value, key);
-
-            if (nested_value) {
-                return_value = nested_value;
-                return true;
-            }
-        }
-
-        return false;
-    });
-
-    return return_value;
 };
 
 // Recursively freeze an object (deep freeze)

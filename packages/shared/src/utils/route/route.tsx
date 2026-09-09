@@ -36,6 +36,3 @@ export const getSelectedRoute = ({ routes, pathname }: TGetSelectedRoute) => {
     }
     return matching_route;
 };
-
-export const isRouteVisible = (route: TRoute, is_logged_in: boolean) =>
-    !(route && route.is_authenticated && !is_logged_in);

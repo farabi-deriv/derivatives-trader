@@ -1,18 +1,6 @@
-import { filterDisabledPositions, formatPortfolioPosition } from '../format-response';
-import { LocalStore } from '../../storage';
+import * as FormatResponse from '../format-response';
+import { formatPortfolioPosition } from '../format-response';
 import { CONTRACT_TYPES } from '../../contract';
-import { getContractTypeFeatureFlag } from '../../constants';
-
-jest.mock('../../constants', () => ({
-    ...jest.requireActual('../../constants'),
-    getContractTypeFeatureFlag: jest.fn(() => 'rise_fall'),
-}));
-jest.mock('../../storage', () => ({
-    ...jest.requireActual('../../storage'),
-    LocalStore: {
-        getObject: jest.fn(() => ({ data: { rise_fall: false } })),
-    },
-}));
 
 describe('format-response', () => {
     const portfolio_pos = {
@@ -41,30 +29,7 @@ describe('format-response', () => {
         });
     });
 
-    describe('filterDisabledPositions', () => {
-        const position = {
-            contract_type: 'CALL',
-            shortcode: 'CALL_1HZ100V_19.53_1695913929_5T_S0P_0',
-        };
-        it('should return false if a feature flag for position.contract_type is disabled', () => {
-            (LocalStore.getObject as jest.Mock).mockReturnValueOnce({ data: { rise_fall: false } });
-            expect(filterDisabledPositions(position)).toBeFalsy();
-        });
-        it('should return true if a feature flag for position.contract_type is enabled', () => {
-            (LocalStore.getObject as jest.Mock).mockReturnValueOnce({ data: { rise_fall: true } });
-            expect(filterDisabledPositions(position)).toBeTruthy();
-        });
-        it('should return true if a feature flag for position.contract_type is not defined', () => {
-            (getContractTypeFeatureFlag as jest.Mock).mockReturnValueOnce(undefined);
-            expect(filterDisabledPositions(position)).toBeTruthy();
-        });
-        it(`should return true if a feature flag for transaction contract category is enabled
-            based on shortcode when contract_type property is missing`, () => {
-            const transaction = {
-                shortcode: 'CALL_1HZ100V_19.53_1695913929_5T_S0P_0',
-            };
-            (LocalStore.getObject as jest.Mock).mockReturnValueOnce({ data: { rise_fall: true } });
-            expect(filterDisabledPositions(transaction)).toBeTruthy();
-        });
+    it('[DCR-013] no longer exports filterDisabledPositions', () => {
+        expect(FormatResponse).not.toHaveProperty('filterDisabledPositions');
     });
 });

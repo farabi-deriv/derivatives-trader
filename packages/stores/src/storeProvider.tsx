@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import StoreContext from './storeContext';
-import { FeatureFlagsStore } from './stores';
 import type { TCoreStores, TStores } from '../types';
 
 const StoreProvider = ({ children, store }: React.PropsWithChildren<{ store: TCoreStores }>) => {
@@ -9,10 +8,7 @@ const StoreProvider = ({ children, store }: React.PropsWithChildren<{ store: TCo
         if ('is_mock' in store && store.is_mock) return store as unknown as TStores;
 
         // Otherwise, instantiate store and return it.
-        return {
-            ...store,
-            feature_flags: new FeatureFlagsStore(),
-        };
+        return { ...store };
     }, [store]);
 
     useEffect(() => {

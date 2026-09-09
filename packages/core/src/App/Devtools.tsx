@@ -3,7 +3,7 @@ import { useFormik } from 'formik';
 
 import { Button, Checkbox, Input } from '@deriv/components';
 import { getDebugServiceWorker, getSocketURL, isProduction } from '@deriv/shared';
-import { observer, useStore } from '@deriv/stores';
+import { observer } from '@deriv/stores';
 
 import './Devtools.scss';
 
@@ -69,32 +69,6 @@ const EndpointSection = observer(() => {
     );
 });
 
-const FeatureFlagsSection = observer(() => {
-    const { feature_flags } = useStore();
-
-    if (!feature_flags.data) return null;
-
-    return (
-        <div className='devtools__checkbox-container'>
-            {Object.keys(feature_flags.data).map(flag => {
-                const flag_name = flag as keyof typeof feature_flags.data;
-
-                return (
-                    <Checkbox
-                        key={flag_name}
-                        className='devtools__checkbox'
-                        classNameLabel={'devtools__checkbox-label'}
-                        label={flag_name}
-                        value={feature_flags.data?.[flag_name]}
-                        // @ts-expect-error Checkbox onChange type is not correct and need to be fixed.
-                        onChange={e => feature_flags.update(old => ({ ...old, [flag_name]: e.target.checked }))}
-                    />
-                );
-            })}
-        </div>
-    );
-});
-
 const Devtools = observer(() => {
     const [is_devtool_open, setIsDevtoolOpen] = useState(false);
 
@@ -104,10 +78,6 @@ const Devtools = observer(() => {
                 <div className='devtools__panel-left'>
                     <p className='devtools__panel-title'>Endpoint</p>
                     <EndpointSection />
-                </div>
-                <div className='devtools__panel-right'>
-                    <p className='devtools__panel-title'>Feature flags</p>
-                    <FeatureFlagsSection />
                 </div>
                 <button onClick={() => setIsDevtoolOpen(!is_devtool_open)} className='devtools__close-button'>
                     Close

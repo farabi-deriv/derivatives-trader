@@ -219,24 +219,6 @@ function FeatureComponent() {
 }
 ```
 
-#### useFeatureFlags
-
-For feature flag management:
-
-```tsx
-import { useFeatureFlags } from '@deriv/api';
-
-function ConditionalFeature() {
-    const { isFeatureEnabled } = useFeatureFlags();
-
-    if (isFeatureEnabled('new_trading_interface')) {
-        return <NewTradingInterface />;
-    }
-
-    return <LegacyTradingInterface />;
-}
-```
-
 ## API Reference
 
 ### Core Hooks
@@ -255,7 +237,6 @@ function ConditionalFeature() {
 | --------------------- | --------------------------- | ---------------------- | --------------------- |
 | `useInvalidateQuery`  | Invalidate cached queries   | `()`                   | `(queryKey) => void`  |
 | `useRemoteConfig`     | Access remote configuration | `()`                   | `QueryResult<Config>` |
-| `useFeatureFlags`     | Feature flag management     | `()`                   | `FeatureFlagsResult`  |
 | `useIntercom`         | Intercom integration        | `()`                   | `IntercomMethods`     |
 | `useIsRtl`            | RTL language detection      | `()`                   | `boolean`             |
 | `useLocalStorageData` | Local storage utilities     | `(key, defaultValue?)` | `[value, setValue]`   |

@@ -5,7 +5,7 @@ import Validator, { template } from '../validator';
 describe('validator.ts', () => {
     const amount_required_error = 'Amount is a required field.';
     const should_be_valid_number_error = 'Should be a valid number.';
-    const only_99_characters_error = 'Only 99 characters, please.';
+    const barrier_error = 'Should be a valid number.';
     const min_value_error = 'The value must be equal or greater than 1';
 
     beforeAll(() => {
@@ -115,30 +115,24 @@ describe('validator.ts', () => {
             });
             expect(validator.error_count).toBe(1);
         });
-        it('should fail length validation with 99 chars limit error', () => {
-            const options = { message: only_99_characters_error, max: 99 };
-            const address_city_rules = {
-                address_city: [['length', options]],
+        it('[DCR-015] should fail barrier validation with the message supplied by the rule', () => {
+            const options = { message: barrier_error };
+            const barrier_rules = {
+                barrier_1: [['barrier', options]],
             };
-            const validator = new Validator(
-                {
-                    address_city:
-                        'Krung Thep Mahanakhon Amon Rattanakosin Mahinthara Yuthaya Mahadilok Phop Noppharat Ratchathani Burirom Udomratchaniwet Mahasathan Amon Piman Awatan Sathit Sakkathattiya Witsanukam Prasit',
-                },
-                address_city_rules,
-                { address_city: '' }
-            );
+            const validator = new Validator({ barrier_1: 'abc' }, barrier_rules, store);
             const addFailure = jest.spyOn(validator, 'addFailure');
             const check = jest.spyOn(validator, 'check');
             expect(validator.isPassed()).toBe(false);
             expect(check).toHaveBeenCalled();
             expect(addFailure).toHaveBeenCalledWith(
-                'address_city',
-                expect.objectContaining({ name: 'length', options })
+                'barrier_1',
+                expect.objectContaining({ name: 'barrier', options }),
+                undefined
             );
             expect(validator.errors).toMatchObject({
                 errors: {
-                    address_city: [only_99_characters_error],
+                    barrier_1: [barrier_error],
                 },
             });
             expect(validator.error_count).toBe(1);

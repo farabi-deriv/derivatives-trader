@@ -12,8 +12,6 @@ import type {
 } from '@deriv/api';
 import { TContractInfo } from '@deriv/shared/src/utils/contract/contract-types';
 
-import type { FeatureFlagsStore } from './src/stores';
-
 // Type aliases for compatibility
 type ActiveSymbols = NonNullable<TActiveSymbolsResponse['active_symbols']>;
 type ContractUpdate = TUpdateContractResponse['contract_update'];
@@ -688,6 +686,4 @@ export type TCoreStores = {
     active_symbols: TActiveSymbolsStore;
 };
 
-export type TStores = TCoreStores & {
-    feature_flags: FeatureFlagsStore;
-};
+export type TStores = TCoreStores;

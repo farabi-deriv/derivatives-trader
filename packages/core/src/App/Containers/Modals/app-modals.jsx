@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 
-import { moduleLoader, SessionStore } from '@deriv/shared';
+import { moduleLoader } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 
 const UrlUnavailableModal = React.lazy(() =>
@@ -23,8 +23,7 @@ const RedirectToLoginModal = React.lazy(() =>
 const AppModals = observer(() => {
     const { ui } = useStore();
     const { isUrlUnavailableModalVisible, is_logout_success_modal_visible, is_try_real_modal_visible } = ui;
-    const temp_session_signup_params = SessionStore.get('signup_query_param');
-    const url_params = new URLSearchParams(useLocation().search || temp_session_signup_params);
+    const url_params = new URLSearchParams(useLocation().search);
     const url_action_param = url_params.get('action');
 
     let ComponentToLoad = null;

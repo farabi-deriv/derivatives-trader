@@ -10,7 +10,7 @@ jest.mock('@deriv/quill-icons', () => ({
 }));
 
 describe('<SymbolIconsMapper />', () => {
-    it('should render the correct icon when the symbol exists in the iconMap', () => {
+    it('[DCR-017] should render the correct icon when the symbol exists in the iconMap', () => {
         render(<SymbolIconsMapper symbol='frxAUDCAD' />);
         expect(screen.getByText('MockedForexAudcadIcon')).toBeInTheDocument();
     });
