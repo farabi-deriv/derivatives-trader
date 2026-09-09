@@ -41,7 +41,7 @@
     "dependencies": {
         "@deriv-com/analytics": "1.42.1",
         "@deriv/quill-icons": "2.4.16",
-        "@deriv-com/translations": "1.4.8",
+        "@deriv-com/translations": "1.4.9",
         "@deriv-com/utils": "^0.0.42",
         "@types/js-cookie": "^3.0.1",
         "extend": "^3.0.2",

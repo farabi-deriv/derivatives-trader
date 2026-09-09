@@ -1,8 +1,11 @@
 # derived-market-ordering Specification
 
 ## Purpose
+
 TBD - created by archiving change 994-derived-market-ordering. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [DMO-001] Derived submarket sections render in the curated order
 
 When the market selector lists the **Derived** market (`market: 'synthetic_index'`), its submarket sections SHALL appear in exactly this order:
@@ -125,4 +128,3 @@ The order of the Derived **subgroup** sections and the order of the **submarket*
 
 - **WHEN** a submarket is added to, removed from, or repositioned in the ordering definition
 - **THEN** both the submarket section order and the subgroup section order reflect it, with no second place to edit
-

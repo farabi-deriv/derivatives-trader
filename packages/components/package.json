@@ -51,7 +51,7 @@
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
-        "@deriv-com/translations": "1.4.8",
+        "@deriv-com/translations": "1.4.9",
         "@deriv-com/ui": "1.36.4",
         "@deriv/api": "^1.0.0",
         "@deriv/shared": "^1.0.0",

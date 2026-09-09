@@ -30,6 +30,7 @@ const SUPPORTED_LOCALES = [
     'km',
     'bn',
     'si',
+    'ta',
 ];
 
 const createDayjsLocalePlugin = () =>

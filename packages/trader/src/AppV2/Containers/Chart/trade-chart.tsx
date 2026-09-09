@@ -105,12 +105,12 @@ const TradeChart = observer(() => {
         () =>
             is_accumulator
                 ? {
-                    allowedChartTypes: ['line'],
-                    allowedGranularities: [0],
-                    restrictionMessage: localize(
-                        'Only "Area" chart and "1 tick" interval are available for Accumulator.'
-                    ),
-                }
+                      allowedChartTypes: ['line'],
+                      allowedGranularities: [0],
+                      restrictionMessage: localize(
+                          'Only "Area" chart and "1 tick" interval are available for Accumulator.'
+                      ),
+                  }
                 : {},
         [is_accumulator, localize]
     );
@@ -149,9 +149,9 @@ const TradeChart = observer(() => {
             theme: is_dark_mode_on ? 'dark' : 'light',
             ...(is_accumulator
                 ? {
-                    whitespace: CHART_CONSTANTS.ACCUMULATOR_WHITESPACE,
-                    minimumLeftBars: isMobile ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
-                }
+                      whitespace: CHART_CONSTANTS.ACCUMULATOR_WHITESPACE,
+                      minimumLeftBars: isMobile ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
+                  }
                 : {}),
             ...(has_barrier ? { whitespace: CHART_CONSTANTS.BARRIER_WHITESPACE } : {}),
         }),

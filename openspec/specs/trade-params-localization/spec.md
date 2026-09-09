@@ -1,8 +1,11 @@
 # trade-params-localization Specification
 
 ## Purpose
+
 TBD - created by archiving change duration-parameter-remains-previous-3. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [TPL-001] Duration parameter text follows the active language
 
 The Duration parameter in the desktop trade Parameters panel SHALL show its value and its duration-unit option labels in the currently active language. When the user changes the app language, that text MUST be re-derived in place and MUST NOT be left showing the previous language's wording. A manual page refresh MUST NOT be required.
@@ -97,4 +100,3 @@ No text rendered by the Duration parameter SHALL be computed once and reused for
 
 - **WHEN** the user changes the language twice in a row without refreshing
 - **THEN** the Duration parameter shows the second language's text, not the first language's or the original one's
-
