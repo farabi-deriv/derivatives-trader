@@ -445,7 +445,7 @@ export default class TradeStore extends BaseStore {
     // end-time change made by the user outside a restore still re-seeds normally.
     private is_restoring_tab_barrier = false;
     // Whether a settleTabParamsAfterCommit watcher is already armed — see that method.
-    private is_settle_after_commit_scheduled = false;
+    private settle_after_commit_promise: Promise<void> | null = null;
     // The load's URL explicitly named `rise_fall_equal` — a defaults activation honouring that
     // deep link keeps Allow equals on instead of resetting it. One-shot, consumed by
     // `applyTabDefaults`.
@@ -1139,13 +1139,23 @@ export default class TradeStore extends BaseStore {
         await when(() => this.has_symbols_for_v2);
     }
 
-    // The daily-only expiry default: server time (never browser-local), the next available
-    // trading day, and no literal close time — StartDate.onChangeExpiry -> ContractType.getExpiryTime
-    // resolves that once expiry_type/expiry_date land in the store (see the caller).
+    // `min_contract_duration: '7d'` is 7 *calendar* days; falls back to 1 day when
+    //  contracts_for reports no daily bucket.
+    private get daily_min_days() {
+        const min_seconds = Number(this.duration_min_max?.daily?.min) || 0;
+        return Math.max(1, Math.ceil(min_seconds / 86400));
+    }
+
+    // The daily-only expiry default: server time (never browser-local), the earliest trading day
+    // `daily_min_days` allows, and no literal close time — StartDate.onChangeExpiry ->
+    // ContractType.getExpiryTime resolves that once expiry_type/expiry_date land in the store.
     private async getDailyExpirySeed() {
         const server_time = this.root_store.common.server_time || ServerTime.get();
         const has_intraday = hasIntradayDurationUnit(this.duration_units_list);
-        const expiry_date = await ContractType.getNextTradingDayDate(this.symbol, server_time, has_intraday);
+        // Offset by the minimum first, so the inclusive scan below only skips closed days — always
+        // forward, never back under the floor. Intraday-capable contracts may end today.
+        const earliest = has_intraday ? server_time.clone() : server_time.clone().add(this.daily_min_days, 'day');
+        const expiry_date = await ContractType.getNextTradingDayDate(this.symbol, earliest, true);
         return {
             expiry_type: 'endtime' as const,
             expiry_date,
@@ -1170,6 +1180,33 @@ export default class TradeStore extends BaseStore {
         };
     }
 
+    /** Raise a daily-only end date to the symbol's minimum duration and onto a trading day. Abandons
+     * its write if `symbol`/`expiry_date` moved mid-lookup — the concurrent tab restore owns it. */
+    private async validateDailyExpiryDate(symbol_at_start = this.symbol) {
+        if (
+            this.expiry_type !== 'endtime' ||
+            !this.expiry_date ||
+            this.duration_units_list.length === 0 ||
+            hasIntradayDurationUnit(this.duration_units_list)
+        ) {
+            return;
+        }
+        const expiry_date_at_start = this.expiry_date;
+        const server_time = this.root_store.common.server_time || ServerTime.get();
+        const earliest_allowed = server_time.clone().add(this.daily_min_days, 'day');
+        const kept_date = toMoment(expiry_date_at_start);
+        const is_below_min = kept_date.isBefore(earliest_allowed, 'day');
+        const tradeable_date = await ContractType.getNextTradingDayDate(
+            this.symbol,
+            is_below_min ? earliest_allowed : kept_date,
+            true // start at the base date itself rather than the day after
+        );
+        const is_stale = this.symbol !== symbol_at_start || this.expiry_date !== expiry_date_at_start;
+        if (is_stale) return;
+        if (tradeable_date === this.expiry_date) return;
+        await this.processNewValuesAsync({ expiry_date: tradeable_date }, true, null, false);
+    }
+
     async processContractsForV2() {
         // So a symbol change mid-await can't release the proposal hold for the wrong symbol.
         const symbol_at_start = this.symbol;
@@ -1178,13 +1215,17 @@ export default class TradeStore extends BaseStore {
         // and useContractsFor invokes this fire-and-forget — an early exit that skipped the release
         // left `is_awaiting_contracts_for` true forever: permanent skeleton, no proposals, and
         // every per-tab save path disabled for the rest of the session.
+        let has_deferred_intent = false;
         try {
-            await this.processContractsForV2Body();
+            has_deferred_intent = (await this.processContractsForV2Body()) ?? false;
         } finally {
             // Release the hold — unless the symbol changed mid-flight (the new symbol's own run
             // releases it).
             if (this.symbol === symbol_at_start) {
                 this.is_awaiting_contracts_for = false;
+                // A deferred settle's writes landed under the hold, so the persistence reaction
+                // skipped them; save once now that it is down or a new tab's defaults are lost.
+                if (has_deferred_intent) this.persistActiveTabTradeParams();
             }
             // Explicitly trigger proposal after all contract values (barriers, duration, stake)
             // are applied. The processNewValuesAsync calls in the body use is_changed_by_user=false
@@ -1285,37 +1326,24 @@ export default class TradeStore extends BaseStore {
             // 'd', and converting it to days once put the end date 10 days out on reload. A kept
             // date that has gone stale or falls on a closed day is advanced by the validation below.
             const server_time = this.root_store.common.server_time || ServerTime.get();
+            const expiry_at_start = { date: this.expiry_date, type: this.expiry_type };
             const has_future_date = !!this.expiry_date && toMoment(this.expiry_date).isAfter(server_time, 'day');
             const seed = has_future_date
                 ? { expiry_type: 'endtime' as const, expiry_time: null }
                 : await this.getDailyExpirySeed();
-            // Skip the write, never the hold release below, if the symbol moved during the lookup.
-            if (this.symbol === symbol_at_start) {
+            // Stale-write guard: a restore committing inside the lookup owns the expiry.
+            const is_stale =
+                this.symbol !== symbol_at_start ||
+                this.expiry_date !== expiry_at_start.date ||
+                this.expiry_type !== expiry_at_start.type;
+            if (!is_stale) {
                 await this.processNewValuesAsync(seed, true, null, false);
             }
         }
 
-        // A carried-over expiry_date is only checked for being in the past (getExpiryDate's naive
-        // `+1 day`), never for being a day this symbol actually trades — so a switch between symbols
-        // with different calendars, or that +1 landing on a weekend, would price against a closed
-        // day. Validate it against this symbol's own trading times; getNextTradingDayDate returns
-        // the date unchanged when it is already tradeable.
-        if (
-            this.expiry_type === 'endtime' &&
-            this.expiry_date &&
-            this.duration_units_list.length > 0 &&
-            !hasIntradayDurationUnit(this.duration_units_list)
-        ) {
-            const tradeable_date = await ContractType.getNextTradingDayDate(
-                this.symbol,
-                toMoment(this.expiry_date),
-                true // start at expiry_date itself rather than the day after
-            );
-            // Skip the write, never the hold release below, if the symbol moved during the lookup.
-            if (tradeable_date !== this.expiry_date && this.symbol === symbol_at_start) {
-                await this.processNewValuesAsync({ expiry_date: tradeable_date }, true, null, false);
-            }
-        }
+        // A date kept from a shorter-minimum market arrives already 'endtime', so nothing above
+        // rewrites it.
+        await this.validateDailyExpiryDate(symbol_at_start);
 
         // Turbos: seed payout_per_point from contracts_for choices before the first proposal, and
         // replace a value not in this market's own list — a request priced against it is rejected.
@@ -1326,6 +1354,12 @@ export default class TradeStore extends BaseStore {
         ) {
             this.payout_per_point = String(this.payout_choices[Math.floor(this.payout_choices.length / 2)]);
         }
+
+        // Hold the skeleton until a deferred intent has settled. Releasing before it lands showed
+        // the OUTGOING tab's values as this tab's for a frame; the wrapper's finally still owns the
+        // release, so a throw or the watcher's 30s timeout cannot strand the row.
+        if (has_deferred_intent) await this.settle_after_commit_promise;
+        return has_deferred_intent;
     }
 
     /** The contract offering's values (barriers, duration limits/units, ranges) for the current pair,
@@ -1791,21 +1825,25 @@ export default class TradeStore extends BaseStore {
      * never settles must not strand the intent, which gates every per-tab save. */
     private settleTabParamsAfterCommit() {
         // One outstanding watcher at a time: repeated mid-cascade triggers (e.g. a reconnect storm
-        // of degraded contracts_for releases) would otherwise stack parallel 30s when()s.
-        if (this.is_settle_after_commit_scheduled) return;
-        this.is_settle_after_commit_scheduled = true;
+        // of degraded contracts_for releases) would otherwise stack parallel 30s when()s. The
+        // in-flight promise is itself that latch, so a deferred run can await the same settle.
+        if (this.settle_after_commit_promise) return this.settle_after_commit_promise;
         // The intent this watcher was armed for. On timeout, clear only if it is STILL the pending
         // one — a newer activation queued meanwhile owns the slot, and clearing its intent would
         // strand that activation on the outgoing tab's values.
         const armed_intent = this.pending_tab_params;
-        when(() => !this.is_selecting_market && !this.is_reconciling_url_trade_type, { timeout: 30000 })
+        this.settle_after_commit_promise = when(
+            () => !this.is_selecting_market && !this.is_reconciling_url_trade_type,
+            { timeout: 30000 }
+        )
             .then(() => this.applyPendingTabParams())
             .catch(() => {
                 if (this.pending_tab_params === armed_intent) this.clearPendingTabParams();
             })
             .finally(() => {
-                this.is_settle_after_commit_scheduled = false;
+                this.settle_after_commit_promise = null;
             });
+        return this.settle_after_commit_promise;
     }
 
     /** Take the intent and clear it in one step, so whichever consumer runs first wins and a second
@@ -1957,6 +1995,9 @@ export default class TradeStore extends BaseStore {
         // trade type's configured default rather than leaving the outgoing tab's duration standing.
         const is_duration_restored = await this.applyRestoredTabParams(pending.params);
         if (!is_duration_restored) await this.applyDefaultDuration();
+        // Settles outside processContractsForV2Body, so nothing else validates the restored date
+        // against this symbol's floor. The `defaults` branch above seeds through the floor already.
+        await this.validateDailyExpiryDate();
     }
 
     // Trade-type group of the current contract type — an Up/Down or Allow-equals sub-toggle

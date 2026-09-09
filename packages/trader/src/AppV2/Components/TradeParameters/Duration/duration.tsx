@@ -94,6 +94,10 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         const date_string = epoch_date.toISOString().split('T')[0];
         const time_string = epoch_date.toISOString().split('T')[1].substring(0, 8);
 
+        // `expiry_epoch` is never cleared, so across a tab switch it still holds the previous tab's
+        // proposal. The store's own expiry_date wins whenever it has one.
+        if (expiry_date && expiry_date !== date_string) return;
+
         // Only update if the date actually changed
         if (saved_expiry_date !== date_string) {
             setSavedExpiryDate(date_string);
@@ -108,10 +112,10 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
     // A user edit is safe: `handleSave` writes draft and store together, so they agree and it no-ops.
     useEffect(() => {
         if (duration_unit !== 'd' || !expiry_date) return;
-        if (!saved_expiry_date) {
+        if (saved_expiry_date !== expiry_date) {
             setSavedExpiryDate(expiry_date);
             setSavedExpiryTime(expiry_time || '23:59:59');
-        } else if (expiry_time && saved_expiry_date === expiry_date && saved_expiry_time !== expiry_time) {
+        } else if (expiry_time && saved_expiry_time !== expiry_time) {
             setSavedExpiryTime(expiry_time);
         }
     }, [duration_unit, saved_expiry_date, saved_expiry_time, expiry_date, expiry_time]);

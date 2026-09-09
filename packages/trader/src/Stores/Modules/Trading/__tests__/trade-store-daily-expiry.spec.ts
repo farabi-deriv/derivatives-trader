@@ -17,6 +17,12 @@ configure({ safeDescriptors: false });
 const FIXED_NOW = '2024-02-28T10:00:00.000Z'; // Wednesday
 const DAILY_ONLY_UNITS = [{ value: 'd', text: 'days' }];
 const DAILY_MIN_MAX = { daily: { min: 86400, max: 31536000 } };
+// Some symbols are daily-only at a minimum above one day, where "next trading day" no longer
+// satisfies the floor the way it does for the 1-day cases above.
+const SEVEN_DAY_MIN_MAX = { daily: { min: 604800, max: 31536000 } };
+// FIXED_NOW (Wed 2024-02-28) + 7 calendar days — a Wednesday, open in the default mock.
+const SEVEN_DAY_FLOOR = '2024-03-06';
+const NEXT_TRADING_DAY = '2024-02-29';
 
 jest.mock('_common/base/server_time', () => {
     const actualDayjs = jest.requireActual('dayjs');
@@ -307,5 +313,254 @@ describe('TradeStore — daily-only expiry seed (DCE-001, DCE-002)', () => {
 
         expect(requests.ONETOUCH).toHaveProperty('date_expiry', expected_date_expiry);
         expect(requests.NOTOUCH).toHaveProperty('date_expiry', expected_date_expiry);
+    });
+
+    describe('[DCE-004] a daily minimum above one day', () => {
+        // The store must seed to the same floor the End time picker already enforces
+        // (getDatePickerStartDate: server_time + duration_min_max.daily.min), or the two disagree.
+        const openEverywhere = (date: string) =>
+            Promise.resolve({
+                trading_times: {
+                    markets: [
+                        {
+                            submarkets: [
+                                {
+                                    symbols: [
+                                        {
+                                            underlying_symbol: 'frxUSDJPY',
+                                            times: { close: ['23:59:59'], open: ['00:00:00'] },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                echo_req: { trading_times: date },
+            });
+
+        beforeEach(() => {
+            // Set explicitly rather than relying on suite order: an earlier case swaps both of these.
+            (WS.tradingTimes as jest.Mock).mockImplementation(openEverywhere);
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { ContractType } = require('../Helpers/contract-type');
+            (ContractType.getDurationUnitsList as jest.Mock).mockReturnValue({
+                duration_units_list: DAILY_ONLY_UNITS,
+            });
+            // The mock must agree with the store field: any commit that runs the trade-params
+            // pipeline (onChangeMultiple in a restore) re-reads this and would reset the floor.
+            (ContractType.getDurationMinMax as jest.Mock).mockReturnValue({
+                duration_min_max: SEVEN_DAY_MIN_MAX,
+            });
+            tradeStore.duration_units_list = DAILY_ONLY_UNITS;
+            tradeStore.duration_min_max = SEVEN_DAY_MIN_MAX;
+        });
+
+        it('seeds a fresh selection at the minimum, not the next trading day', async () => {
+            // Unit 't' is not offered here, so the persisted duration is invalid and the
+            // default-duration gate opens — the trade-type-switch path.
+            tradeStore.expiry_type = 'duration';
+            tradeStore.expiry_date = null;
+            tradeStore.duration = 10;
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.duration).toBe(7);
+            expect(tradeStore.duration_unit).toBe('d');
+            expect(tradeStore.expiry_type).toBe('endtime');
+            expect(tradeStore.expiry_date).toBe(SEVEN_DAY_FLOOR);
+            expect(tradeStore.expiry_date).not.toBe(NEXT_TRADING_DAY);
+        });
+
+        it('seeds a cold load at the minimum, not the next trading day', async () => {
+            // A persisted 10 'd' is valid against 7d..365d, so the gate above stays shut and the
+            // 'd'-unit branch seeds instead.
+            tradeStore.expiry_type = 'duration';
+            tradeStore.expiry_date = null;
+            tradeStore.duration = 10;
+            tradeStore.duration_unit = 'd';
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.expiry_type).toBe('endtime');
+            expect(tradeStore.expiry_date).toBe(SEVEN_DAY_FLOOR);
+        });
+
+        it('raises a carried-over end date that sits below the new minimum', async () => {
+            // Already 'endtime' and in the future, so only the trading-day validation still sees it.
+            tradeStore.expiry_type = 'endtime';
+            tradeStore.expiry_date = NEXT_TRADING_DAY;
+            tradeStore.duration = 7;
+            tradeStore.duration_unit = 'd';
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.expiry_date).toBe(SEVEN_DAY_FLOOR);
+        });
+
+        it('leaves a carried-over end date already beyond the minimum alone', async () => {
+            tradeStore.expiry_type = 'endtime';
+            tradeStore.expiry_date = '2024-03-20';
+            tradeStore.duration = 7;
+            tradeStore.duration_unit = 'd';
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.expiry_date).toBe('2024-03-20');
+        });
+
+        it('steps forward, never back, when the minimum lands on a closed day', async () => {
+            // An 8-day minimum, not 7: ContractType's `trading_times` cache is module-level, so a
+            // date an earlier case fetched as open can't be re-answered as closed.
+            const EIGHT_DAY_FLOOR = '2024-03-07';
+            const EIGHT_DAY_MIN_MAX = { daily: { min: 691200, max: 31536000 } };
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { ContractType } = require('../Helpers/contract-type');
+            (ContractType.getDurationMinMax as jest.Mock).mockReturnValue({ duration_min_max: EIGHT_DAY_MIN_MAX });
+            tradeStore.duration_min_max = EIGHT_DAY_MIN_MAX;
+            (WS.tradingTimes as jest.Mock).mockImplementation((date: string) =>
+                Promise.resolve({
+                    trading_times: {
+                        markets: [
+                            {
+                                submarkets: [
+                                    {
+                                        symbols: [
+                                            {
+                                                underlying_symbol: 'frxUSDJPY',
+                                                times: {
+                                                    close: [date === EIGHT_DAY_FLOOR ? '--' : '23:59:59'],
+                                                    open: ['00:00:00'],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    echo_req: { trading_times: date },
+                })
+            );
+            tradeStore.expiry_type = 'duration';
+            tradeStore.expiry_date = null;
+            tradeStore.duration = 10;
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.processContractsForV2();
+
+            // Forward to the next open day — a backward step would re-break the minimum.
+            expect(tradeStore.expiry_date).toBe('2024-03-08');
+        });
+
+        it('abandons its write when a tab restore changes expiry_date mid-lookup', async () => {
+            // The tab restore commits INSIDE the validation's lookup, so re-applying a date
+            // computed from the pre-await state overwrote it. Fresh dates: the cache skips the mock.
+            const OTHER_TAB_DATE = '2024-03-15';
+            const RESTORED_DATE = '2024-03-12';
+            tradeStore.expiry_type = 'endtime';
+            tradeStore.expiry_date = OTHER_TAB_DATE;
+            tradeStore.duration = 7;
+            tradeStore.duration_unit = 'd';
+            // Simulate the restore landing while the lookup is in flight.
+            let has_mutated = false;
+            (WS.tradingTimes as jest.Mock).mockImplementation((date: string) => {
+                if (!has_mutated) {
+                    has_mutated = true;
+                    tradeStore.expiry_date = RESTORED_DATE;
+                }
+                return openEverywhere(date);
+            });
+
+            await tradeStore.processContractsForV2();
+
+            expect(tradeStore.expiry_date).toBe(RESTORED_DATE);
+            expect(tradeStore.expiry_date).not.toBe(OTHER_TAB_DATE);
+        });
+
+        it('validates the restored expiry on the deferred settle path', async () => {
+            // Settles outside processContractsForV2Body; applyRestoredTabParams only drops an end
+            // time wholly in the past, so a below-floor saved date would otherwise stand.
+            const market = { symbol: 'frxUSDJPY', contract_type: 'touchnotouch' };
+            tradeStore.open_markets_manual = [market];
+            tradeStore.tab_trade_params_manual = {
+                'frxUSDJPY|touchnotouch': {
+                    expiry_type: 'endtime',
+                    expiry_date: NEXT_TRADING_DAY, // one day out — below the 7-day floor
+                    expiry_time: null,
+                    saved_expiry_date_v2: NEXT_TRADING_DAY,
+                    duration: 7,
+                    duration_unit: 'd',
+                },
+            };
+            tradeStore.queueTabTradeParams(market);
+
+            // Private: this is the deferred entry point, reached from settleTabParamsAfterCommit's
+            // when() rather than from any public call.
+            await (tradeStore as unknown as { applyPendingTabParams: () => Promise<void> }).applyPendingTabParams();
+
+            expect(tradeStore.expiry_date).toBe(SEVEN_DAY_FLOOR);
+        });
+
+        // Enough microtask turns that the body would have run to completion on its own.
+        const flushBody = async () => {
+            // eslint-disable-next-line no-await-in-loop
+            for (let i = 0; i < 50; i++) await Promise.resolve();
+        };
+        const withDeferredIntent = () => {
+            const market = { symbol: 'frxUSDJPY', contract_type: 'touchnotouch' };
+            tradeStore.open_markets_manual = [market];
+            tradeStore.tab_trade_params_manual = { 'frxUSDJPY|touchnotouch': { duration: 7, duration_unit: 'd' } };
+            tradeStore.queueTabTradeParams(market);
+            tradeStore.startSelectingMarket();
+        };
+
+        it('holds the params skeleton until a deferred intent settles', async () => {
+            // Releasing at the end of the body showed the outgoing tab's values as this tab's for a
+            // frame, because the deferred restore commits after it.
+            withDeferredIntent();
+
+            const run = tradeStore.processContractsForV2();
+            await flushBody();
+            expect(tradeStore.is_awaiting_contracts_for).toBe(true);
+
+            tradeStore.stopSelectingMarket();
+            await run;
+
+            expect(tradeStore.is_awaiting_contracts_for).toBe(false);
+        });
+
+        it('releases the skeleton even when the body throws', async () => {
+            // The strand guard: the wrapper's finally owns the release, so no failure path can
+            // leave the row on a permanent skeleton while the hold is held for the settle.
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { ContractType } = require('../Helpers/contract-type');
+            const spy = jest.spyOn(ContractType, 'getContractCategories').mockImplementationOnce(() => {
+                throw new Error('contracts_for failed');
+            });
+            withDeferredIntent();
+
+            await expect(tradeStore.processContractsForV2()).rejects.toThrow('contracts_for failed');
+
+            expect(tradeStore.is_awaiting_contracts_for).toBe(false);
+            spy.mockRestore();
+        });
+
+        it('sends a first date_expiry that clears the minimum duration', async () => {
+            tradeStore.expiry_type = 'duration';
+            tradeStore.expiry_date = null;
+            tradeStore.duration = 10;
+            tradeStore.duration_unit = 't';
+
+            await tradeStore.processContractsForV2();
+            const requests = createProposalRequests(tradeStore);
+
+            // `date_expiry` only exists on the endtime arm of the request union, hence the narrowing.
+            const dateExpiryOf = (request: unknown) => (request as { date_expiry?: number }).date_expiry;
+            const min_date_expiry = dayjs(FIXED_NOW).unix() + SEVEN_DAY_MIN_MAX.daily.min;
+            expect(dateExpiryOf(requests.ONETOUCH)).toBeGreaterThanOrEqual(min_date_expiry);
+            expect(dateExpiryOf(requests.NOTOUCH)).toBeGreaterThanOrEqual(min_date_expiry);
+        });
     });
 });

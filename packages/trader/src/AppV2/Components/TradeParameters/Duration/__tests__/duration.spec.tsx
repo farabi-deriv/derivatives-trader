@@ -233,6 +233,47 @@ describe('Duration', () => {
         expect(mockSetSavedExpiryDateV2).not.toHaveBeenCalled();
     });
 
+    it('ignores an expiry_epoch that disagrees with the store expiry_date, and follows the store', () => {
+        // `expiry_epoch` is never cleared, so on a tab switch it still holds the previous tab's
+        // proposal — writing it back copied that tab's date onto this one and persisted it.
+        const previous_tab_epoch = 1788552000; // 2026-09-04
+        default_trade_store.modules.trade.expiry_epoch = previous_tab_epoch;
+        default_trade_store.modules.trade.duration_unit = 'd';
+        default_trade_store.modules.trade.duration_units_list = [{ value: 'd', text: 'days' }];
+        default_trade_store.modules.trade.expiry_type = 'endtime';
+        default_trade_store.modules.trade.expiry_date = '2026-09-10';
+        default_trade_store.modules.trade.saved_expiry_date_v2 = '';
+
+        render(
+            <TraderProviders store={default_trade_store}>
+                <Duration />
+            </TraderProviders>
+        );
+
+        const setSaved = default_trade_store.modules.trade.setSavedExpiryDateV2 as jest.Mock;
+        expect(setSaved).not.toHaveBeenCalledWith('2026-09-04');
+        expect(setSaved).toHaveBeenCalledWith('2026-09-10');
+    });
+
+    it('corrects a picker seed that disagrees with the store expiry_date', () => {
+        // The daily floor is applied to expiry_date after the seed is already set. The seed used to
+        // track only an EMPTY value, so a non-empty stale one kept showing the pre-floor date.
+        default_trade_store.modules.trade.duration_unit = 'd';
+        default_trade_store.modules.trade.duration_units_list = [{ value: 'd', text: 'days' }];
+        default_trade_store.modules.trade.expiry_type = 'endtime';
+        default_trade_store.modules.trade.expiry_date = '2026-09-10';
+        default_trade_store.modules.trade.saved_expiry_date_v2 = '2026-09-04';
+        default_trade_store.modules.trade.expiry_epoch = '';
+
+        render(
+            <TraderProviders store={default_trade_store}>
+                <Duration />
+            </TraderProviders>
+        );
+
+        expect(default_trade_store.modules.trade.setSavedExpiryDateV2).toHaveBeenCalledWith('2026-09-10');
+    });
+
     it('should handle expiry_epoch updates correctly when switching between contract types', () => {
         // Start with Accumulator (no duration) - next year's date
         const accumulator_epoch = 1792108799; // Oct 15, 2026
