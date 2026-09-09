@@ -8,7 +8,9 @@ TBD - created by archiving change cut-main-thread-work-behind-the-market-selecto
 
 ### Requirement: Symbol list ordering is deterministic and locale-aware
 
-The symbol-sorting utility SHALL order a list of active symbols first by market, using a fixed curated market order — `synthetic_index`, `forex`, `indices`, `cryptocurrency`, `commodities` — and then, within the same market, alphabetically by the localized submarket display name using locale-aware comparison. Symbols whose market is not in the curated order SHALL sort after every symbol whose market is in the curated order, and SHALL tie-break among themselves by localized submarket display name. A submarket with no known localized display name SHALL fall back to its raw submarket key as its comparison value.
+The symbol-sorting utility SHALL order a list of active symbols first by market, using a fixed curated market order — `synthetic_index`, `forex`, `indices`, `cryptocurrency`, `commodities` — and then, within a market, by curated submarket rank where the submarket key has one, and only otherwise alphabetically by the localized submarket display name using locale-aware comparison. Symbols whose market is not in the curated order SHALL sort after every symbol whose market is in the curated order, and SHALL tie-break among themselves by localized submarket display name. A submarket with no known localized display name SHALL fall back to its raw submarket key as its comparison value.
+
+The `derived-market-ordering` capability (requirements DMO-001 and DMO-002) is the authority for which submarket keys are curated and the rank each holds.
 
 The produced order MUST be identical to the order produced before this change for every input; the existing ordering specifications SHALL pass unmodified.
 
@@ -20,7 +22,7 @@ The produced order MUST be identical to the order produced before this change fo
 #### Scenario: Same-market symbols keep a stable submarket-name ordering
 
 - **WHEN** two or more symbols share the same market
-- **THEN** they are ordered alphabetically by their localized submarket display name using locale-aware comparison, preserving the existing relative order
+- **THEN** they are ordered by curated submarket rank where the submarket key has one, and only otherwise alphabetically by their localized submarket display name using locale-aware comparison, preserving the existing relative order
 
 #### Scenario: Unknown markets sort after curated markets
 
