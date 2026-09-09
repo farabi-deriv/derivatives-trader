@@ -215,11 +215,7 @@ Distinguishing a genuine deep link from the application's own URL stamp written 
 
 ### Requirement: Restoring a tab's parameters never prevents the Trade page from loading
 
-Determining which tab's parameters to restore happens during store construction, before the
-application's UI state is available. That determination SHALL NOT depend on state that is unavailable
-at that point, and SHALL NOT be able to raise an error out of construction: a failure there aborts
-application start-up and replaces the entire Trade page with the generic error screen, which is a
-strictly worse outcome than starting from defaults.
+Determining which tab's parameters to restore SHALL NOT depend on state that is unavailable at that point, and MUST NOT be able to raise an error out of construction. That determination happens during store construction, before the application's UI state is available, and a failure there aborts application start-up and replaces the entire Trade page with the generic error screen — a strictly worse outcome than starting from defaults.
 
 #### Scenario: The page loads when UI state is not yet available
 

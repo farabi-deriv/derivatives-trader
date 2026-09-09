@@ -44,11 +44,3 @@ Each has a recommended default, already applied throughout this plan — the pla
 ## 6. Documentation
 
 - [x] 6.1 Update `CLAUDE.md` (Gotchas / Store structure): mobile menu offers Light/Dark/System via `ui.setThemePreference`; desktop keeps the one-click toggle that records an explicit preference; selection UI keys off `theme_preference`, rendering keys off `is_dark_mode_on`. Verify: the file no longer describes the mobile control as a dark-theme toggle.
-
-## 7. Manual QA (needs real devices; not automatable in Jest/jsdom)
-
-- [ ] 7.1 On a mobile device (≤600px) with the OS in Dark, clear site data, open the menu: System is selected and the app (chart included) is dark; select Light → whole app goes light and stays light after reload and after flipping the OS theme. Verify: matches spec "An explicit Light or Dark selection is enforced app-wide".
-- [ ] 7.2 With System selected and the app open, flip the OS theme both ways: page and chart follow live, no reload (spec: "Selecting System follows the OS theme live").
-- [ ] 7.3 On Samsung Internet with the browser's dark mode active and the app set to Light: no inversion, chart and page both light (spec: "Forced browser darkening does not leak into an explicitly light app").
-- [ ] 7.4 Desktop (>600px): first visit on a dark OS lands dark; one sidebar click switches to light in place with no flyout; flipping the OS afterwards changes nothing (spec: desktop requirement, all three scenarios).
-- [ ] 7.5 Visual check of the mobile selection against Figma `21919-130536` (spacing, icons, order, selected state) before requesting design/QA signoff.

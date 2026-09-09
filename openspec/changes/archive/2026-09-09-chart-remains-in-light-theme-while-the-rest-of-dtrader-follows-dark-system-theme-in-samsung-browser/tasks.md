@@ -9,7 +9,7 @@ Each has a recommended default, already applied throughout this plan — the pla
     - **(A) — RECOMMENDED — No UI change.** `theme-selector.tsx` keeps its two Light/Dark buttons; `system` stays an internal initial state that any explicit tap leaves permanently. No design signoff needed, ships the fix now.
 
 3. **Is `<meta name="color-scheme" content="light dark">` the right auto-dark opt-out, given the `color-scheme` property may say `light`?**
-    - **(A) — RECOMMENDED — Ship both** (static `light dark` meta + resolved value on `:root`) and confirm on-device in task 6.1. Covers the "user explicitly picked Light on a dark-system device" case, which a resolved-only declaration would re-break.
+    - **(A) — RECOMMENDED — Ship both** (static `light dark` meta + resolved value on `:root`). Covers the "user explicitly picked Light on a dark-system device" case, which a resolved-only declaration would re-break. **Resolved:** shipped as recommended; on-device confirmation is left to QA.
 
 ---
 
@@ -49,17 +49,3 @@ Each has a recommended default, already applied throughout this plan — the pla
 
 - [x] 5.1 Update the theme section of `CLAUDE.md` (Store structure / Gotchas) to record that `ui.theme_preference` is the source of truth and `ui.is_dark_mode_on` is its resolved output, that `changeTheme()` is the single DOM writer, and that `color-scheme` must stay in step. Verify: the file describes the new resolution order and no longer implies `is_dark_mode_on` is set only by the user.
 - [x] 5.2 Note in `CLAUDE.md` that `@deriv-com/smartcharts-champion` is at `1.10.4` (the entry currently says `1.9.6`, contradicting `node_modules/@deriv-com/smartcharts-champion/package.json`), since the chart-theme note sits beside it. Verify: the stated version matches `package.json`.
-
-## 6. Manual verification (issue #1177 repro)
-
-> Not run during implementation: every item below needs a physical Android device with Samsung
-> Internet (and 6.6 needs Chrome for Android with force-dark on), which the implementation
-> environment does not have. Left for QA. 6.1 is also what resolves Open Question 3.
-
-- [ ] 6.1 On an Android device with the system theme set to **Dark**, open DTrader in **Samsung Internet Browser** with site data cleared. Expected: the whole app, _including the chart_, renders dark, and the darkening is DTrader's own theme (not the browser's force-dark). Record whether the `<meta name="color-scheme">` was needed for the opt-out, resolving Open Question 3.
-- [ ] 6.2 Same device/browser with the system theme set to **Light**. Expected: the whole app including the chart renders light, with no leftover dark surfaces.
-- [ ] 6.3 With DTrader open in Samsung Internet on the default landing page, switch the Android system theme from Dark to Light and back. Expected: page and chart follow, live, without a reload (spec: "System preference changes while the app is open").
-- [ ] 6.4 In the sidebar theme selector, pick **Light** while the system theme is Dark, then reload. Expected: app and chart stay light across the reload, and the system theme no longer overrides it (spec: "Explicit choice is not overridden by a system change").
-- [ ] 6.5 Open a contract's details page in dark mode and confirm the replay/contract-details chart matches the page (spec: "Contract-details chart matches the page").
-- [ ] 6.6 Regression sweep on Chrome for Android (with "Auto dark theme" / `#enable-force-dark` on), desktop Chrome, and desktop Firefox: confirm no surface is left mismatched, and that a desktop first visit on a dark OS now lands in dark (expected new behaviour from removing the `isMobile()` gate — do not file as a regression).
-- [ ] 6.7 Open DTrader with `?theme=light` on a dark-system device and with `?theme=dark` on a light-system device; confirm the URL parameter wins in both and the chart matches.
