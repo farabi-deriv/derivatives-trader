@@ -1,7 +1,7 @@
 /**
- * @name     All markets — trade form loads correctly or shows closed-market state
+ * @name     All markets — live feed ticks on Market Info
  * @id       flow-1
- * @flow     playwright/flows/feed/flow.md#flow-1--all-markets-feed-active-or-closed-state-correct-for-every-market-in-the-dialog--feedverify-all-markets-streamingspects
+ * @flow     playwright/flows/feed/flow.md#flow-1--all-markets-live-feed-ticks-on-market-info-for-every-tradeable-symbol--feedverify-all-markets-streamingspects
  * @coverage playwright/flows/feed/coverage.md
  */
 import { test, expect } from '../../fixtures/fixtures';
@@ -13,29 +13,27 @@ test.describe('Feed', { tag: ['@desktop', '@mobile', '@feed', '@smoke', '@produc
         if (!process.env.BASE_URL) throw new Error('BASE_URL is not set in playwright/.env');
     });
 
-    // Disabled pending manual verification of the redesign fix — re-enable once confirmed.
-    test.skip('VERIFY all markets show live price feed or closed-market state', async ({
+    test('VERIFY all markets show live price feed or closed-market state', async ({
         page,
         tradeParametersPage,
+        marketSelectionPage,
         feedPage,
     }) => {
         await TradeBasePage.seedLocalStorageOnOrigin(page);
         await tradeParametersPage.gotoTradePage();
 
-        for (const market of FeedPage.MARKETS) {
+        for (let index = 0; index < FeedPage.MARKETS.length; index++) {
+            const market = FeedPage.MARKETS[index];
             await expect
-                .soft(async () => {
-                    // selectMarketAndTradeType() asserts the Multipliers params render with no
-                    // error — the redesign no longer exposes a live-ticking price anywhere in the
-                    // DOM (see FeedPage), so this is the strongest signal available that the WS
-                    // feed/proposal for this symbol actually resolved.
-                    await tradeParametersPage.selectMarketAndTradeType(feedPage.resolveLabel(market), 'Multipliers');
-
-                    if (market.status === 'session_gated') {
-                        await feedPage.verifyMarketClosedState(market.label);
-                    }
-                }, `[${market.label}] market check`)
-                .toPass({ timeout: 30_000 });
+                .soft(
+                    async () => {
+                        await feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market);
+                    },
+                    `[${feedPage.resolveLabel(market)}] market feed check`
+                )
+                .toPass({ timeout: 60_000 });
         }
+
+        await marketSelectionPage.closeMarketSelectionPicker();
     });
 });

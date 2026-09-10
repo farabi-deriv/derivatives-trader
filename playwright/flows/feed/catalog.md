@@ -1,7 +1,8 @@
 # 🗺️ Feed Journey Catalog — Technical Reference
 
-> Source of truth: `packages/trader/src/AppV2/Components/MarketSelector/market-selector.tsx` · `packages/trader/src/AppV2/Components/TradeParameters/`
-> Created: 2026-07-20 | Last updated: 2026-08-05 (redesign removed the live spot-price DOM element entirely — see below; switched to `selectMarketAndTradeType()`, removed the CLOSED badge check)
+> Source of truth: `packages/trader/src/AppV2/Components/MarketSelection/` · `market-info-screen.tsx`
+> · `market-search-results.tsx`
+> Created: 2026-07-20 | Last updated: 2026-09-10
 
 ---
 
@@ -15,50 +16,91 @@
 
 ## Section 2 — Flow Details
 
-### Flow 1 — All markets: feed active or closed state correct for every market in the dialog
+### Flow 1 — All markets: live feed ticks on Market Info for every tradeable symbol
 
 ```typescript
 // Entry: unauthenticated
+await TradeBasePage.seedLocalStorageOnOrigin(page);
 await tradeParametersPage.gotoTradePage();
 
-// Iterate over all ~65 markets from FeedPage.MARKETS; branch on status
-for (const market of FeedPage.MARKETS) {
-    // Both viewports: TradeParametersPage.selectMarketAndTradeType() — search-based via the unified
-    // Market Selection modal. mobileLabel overrides label for markets where mobile renders a
-    // different name (e.g. 'Step Index 100' → 'Step 100 Index'). This call itself asserts the
-    // Multipliers params (Multiplier/Stake/Risk management/Buy button) render with no error — the
-    // strongest available signal that the WS feed/proposal for this symbol resolved, now that the
-    // redesign has no DOM-visible live price to check directly.
-    await tradeParametersPage.selectMarketAndTradeType(feedPage.resolveLabel(market), 'Multipliers');
-
-    if (market.status === 'session_gated') {
-        // Session-gated — verify closed state, or no-op if open at runtime (already covered above)
-        await feedPage.verifyMarketClosedState(market.label);
-        // Closed: .closed-market-message--container (reopen banner) + .market-countdown-timer
-    }
+for (let index = 0; index < FeedPage.MARKETS.length; index++) {
+    const market = FeedPage.MARKETS[index];
+    await expect
+        .soft(
+            async () => {
+                await feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market);
+            },
+            `[${feedPage.resolveLabel(market)}] market feed check`
+        )
+        .toPass({ timeout: 60_000 });
 }
+await marketSelectionPage.closeMarketSelectionPicker();
 ```
 
-**Market data:** `FeedPage.MARKETS` (static property) — all ~65 symbols with `label`, optional `mobileLabel`, and `status`. No `symbolClass` — selection is name-based via search.
+**Market data:** `FeedPage.MARKETS` — static array of ~65 entries, each `{ label, status }` where
+`status` is `'open'` (24/7 synthetics) or `'session_gated'` (forex, indices, commodities, crypto, baskets).
+Optional `mobileLabel` remains on the type for viewport overrides but is unused by current entries
+(e.g. step indices display as `Step 100 Index` on both platforms).
 
-**Why there's no live-price assertion:** The pre-redesign trade page rendered the ticking spot price
-via SmartCharts' `.cq-symbol-info` header (`.cq-animated-price` desktop / `.market-selector-info__price`
-mobile) and a "CLOSED" badge (`.cq-symbol-closed-text` / `.tag.tag__color--error`) in that same header.
-The redesign removed this header entirely — the price now renders only on the chart `<canvas>`, which
-Playwright cannot read, and there is no DOM-visible "CLOSED" badge anymore either. The reopen-time
-banner and countdown timer (`.closed-market-message--container` / `.market-countdown-timer`) are
-unaffected and still render correctly for closed markets.
+**Why Market Info, not the trade form:** The redesign removed the DOM-visible live spot price from the
+trade page (chart is `<canvas>` only). Market Info exposes `.market-info__price`, which updates from
+the same ticks WebSocket stream.
+
+**Search behaviour:** Cross-trade-type search groups results under each tradeable trade type. The test
+opens Info from `firstMarketSearchResultRow(label)` — the first DOM match, not a fixed trade type.
+
+**Between markets:** Picker stays open. `returnFromMarketInfoForNextSearch` clicks Back; the next
+iteration's `fill()` replaces the search query. No need to close the picker or tap Search again.
+
+**Session-gated skip:** When the first search row shows **CLOSED**, or Market Info shows **Closed**,
+the market is skipped with no tick assertion.
 
 ---
 
-## Section 3 — POM Method Reference
+## Section 3 — Key DOM Locators
 
-| What the step does                                                                      | Method                                                            |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Select market + trade type — viewport-aware via search (unified Market Selection modal) | `tradeParametersPage.selectMarketAndTradeType(market, tradeType)` |
-| Assert closed-market reopen banner + countdown (or no-op if open at runtime)            | `feedPage.verifyMarketClosedState(label)`                         |
-| Resolve the display label for the current viewport (`mobileLabel` override)             | `feedPage.resolveLabel(market)`                                   |
-| Static array of all ~65 markets with `label`, optional `mobileLabel`, and `status`      | `FeedPage.MARKETS`                                                |
-| Locator: reopen-time banner on trade form                                               | `feedPage.closedMarketMessageContainer`                           |
-| Locator: countdown timer inside reopen banner                                           | `feedPage.marketCountdownTimer`                                   |
-| Navigate to trade page (entry point)                                                    | `tradeParametersPage.gotoTradePage()`                             |
+| UI element                   | Locator / class                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| Picker (mobile)              | `[role="dialog"][aria-label="Market selection"]`                                             |
+| Picker (desktop)             | `.market-selection-desktop`                                                                  |
+| Search icon (mobile header)  | `marketSelectionPanel` → `getByRole('button', { name: 'Search' })`                           |
+| Search page (mobile)         | `.market-search`                                                                             |
+| Search input (mobile)        | `.market-search` → `getByPlaceholder('Search markets')`                                      |
+| Search input (desktop)       | `.market-selection-desktop__search` → `getByPlaceholder('Search by market name')`            |
+| Search results list          | `.market-search-results`                                                                     |
+| Search loading skeleton      | `.market-selection-list--loading`                                                            |
+| Search result row (mobile)   | `.market-search-results` → `.market-selection-row` filtered by `.market-selection-row__name` |
+| Search result row (desktop)  | `.market-search-results` → `.market-row-desktop` filtered by `.market-row-desktop__name`     |
+| Info button (mobile row)     | `.market-selection-row__action--info` — use `dispatchEvent('click')`                         |
+| Info button (desktop row)    | row → `getByRole('button', { name: 'Info' })`                                                |
+| Market Info screen           | `.market-info`                                                                               |
+| Market name on Info          | `.market-info__name`                                                                         |
+| Live price on Info           | `.market-info__price`                                                                        |
+| Search result row CLOSED tag | `.market-selection-row__content` → `.tag__color--error-fill` with text **CLOSED**            |
+| Closed tag on Market Info    | `.market-info__price-row` → `.tag__color--error-fill` with text **Closed**                   |
+| Back from Info               | `getByRole('button', { name: 'Back' })` on `.market-info`                                    |
+
+---
+
+## Section 4 — POM Method Reference
+
+| What the step does                                           | Method                                                                   |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Full per-market flow (search → Info → assert; picker reused) | `feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market)`    |
+| Ensure picker + search ready (idempotent; safe on retry)     | `feedPage.openMarketSearchInPicker(marketSelectionPage)`                 |
+| Type query and return first row (CLOSED → skip Info)         | `feedPage.searchMarketFirstResultRow(marketSelectionPage, label)`        |
+| Check CLOSED tag on a search row                             | `marketSelectionPage.isSearchResultRowClosed(row)`                       |
+| Search, open Info, assert (when row is live)                 | `feedPage.searchMarketAndOpenInfo(marketSelectionPage, label)`           |
+| Back to search between markets                               | `feedPage.returnFromMarketInfoForNextSearch(marketSelectionPage)`        |
+| Assert live price ticks; skip closed session-gated           | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status)` |
+| Resolve display label for viewport                           | `feedPage.resolveLabel(market)`                                          |
+| Static array of all ~65 markets                              | `FeedPage.MARKETS`                                                       |
+| Locator: Market Info root                                    | `marketSelectionPage.marketInfoScreen`                                   |
+| Locator: live price on Market Info                           | `marketSelectionPage.marketInfoScreen.locator('.market-info__price')`    |
+| Open search page / confirm input ready                       | `marketSelectionPage.openMarketSearch()`                                 |
+| Wait for first matching search row (past skeleton)           | `marketSelectionPage.waitForMarketSearchResultRow(market)`               |
+| First row in cross-trade-type results                        | `marketSelectionPage.firstMarketSearchResultRow(market)`                 |
+| Open Info on a specific search row                           | `marketSelectionPage.openMarketInfoOnSearchRow(row)`                     |
+| Close picker after the loop                                  | `marketSelectionPage.closeMarketSelectionPicker()`                       |
+| Navigate to trade page (entry point)                         | `tradeParametersPage.gotoTradePage()`                                    |
+| Seed localStorage (suppress tours)                           | `TradeBasePage.seedLocalStorageOnOrigin(page)`                           |

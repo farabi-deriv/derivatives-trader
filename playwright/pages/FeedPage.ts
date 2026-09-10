@@ -1,4 +1,5 @@
 import { Locator, expect } from '@playwright/test';
+import { MarketSelectionPage } from './MarketSelectionPage';
 import { TradeBasePage } from './TradeBasePage';
 
 export type MarketStatus = 'open' | 'session_gated';
@@ -11,24 +12,18 @@ export interface Market {
 }
 
 /**
- * FeedPage — Verifies every market's trade form loads correctly (or shows the closed-market
- * state) after the WebSocket feed connects.
+ * FeedPage — Verifies every market's live price feed (or closed-market state) via the Market Info
+ * screen in the market-selection picker.
  *
- * The redesigned trade page no longer exposes the live-ticking spot price anywhere in the DOM
- * (the old SmartCharts symbol-info header — `.cq-animated-price` / `.market-selector-info__price`
- * — was removed; the price now renders only on the chart `<canvas>`, which Playwright cannot read).
- * So "the feed is alive" is instead verified indirectly: for each market, selecting it + Multipliers
- * succeeds and the trade form's params render with no error (asserted inside
- * `selectMarketAndTradeType()`'s own `verifyParamsForTradeType()` call) — this only happens once the
- * `ticks`/`proposal` subscriptions for that symbol have actually resolved.
- *
- * Navigation to the trade page and market/trade-type selection is handled by
- * `TradeParametersPage.gotoTradePage()` + `selectMarketAndTradeType(market, 'Multipliers')`.
+ * Flow per market: open picker → search row → Info → assert `.market-info__price`
+ * ticks from the live stream. Search is cross-trade-type; when a symbol appears under several
+ * groups, the first matching row is used. Session-gated markets outside exchange hours are skipped.
  *
  * @example
  * ```typescript
  * await tradeParametersPage.gotoTradePage();
- * await tradeParametersPage.selectMarketAndTradeType('Volatility 100 Index', 'Multipliers');
+ * await feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market);
+ * await marketSelectionPage.closeMarketSelectionPicker();
  * ```
  */
 export class FeedPage extends TradeBasePage {
@@ -56,11 +51,11 @@ export class FeedPage extends TradeBasePage {
         { label: 'Jump 75 Index', status: 'open' },
         { label: 'Jump 100 Index', status: 'open' },
         // ── Step indices — 24/7 ────────────────────────────────────────────────
-        { label: 'Step Index 100', mobileLabel: 'Step 100 Index', status: 'open' },
-        { label: 'Step Index 200', mobileLabel: 'Step 200 Index', status: 'open' },
-        { label: 'Step Index 300', mobileLabel: 'Step 300 Index', status: 'open' },
-        { label: 'Step Index 400', mobileLabel: 'Step 400 Index', status: 'open' },
-        { label: 'Step Index 500', mobileLabel: 'Step 500 Index', status: 'open' },
+        { label: 'Step 100 Index', status: 'open' },
+        { label: 'Step 200 Index', status: 'open' },
+        { label: 'Step 300 Index', status: 'open' },
+        { label: 'Step 400 Index', status: 'open' },
+        { label: 'Step 500 Index', status: 'open' },
         // ── Daily reset indices — 24/7 ─────────────────────────────────────────
         { label: 'Bear Market Index', status: 'open' },
         { label: 'Bull Market Index', status: 'open' },
@@ -121,26 +116,26 @@ export class FeedPage extends TradeBasePage {
     ];
 
     // ============================================
-    // LOCATORS
+    // LOCATORS (scoped via MarketSelectionPage — single source for `.market-info`)
     // ============================================
 
-    /**
-     * "This market will reopen at…" banner rendered by the trade form when the selected
-     * market is outside its trading hours. Also doubles as the closed-state signal itself —
-     * the redesign removed the old "CLOSED" badge from the chart header entirely, so this
-     * banner's presence is now the only DOM-visible indicator that a market is closed.
-     * Source: `.closed-market-message--container` in market-closed-message.tsx.
-     */
-    get closedMarketMessageContainer(): Locator {
-        return this.page.locator('.closed-market-message--container');
+    private marketInfoName(marketSelectionPage: MarketSelectionPage): Locator {
+        return marketSelectionPage.marketInfoScreen.locator('.market-info__name');
+    }
+
+    /** Live spot price on the Market Info screen. Source: market-info-screen.tsx `.market-info__price` */
+    private marketInfoPrice(marketSelectionPage: MarketSelectionPage): Locator {
+        return marketSelectionPage.marketInfoScreen.locator('.market-info__price');
     }
 
     /**
-     * Countdown timer inside the closed-market banner — displays time remaining until reopen.
-     * Source: `.market-countdown-timer` in market-closed-message.tsx.
+     * Closed tag in `.market-info__price-row` when the exchange is shut (replaces `.market-info__price`).
+     * Search list uses uppercase **CLOSED**; Market Info uses title case **Closed** in `.tag__color--error-fill`.
      */
-    get marketCountdownTimer(): Locator {
-        return this.page.locator('.market-countdown-timer');
+    private marketInfoClosedTag(marketSelectionPage: MarketSelectionPage): Locator {
+        return marketSelectionPage.marketInfoScreen
+            .locator('.market-info__price-row .tag__color--error-fill', { hasText: 'Closed' })
+            .first();
     }
 
     // ============================================
@@ -151,35 +146,150 @@ export class FeedPage extends TradeBasePage {
         return this.isMobile && market.mobileLabel ? market.mobileLabel : market.label;
     }
 
+    /**
+     * Ensure the picker is open with search ready — idempotent, safe inside `.toPass()` retries.
+     * Skips Add-market / Search taps when already on the search page or Market Info (Back first).
+     */
+    async openMarketSearchInPicker(marketSelectionPage: MarketSelectionPage): Promise<void> {
+        if (await marketSelectionPage.marketInfoScreen.isVisible().catch(() => false)) {
+            await this.returnFromMarketInfoForNextSearch(marketSelectionPage);
+        }
+
+        const pickerOpen = await marketSelectionPage.marketSelectionPanel.isVisible().catch(() => false);
+        if (!pickerOpen) {
+            await marketSelectionPage.addMarketButton.click();
+            await expect(marketSelectionPage.marketSelectionPanel, 'Market-selection picker should open').toBeVisible();
+        }
+
+        const searchReady = await marketSelectionPage.marketSearchInput.isVisible().catch(() => false);
+        if (!searchReady) {
+            await marketSelectionPage.openMarketSearch();
+        }
+    }
+
+    /** Search for a symbol and return the first matching search row. */
+    async searchMarketFirstResultRow(marketSelectionPage: MarketSelectionPage, marketLabel: string): Promise<Locator> {
+        await expect(
+            marketSelectionPage.marketSearchInput,
+            `[${marketLabel}] search input should be ready before typing`
+        ).toBeVisible();
+        await marketSelectionPage.marketSearchInput.fill(marketLabel);
+        return marketSelectionPage.waitForMarketSearchResultRow(marketLabel);
+    }
+
+    /** Search for a symbol and open its Market Info from the first matching search row. */
+    async searchMarketAndOpenInfo(marketSelectionPage: MarketSelectionPage, marketLabel: string): Promise<void> {
+        const resultRow = await this.searchMarketFirstResultRow(marketSelectionPage, marketLabel);
+
+        await marketSelectionPage.openMarketInfoOnSearchRow(resultRow);
+        await expect(
+            marketSelectionPage.marketInfoScreen,
+            `[${marketLabel}] Market Info screen should open`
+        ).toBeVisible();
+        await expect(
+            this.marketInfoName(marketSelectionPage),
+            `[${marketLabel}] Market Info should show the market name`
+        ).toHaveText(marketLabel);
+    }
+
+    /** Back out of Market Info to search and open the next market (picker stays open). */
+    async returnFromMarketInfoForNextSearch(marketSelectionPage: MarketSelectionPage): Promise<void> {
+        await marketSelectionPage.marketInfoBackButton.click();
+        await expect(
+            marketSelectionPage.marketInfoScreen,
+            'Market Info screen should close after Back'
+        ).not.toBeVisible();
+        await expect(
+            marketSelectionPage.marketSearchInput,
+            'Search input should be ready for the next market query'
+        ).toBeVisible();
+        await expect(marketSelectionPage.marketSearchInput, 'Search input should be editable').toBeEditable();
+    }
+
     // ============================================
     // VERIFICATIONS
     // ============================================
 
     /**
-     * Assert the closed-market UI state for a session-gated symbol.
-     *
-     * Checks two signals on both desktop and mobile:
-     *   1. Trade form reopen-time banner (`.closed-market-message--container`)
-     *   2. Countdown timer inside the banner (`.market-countdown-timer`)
-     *
-     * @param label - Human-readable market name used in assertion messages, e.g. `'Hong Kong 50'`.
+     * End-to-end feed check for one market: search → Info → assert live price or closed state.
+     * Opens the picker on first use; afterwards the picker stays open between markets.
+     * `openMarketSearchInPicker` is idempotent so `.toPass()` retries never re-click Add market.
      */
-    async verifyMarketClosedState(label: string): Promise<void> {
-        const isClosed = await this.closedMarketMessageContainer.isVisible().catch(() => false);
+    async verifyMarketFeedViaInfoScreen(marketSelectionPage: MarketSelectionPage, market: Market): Promise<void> {
+        const label = this.resolveLabel(market);
 
-        if (!isClosed) {
-            // Market is within trading hours at runtime — selectMarketAndTradeType() already
-            // confirmed the trade form loaded without error, nothing further to assert here.
+        await this.openMarketSearchInPicker(marketSelectionPage);
+
+        const resultRow = await this.searchMarketFirstResultRow(marketSelectionPage, label);
+
+        if (await marketSelectionPage.isSearchResultRowClosed(resultRow)) {
+            if (market.status === 'open') {
+                throw new Error(`[${label}] Always-open market should not show CLOSED in search results`);
+            }
+            // session_gated and outside trading hours — skip Info; search page stays open for the next query
             return;
         }
 
+        await marketSelectionPage.openMarketInfoOnSearchRow(resultRow);
+        await expect(marketSelectionPage.marketInfoScreen, `[${label}] Market Info screen should open`).toBeVisible();
         await expect(
-            this.closedMarketMessageContainer,
-            `[${label}] Closed-market reopen banner should be visible on the trade form`
-        ).toBeVisible();
-        await expect(
-            this.marketCountdownTimer,
-            `[${label}] Countdown timer should be visible in the closed-market banner`
-        ).toBeVisible();
+            this.marketInfoName(marketSelectionPage),
+            `[${label}] Market Info should show the market name`
+        ).toHaveText(label);
+
+        try {
+            await this.verifyMarketInfoFeedState(marketSelectionPage, label, market.status);
+        } finally {
+            await this.returnFromMarketInfoForNextSearch(marketSelectionPage);
+        }
+    }
+
+    /**
+     * Assert the Market Info screen shows a live ticking price.
+     * Session-gated markets that are closed at runtime are skipped — proceed to the next market.
+     */
+    async verifyMarketInfoFeedState(
+        marketSelectionPage: MarketSelectionPage,
+        label: string,
+        status: MarketStatus
+    ): Promise<void> {
+        const marketInfoPrice = this.marketInfoPrice(marketSelectionPage);
+        const marketInfoClosedTag = this.marketInfoClosedTag(marketSelectionPage);
+
+        await expect
+            .poll(
+                async () => {
+                    const priceVisible = await marketInfoPrice.isVisible().catch(() => false);
+                    const closedVisible = await marketInfoClosedTag.isVisible().catch(() => false);
+                    return priceVisible || closedVisible;
+                },
+                { message: `[${label}] Market Info should finish loading price or closed state` }
+            )
+            .toBe(true);
+
+        const isClosed = await marketInfoClosedTag.isVisible().catch(() => false);
+
+        if (isClosed) {
+            if (status === 'open') {
+                throw new Error(`[${label}] Always-open market should not show Closed on Market Info`);
+            }
+            // session_gated and outside trading hours — no live feed to verify; move on
+            return;
+        }
+
+        await expect(marketInfoPrice, `[${label}] Live price should be visible on Market Info`).toBeVisible();
+        const initialPrice = ((await marketInfoPrice.textContent()) ?? '').trim();
+        expect(initialPrice, `[${label}] Market Info price should be non-empty`).not.toBe('');
+        expect(initialPrice, `[${label}] Market Info price should look numeric`).toMatch(/[\d.,]+/);
+
+        await expect
+            .poll(
+                async () => {
+                    const current = ((await marketInfoPrice.textContent()) ?? '').trim();
+                    return current !== '' && current !== initialPrice;
+                },
+                { message: `[${label}] Market Info price should tick from the live feed`, timeout: 15_000 }
+            )
+            .toBe(true);
     }
 }

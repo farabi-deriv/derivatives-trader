@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-07
+Last updated: 2026-09-10
 
 ---
 
@@ -41,10 +41,10 @@ Each module section lists every documented flow with its current **status** and 
 | `reports`          | 8           | 8          | 8         |
 | `notifications`    | 9           | 9          | 1         |
 | `auth`             | 3           | 3          | 3         |
-| `trade-automate`   | 28          | 28         | 24        |
+| `trade-automate`   | 28          | 28         | 25        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
-| **Total**          | **120**     | **120**    | **103**   |
+| **Total**          | **120**     | **120**    | **104**   |
 
 > Status advances: `documented` → `automated`
 
@@ -204,9 +204,9 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/feed/` · **Test folder:** `playwright/tests/feed/`
 
-| Flow   | Priority | Description                                                                                                                    | User State      | Status      |
-| ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------- | ----------- |
-| Flow 1 | P0       | All markets: feed active or closed state correct for every market (~65 symbols, desktop + mobile; open/session_gated branches) | unauthenticated | `automated` |
+| Flow   | Priority | Description                                                                                                             | User State      | Status      |
+| ------ | -------- | ----------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
+| Flow 1 | P0       | All markets: live feed ticks on Market Info for every tradeable symbol (~65; skip CLOSED in search list; picker reused) | unauthenticated | `automated` |
 
 ---
 
@@ -253,6 +253,7 @@ Each module section lists every documented flow with its current **status** and 
 | **Next** | `trade`            | Flow 12 (closed market) + G1 (insufficient balance) + G2 (unauthenticated purchase)    |
 | **Soon** | `trade-automate`   | Flow 4 (EU gating) · G1 · G2 (unsupported trade type)                                  |
 | **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                       |
+| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                         |
 | **Done** | `positions`        | All 11 flows/gaps automated                                                            |
 | **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance       |
 | **Done** | `trade`            | Flows 1–11 + 9.1–9.8 automated; only Flow 12 + G1/G2 remain                            |

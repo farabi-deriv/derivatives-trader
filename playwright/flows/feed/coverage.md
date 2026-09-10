@@ -1,16 +1,16 @@
 # Feed Journey Coverage
 
-**Analysis date:** 2026-07-20
+**Analysis date:** 2026-09-10
 
 ---
 
 ## Section 1 — Coverage at a Glance
 
-| #      | Journey                                                                         | Desktop | Mobile | Notes                                                                                                                                                                                                                                                                                                                                       |
-| ------ | ------------------------------------------------------------------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Flow 1 | All markets: feed active or closed state correct for every market in the dialog | ✅      | ✅     | ~65 symbols; `open` branch relies on `selectMarketAndTradeType()`'s own no-error assertion (no DOM-visible live price exists post-redesign); `session_gated` branch verifies reopen banner + countdown (or no-ops if market is open at runtime); both viewports use `TradeParametersPage.selectMarketAndTradeType()` search-based selection |
+| #      | Journey                                                                | Desktop | Mobile | Notes                                                                                                                                                                                 |
+| ------ | ---------------------------------------------------------------------- | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow 1 | All markets: live feed ticks on Market Info for every tradeable symbol | ✅      | ✅     | ~65 symbols; picker opens once → cross-trade-type search → skip **CLOSED** in list or assert `.market-info__price` ticks on Info; Back between live markets; picker closed after loop |
 
-Full details → [flow.md — Flow 1](./flow.md#flow-1--all-markets-feed-active-or-closed-state-correct-for-every-market-in-the-dialog--feedverify-all-markets-streamingspects)
+Full details → [flow.md — Flow 1](./flow.md#flow-1--all-markets-live-feed-ticks-on-market-info-for-every-tradeable-symbol--feedverify-all-markets-streamingspects)
 
 ---
 
@@ -22,6 +22,6 @@ _No known gaps._
 
 ## Section 3 — Priority List
 
-| Priority | Spec file                                   | Flow   | Reason                                                                              |
-| -------- | ------------------------------------------- | ------ | ----------------------------------------------------------------------------------- |
-| P0       | `feed/verify-all-markets-streaming.spec.ts` | Flow 1 | Confirms WebSocket feed is alive and all ~65 markets show correct open/closed state |
+| Priority | Spec file                                   | Flow   | Reason                                                                                               |
+| -------- | ------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| P0       | `feed/verify-all-markets-streaming.spec.ts` | Flow 1 | Confirms WebSocket feed is alive for all tradeable markets (~65 symbols) via Market Info price ticks |

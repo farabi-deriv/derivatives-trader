@@ -69,10 +69,10 @@ export class MarketSelectionPage extends TradeBasePage {
     /**
      * Search-icon trigger that opens the dedicated mobile search page — desktop's search field is
      * already inline, so this is mobile-only chrome.
-     * Source: market-selection-header.tsx aria-label='Search'
+     * Source: market-selection-header.tsx `.market-selection__header-icon` aria-label='Search'
      */
     get marketSelectionSearchButton(): Locator {
-        return this.page.getByRole('button', { name: 'Search' });
+        return this.marketSelectionPanel.getByRole('button', { name: 'Search' });
     }
 
     /**
@@ -88,6 +88,27 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * Mobile dedicated search page container. Empty until the header Search icon is tapped.
+     * Source: market-search-page.tsx `.market-search`
+     */
+    get marketSearchPage(): Locator {
+        return this.page.locator('.market-search');
+    }
+
+    /**
+     * Cross-trade-type search results list — rendered after the query matches loaded symbol lists.
+     * Source: market-search-results.tsx `.market-search-results`
+     */
+    get marketSearchResults(): Locator {
+        return this.page.locator('.market-search-results');
+    }
+
+    /** Skeleton shown while per-trade-type symbol lists are still loading for a query. */
+    get marketSearchLoadingList(): Locator {
+        return this.page.locator('.market-selection-list--loading');
+    }
+
+    /**
      * Market-selection search input — viewport-aware. Searching by name reaches any market across
      * every trade type in one step, rather than switching categories and scrolling a long list.
      * - Desktop: always-inline field, placeholder "Search by market name" (market-selection-desktop.tsx)
@@ -96,8 +117,19 @@ export class MarketSelectionPage extends TradeBasePage {
      */
     get marketSearchInput(): Locator {
         return this.isMobile
-            ? this.page.getByPlaceholder('Search markets')
-            : this.page.getByPlaceholder('Search by market name');
+            ? this.marketSearchPage.getByPlaceholder('Search markets')
+            : this.page.locator('.market-selection-desktop__search').getByPlaceholder('Search by market name');
+    }
+
+    /**
+     * Clear (X) control on the SearchField — shown while the query is non-empty. Clears the query
+     * but keeps the picker (and the mobile search page) open.
+     * Source: @deriv-com/quill-ui SearchField `button.icon_wrapper`
+     */
+    get marketSearchClearButton(): Locator {
+        return this.isMobile
+            ? this.page.locator('.market-search__header button.icon_wrapper')
+            : this.page.locator('.market-selection-desktop__search button.icon_wrapper');
     }
 
     /**
@@ -112,6 +144,42 @@ export class MarketSelectionPage extends TradeBasePage {
             .locator('.market-search-results__group')
             .filter({ has: this.page.locator('.market-search-results__trade-type', { hasText: tradeType }) })
             .first();
+    }
+
+    /**
+     * First market row matching the display name in search results — search is grouped by trade type
+     * and a symbol can appear under several groups; this takes the first match in list order.
+     *
+     * @param market - Visible market name (e.g. 'Volatility 100 Index')
+     */
+    firstMarketSearchResultRow(market: string): Locator {
+        const results = this.marketSearchResults;
+        return this.isMobile
+            ? results
+                  .locator('.market-selection-row')
+                  .filter({ has: this.page.locator('.market-selection-row__name', { hasText: market }) })
+                  .first()
+            : results
+                  .locator('.market-row-desktop')
+                  .filter({ has: this.page.locator('.market-row-desktop__name', { hasText: market }) })
+                  .first();
+    }
+
+    /**
+     * CLOSED tag on a search-result row when the exchange is shut (replaces the % change pill).
+     * Mobile: inside `.market-selection-row__content`. Desktop: inside `.market-row-desktop`.
+     * Market Info uses title case **Closed** in `.market-info__price-row` instead.
+     * Source: market-selection-row-mobile.tsx / market-selection-row-desktop.tsx
+     */
+    searchResultRowClosedTag(row: Locator): Locator {
+        return row.locator('.tag__color--error-fill', { hasText: 'CLOSED' }).first();
+    }
+
+    /** Whether a search-result row shows the CLOSED tag (market outside trading hours). */
+    async isSearchResultRowClosed(row: Locator): Promise<boolean> {
+        return this.searchResultRowClosedTag(row)
+            .isVisible()
+            .catch(() => false);
     }
 
     /**
@@ -519,6 +587,19 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * Open Market Info from a specific search-result row (use when multiple trade-type groups match).
+     *
+     * @param row - A row locator from {@link firstMarketSearchResultRow} or {@link marketSearchResultRow}
+     */
+    async openMarketInfoOnSearchRow(row: Locator): Promise<void> {
+        if (this.isMobile) {
+            await row.locator('.market-selection-row__action--info').dispatchEvent('click');
+        } else {
+            await row.getByRole('button', { name: 'Info' }).click();
+        }
+    }
+
+    /**
      * Open the Guide description modal for the currently-selected trade type.
      */
     async openGuide(): Promise<void> {
@@ -539,13 +620,55 @@ export class MarketSelectionPage extends TradeBasePage {
 
     /**
      * Open the search field, ready for `.fill()`. Desktop's search field is already inline, so
-     * this is a no-op there; mobile requires tapping the Search icon first to reach the
-     * dedicated search page.
+     * this is a no-op there; mobile taps Search then waits for the dedicated search input before
+     * returning so the caller can fill immediately with no extra hidden wait.
      */
     async openMarketSearch(): Promise<void> {
         if (this.isMobile) {
+            await expect(
+                this.marketSelectionSearchButton,
+                'Search icon should be visible on the market-selection header'
+            ).toBeVisible();
             await this.marketSelectionSearchButton.click();
+            await expect(this.marketSearchPage, 'Mobile search page should open').toBeVisible();
+            await expect(this.marketSearchInput, 'Mobile search input should be ready to type').toBeVisible();
+            await expect(this.marketSearchInput, 'Mobile search input should be editable').toBeEditable();
         }
+    }
+
+    /**
+     * Wait for a market row to appear in cross-trade-type search results — skips the loading
+     * skeleton phase while per-trade-type symbol lists resolve.
+     */
+    async waitForMarketSearchResultRow(market: string): Promise<Locator> {
+        const row = this.firstMarketSearchResultRow(market);
+
+        await expect
+            .poll(
+                async () => {
+                    if (await this.marketSearchLoadingList.isVisible().catch(() => false)) {
+                        return false;
+                    }
+                    return await row.isVisible().catch(() => false);
+                },
+                { message: `[${market}] should appear in search results after symbol lists load` }
+            )
+            .toBe(true);
+
+        return row;
+    }
+
+    /**
+     * Clear the market-selection search query via the SearchField X control — keeps the picker
+     * open so the next symbol can be typed immediately.
+     */
+    async clearMarketSearch(): Promise<void> {
+        await expect(
+            this.marketSearchClearButton,
+            'Search clear (X) should be visible while a query is active'
+        ).toBeVisible();
+        await this.marketSearchClearButton.click();
+        await expect(this.marketSearchInput, 'Search field should be empty after clearing').toHaveValue('');
     }
 
     /**
@@ -562,9 +685,8 @@ export class MarketSelectionPage extends TradeBasePage {
 
     /**
      * Close the market-selection picker without selecting a market. Mobile taps the header's
-     * Close (X) button; desktop clicks the InputPopover backdrop on the overlay element itself,
-     * positioned just to the right of the ~900px panel (chart area). `page.mouse.click()` at
-     * viewport coordinates misses the overlay because the chart sits above it in the hit-test stack.
+     * Close (X) button — if the dedicated search page is still open, taps Cancel first because
+     * Close is not rendered on the search page. Desktop clicks the InputPopover backdrop.
      */
     async closeMarketSelectionPicker(): Promise<void> {
         const panel = this.marketSelectionPanel;
@@ -575,6 +697,14 @@ export class MarketSelectionPage extends TradeBasePage {
             }
 
             if (this.isMobile) {
+                // Close (X) is on the browse header only — the dedicated search page replaces it with Cancel.
+                if (await this.marketSearchPage.isVisible().catch(() => false)) {
+                    await this.marketSearchCancelButton.click();
+                    await expect(
+                        this.marketSearchPage,
+                        'Search page should close before dismissing the picker'
+                    ).not.toBeVisible();
+                }
                 await this.marketSelectionCloseButton.click();
             } else {
                 const overlay = this.marketSelectionOverlay;
