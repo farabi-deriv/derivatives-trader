@@ -101,6 +101,8 @@ jobs:
       cron_suite: ${{ steps.resolve-cron.outputs.cron_suite }}
       matrix: ${{ steps.resolve-matrix.outputs.matrix }}
       max_parallel: ${{ steps.resolve-matrix.outputs.max_parallel }}
+      shard_total: ${{ steps.resolve-matrix.outputs.shard_total }}
+      report_platforms: ${{ steps.resolve-matrix.outputs.report_platforms }}
     steps:
       - name: Checkout
         if: ${{ (github.event.inputs.spec_file || inputs.spec_file) != '' }}
@@ -177,6 +179,9 @@ jobs:
 
       - name: Resolve matrix platforms
         id: resolve-matrix
+        env:
+          RESOLVED_SPEC: ${{ steps.resolve-spec.outputs.resolved_spec || '' }}
+          PREVIEW_URL: ${{ steps.resolve-preview-url.outputs.resolved_preview_url || '' }}
         run: |
           ALL='[{"platform":"chromium","name":"Chromium","browser":"chromium","grep_tag":"desktop"},{"platform":"chromium-mobile","name":"Chromium Mobile","browser":"chromium","grep_tag":"mobile"},{"platform":"firefox","name":"Firefox","browser":"firefox","grep_tag":"desktop"},{"platform":"webkit","name":"WebKit","browser":"webkit","grep_tag":"desktop"},{"platform":"webkit-mobile","name":"WebKit Mobile","browser":"webkit","grep_tag":"mobile"}]'
           SELECTED="${{ inputs.platform || github.event.inputs.platform || 'all' }}"
@@ -202,11 +207,35 @@ jobs:
           else
             MATRIX=$(echo "$ALL" | jq -c --arg sel "$SELECTED" '[.[] | select(.platform == $sel)]')
           fi
-          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
 
-          # Cap parallelism at 2 to avoid shared-account login races (see strategy.max-parallel below).
-          MATRIX_COUNT=$(echo "$MATRIX" | jq 'length')
-          if [ "$MATRIX_COUNT" -le 1 ]; then
+          if [ -n "$RESOLVED_SPEC" ]; then
+            SHARD_TOTAL=1
+          else
+            # Hardcoded default — smoke and regression split across 2 shard jobs per platform (incl. preview runs).
+            SHARD_TOTAL=2
+          fi
+
+          if [ "$SHARD_TOTAL" -le 1 ]; then
+            EXPANDED=$(echo "$MATRIX" | jq -c '[.[] | . + {shard_index: 1, shard_total: 1}]')
+          else
+            EXPANDED=$(echo "$MATRIX" | jq -c --argjson total "$SHARD_TOTAL" '
+              [.[] | . as $p | range(1; $total + 1) | $p + {shard_index: ., shard_total: $total}]
+            ')
+          fi
+          echo "matrix=${EXPANDED}" >> "$GITHUB_OUTPUT"
+          echo "shard_total=${SHARD_TOTAL}" >> "$GITHUB_OUTPUT"
+          echo "report_platforms=$(echo "$MATRIX" | jq -c '[.[].platform] | unique')" >> "$GITHUB_OUTPUT"
+          echo "::notice::Shard total: ${SHARD_TOTAL} ($(echo "$EXPANDED" | jq 'length') matrix jobs)"
+
+          # Shared test account: sharded runs allow up to 4 concurrent jobs; non-sharded cap at 2.
+          MATRIX_COUNT=$(echo "$EXPANDED" | jq 'length')
+          if [ "$SHARD_TOTAL" -gt 1 ]; then
+            if [ "$MATRIX_COUNT" -le 4 ]; then
+              MAX_PARALLEL="$MATRIX_COUNT"
+            else
+              MAX_PARALLEL=4
+            fi
+          elif [ "$MATRIX_COUNT" -le 1 ]; then
             MAX_PARALLEL=1
           elif [ "$MATRIX_COUNT" -le 2 ]; then
             MAX_PARALLEL="$MATRIX_COUNT"
@@ -216,12 +245,14 @@ jobs:
           echo "max_parallel=${MAX_PARALLEL}" >> "$GITHUB_OUTPUT"
 
   playwright-tests:
-    name: Playwright Tests - ${{ matrix.name }} (${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
+    name: Playwright Tests - ${{ matrix.name }}${{ matrix.shard_total > 1 && format(' (shard {0}/{1})', matrix.shard_index, matrix.shard_total) || '' }} (${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
     needs: validate-inputs
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      # Matrix platforms share the same test account, so cap concurrency at 2 to avoid concurrent-login races.
+      # Matrix platforms share the same test account. Non-sharded runs cap concurrency at 2;
+      # sharded runs (SHARD_TOTAL > 1) allow up to 4 concurrent jobs — see resolve-matrix's
+      # MAX_PARALLEL logic. If shared-account login races reappear, lower this cap first.
       max-parallel: ${{ fromJSON(needs.validate-inputs.outputs.max_parallel) }}
       matrix:
         include: ${{ fromJSON(needs.validate-inputs.outputs.matrix) }}
@@ -257,22 +288,35 @@ jobs:
           esac
           ./playwright/e2e-tests-core/scripts/env-cipher.sh decrypt "$TEST_ENV"
 
-      - name: Run Playwright tests (${{ matrix.name }})
+      - name: Run Playwright tests (${{ matrix.name }}${{ matrix.shard_total > 1 && format(' shard {0}/{1}', matrix.shard_index, matrix.shard_total) || '' }})
         env:
           TEST_ENV: ${{ needs.validate-inputs.outputs.resolved_preview_url && 'staging' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
           TEST_SUITE: ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }}
           RESOLVED_SPEC: ${{ needs.validate-inputs.outputs.resolved_spec }}
           PREVIEW_BASE_URL: ${{ needs.validate-inputs.outputs.resolved_preview_url }}
           GREP_TAG: ${{ matrix.grep_tag }}
+          SHARD_INDEX: ${{ matrix.shard_index }}
+          SHARD_TOTAL: ${{ matrix.shard_total }}
+          CI: true
+          # TestDino live streaming (see playwright.config.ts). TESTDINO_STREAM=1 enables blob +
+          # @testdino/playwright per shard. All shards of a platform share TESTDINO_CI_RUN_ID.
+          TESTDINO_STREAM: "1"
           TESTDINO_TOKEN: ${{ secrets.TESTDINO_TOKEN }}
+          TESTDINO_TAG: ${{ matrix.platform }}
+          TESTDINO_CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.platform }}
         run: |
           if [ -n "$PREVIEW_BASE_URL" ]; then
             export BASE_URL="$PREVIEW_BASE_URL"
             echo "::notice::Running against preview BASE_URL=$BASE_URL"
           fi
           RESOLVED_SPEC="${RESOLVED_SPEC//[[:space:]]/}"
+          SHARD_ARGS=""
+          if [ "$SHARD_TOTAL" -gt 1 ]; then
+            SHARD_ARGS="--shard=${SHARD_INDEX}/${SHARD_TOTAL}"
+            echo "::notice::Running shard ${SHARD_INDEX}/${SHARD_TOTAL}"
+          fi
           if [ -n "$RESOLVED_SPEC" ]; then
-            npx playwright test --project=${{ matrix.platform }} "$RESOLVED_SPEC"
+            npx playwright test --project=${{ matrix.platform }} $SHARD_ARGS "$RESOLVED_SPEC"
           else
             if [ "$TEST_SUITE" = "regression" ]; then
               GREP_PATTERN="(?=.*@${GREP_TAG})"
@@ -282,11 +326,78 @@ jobs:
             if [ "$TEST_ENV" = "production" ] && [ -z "$BASE_URL" ]; then
               GREP_PATTERN="${GREP_PATTERN}(?=.*@production)"
             fi
-            npx playwright test --project=${{ matrix.platform }} --grep "$GREP_PATTERN"
+            npx playwright test --project=${{ matrix.platform }} $SHARD_ARGS --grep "$GREP_PATTERN"
           fi
 
-      - name: Publish TestDino Summary
+      - name: Upload blob report (${{ matrix.platform }} shard ${{ matrix.shard_index }})
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-${{ matrix.platform }}-${{ matrix.shard_index }}-${{ github.run_attempt }}
+          path: blob-report/
+          retention-days: 1
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        if: failure()
+        with:
+          name: playwright-test-results-${{ matrix.platform }}-shard-${{ matrix.shard_index }}-${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+          path: playwright/test-results/
+          retention-days: 7
+
+      - name: Clean-up Decrypted Env Files
         if: always()
+        run: rm -f playwright/.env.staging playwright/.env.production
+
+  report:
+    name: Merge & report (${{ matrix.platform }})
+    needs: [validate-inputs, playwright-tests]
+    if: ${{ !cancelled() }}
+    runs-on: github-hosted-playwright01
+    environment: ${{ needs.validate-inputs.outputs.resolved_preview_url && 'staging' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(needs.validate-inputs.outputs.report_platforms) }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f #v6.3.0
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Download blob reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c #v8.0.1
+        with:
+          path: all-blob-reports
+          # Scope to THIS run attempt + THIS platform. The [0-9] anchor is REQUIRED so
+          # the 'chromium' glob does not also swallow 'chromium-mobile-*' blobs.
+          pattern: blob-${{ matrix.platform }}-[0-9]*-${{ github.run_attempt }}
+          merge-multiple: true
+
+      - name: Merge into HTML and JSON reports
+        env:
+          PLAYWRIGHT_MERGE_REPORTS: "1"
+        run: |
+          BLOB_COUNT=$(find all-blob-reports -name '*.zip' 2>/dev/null | wc -l | tr -d ' ')
+          echo "Blob archives to merge: ${BLOB_COUNT}"
+          if [ "$BLOB_COUNT" -eq 0 ]; then
+            echo "::warning::No blob reports found for ${{ matrix.platform }} — skipping merge"
+            exit 0
+          fi
+          npx playwright merge-reports --config playwright.config.ts ./all-blob-reports
+
+      - name: Publish TestDino Summary
+        if: ${{ !cancelled() }}
         continue-on-error: true
         env:
           TESTDINO_ACCESS_TOKEN: ${{ secrets.TESTDINO_ACCESS_TOKEN }}
@@ -296,22 +407,15 @@ jobs:
         run: node playwright/e2e-tests-core/scripts/github-summary-testdino.js
 
       - name: Upload Playwright Report
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
-        if: always()
         with:
           name: playwright-report-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
           path: playwright/playwright-report/
+          if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
-        if: failure()
-        with:
-          name: playwright-test-results-${{ matrix.platform }}-${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }}
-          path: playwright/test-results/
-          retention-days: 7
-
-      - name: Save Slack Result Artifact (${{ matrix.name }})
+      - name: Save Slack Result Artifact (${{ matrix.platform }})
         if: always() && (inputs.notify || github.event.inputs.notify) != 'skip'
         continue-on-error: true
         run: node playwright/e2e-tests-core/scripts/slack-notify-testdino.js
@@ -330,7 +434,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-      - name: Upload Slack Result Artifact (${{ matrix.name }})
+      - name: Upload Slack Result Artifact (${{ matrix.platform }})
         if: always() && (inputs.notify || github.event.inputs.notify) != 'skip'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         with:
@@ -340,16 +444,10 @@ jobs:
           include-hidden-files: true
           retention-days: 1
 
-      - name: Clean-up Decrypted Env Files
-        if: always()
-        run: rm -f playwright/.env.staging playwright/.env.production
-
   notify:
     name: Slack Notification
-    needs: [validate-inputs, playwright-tests]
+    needs: [validate-inputs, report]
     runs-on: github-hosted-playwright01
-    # Does not fire on cancellation — intentional (cancelled runs are not notified)
-    # '' (empty string, e.g. scheduled runs) means "use default channel" — only 'skip' suppresses notification
     if: (success() || failure()) && (inputs.notify || github.event.inputs.notify) != 'skip'
     permissions:
       contents: read
@@ -358,7 +456,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
 
-      - name: Download all Slack result artifacts
+      - name: Download Slack result artifacts
         continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c #v8.0.1
         with:

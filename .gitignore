@@ -40,6 +40,7 @@ packages/*/bundle-stats.json
 /playwright/.auth/
 playwright/playwright-report/
 playwright/test-results/
+blob-report/
 playwright/agent/.healing/
 **/agent/.healing/
 .playwright-mcp/

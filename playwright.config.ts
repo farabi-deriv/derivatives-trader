@@ -4,13 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Determine the target environment and load the corresponding .env file.
- *
- * Set TEST_ENV before running Playwright to select the environment:
- *   TEST_ENV=staging npx playwright test      → loads .env.staging
- *   TEST_ENV=production npx playwright test   → loads .env.production
- *
- * Defaults to 'staging' if TEST_ENV is not set.
+ * TEST_ENV selects playwright/.env.staging or .env.production (default: staging).
  */
 const VALID_ENVS = ['staging', 'production'] as const;
 type ValidEnv = (typeof VALID_ENVS)[number];
@@ -22,100 +16,83 @@ if (!(VALID_ENVS as readonly string[]).includes(testEnvRaw)) {
 const testEnv: ValidEnv = testEnvRaw as ValidEnv;
 const envFile = path.resolve(__dirname, 'playwright', `.env.${testEnv}`);
 
-if (!fs.existsSync(envFile)) {
-    const message =
-        `Environment file not found: ${envFile}\n` +
-        `TEST_ENV is '${testEnv}' (default: 'staging'). Ensure playwright/.env.${testEnv} exists.\n` +
-        `Copy playwright/.env.example to playwright/.env.${testEnv} and fill in credentials.`;
+// PLAYWRIGHT_MERGE_REPORTS=1: merge-only CI jobs skip loading credentials.
+const isMergeOnly = process.env.PLAYWRIGHT_MERGE_REPORTS === '1';
 
-    if (process.env.CI) {
-        // Hard fail in CI — tests must never run without credentials
-        throw new Error(message);
+if (!isMergeOnly) {
+    if (!fs.existsSync(envFile)) {
+        const message =
+            `Environment file not found: ${envFile}\n` +
+            `TEST_ENV is '${testEnv}' (default: 'staging'). Ensure playwright/.env.${testEnv} exists.\n` +
+            `Copy playwright/.env.example to playwright/.env.${testEnv} and fill in credentials.`;
+
+        if (process.env.CI) {
+            throw new Error(message);
+        }
+        console.warn(`⚠️  ${message}`);
     }
-    // Warn locally — allows tsc, IDE language servers, and type-checks to
-    // proceed in a fresh checkout before the developer has created the env file.
-    // Tests will still fail at runtime due to missing env vars.
-    console.warn(`⚠️  ${message}`);
+
+    dotenv.config({ path: envFile });
 }
 
-dotenv.config({ path: envFile });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
     testDir: './playwright/tests',
-
-    /* Global test timeout */
     timeout: 600000,
-
-    /* Timeout for each assertion */
     expect: {
         timeout: 45000,
     },
-
-    /* Run tests in files in parallel */
     fullyParallel: true,
-
-    /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: !!process.env.CI,
-
-    /* Retry on CI only */
     retries: process.env.CI ? 1 : 0,
+    workers: process.env.CI ? 4 : undefined,
 
-    /* Configure workers */
-    workers: process.env.CI ? 5 : undefined,
-
-    /* Reporter — all output inside playwright/test-results/ */
-    reporter: [
-        ['list'],
-        ['html', { outputFolder: './playwright/playwright-report' }],
-        ['json', { outputFile: './playwright/playwright-report/results.json' }],
-        /* Live-streams results to TestDino as the run progresses — only enabled when a token is set. */
-        ...(process.env.TESTDINO_TOKEN
+    // CI test jobs (TESTDINO_STREAM=1): blob + live TestDino. Merge jobs: html/json only.
+    reporter: process.env.CI
+        ? process.env.TESTDINO_STREAM === '1'
             ? [
-                  [
-                      '@testdino/playwright',
-                      { token: process.env.TESTDINO_TOKEN, serverUrl: 'https://reporter.testdino.com' },
-                  ] as [string, object],
+                  ['list'],
+                  ['blob'],
+                  ...(process.env.TESTDINO_TOKEN
+                      ? [
+                            [
+                                '@testdino/playwright',
+                                {
+                                    token: process.env.TESTDINO_TOKEN,
+                                    serverUrl: 'https://reporter.testdino.com',
+                                    ciRunId: process.env.TESTDINO_CI_RUN_ID,
+                                    ...(process.env.TESTDINO_TAG ? { tags: [process.env.TESTDINO_TAG] } : {}),
+                                },
+                            ] as [string, Record<string, unknown>],
+                        ]
+                      : []),
               ]
-            : []),
-    ],
+            : [
+                  ['list'],
+                  ['html', { outputFolder: './playwright/playwright-report' }],
+                  ['json', { outputFile: './playwright/playwright-report/results.json' }],
+              ]
+        : [
+              ['list'],
+              ['html', { outputFolder: './playwright/playwright-report' }],
+              ['json', { outputFile: './playwright/playwright-report/results.json' }],
+          ],
 
     use: {
-        /* Base URL — override with BASE_URL env var for different environments */
         baseURL: process.env.BASE_URL || 'https://staging-dtrader.deriv.com',
-
-        /* Grant geolocation permission up front so the browser location-sharing
-         * popup is never shown to the test runner, and pin deterministic mock
-         * coordinates so geolocation-aware tests (e.g. KYC flows) behave
-         * identically across all browser projects.
-         */
         permissions: ['geolocation'],
         geolocation: { latitude: 0, longitude: 0 },
-
-        /* Headless in CI, headed locally */
         headless: !!process.env.CI,
-
-        /* Collect trace/screenshot/video on failure */
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
-
-        /* Launch options — browser-specific args are set per project below */
         launchOptions: {
             slowMo: 0,
         },
-
-        /* Timeouts */
         navigationTimeout: 45000,
         actionTimeout: 45000,
-
-        /* User agent */
         userAgent: 'Playwright-Agent/deriv/1.9',
     },
 
-    /* Configure projects for major browsers */
     projects: [
         {
             name: 'chromium',
@@ -129,7 +106,6 @@ export default defineConfig({
                         '--disable-dev-shm-usage',
                         '--disable-web-security',
                         '--disable-features=VizDisplayCompositor',
-                        // KYC capture flows require a camera device even when tests upload files.
                         '--use-fake-ui-for-media-stream',
                         '--use-fake-device-for-media-stream',
                     ],
@@ -148,7 +124,6 @@ export default defineConfig({
                         '--disable-dev-shm-usage',
                         '--disable-web-security',
                         '--disable-features=VizDisplayCompositor',
-                        // KYC capture flows require a camera device even when tests upload files.
                         '--use-fake-ui-for-media-stream',
                         '--use-fake-device-for-media-stream',
                     ],
@@ -186,10 +161,8 @@ export default defineConfig({
         },
     ],
 
-    /* Output directory for test artifacts (screenshots, traces, videos) */
     outputDir: './playwright/test-results',
 
-    /* Run local dev server before tests (only when START_SERVER=true) */
     webServer:
         process.env.START_SERVER === 'true'
             ? {
