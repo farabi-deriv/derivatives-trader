@@ -114,5 +114,5 @@ One or two sentences: what the rule is and why it exists.
 | Route/URL tree and data-testid map           | `flow.md` (orientation for humans)                                                            |
 | How to add a new variant / maintenance guide | `coverage.md` or a contributing doc                                                           |
 | How to debug / triage map                    | Not needed — the POM reference and decisions sections already point the AI to the right place |
-| Project-wide Playwright rules                | `playwright/CLAUDE.md`                                                                        |
+| Project-wide Playwright rules                | `playwright/AGENTS.md`                                                                        |
 | Shared utility docs                          | `playwright/flows/_conventions/utils-reference.md`                                            |

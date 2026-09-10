@@ -45,7 +45,7 @@ use_skill("flow-to-playwright-dtrader")   ← determines WHAT to generate (from 
 use_skill("playwright")                   ← determines HOW to write high-quality code
 ```
 
-The `playwright` skill provides critical rules from `playwright/CLAUDE.md` governing test folder naming, TypeScript standards, Page Object patterns, navigation rules, and more.
+The `playwright` skill provides critical rules from `playwright/AGENTS.md` governing test folder naming, TypeScript standards, Page Object patterns, navigation rules, and more.
 
 ---
 

@@ -23,7 +23,7 @@ This skill provides comprehensive patterns and reference material for writing hi
 **Don't use this skill when:**
 
 - Writing unit tests (use Jest/Vitest patterns instead)
-- Making standalone API calls outside Playwright context (see `qa-mailisk-api` skill)
+- Making standalone API calls outside Playwright test context — use resource 07 (qa-script-runner) and 08 (mailisk) inside tests; standalone API skills are not vendored in this repo.
 
 ---
 
@@ -84,8 +84,10 @@ Load only the resources relevant to your current task. Each file is self-contain
 
 ## Related Skills
 
-- [qa-mailisk-api](../qa-mailisk-api/SKILL.md) - Standalone Mailisk email retrieval via curl/fetch/MCP (no Playwright test context)
-- [qa-github-issues](../qa-github-issues/SKILL.md) - Create GitHub issues for Playwright test failures
+- [flow-to-playwright-dtrader](../flow-to-playwright-dtrader/SKILL.md) — implement coverage gaps as Playwright tests
+- [src-to-flow-dtrader](../src-to-flow-dtrader/SKILL.md) — document flows from `packages/` source
+- [qa-bug-report](../qa-bug-report/SKILL.md) — format or create GitHub bug reports
+- See `playwright/flows/_github-issues.md` for the GitHub-issue-from-failure workflow (no dedicated skill in this repo)
 
 ## References
 

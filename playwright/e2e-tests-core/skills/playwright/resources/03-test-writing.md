@@ -340,7 +340,7 @@ test.describe('Password validation', { tag: ['@security', '@profile', '@desktop'
 | **Execution level** | `@smoke`, `@production`                                                                                                                                                                                                                                             | Optional — only add when explicitly decided by the team. `@production` marks tests safe to run against the production environment |
 | **Special**         | `@example`, `@authentication`, `@i18n`, `@validation`, `@security`, `@address`, `@account-creation`, `@regulatory`, `@wallet`, `@bot-builder`, `@poa`, `@gps`, `@financial`, `@quick-strategy`, `@popup`, `@martingale`, `@dalembert`, `@oscars-grind`, `@standard` | Contextual — add when the test covers a specific cross-cutting concern                                                            |
 
-> **Extending the registry:** This list is not exhaustive. When a new feature area, execution level, or cross-cutting concern emerges that is not covered by an existing tag, create a new tag following the `@kebab-case` convention. Add the new tag to the registry tables in `.clinerules`, `CLAUDE.md`, `SKILL.md`, and `README.md` before using it in tests.
+> **Extending the registry:** This list is not exhaustive. When a new feature area, execution level, or cross-cutting concern emerges that is not covered by an existing tag, create a new tag following the `@kebab-case` convention. Add the new tag to the registry tables in `playwright/AGENTS.md`, `SKILL.md`, and `README.md` before using it in tests.
 
 ### 4. Error Handling & Debugging
 

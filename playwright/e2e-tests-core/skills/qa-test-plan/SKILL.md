@@ -1,6 +1,6 @@
 ---
 name: qa-test-plan
-description: Given a GitHub issue in deriv-com/derivatives-trader, research the issue + its fix PR and post a reusable, GitHub-native manual QA test-plan checklist as a comment. Use when the user asks for a "test plan", "test checklist", or "checklist for testing" for a QA-tracked issue. Do NOT use for Playwright/e2e test authoring — use flow-to-playwright-dtrader / gap-to-playwright / src-to-flow instead.
+description: Given a GitHub issue in deriv-com/derivatives-trader, research the issue + its fix PR and post a reusable, GitHub-native manual QA test-plan checklist as a comment. Use when the user asks for a "test plan", "test checklist", or "checklist for testing" for a QA-tracked issue. Do NOT use for Playwright/e2e test authoring — use flow-to-playwright-dtrader / src-to-flow-dtrader instead.
 version: 1.1.0
 last_updated: 2026-08-21
 ---
@@ -213,7 +213,7 @@ gh api -X PATCH /repos/deriv-com/derivatives-trader/issues/comments/<comment_id>
 - **Don't duplicate sign-off** — one **Must pass to sign off** block replaces separate Entry, Exit, and Sign-off sections.
 - **The automated-test section is Playwright e2e only — not unit tests.** Give the runnable command (spec file + `--grep` tag) and the coverage status; don't list the PR's Jest/Vitest cases. A QA reviewer reading the issue needs to know which e2e to kick off, not which unit assertions the dev added.
 - **Always state coverage status explicitly, even when it's good news.** If the affected flow's platform column is ✅, say "e2e covers the happy path — manual QA focuses on the visual fix + edge cases". If it's ❌, say "no e2e on this platform — manual QA is the only backstop, treat the regression section as mandatory". Silent omission reads as "covered" when it isn't.
-- **When e2e coverage is lacking for the fix, suggest a follow-up.** If the issue's symptom (e.g. negative barrier overlap) isn't asserted in any flow, propose adding it — point at the `gap-to-playwright` skill (for a manual-gap-found flow) or `src-to-flow-dtrader` (if it's a new user journey), and mark it as an out-of-this-PR follow-up so it doesn't block sign-off. **But never propose a follow-up for an `N/A` surface** (e.g. SmartCharts canvas) — it's not automatable by design; say "no e2e applies — manual-only" and point only at the indirect flows that touch it. Don't fabricate a runnable e2e command for a surface that has none.
+- **When e2e coverage is lacking for the fix, suggest a follow-up.** If the issue's symptom (e.g. negative barrier overlap) isn't asserted in any flow, propose adding it — point at `flow-to-playwright-dtrader` (implement from `coverage.md`) or `src-to-flow-dtrader` (if it's a new user journey), and mark it as an out-of-this-PR follow-up so it doesn't block sign-off. **But never propose a follow-up for an `N/A` surface** (e.g. SmartCharts canvas) — it's not automatable by design; say "no e2e applies — manual-only" and point only at the indirect flows that touch it. Don't fabricate a runnable e2e command for a surface that has none.
 
 ## Examples of good "Notes for tester" lines
 

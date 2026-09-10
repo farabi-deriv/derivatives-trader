@@ -346,4 +346,4 @@ const LazyModule = React.lazy(() => import('./Module'));
 
 # Playwright E2E Tests
 
-All Playwright rules, conventions, and skill-loading instructions live in `playwright/CLAUDE.md`.
+All Playwright rules, conventions, and skill-loading instructions live in `playwright/AGENTS.md` (`playwright/CLAUDE.md` symlinks it for Claude Code).
