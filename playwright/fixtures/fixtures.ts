@@ -14,6 +14,7 @@ import { TradeMultipliersPage } from '../pages/TradeMultipliersPage';
 import { TradeAccumulatorsPage } from '../pages/TradeAccumulatorsPage';
 import { TradeTurbosPage } from '../pages/TradeTurbosPage';
 import { TradeVanillasPage } from '../pages/TradeVanillasPage';
+import { TradeValidationPage } from '../pages/TradeValidationPage';
 import { TradeAutomatePage } from '../pages/TradeAutomatePage';
 import { PositionsPage } from '../pages/PositionsPage';
 import { ReportsPage } from '../pages/ReportsPage';
@@ -81,6 +82,7 @@ export const test = base.extend<{
     tradeAccumulatorsPage: TradeAccumulatorsPage;
     tradeTurbosPage: TradeTurbosPage;
     tradeVanillasPage: TradeVanillasPage;
+    tradeValidationPage: TradeValidationPage;
     tradeAutomatePage: TradeAutomatePage;
     positionsPage: PositionsPage;
     reportsPage: ReportsPage;
@@ -198,6 +200,13 @@ export const test = base.extend<{
      */
     tradeVanillasPage: async ({ page }, use) => {
         await use(new TradeVanillasPage(page));
+    },
+
+    /**
+     * Manual Trading negative-validation fixture.
+     */
+    tradeValidationPage: async ({ page }, use) => {
+        await use(new TradeValidationPage(page));
     },
 
     /**

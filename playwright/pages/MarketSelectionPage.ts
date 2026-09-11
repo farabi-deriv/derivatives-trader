@@ -450,7 +450,7 @@ export class MarketSelectionPage extends TradeBasePage {
      * Source: market-selection-header.tsx `aria-label="Close"`
      */
     get marketSelectionCloseButton(): Locator {
-        return this.page.getByRole('button', { name: 'Close' });
+        return this.page.getByRole('button', { name: 'Close', exact: true });
     }
 
     /**

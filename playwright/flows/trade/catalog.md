@@ -1,48 +1,50 @@
 # 🗺️ Trade Journey Catalog — Technical Reference
 
 > Source of truth: `packages/trader/src/AppV2/Containers/Trade/` · `packages/trader/src/AppV2/Components/TradeParameters/` · `packages/trader/src/AppV2/Components/PurchaseButton/`
-> Last updated: 2026-08-24
+> Last updated: 2026-09-09 (added Manual Trading negative validation)
 
 ---
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                        | Tags                                         |
-| ---------- | ---------------------------------------------------------------- | -------------------------------------------- |
-| Flow 1     | `trade/verify-trade-form-loads.spec.ts`                          | `@trade @smoke @desktop @mobile @production` |
-| Flow 2.1   | `trade/rise-fall/verify-rise.spec.ts`                            | `@trade @smoke @desktop @mobile @production` |
-| Flow 2.2   | `trade/rise-fall/verify-fall.spec.ts`                            | `@trade @smoke @desktop @mobile`             |
-| Flow 2.3   | `trade/rise-fall/verify-rise-allow-equals.spec.ts`               | `@trade @desktop @mobile`                    |
-| Flow 2.4   | `trade/rise-fall/verify-fall-allow-equals.spec.ts`               | `@trade @desktop @mobile`                    |
-| Flow 3.1   | `trade/higher-lower/verify-higher.spec.ts`                       | `@trade @desktop @mobile`                    |
-| Flow 3.2   | `trade/higher-lower/verify-lower.spec.ts`                        | `@trade @desktop @mobile`                    |
-| Flow 4.1   | `trade/touch-no-touch/verify-touch.spec.ts`                      | `@trade @desktop @mobile`                    |
-| Flow 4.2   | `trade/touch-no-touch/verify-no-touch.spec.ts`                   | `@trade @desktop @mobile`                    |
-| Flow 5.1   | `trade/matches-differs/verify-matches.spec.ts`                   | `@trade @smoke @desktop @mobile`             |
-| Flow 5.2   | `trade/matches-differs/verify-differs.spec.ts`                   | `@trade @smoke @desktop @mobile`             |
-| Flow 6.1   | `trade/over-under/verify-over.spec.ts`                           | `@trade @desktop @mobile`                    |
-| Flow 6.2   | `trade/over-under/verify-under.spec.ts`                          | `@trade @desktop @mobile`                    |
-| Flow 7.1   | `trade/even-odd/verify-even.spec.ts`                             | `@trade @desktop @mobile`                    |
-| Flow 7.2   | `trade/even-odd/verify-odd.spec.ts`                              | `@trade @desktop @mobile`                    |
-| Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @desktop @mobile`                    |
-| Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 9.4   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`             |
-| Flow 9.5   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                    |
-| Flow 9.6   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                    |
-| Flow 9.7   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                    |
-| Flow 9.8   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                    |
-| Flow 10.1  | `trade/turbos/verify-turbos-up.spec.ts`                          | `@trade @desktop @mobile`                    |
-| Flow 10.2  | `trade/turbos/verify-turbos-down.spec.ts`                        | `@trade @desktop @mobile`                    |
-| Flow 10.3  | `trade/turbos/verify-turbos-up-with-tp.spec.ts`                  | `@trade @desktop @mobile`                    |
-| Flow 10.4  | `trade/turbos/verify-turbos-down-with-tp.spec.ts`                | `@trade @desktop @mobile`                    |
-| Flow 11.1  | `trade/vanillas/verify-vanillas-call.spec.ts`                    | `@trade @desktop @mobile`                    |
-| Flow 11.2  | `trade/vanillas/verify-vanillas-put.spec.ts`                     | `@trade @desktop @mobile`                    |
-| Flow 12    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                    |
-| G1         | `trade/verify-insufficient-balance.spec.ts`                      | `@trade`                                     |
-| G2         | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade`                                     |
+| Journey ID | Spec File                                                        | Tags                                           |
+| ---------- | ---------------------------------------------------------------- | ---------------------------------------------- |
+| Flow 1     | `trade/verify-trade-form-loads.spec.ts`                          | `@trade @smoke @desktop @mobile @production`   |
+| Flow 2.1   | `trade/rise-fall/verify-rise.spec.ts`                            | `@trade @smoke @desktop @mobile @production`   |
+| Flow 2.2   | `trade/rise-fall/verify-fall.spec.ts`                            | `@trade @smoke @desktop @mobile`               |
+| Flow 2.3   | `trade/rise-fall/verify-rise-allow-equals.spec.ts`               | `@trade @desktop @mobile`                      |
+| Flow 2.4   | `trade/rise-fall/verify-fall-allow-equals.spec.ts`               | `@trade @desktop @mobile`                      |
+| Flow 3.1   | `trade/higher-lower/verify-higher.spec.ts`                       | `@trade @desktop @mobile`                      |
+| Flow 3.2   | `trade/higher-lower/verify-lower.spec.ts`                        | `@trade @desktop @mobile`                      |
+| Flow 4.1   | `trade/touch-no-touch/verify-touch.spec.ts`                      | `@trade @desktop @mobile`                      |
+| Flow 4.2   | `trade/touch-no-touch/verify-no-touch.spec.ts`                   | `@trade @desktop @mobile`                      |
+| Flow 5.1   | `trade/matches-differs/verify-matches.spec.ts`                   | `@trade @smoke @desktop @mobile`               |
+| Flow 5.2   | `trade/matches-differs/verify-differs.spec.ts`                   | `@trade @smoke @desktop @mobile`               |
+| Flow 6.1   | `trade/over-under/verify-over.spec.ts`                           | `@trade @desktop @mobile`                      |
+| Flow 6.2   | `trade/over-under/verify-under.spec.ts`                          | `@trade @desktop @mobile`                      |
+| Flow 7.1   | `trade/even-odd/verify-even.spec.ts`                             | `@trade @desktop @mobile`                      |
+| Flow 7.2   | `trade/even-odd/verify-odd.spec.ts`                              | `@trade @desktop @mobile`                      |
+| Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @desktop @mobile`                      |
+| Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 9.4   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 9.5   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
+| Flow 9.6   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
+| Flow 9.7   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                      |
+| Flow 9.8   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                      |
+| Flow 10.1  | `trade/turbos/verify-turbos-up.spec.ts`                          | `@trade @desktop @mobile`                      |
+| Flow 10.2  | `trade/turbos/verify-turbos-down.spec.ts`                        | `@trade @desktop @mobile`                      |
+| Flow 10.3  | `trade/turbos/verify-turbos-up-with-tp.spec.ts`                  | `@trade @desktop @mobile`                      |
+| Flow 10.4  | `trade/turbos/verify-turbos-down-with-tp.spec.ts`                | `@trade @desktop @mobile`                      |
+| Flow 11.1  | `trade/vanillas/verify-vanillas-call.spec.ts`                    | `@trade @desktop @mobile`                      |
+| Flow 11.2  | `trade/vanillas/verify-vanillas-put.spec.ts`                     | `@trade @desktop @mobile`                      |
+| Flow 12    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
+| Flow 13    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
+| Flow 14    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
+| G1         | `trade/verify-insufficient-balance.spec.ts`                      | `@trade`                                       |
+| G2         | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade`                                       |
 
 ---
 
@@ -802,33 +804,63 @@ test('VERIFY Buy "Put" Vanillas Contract (Demo Account)', async ({ tradeVanillas
 
 ---
 
-### Flow 15 — Market closed: purchase button hidden, countdown visible
+### Flow 12 — Market closed: purchase button hidden, countdown visible
 
 ```typescript
-test.describe('Trade — Closed Market', { tag: ['@trade', '@desktop', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage, tradePage, page }) => {
-        await loginPage.login();
-        await tradePage.goto();
-        await NavigationUtils.waitForDerivApiSettled(page);
-    });
-
-    test('VERIFY closed market hides purchase button and shows reopening countdown', async ({ tradePage, page }) => {
-        await expect(page.getByText('CLOSED'), 'CLOSED tag should be visible in market selector').toBeVisible();
-        await expect(
-            tradePage.purchaseButton,
-            'Purchase button should not be visible for closed market'
-        ).not.toBeVisible();
-        await expect(
-            page.getByText('This market will reopen at'),
-            'Closed market countdown message should be visible'
-        ).toBeVisible();
-    });
-});
+const closedMarket = await tradeValidationPage.selectFirstClosedMarket();
+test.skip(!closedMarket, 'No closed market is currently returned by staging');
+await tradeValidationPage.verifyClosedMarketPurchaseState();
+await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall');
+const recovered = await tradeValidationPage.getPurchaseControlState();
 ```
+
+### Flow 13 — Insufficient balance: viewport-specific purchase gate
+
+```typescript
+const balance = Number(await tradeValidationPage.getBalance());
+await tradeValidationPage.verifyInsufficientBalanceBehavior(balance);
+expect(tradeValidationPage.getTrackedBuyRequestCount(), 'Client-side balance validation must not send Buy').toBe(0);
+```
+
+### Flow 14 — Manual Trading negative validation matrix
+
+```typescript
+for (const configuration of stakeCapabilityMatrix) {
+    await tradeValidationPage.selectMarketAndTradeType(configuration.market, configuration.tradeType);
+    await tradeValidationPage.verifyStakeRuntimeBoundaries();
+    await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+}
+await tradeValidationPage.verifyDurationRuntimeBoundaries('Seconds');
+await tradeValidationPage.verifyBarrierRequiredAndZeroValidation();
+await tradeValidationPage.verifyDigitChoiceAvailability();
+await tradeValidationPage.verifyRiskManagementRuntimeOptions();
+```
+
+> **Fixture:** `tradeValidationPage` from `playwright/fixtures/fixtures.ts`
+> **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Digits, Multiplier, and Deal Cancellation.
+> **Buy-state coverage:** hidden for closed markets; disabled with `-` payout for client-provable insufficient balance; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
 
 ---
 
-## Section 3 — Tags Reference
+## Section 3 — POM Method Reference
+
+| Purpose                                  | Page Object method                                             |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| Parse and validate current Stake limits  | `tradeValidationPage.verifyStakeRuntimeBoundaries()`           |
+| Verify Stake input filtering             | `tradeValidationPage.verifyStakeInputSanitization()`           |
+| Validate current Duration limits/options | `tradeValidationPage.verifyDurationRuntimeBoundaries()`        |
+| Validate required/zero Barrier           | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()` |
+| Read current Digits availability         | `tradeValidationPage.verifyDigitChoiceAvailability()`          |
+| Read Multipliers TP/SL/DC options        | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`     |
+| Discover markets in an asset category    | `tradeValidationPage.readMarketsForCategory()`                 |
+| Select current closed market             | `tradeValidationPage.selectFirstClosedMarket()`                |
+| Verify insufficient balance behavior     | `tradeValidationPage.verifyInsufficientBalanceBehavior()`      |
+| Track duplicate Buy requests             | `tradeValidationPage.startBuyRequestTracking()`                |
+| Read complete Buy state                  | `tradeValidationPage.getPurchaseControlState()`                |
+
+---
+
+## Section 4 — Tags Reference
 
 | Tag           | When to apply                                           |
 | ------------- | ------------------------------------------------------- |
@@ -842,7 +874,7 @@ test.describe('Trade — Closed Market', { tag: ['@trade', '@desktop', '@mobile'
 
 ---
 
-## Section 4 — Feature-Specific Decisions
+## Section 5 — Feature-Specific Decisions
 
 ### Desktop vs Mobile: same spec, platform-branched assertions
 
@@ -902,9 +934,9 @@ Desktop Multipliers **Stop out** (`multipliers-information.tsx`) uses the same `
 
 Preset chips use `aria-label="Select value $20"` (not `"Select value 20.00 USD"`). Desktop (`stake-desktop.tsx`): **Quick picks** / **Custom** tabs. Tapping a chip commits and closes the popover — Quick picks has no Save. Custom shows `dt_stake_input_desktop` and footer Save (`.stake-input-desktop__save-button`). Mobile: chips only draft; header Save commits, and stays disabled while the draft equals the committed stake — dismiss an unchanged reopen with Close (`dt-actionsheet-header-close-action`).
 
-### Purchase button does not disable on insufficient balance
+### Insufficient balance has two purchase paths
 
-Clicking "Buy" with insufficient balance opens `ServiceErrorSheet` instead. Do not assert `toBeDisabled()` on the buy button.
+Client-provable insufficiency disables Buy and withholds payout as `-`. Server-reported insufficiency keeps Buy enabled so clicking can open `ServiceErrorSheet`. On mobile, an unaffordable Stake draft is blocked by the sheet's Save action before it reaches the trade page.
 
 ### Multipliers Risk Management panel — TP/SL and Deal Cancellation are mutually exclusive
 

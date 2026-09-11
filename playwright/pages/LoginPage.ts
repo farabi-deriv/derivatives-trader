@@ -135,6 +135,10 @@ export class LoginPage {
     /**
      * Full login flow: navigate to app, click Login, enter credentials, assert successful login.
      * Falls back to TEST_EMAIL / TEST_PASSWORD env vars if no credentials are provided.
+     *
+     * After OAuth returns, the trade shell sometimes mounts late (especially on mobile).
+     * Recovery order per attempt: verify → page reload + re-verify → full re-login (up to 3 attempts).
+     *
      * @param email - Optional email override
      * @param password - Optional password override
      * @returns The email address used to log in
@@ -151,20 +155,52 @@ export class LoginPage {
         }
 
         const tradeBasePage = new TradeBasePage(this.page);
-        await tradeBasePage.gotoTradePage();
-        await tradeBasePage.loginButton.click();
+        const maxAttempts = 3;
+        let lastError: unknown;
 
-        await this.enterEmail(loginEmail);
-        await this.clickLogInButton();
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                await tradeBasePage.gotoTradePage();
 
-        const passwordPage = new PasswordPage(this.page);
-        await passwordPage.enterPassword(loginPassword);
-        await passwordPage.clickLogInButton();
+                // A prior attempt may already have cookies; skip OAuth if the shell is up.
+                if (await tradeBasePage.accountInfo.isVisible().catch(() => false)) {
+                    await tradeBasePage.verifySuccessfulLogin();
+                    return loginEmail;
+                }
 
-        await NavigationUtils.waitForDerivApiSettled(this.page);
-        await tradeBasePage.verifySuccessfulLogin();
+                await tradeBasePage.loginButton.click();
+                await this.enterEmail(loginEmail);
+                await this.clickLogInButton();
 
-        return loginEmail;
+                const passwordPage = new PasswordPage(this.page);
+                await passwordPage.enterPassword(loginPassword);
+                await passwordPage.clickLogInButton();
+
+                await NavigationUtils.waitForDerivApiSettled(this.page);
+                await this.verifyLoginWithRefreshRecovery(tradeBasePage);
+                return loginEmail;
+            } catch (error) {
+                lastError = error;
+                if (attempt === maxAttempts) {
+                    break;
+                }
+            }
+        }
+
+        throw lastError instanceof Error ? lastError : new Error(`Login failed after ${maxAttempts} attempts`);
+    }
+
+    /**
+     * Assert logged-in shell; on miss, reload once and re-assert (covers late account-info mount).
+     */
+    private async verifyLoginWithRefreshRecovery(tradeBasePage: TradeBasePage): Promise<void> {
+        try {
+            await tradeBasePage.verifySuccessfulLogin();
+        } catch {
+            await this.page.reload({ waitUntil: 'domcontentloaded' });
+            await NavigationUtils.waitForDerivApiSettled(this.page);
+            await tradeBasePage.verifySuccessfulLogin();
+        }
     }
 
     /**

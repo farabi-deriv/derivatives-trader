@@ -17,3 +17,4 @@
 
 export * from '../e2e-tests-core/utils';
 export * from './testData';
+export * from './manual-trade-negative-matrix';

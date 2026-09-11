@@ -611,6 +611,27 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
+     * Inline validation / range message in the open Stake custom editor.
+     * Shared by Manual Trading and Automate (Flow 15) stake negative checks.
+     */
+    get stakeValidationMessage(): Locator {
+        const root = this.isMobile ? this.stakeContainer : this.stakePopover;
+        return root.locator('.message__container__text').first();
+    }
+
+    /** Source: stake-input proposal validation — stake below market minimum. */
+    static readonly STAKE_MIN_AMOUNT_ERROR = /Please enter a stake amount that(?:'s| is) at least [\d.]+/;
+
+    /** Source: stake-input onSave — empty custom stake draft. */
+    static readonly STAKE_REQUIRED_ERROR = 'Amount is a required field.';
+
+    /** Source: stake-input onInputChange — trailing decimal/comma separator. */
+    static readonly STAKE_INVALID_NUMBER_ERROR = 'Should be a valid number.';
+
+    /** Source: error-message-mapper PayoutLimits — stake draft exceeds max payout. */
+    static readonly STAKE_MAX_PAYOUT_ERROR = /Minimum stake of .+ and maximum payout of .+\. Current payout is .+\./;
+
+    /**
      * Duration input — viewport-aware.
      * - Mobile (< 1024px): no testid; use the visible "Duration" label text
      * - Desktop (≥ 1024px): duration display text in the trade params form
@@ -730,6 +751,8 @@ export class TradeParametersPage extends TradeBasePage {
      *   active tab. Defaults to `false`.
      * @param options.mode - `'manual'` (default) asserts Buy button and manual-only UI;
      *   `'automate'` skips Buy and asserts the Run control instead.
+     * @param options.verifyAllowEquals - Require Allow equals for configurations known to support it.
+     * @param options.verifyParams - Run the complete trade-type parameter assertions. Defaults to true.
      *
      * @example
      * ```typescript
@@ -742,9 +765,14 @@ export class TradeParametersPage extends TradeBasePage {
     async selectMarketAndTradeType(
         market: string,
         tradeType: string,
-        options: { openInNewTab?: boolean; mode?: 'manual' | 'automate' } = {}
+        options: {
+            openInNewTab?: boolean;
+            mode?: 'manual' | 'automate';
+            verifyAllowEquals?: boolean;
+            verifyParams?: boolean;
+        } = {}
     ): Promise<void> {
-        const { openInNewTab = false, mode = 'manual' } = options;
+        const { openInNewTab = false, mode = 'manual', verifyAllowEquals = true, verifyParams = true } = options;
 
         const activeTabText = await this.activeMarketTab.textContent();
         const isAlreadySelected =
@@ -802,7 +830,9 @@ export class TradeParametersPage extends TradeBasePage {
             ).toContainText(market);
         }
 
-        await this.verifyParamsForTradeType(tradeType, mode);
+        if (verifyParams) {
+            await this.verifyParamsForTradeType(tradeType, mode, verifyAllowEquals);
+        }
     }
 
     /**
@@ -1107,6 +1137,56 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
+     * Open the Stake custom input without committing a draft.
+     * Desktop switches to the Custom tab; mobile uses the sheet field directly.
+     */
+    async openStakeCustomInput(): Promise<void> {
+        await this.stakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+        }
+        await expect(this.stakePopoverInput, 'Stake custom input should be visible').toBeVisible();
+    }
+
+    /**
+     * Replace the current Stake custom draft. Use sequential typing when exercising key filtering.
+     *
+     * @param value - Draft amount or invalid characters.
+     * @param sequential - When true, types character-by-character.
+     */
+    async fillStakeCustomDraft(value: string, sequential = false): Promise<void> {
+        await this.stakePopoverInput.clear();
+        if (sequential) {
+            await this.stakePopoverInput.pressSequentially(value);
+        } else {
+            await this.stakePopoverInput.fill(value);
+        }
+    }
+
+    /**
+     * Dismiss an open stake or parameter editor without committing.
+     * Mobile: ActionSheet Close. Desktop: overlay click (same pattern as Automate Flow 15).
+     *
+     * @param sheet - Mobile action-sheet root.
+     * @param popover - Desktop popover root.
+     * @param label - Assertion label.
+     */
+    async dismissParameterEditor(sheet: Locator, popover: Locator, label = 'Editor'): Promise<void> {
+        if (this.isMobile) {
+            await this.actionSheetCloseButton(sheet).click();
+            await expect(sheet, `${label} sheet should close after dismiss`).not.toBeVisible();
+            return;
+        }
+        await this.page.locator('.input-popover-overlay').click();
+        await expect(popover, `${label} popover should close after dismiss`).not.toBeVisible();
+    }
+
+    /** Dismiss the open Stake editor without committing its draft. */
+    async dismissStakeEditor(): Promise<void> {
+        await this.dismissParameterEditor(this.stakeContainer, this.stakePopover, 'Stake');
+    }
+
+    /**
      * Core scroll-and-confirm mechanics shared by single- and multi-column `WheelPicker` sheets:
      * scroll the listbox to the target option's snap position, then wait for the library to mark
      * it as the committed selection.
@@ -1400,8 +1480,13 @@ export class TradeParametersPage extends TradeBasePage {
      *
      * @param tradeType - The trade type that was just selected
      * @param mode - `'manual'` asserts Buy button; `'automate'` asserts Run instead
+     * @param verifyAllowEquals - Require the configuration-dependent Allow equals control.
      */
-    private async verifyParamsForTradeType(tradeType: string, mode: 'manual' | 'automate' = 'manual'): Promise<void> {
+    protected async verifyParamsForTradeType(
+        tradeType: string,
+        mode: 'manual' | 'automate' = 'manual',
+        verifyAllowEquals = true
+    ): Promise<void> {
         const isAutomate = mode === 'automate';
 
         switch (tradeType) {
@@ -1410,8 +1495,10 @@ export class TradeParametersPage extends TradeBasePage {
                 await expect(this.fallButton, 'Fall button should be visible for Rise/Fall').toBeVisible();
                 await expect(this.durationLabel, 'Duration param should be visible for Rise/Fall').toBeVisible();
                 await this.assertStakeParamVisible(isAutomate, 'Rise/Fall');
-                if (!isAutomate) {
+                if (!isAutomate && verifyAllowEquals) {
                     await expect(this.allowEqualsText, 'Allow equals should be visible for Rise/Fall').toBeVisible();
+                }
+                if (!isAutomate) {
                     await expect(this.purchaseButton, 'Buy button should be visible for Rise/Fall').toBeVisible();
                 }
                 break;

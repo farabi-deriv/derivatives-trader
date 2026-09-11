@@ -99,19 +99,6 @@ export class TradeAutomatePage extends TradeParametersPage {
     /** Source: MaxTradeStake — cap below trade-form initial stake (Flow 15 baseline stake is `1`). */
     private static readonly MAX_STAKE_BELOW_INITIAL_ERROR = 'Max. stake must be equal or greater than 1';
 
-    /** Source: stake-input proposal validation — stake below market minimum (min varies by symbol). */
-    private static readonly STAKE_MIN_AMOUNT_ERROR = /Please enter a stake amount that(?:'s| is) at least [\d.]+/;
-
-    /** Source: stake-input onSave — empty custom stake draft (stake-input.tsx / stake-input-desktop.tsx). */
-    private static readonly STAKE_REQUIRED_ERROR = 'Amount is a required field.';
-
-    /** Source: stake-input onInputChange — trailing decimal/comma separator (fe_stake_error). */
-    private static readonly STAKE_INVALID_NUMBER_ERROR = 'Should be a valid number.';
-
-    /** Source: error-message-mapper PayoutLimits — stake draft exceeds max payout (proposal validation). */
-    private static readonly STAKE_MAX_PAYOUT_ERROR =
-        /Minimum stake of .+ and maximum payout of .+\. Current payout is .+\./;
-
     /** Source: insufficient-balance-utils getInsufficientBalanceMessage — drafted stake above balance. */
     private static formatInsufficientBalanceHint(balanceAmount: string, currency: string): string {
         const formatted = Number(balanceAmount.replace(/,/g, '')).toLocaleString('en-US', {
@@ -367,6 +354,18 @@ export class TradeAutomatePage extends TradeParametersPage {
     /** Initial stake field — desktop automate tab label is "Initial stake"; mobile /automate keeps "Stake". */
     get initialStakeField(): Locator {
         return this.isMobile ? this.page.getByLabel('Stake').first() : this.page.getByLabel('Initial stake').first();
+    }
+
+    /**
+     * Open the Automate stake custom editor via the Initial stake trigger.
+     * Reuses Manual/shared Custom-tab + input wait behavior from TradeParametersPage.
+     */
+    override async openStakeCustomInput(): Promise<void> {
+        await this.initialStakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+        }
+        await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
     }
 
     /**
@@ -2016,12 +2015,6 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.verifyThresholdAutoStopPostConditions('profit');
     }
 
-    private get stakeValidationMessage(): Locator {
-        const root = this.isMobile ? this.stakeContainer : this.stakePopover;
-        return root.locator('.message__container__text');
-    }
-
-    /** Max payout / Payout rows — desktop: `.stake-input-desktop__details`; mobile: stake sheet. */
     private get stakeDetailsRoot(): Locator {
         return this.isMobile
             ? this.stakeContainer.locator('.stake-content__details')
@@ -2066,19 +2059,9 @@ export class TradeAutomatePage extends TradeParametersPage {
         }
     }
 
-    /** Dismiss an open automation/stake editor — mobile ActionSheet close or desktop overlay click. */
+    /** Dismiss an open automation editor — reuses shared Manual/Automate dismiss helpers. */
     private async dismissAutomationEditor(sheet: Locator, popover: Locator, label = 'Editor'): Promise<void> {
-        if (this.isMobile) {
-            await this.actionSheetCloseButton(sheet).click();
-            await expect(sheet, `${label} sheet should close after dismiss`).not.toBeVisible();
-        } else {
-            await this.page.locator('.input-popover-overlay').click();
-            await expect(popover, `${label} popover should close after dismiss`).not.toBeVisible();
-        }
-    }
-
-    private async dismissStakeEditor(): Promise<void> {
-        await this.dismissAutomationEditor(this.stakeContainer, this.stakePopover, 'Stake');
+        await this.dismissParameterEditor(sheet, popover, label);
     }
 
     private async dismissAutomationSheet(sheet: Locator, label: string): Promise<void> {
@@ -2090,35 +2073,22 @@ export class TradeAutomatePage extends TradeParametersPage {
         const priorValue = (await this.initialStakeField.inputValue()).trim();
 
         // Below market minimum — proposal validation blocks Save.
-        await this.initialStakeField.click();
-        if (!this.isMobile) {
-            await this.stakeManualInputToggle.click();
-            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
-        }
-        await this.stakePopoverInput.click();
-        await this.stakePopoverInput.clear();
-        await this.stakePopoverInput.fill('0.01');
+        await this.openStakeCustomInput();
+        await this.fillStakeCustomDraft('0.01');
         await expect(
             this.stakeValidationMessage,
             'Stake editor should show a validation error after proposal validation'
-        ).toHaveText(TradeAutomatePage.STAKE_MIN_AMOUNT_ERROR, { timeout: 20_000 });
+        ).toHaveText(TradeParametersPage.STAKE_MIN_AMOUNT_ERROR, { timeout: 20_000 });
         await expect(
             this.stakeSaveButton,
             'Stake Save should stay disabled while the draft fails proposal validation'
         ).toBeDisabled();
         await this.dismissStakeEditor();
-        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
-            priorValue
-        );
+        await this.assertInitialStakeUnchanged(priorValue);
 
         // Empty draft — desktop: Save-click FE error; mobile: Save gated while empty.
-        await this.initialStakeField.click();
-        if (!this.isMobile) {
-            await this.stakeManualInputToggle.click();
-            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
-        }
-        await this.stakePopoverInput.click();
-        await this.stakePopoverInput.clear();
+        await this.openStakeCustomInput();
+        await this.fillStakeCustomDraft('');
         if (this.isMobile) {
             await expect(
                 this.stakeSaveButton,
@@ -2128,51 +2098,32 @@ export class TradeAutomatePage extends TradeParametersPage {
             await expect(this.stakeSaveButton, 'Stake Save should enable after clearing the draft').toBeEnabled();
             await this.stakeSaveButton.click();
             await expect(this.stakeValidationMessage, 'Stake editor should show required-field error').toHaveText(
-                TradeAutomatePage.STAKE_REQUIRED_ERROR
+                TradeParametersPage.STAKE_REQUIRED_ERROR
             );
         }
         await this.dismissStakeEditor();
-        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
-            priorValue
-        );
+        await this.assertInitialStakeUnchanged(priorValue);
 
         // Trailing decimal — FE format error (e.g. "1." ends with ".").
-        await this.initialStakeField.click();
-        if (!this.isMobile) {
-            await this.stakeManualInputToggle.click();
-            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
-        }
-        await this.stakePopoverInput.click();
-        await this.stakePopoverInput.clear();
-        await this.stakePopoverInput.fill('1.');
+        await this.openStakeCustomInput();
+        await this.fillStakeCustomDraft('1.');
         await expect(this.stakeValidationMessage, 'Stake editor should show invalid-number format error').toHaveText(
-            TradeAutomatePage.STAKE_INVALID_NUMBER_ERROR
+            TradeParametersPage.STAKE_INVALID_NUMBER_ERROR
         );
         await expect(
             this.stakeSaveButton,
             'Stake Save should stay disabled while the draft is not a valid number'
         ).toBeDisabled();
         await this.dismissStakeEditor();
-        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
-            priorValue
-        );
+        await this.assertInitialStakeUnchanged(priorValue);
 
-        // Above max payout — read cap from stake details (e.g. "$10,000.00"), draft stake at
-        // that ceiling until the Payout row errors (stake 10000 → payout $18,681.03 > max $10,000).
-        await this.initialStakeField.click();
-        if (!this.isMobile) {
-            await this.stakeManualInputToggle.click();
-            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
-        }
+        // Above max payout — read cap from stake details, then draft until Payout row errors.
+        await this.openStakeCustomInput();
         const maxPayout = await this.readStakeDetailsAmount('Max payout');
-        await this.stakePopoverInput.click();
-        await this.stakePopoverInput.clear();
-
         const stakeCandidates = [String(Math.ceil(maxPayout)), String(Math.ceil(maxPayout * 2))];
         let payoutExceeded = false;
         for (const stakeDraft of stakeCandidates) {
-            await this.stakePopoverInput.clear();
-            await this.stakePopoverInput.fill(stakeDraft);
+            await this.fillStakeCustomDraft(stakeDraft);
             try {
                 await expect(
                     this.stakeDetailsRow('Payout'),
@@ -2181,7 +2132,7 @@ export class TradeAutomatePage extends TradeParametersPage {
                 await expect(
                     this.stakeValidationMessage,
                     'Stake input should show PayoutLimits validation after proposal'
-                ).toHaveText(TradeAutomatePage.STAKE_MAX_PAYOUT_ERROR, { timeout: 5_000 });
+                ).toHaveText(TradeParametersPage.STAKE_MAX_PAYOUT_ERROR, { timeout: 5_000 });
                 payoutExceeded = true;
                 break;
             } catch (error) {
@@ -2193,7 +2144,6 @@ export class TradeAutomatePage extends TradeParametersPage {
                 if (!isExpectTimeout) {
                     throw error;
                 }
-                // Payout may scale sub-linearly on some trade types — try a higher draft.
             }
         }
         expect(payoutExceeded, `Stake drafts ${stakeCandidates.join(', ')} should exceed max payout ${maxPayout}`).toBe(
@@ -2204,9 +2154,7 @@ export class TradeAutomatePage extends TradeParametersPage {
             'Stake Save should stay disabled while payout exceeds the maximum'
         ).toBeDisabled();
         await this.dismissStakeEditor();
-        await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
-            priorValue
-        );
+        await this.assertInitialStakeUnchanged(priorValue);
 
         // Above current balance — balance hint (mobile also gates Save).
         const balanceHeader = (await this.balance.innerText()).replace(/,/g, '').trim();
@@ -2217,14 +2165,8 @@ export class TradeAutomatePage extends TradeParametersPage {
         const [, balanceAmount, currency] = balanceMatch;
         const expectedBalanceHint = TradeAutomatePage.formatInsufficientBalanceHint(balanceAmount, currency);
         const stakeAboveBalance = (parseFloat(balanceAmount) + 0.01).toFixed(2);
-        await this.initialStakeField.click();
-        if (!this.isMobile) {
-            await this.stakeManualInputToggle.click();
-            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
-        }
-        await this.stakePopoverInput.click();
-        await this.stakePopoverInput.clear();
-        await this.stakePopoverInput.fill(stakeAboveBalance);
+        await this.openStakeCustomInput();
+        await this.fillStakeCustomDraft(stakeAboveBalance);
         await expect(this.stakeValidationMessage, 'Stake editor should show insufficient-balance hint').toHaveText(
             expectedBalanceHint,
             { timeout: 20_000 }
@@ -2236,6 +2178,10 @@ export class TradeAutomatePage extends TradeParametersPage {
             ).toBeDisabled();
         }
         await this.dismissStakeEditor();
+        await this.assertInitialStakeUnchanged(priorValue);
+    }
+
+    private async assertInitialStakeUnchanged(priorValue: string): Promise<void> {
         await expect(this.initialStakeField, 'Initial stake should keep its prior committed value').toHaveValue(
             priorValue
         );

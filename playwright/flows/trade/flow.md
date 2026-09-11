@@ -787,17 +787,59 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                        | Balance reflects P/L from early close                                                    | Both     |
 | 14  | Verify closed contract in Reports | `verifyClosedContractInReports()`                                          | Trade table + Statement rows correct                                                     | Both     |
 
+## Flow 12 — Market closed: purchase hidden and open-market recovery · `verify-manual-trade-negative-validation.spec.ts`
+
+**Prerequisites:** Authenticated account and at least one currently closed market returned by staging.
+
+| #   | Step                      | Action                                                     | Expected Result                                                      | Platform |
+| --- | ------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- | -------- |
+| 1   | Discover a closed market  | Search the live market catalogue for a row tagged `CLOSED` | A closed symbol is selected without assuming its schedule            | Both     |
+| 2   | Verify closed state       | Observe trade parameters and reopening status              | Buy is absent; reopening status is visible; no stale payout is shown | Both     |
+| 3   | Recover on an open market | Select Volatility 100 Index / Rise/Fall                    | Buy returns without remaining in loading state                       | Both     |
+
+## Flow 13 — Insufficient balance: viewport-specific purchase gate · `verify-manual-trade-negative-validation.spec.ts`
+
+**Prerequisites:** Authenticated account whose readable balance is below an in-range stake.
+
+| #   | Step                         | Action                                              | Expected Result                                                | Platform |
+| --- | ---------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | -------- |
+| 1   | Read live limits and balance | Parse the displayed Stake range and account balance | Amount is generated above balance but inside the current range | Both     |
+| 2   | Enter unaffordable stake     | Fill the generated amount                           | Balance-aware guidance uses the current account balance        | Both     |
+| 3   | Verify mobile gate           | Observe Stake Save                                  | Save is disabled and the draft cannot commit                   | Mobile   |
+| 4   | Verify desktop gate          | Save the draft and observe Buy                      | Buy is disabled and payout is `-`                              | Desktop  |
+| 5   | Verify no submission         | Inspect outbound buy count                          | No buy request is sent                                         | Both     |
+
+## Flow 14 — Manual Trading negative validation matrix · `verify-manual-trade-negative-validation.spec.ts`
+
+**Prerequisites:** Authenticated funded staging account. Limits and options are returned by the active contract configuration.
+
+| #   | Step                          | Action                                                                                                  | Expected Result                                                                                                      | Platform |
+| --- | ----------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Validate Stake matrix         | Run current-limit checks across every Stake-bearing trade type and one representative per market family | Invalid drafts show configuration-specific limits; exact minimum is accepted; committed Stake and Buy stay unchanged | Both     |
+| 2   | Validate Stake filtering      | Type letters, symbols, and excessive precision                                                          | Invalid characters are rejected and precision is bounded                                                             | Both     |
+| 3   | Validate Duration             | Read desktop range or mobile wheel options                                                              | Out-of-range values are blocked; mobile options are bounded                                                          | Both     |
+| 4   | Validate Barrier              | Enter zero and empty drafts                                                                             | Validation appears, Save is disabled, committed value remains                                                        | Both     |
+| 5   | Validate Digits               | Inspect Over/Under choices                                                                              | Digits 0–9 are represented with subtype availability                                                                 | Both     |
+| 6   | Validate Multipliers risk     | Read multiplier, TP/SL ranges, and DC choices                                                           | Values come from the active configuration                                                                            | Both     |
+| 7   | Validate market families      | Inspect all live asset categories                                                                       | Every major family has a representative                                                                              | Both     |
+| 8   | Validate stale values         | Switch symbols/types after setting parameters                                                           | Retained values belong to the new runtime ranges/options                                                             | Both     |
+| 9   | Validate duplicate purchase   | Double-click Accumulators Buy                                                                           | Exactly one buy request is sent                                                                                      | Both     |
+| 10  | Validate Accumulator recovery | Settle the Accumulator                                                                                  | Buy returns enabled                                                                                                  | Both     |
+| 11  | Validate Turbos lifecycle     | Buy and close a Turbos contract                                                                         | Open position closes and Buy recovers                                                                                | Both     |
+
+> The current market picker does not expose Asians, Ends Between/Outside, or Stays Between/Goes Outside. Server-only open-position-cap setup is also unavailable with current account tooling; these states are not reported as passing by this flow.
+
 ---
 
 ## Gap Flows
 
-### G1 — Insufficient balance → ServiceErrorSheet shown
+### G1 — Server-reported insufficient balance → ServiceErrorSheet shown
 
-| #   | Test case                                    | Steps                                                  | Expected Result                                                                |
-| --- | -------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| 1   | Attempt trade with zero/insufficient balance | Account with balance below minimum stake → click "Buy" | `ServiceErrorSheet` with title "Insufficient balance" and "Deposit now" button |
+| #   | Test case                          | Steps                                                                                       | Expected Result                                                                        |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1   | Trigger backend-only insufficiency | Use a state where balance is unreadable to the client but Buy returns `InsufficientBalance` | Buy stays enabled and opens `ServiceErrorSheet` with the authoritative backend message |
 
-> Requires account-state setup (zero or insufficient balance). Proposed spec: `trade/verify-insufficient-balance.spec.ts`
+> Blocked: current account tooling creates funded accounts and cannot drain them; readable insufficient balances are stopped by the client gate before Buy.
 
 ### G2 — Unauthenticated purchase attempt → login prompt sheet
 
