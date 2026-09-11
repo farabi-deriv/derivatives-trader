@@ -16,7 +16,8 @@
  * Behaviour:
  *   - Fetches the 50 most recent TestDino runs and matches on pipeline.id === GITHUB_RUN_ID,
  *     preferring the run tagged for PLATFORM when more than one match is found.
- *   - Fetches failed/flaky test details via GET /context?runId={id}.
+ *   - Fetches failed test titles via GET /debug-bundle?runId={id} (paginated).
+ *     (The retired GET /context endpoint now returns 404.)
  *   - Always writes the "View TestDino Report" link.
  *   - Renders a stats table and a Failed Tests table when failures exist.
  *   - On any API/auth/network failure exits 0 with a fallback note —
@@ -77,6 +78,70 @@ async function apiFetch(path, timeoutMs = 10_000) {
     } finally {
         clearTimeout(timer);
     }
+}
+
+/** Extract display fields from a debug-bundle run-scope item. */
+function titleAndSpecFromItem(item) {
+    const testObj = item?.test ?? {};
+    const specObj = typeof item?.spec === 'object' && item.spec ? item.spec : {};
+    const titlePath = Array.isArray(item?.title_path)
+        ? item.title_path
+        : Array.isArray(testObj?.title_path)
+          ? testObj.title_path
+          : Array.isArray(testObj?.titlePath)
+            ? testObj.titlePath
+            : Array.isArray(item?.title)
+              ? item.title
+              : [];
+    const testName = titlePath.length
+        ? titlePath[titlePath.length - 1]
+        : (item?.title ?? testObj?.title ?? 'Unknown test');
+    const spec =
+        item?.file_path ??
+        specObj?.filePath ??
+        specObj?.path ??
+        (typeof item?.spec === 'string' ? item.spec : '') ??
+        titlePath.find(part => /\.(spec|test)\.[jt]sx?$/.test(String(part))) ??
+        titlePath[2] ??
+        '';
+    const caseId = item?.caseId ?? testObj?.caseId ?? item?.pw_test_id ?? testObj?.pw_test_id ?? item?.id ?? null;
+    return { testName, spec, caseId };
+}
+
+/** Fetch one page of run-scope debug bundle (limit max 50 per TestDino API). */
+async function fetchDebugBundlePage(runId, page) {
+    const path = `/debug-bundle?runId=${encodeURIComponent(runId)}&page=${page}&limit=50`;
+    const result = await apiFetch(path);
+    if (!result.ok || result.body?.success === false) return null;
+    const data = result.body?.data;
+    if (!data || data.scope !== 'run') return null;
+    const items = Array.isArray(data.items) ? data.items : [];
+    const total = Number(data.total) || items.length;
+    const hasNext = Boolean(data.nextPage) || page * 50 < total;
+    return { items, hasNext, total };
+}
+
+/** Fetch failed test cases from /debug-bundle (paginated). */
+async function fetchRunFailedTests(runId) {
+    const failedTests = [];
+    let page = 1;
+    let hasNext = true;
+    let apiTruncated = false;
+
+    while (hasNext && page <= 20) {
+        const pageResult = await fetchDebugBundlePage(runId, page);
+        if (!pageResult) break;
+        for (const item of pageResult.items) {
+            const status = item?.status ?? item?.test?.status;
+            if (status && status !== 'failed') continue;
+            failedTests.push(item);
+        }
+        hasNext = pageResult.hasNext;
+        if (hasNext && page >= 20) apiTruncated = true;
+        page += 1;
+    }
+
+    return { failedTests, apiTruncated };
 }
 
 const main = async () => {
@@ -186,12 +251,7 @@ const main = async () => {
     write(`| ${total} | ${passed} | ${failed} | ${flaky} | ${skipped} | ${timedOut} | ${duration} |`);
 
     if (failed > 0) {
-        // GET /context?runId={id} returns data.list for all test cases.
-        // Filter to failed only (flaky recovers on retry — not a failure). title[] last element = test name, index 2 = spec file.
-        const ctxResult = await apiFetch(`/context?runId=${encodeURIComponent(run.id)}&limit=500`);
-        const allCases = ctxResult.ok && ctxResult.body?.success ? (ctxResult.body.data?.list ?? []) : [];
-        const failedTests = allCases.filter(tc => tc.status === 'failed');
-        const apiTruncated = allCases.length === 500;
+        const { failedTests, apiTruncated } = await fetchRunFailedTests(run.id);
 
         if (failedTests.length > 0) {
             const MAX_ROWS = 100;
@@ -201,21 +261,19 @@ const main = async () => {
             write('');
             write('| # | Test | Spec |');
             write('|---|---|---|');
-            displayed.forEach((tc, i) => {
-                const titleArr = Array.isArray(tc.title) ? tc.title : [];
-                const testName = sanitizeMd(titleArr[titleArr.length - 1] ?? tc.title ?? 'Unknown test');
-                const spec = sanitizeMd(titleArr[2] ?? '');
-                const cell = tc.caseId ? `[${testName}](${runUrl}/${encodeURIComponent(tc.caseId)})` : testName;
-                write(`| ${i + 1} | ${cell} | ${spec} |`);
+            displayed.forEach((item, i) => {
+                const { testName, spec, caseId } = titleAndSpecFromItem(item);
+                const safeName = sanitizeMd(testName);
+                const safeSpec = sanitizeMd(spec);
+                const cell = caseId ? `[${safeName}](${runUrl}/${encodeURIComponent(caseId)})` : safeName;
+                write(`| ${i + 1} | ${cell} | ${safeSpec} |`);
             });
             if (failedTests.length > MAX_ROWS) {
                 write(`| … | _${failedTests.length - MAX_ROWS} more — [see full report](${runUrl})_ | |`);
             }
             if (apiTruncated) {
                 write('');
-                write(
-                    `> ⚠️ API returned 500 results (max). Some failures may not be listed — [see full report](${runUrl}).`
-                );
+                write(`> ⚠️ Failed-test list truncated at 100 rows — [see full report](${runUrl}).`);
             }
         } else {
             write('');

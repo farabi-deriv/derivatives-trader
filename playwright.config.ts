@@ -35,6 +35,15 @@ if (!isMergeOnly) {
     dotenv.config({ path: envFile });
 }
 
+const chromiumLaunchArgs = [
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-web-security',
+    '--disable-features=VizDisplayCompositor,ThirdPartyCookiesPhaseout,TestThirdPartyCookiePhaseout',
+    '--use-fake-ui-for-media-stream',
+    '--use-fake-device-for-media-stream',
+];
+
 export default defineConfig({
     testDir: './playwright/tests',
     timeout: 600000,
@@ -101,14 +110,7 @@ export default defineConfig({
                 viewport: { width: 1536, height: 864 },
                 userAgent: `${devices['Desktop Chrome'].userAgent} Playwright-Agent/deriv/1.9`,
                 launchOptions: {
-                    args: [
-                        '--no-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-web-security',
-                        '--disable-features=VizDisplayCompositor',
-                        '--use-fake-ui-for-media-stream',
-                        '--use-fake-device-for-media-stream',
-                    ],
+                    args: chromiumLaunchArgs,
                 },
             },
         },
@@ -119,14 +121,7 @@ export default defineConfig({
                 viewport: { width: 412, height: 915 },
                 userAgent: `${devices['Pixel 7'].userAgent} Playwright-Agent/deriv/1.9`,
                 launchOptions: {
-                    args: [
-                        '--no-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-web-security',
-                        '--disable-features=VizDisplayCompositor',
-                        '--use-fake-ui-for-media-stream',
-                        '--use-fake-device-for-media-stream',
-                    ],
+                    args: chromiumLaunchArgs,
                 },
             },
         },

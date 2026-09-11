@@ -44,6 +44,61 @@ async function fetchWithTimeout(url, options, timeoutMs = 10_000) {
     }
 }
 
+function titleFromDebugBundleItem(item) {
+    const testObj = item?.test ?? {};
+    const titlePath = Array.isArray(item?.title_path)
+        ? item.title_path
+        : Array.isArray(testObj?.title_path)
+          ? testObj.title_path
+          : Array.isArray(testObj?.titlePath)
+            ? testObj.titlePath
+            : Array.isArray(item?.title)
+              ? item.title
+              : [];
+    const testName = titlePath.length
+        ? titlePath[titlePath.length - 1]
+        : (item?.title ?? testObj?.title ?? 'Unknown test');
+    const caseId = item?.caseId ?? testObj?.caseId ?? item?.pw_test_id ?? testObj?.pw_test_id ?? item?.id ?? null;
+    return { testName, caseId };
+}
+
+async function fetchRunFailedTests(projectId, token, runId) {
+    const seen = new Set();
+    const failedTests = [];
+    let page = 1;
+    let hasNext = true;
+
+    while (hasNext && page <= 20) {
+        const url = `https://api.testdino.com/api/v1/public/${projectId}/debug-bundle?runId=${encodeURIComponent(runId)}&page=${page}&limit=50`;
+        try {
+            const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) break;
+            const body = await res.json();
+            if (body?.success === false) break;
+            const data = body?.data;
+            if (!data || data.scope !== 'run') break;
+            const items = Array.isArray(data.items) ? data.items : [];
+            for (const item of items) {
+                const status = item?.status ?? item?.test?.status;
+                if (status && status !== 'failed') continue;
+                const { testName, caseId } = titleFromDebugBundleItem(item);
+                const key = caseId ?? testName;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                failedTests.push({ id: caseId, title: testName });
+            }
+            const total = Number(data.total) || items.length;
+            hasNext = Boolean(data.nextPage) || page * 50 < total;
+            page += 1;
+        } catch (err) {
+            console.warn(`⚠️ Failed to fetch TestDino debug bundle (page ${page}): ${err.message}`);
+            break;
+        }
+    }
+
+    return failedTests;
+}
+
 function writeJsonFile(filePath, data) {
     if (!filePath) return;
     const resolved = path.resolve(filePath);
@@ -178,32 +233,8 @@ async function fetchTestDinoRunByGithubId() {
             ? `https://app.testdino.com/${orgId}/projects/${projectId}/test-runs/${run.id}`
             : null;
 
-        // Step 2: fetch failed tests via /context endpoint.
-        // GET /context?runId={id} returns data.list[] for all cases; filter to failed only
-        // (flaky tests recovered on retry and are NOT reported as failures).
-        // title is an array; last element is the test name, index 2 is the spec file.
-        let failedTests = [];
-        try {
-            const ctxRes = await fetchWithTimeout(
-                `https://api.testdino.com/api/v1/public/${projectId}/context?runId=${encodeURIComponent(run.id)}&limit=500`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (ctxRes.ok) {
-                const ctxJson = await ctxRes.json();
-                const list = (ctxJson?.data?.list ?? []).filter(tc => tc.status === 'failed');
-                const seen = new Set();
-                for (const tc of Array.isArray(list) ? list : []) {
-                    const key = tc.caseId ?? JSON.stringify(tc.title);
-                    if (seen.has(key)) continue;
-                    seen.add(key);
-                    const titleArr = Array.isArray(tc.title) ? tc.title : [];
-                    const testName = titleArr[titleArr.length - 1] ?? 'Unknown test';
-                    failedTests.push({ id: tc.caseId ?? null, title: testName });
-                }
-            }
-        } catch (err) {
-            console.warn(`⚠️ Failed to fetch TestDino failed results: ${err.message}`);
-        }
+        // Step 2: fetch failed tests via /debug-bundle.
+        const failedTests = await fetchRunFailedTests(projectId, token, run.id);
 
         return { run, runUrl, failedTests };
     } catch (err) {
