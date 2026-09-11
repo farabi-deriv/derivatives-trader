@@ -32,27 +32,40 @@ test.describe('Notifications — Trade banner sell', { tag: ['@notifications', '
     });
 
     test('VERIFY sell notification banner appears after closing contract', async ({
+        page,
         tradeRiseFallPage,
         positionsPage,
+        contractDetailsPage,
         notificationsPage,
     }) => {
-        // Step 1: Buy a short duration contract if no positions exist
+        // Minutes (not Ticks): tick Rise/Fall does not offer resale, so Close stays disabled.
+        // Do not require an empty Open tab — leftover unsellable positions must not block this flow.
+        await tradeRiseFallPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall');
+        await tradeRiseFallPage.selectDuration('Minutes', '5 min');
         await tradeRiseFallPage.setStake('1.00');
         await tradeRiseFallPage.clickRiseFallOption('Rise');
-        await expect(tradeRiseFallPage.purchaseButton, 'Purchase button should be visible').toBeVisible();
-        await tradeRiseFallPage.purchaseButton.click();
+        await tradeRiseFallPage.clickBuy();
+        await expect(
+            tradeRiseFallPage.purchaseNotification.first(),
+            'Purchase notification should confirm the buy before closing'
+        ).toBeVisible({ timeout: 15_000 });
 
-        // Step 2: Navigate to /positions and close the open contract
         await positionsPage.goToPositions();
-        await expect(positionsPage.firstContractCard, 'Open contract card should be visible in positions').toBeVisible({
-            timeout: 15000,
+        const riseCard = page
+            .getByTestId('dt_contract_card')
+            .filter({ hasText: 'Volatility 100 Index' })
+            .filter({ hasText: 'Rise' })
+            .first();
+        await expect(riseCard, 'Bought Rise/Fall contract should appear in Open positions').toBeVisible({
+            timeout: 15_000,
         });
-        await positionsPage.closeFirstContract();
+        await riseCard.click();
+        await NavigationUtils.waitForDerivApiSettled(page);
+        await contractDetailsPage.sellContract();
 
-        // Step 3: Assert the contract-closed / sell notification banner appears
         await expect(
             notificationsPage.sellBanner.first(),
             'Trade sell / contract closed notification banner should appear'
-        ).toBeVisible({ timeout: 15000 });
+        ).toBeVisible({ timeout: 15_000 });
     });
 });
