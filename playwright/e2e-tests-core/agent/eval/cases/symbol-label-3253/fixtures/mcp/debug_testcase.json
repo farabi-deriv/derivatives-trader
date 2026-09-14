@@ -1,0 +1,21 @@
+{
+  "testcase_id": "e490c96d368c255eab10-549b7dd478b77e936fc5",
+  "history": [
+    {
+      "status": "failed",
+      "at": "2026-08-12T21:15:00Z",
+      "error": "Symbol label should be visible for symbol \"1HZ100V\""
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-20T10:48:00Z",
+      "error": "Symbol label should be visible for symbol \"1HZ100V\""
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-24T11:01:00Z",
+      "error": "Symbol label should be visible for symbol \"1HZ100V\""
+    }
+  ],
+  "laterMatchingPass": false
+}

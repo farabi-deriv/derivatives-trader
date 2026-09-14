@@ -1,0 +1,198 @@
+[
+  {
+    "number": 3186,
+    "title": "fix(playwright): resolve daily cron test failures — Financial STP duplicate card + Explore tab-race",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/daily-cron-test-failures-explore-financial-stp",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-20T13:53:47Z",
+    "updatedAt": "2026-08-21T01:51:07Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3186",
+    "labels": []
+  },
+  {
+    "number": 3185,
+    "title": "test(auth): legacy_client_blocked notice + livechat (G12)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/legacy-client-blocked-notice",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-20T12:57:46Z",
+    "updatedAt": "2026-08-21T01:49:30Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3185",
+    "labels": []
+  },
+  {
+    "number": 3184,
+    "title": "GPS cta update",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "ankitha/gps_cta_fix1",
+    "author": {
+      "login": "ankitha-deriv"
+    },
+    "createdAt": "2026-08-20T12:29:58Z",
+    "updatedAt": "2026-08-20T16:23:21Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3184",
+    "labels": []
+  },
+  {
+    "number": 3183,
+    "title": "fix(playwright): stabilize notification tests for Novu v3.17 opacity-gated actions",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/playwright-notification-tests-visibility",
+    "author": {
+      "login": "infanta-deriv"
+    },
+    "createdAt": "2026-08-20T12:10:35Z",
+    "updatedAt": "2026-08-20T16:24:42Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3183",
+    "labels": []
+  },
+  {
+    "number": 3182,
+    "title": "fix(test): portfolio empty-balance test resilient to missing Options",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/portfolio-empty-balance-options-assertion",
+    "author": {
+      "login": "infanta-deriv"
+    },
+    "createdAt": "2026-08-20T12:07:45Z",
+    "updatedAt": "2026-08-20T16:24:11Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3182",
+    "labels": []
+  },
+  {
+    "number": 3181,
+    "title": "test(auth): add OAuth2 consent permission rows spec (G11)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/oauth2-consent-permission-rows",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-20T11:09:51Z",
+    "updatedAt": "2026-08-21T05:07:56Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3181",
+    "labels": []
+  },
+  {
+    "number": 3180,
+    "title": "test(auth): add OAuth2 duplicate-challenge remount guard spec (G5)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/oauth2-duplicate-challenge-guard",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-20T10:37:08Z",
+    "updatedAt": "2026-08-21T01:48:37Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3180",
+    "labels": []
+  },
+  {
+    "number": 3179,
+    "title": "fix(total-balance): parse comma-formatted total_balance strings (hero showed 0.00)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/fix-home-total-value-options-transfer",
+    "author": {
+      "login": "lexi-github-app[bot]"
+    },
+    "createdAt": "2026-08-20T09:32:58Z",
+    "updatedAt": "2026-08-24T05:34:00Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3179",
+    "labels": []
+  },
+  {
+    "number": 3122,
+    "title": "Playwright Auto Healer Fix: Error: Cashier iframe should show \"Deposit\" nav button",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-11fb6251f2cb",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T22:38:58Z",
+    "updatedAt": "2026-08-19T06:38:20Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3122",
+    "labels": []
+  },
+  {
+    "number": 3112,
+    "title": "Playwright Auto Healer Fix: Error: Options transaction details sub-panel should slide off-screen after click",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-befe16649a54",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T09:45:12Z",
+    "updatedAt": "2026-08-18T09:47:54Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3112",
+    "labels": []
+  },
+  {
+    "number": 3103,
+    "title": "Playwright Auto Healer Fix: Error: DTrader URL should contain symbol=CRASH500",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-0ec62c11f31e",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T05:15:23Z",
+    "updatedAt": "2026-08-18T09:44:55Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3103",
+    "labels": []
+  },
+  {
+    "number": 3102,
+    "title": "Playwright Auto Healer Fix: Error: \"Try real trading\" modal should appear on the USD/EUR deposit path for in",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-ce066b6f8583",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T05:10:46Z",
+    "updatedAt": "2026-08-18T09:45:33Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3102",
+    "labels": []
+  },
+  {
+    "number": 3101,
+    "title": "Playwright Auto Healer Fix: Error: Symbol label should be visible for symbol \"1HZ100V\"",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-8b650848a39f",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T05:04:26Z",
+    "updatedAt": "2026-08-18T09:45:52Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3101",
+    "labels": []
+  },
+  {
+    "number": 3100,
+    "title": "Playwright Auto Healer Fix: Error: Trade/CFDs nav link should be visible after login",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-77fb18015e13",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-18T05:01:46Z",
+    "updatedAt": "2026-08-18T05:26:15Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3100",
+    "labels": []
+  }
+]

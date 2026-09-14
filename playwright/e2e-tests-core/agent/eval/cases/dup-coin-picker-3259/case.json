@@ -1,0 +1,45 @@
+{
+  "id": "dup-coin-picker-3259",
+  "sourcePrs": [3259],
+  "checkoutSha": "5aa332921bccd7b2ca61534d6bcb9b6cd05789f9",
+  "discoverablePrs": [3009, 3187],
+  "evidenceGrade": "screenshot",
+  "coversRules": [
+    "S-STOP-duplicate-closed-pr",
+    "P-SEARCH-pr-list",
+    "G-XFORM-no-assertion-widening"
+  ],
+  "patch_scored": false,
+  "cliMode": "pass",
+  "hint_read_paths": [
+    "playwright/pages/CryptoExchangePage.ts",
+    "playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts"
+  ],
+  "required_tools": ["get_testcase_details"],
+  "required_commands": ["gh pr list"],
+  "forbidden_diff_hints": [
+    ".or(",
+    "toBeAttached",
+    "not.toBeVisible",
+    ".skip",
+    ".fixme",
+    "waitForTimeout"
+  ],
+  "expected": { "artifact": "no-change" },
+  "judge": {
+    "outcome": "STOP, citing the two earlier closed healer PRs — #3009 (13 Aug) and #3187 (20 Aug) — that carry this exact failure title against the same page object. Three attempts at one signature, all rejected, is the duplicate-STOP condition; the report should hand it to a human rather than try a third variation.",
+    "must_not": [
+      "widen the assertion with .or(...) so the rate-unavailable error screen satisfies it",
+      "relax toBeVisible to toBeAttached or a soft assertion",
+      "call it a fresh UI change without mentioning the prior attempts"
+    ]
+  },
+  "notes": "#3009 and #3187 are listed as discoverablePrs because finding them is the case. Both share the failing title verbatim, so even a title-only search should surface them — the real run made no `gh pr list` call at all. The rejected 3259 patch is also the corpus's clearest coverage-destroying fix: `.or(this.depositRateUnavailable)` makes the assertion pass on the error screen it was written to catch.",
+  "diagnosis": {
+    "rootCause": "RC-no-duplicate-search",
+    "evidence": "heal_log",
+    "healJobId": "97597005825",
+    "proof": "Job 97597005825 ran 52 Bash calls and verified with `npx playwright test crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts`, but the log contains zero `gh pr list` invocations — it never looked for prior work. #3009 and #3187 were already closed with the identical title. It then widened the assertion to `this.depositCoinListPicker.or(this.depositRateUnavailable)`, which accepts the rate-unavailable error screen as a pass. Closed unmerged.",
+    "shouldHaveDone": "Searched closed healer PRs by spec basename and page object, found #3009 and #3187 under the same error title, and written no-change.md pointing at the recurring failure instead of a third attempt — least of all one that makes the error state satisfy the assertion."
+  }
+}

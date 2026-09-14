@@ -1,0 +1,18 @@
+{
+  "number": 3068,
+  "title": "Playwright Auto Healer Fix: Error: Transaction detail banner type label should show \"Deposit\"",
+  "state": "MERGED",
+  "isDraft": false,
+  "headRefName": "claude/playwright-healing-ui-change-e713d19ba3ba",
+  "author": {
+    "login": "github-actions[bot]"
+  },
+  "createdAt": "2026-08-17T03:15:52Z",
+  "updatedAt": "2026-08-17T03:20:01Z",
+  "url": "https://github.com/deriv-com/home-app/pull/3068",
+  "labels": [],
+  "body": "## Failing test case(s)\n\n- [VERIFY USD deposit via credit card increases wallet balance and shows successful transaction](https://app.testdino.com/projects/project_69fc32c04a820df27cf28ac2/runs/test_run_cd554009aa9cd7dcbcf0d45a/case/e64b6134921b1dff28a7-961c891647f082c60013) (chromium-mobile, run #5886)\n- [VERIFY Transfer from USD wallet to ETH wallet](https://app.testdino.com/projects/project_69fc32c04a820df27cf28ac2/runs/test_run_cd554009aa9cd7dcbcf0d45a/case/a845a956ab33dd51b3b1-110a90a52330d7b0f9df) (chromium-mobile, run #5886) — plus 103 other candidates sharing the same signature\n\n## What is failing\n\n`transactionDetailsRoute` in `PortfolioPage.ts:678` matches `p.text-[#0000007A]` which no longer exists; the element is now rendered as `p.text-black-opacity-600`, causing `element(s) not found` at line 1597 across 105 candidates.\n\n## Evidence\n\nCommit `10191bbef` (PR #2977 `feat(design-system): generated component gallery`, merged 2026-08-14) migrated `wallet-transactions-sidebar.tsx:610` from `<p className=\"text-[#0000007A]\">` to `<p className=\"text-black-opacity-600\">` as part of the Quill design-token rollout. Current `src/` confirms the element carries `text-black-opacity-600` only. An identical pattern fix was previously shipped as PR #2696 (merged 2026-08-04) which removed `text-sm` from the same locator. CLI verification was blocked by session permissions; fix is supported by confirmed source change and prior healer precedent.\n\n## Changes\n\n- `playwright/pages/PortfolioPage.ts`: Update `transactionDetailsRoute` getter — replace `p.text-[#0000007A]` with `p.text-black-opacity-600` to match the Quill token class now on the wallet transaction detail banner type label.\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "baseRefName": "main",
+  "mergedAt": "2026-08-17T03:19:46Z",
+  "closedAt": "2026-08-17T03:19:46Z"
+}

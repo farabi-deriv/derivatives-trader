@@ -1,0 +1,163 @@
+{
+  "items": [
+    {
+      "pw_test_id": "9dd5607cacbefc6816c6-7ab1090d834996cca2fe",
+      "suite_id": "test_suite_2f70c1de4b3a8c05e91d7cc4",
+      "title": "VERIFY Options - DTrader - Trade Types Redirections for Demo Account",
+      "title_path": [
+        "",
+        "chromium-mobile",
+        "options/verify-dtrader-redirections.spec.ts",
+        "Options — DTrader trade type redirections",
+        "VERIFY Options - DTrader - Trade Types Redirections for Demo Account"
+      ],
+      "location": {
+        "file": "options/verify-dtrader-redirections.spec.ts",
+        "line": 41,
+        "column": 9
+      },
+      "tags": ["@mobile", "@options", "@dtrader", "@production"],
+      "status": "failed",
+      "platform": "chromium-mobile",
+      "testrun_id": "test_run_6fb6138bd615d9565ebc4916",
+      "attempts": [
+        {
+          "attempt_id": "test_case_1c74a0be55d38e2f0b41977c",
+          "attempt_index": 1,
+          "status": "failed",
+          "outcome": "unexpected",
+          "duration_ms": 31742,
+          "start_time": "2026-08-12T21:14:03.118Z",
+          "worker_index": 3,
+          "parallel_index": 0,
+          "shard_index": null,
+          "split_index": null,
+          "errors": [
+            {
+              "message": "Error: Symbol label should be visible for symbol \"1HZ50V\"\n\nexpect(locator).toBeVisible() failed\n\nLocator: locator('.market-selector-info__label p').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout: 15000ms\n\nCall log:\n  - Symbol label should be visible for symbol \"1HZ50V\" with timeout 15000ms\n  - waiting for locator('.market-selector-info__label p').first()\n",
+              "stack": "Error: Symbol label should be visible for symbol \"1HZ50V\"\n\n    at DTraderPage.verifyActiveSymbol (/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts:58:38)\n    at /home/runner/work/home-app/home-app/playwright/tests/options/verify-dtrader-redirections.spec.ts:64:7",
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts",
+                "line": 58,
+                "column": 38
+              }
+            }
+          ],
+          "attachments": [
+            {
+              "name": "screenshot",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/9dd5607cacbefc6816c6-7ab1090d834996cca2fe/6b21f0c4a7e39d15-test-failed-1.png",
+              "contentType": "image/png"
+            },
+            {
+              "name": "error-context",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/9dd5607cacbefc6816c6-7ab1090d834996cca2fe/9f4c17e2b8d0a663-error-context.md",
+              "contentType": "text/markdown"
+            }
+          ],
+          "annotations": [],
+          "logs": [],
+          "steps": [
+            {
+              "id": "test_step_75c0e91b3ad64f28a1e0b5d7",
+              "title": "Expect \"toBeVisible\"",
+              "category": "expect",
+              "status": "failed",
+              "duration_ms": 15042,
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts",
+                "line": 58,
+                "column": 38
+              },
+              "children": []
+            }
+          ],
+          "action_traces": []
+        }
+      ],
+      "evidence": [
+        {
+          "name": "screenshot",
+          "content_type": "image/png",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/9dd5607cacbefc6816c6-7ab1090d834996cca2fe/6b21f0c4a7e39d15-test-failed-1.png?<redacted-sas>",
+          "expires_at": "2026-08-12T22:14:03.000000000Z"
+        },
+        {
+          "name": "error-context",
+          "content_type": "text/markdown",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/9dd5607cacbefc6816c6-7ab1090d834996cca2fe/9f4c17e2b8d0a663-error-context.md?<redacted-sas>",
+          "expires_at": "2026-08-12T22:14:03.000000000Z"
+        }
+      ]
+    },
+    {
+      "pw_test_id": "e490c96d368c255eab10-2adfdf472ef6787e7a45",
+      "suite_id": "test_suite_473ba10f941a69aaf1afb17a",
+      "title": "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account",
+      "title_path": [
+        "",
+        "chromium-mobile",
+        "options/verify-smarttrader-redirections.spec.ts",
+        "Options — SmartTrader trade type redirections",
+        "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account"
+      ],
+      "location": {
+        "file": "options/verify-smarttrader-redirections.spec.ts",
+        "line": 38,
+        "column": 9
+      },
+      "tags": ["@mobile", "@options", "@smarttrader", "@production"],
+      "status": "failed",
+      "platform": "chromium-mobile",
+      "testrun_id": "test_run_6fb6138bd615d9565ebc4916",
+      "attempts": [
+        {
+          "attempt_id": "test_case_5e0a9d6c2b174f83ad9c30ee",
+          "attempt_index": 1,
+          "status": "failed",
+          "outcome": "unexpected",
+          "duration_ms": 29118,
+          "start_time": "2026-08-12T21:15:47.902Z",
+          "worker_index": 5,
+          "parallel_index": 0,
+          "shard_index": null,
+          "split_index": null,
+          "errors": [
+            {
+              "message": "Error: Symbol label should be visible for symbol \"1HZ50V\"\n\nexpect(locator).toBeVisible() failed\n\nLocator: locator('.market-selector-info__label p').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout: 15000ms\n",
+              "stack": "Error: Symbol label should be visible for symbol \"1HZ50V\"\n\n    at DTraderPage.verifyActiveSymbol (/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts:58:38)\n    at /home/runner/work/home-app/home-app/playwright/tests/options/verify-smarttrader-redirections.spec.ts:59:7",
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts",
+                "line": 58,
+                "column": 38
+              }
+            }
+          ],
+          "attachments": [
+            {
+              "name": "error-context",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/e490c96d368c255eab10-2adfdf472ef6787e7a45/2a5e8c31d94b7f06-error-context.md",
+              "contentType": "text/markdown"
+            }
+          ],
+          "annotations": [],
+          "logs": [],
+          "steps": [],
+          "action_traces": []
+        }
+      ],
+      "evidence": [
+        {
+          "name": "error-context",
+          "content_type": "text/markdown",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/1d0c4b6f-70a2-4d1e-9c33-2f8b7e5a1c04/e490c96d368c255eab10-2adfdf472ef6787e7a45/2a5e8c31d94b7f06-error-context.md?<redacted-sas>",
+          "expires_at": "2026-08-12T22:15:47.000000000Z"
+        }
+      ]
+    }
+  ],
+  "_agent_guidance": "This test case has screenshot images attached. Fetch and view the screenshot URLs (in the 'screenshots' or attachment 'path' fields) to visually inspect the application state at the time of failure — this is critical for accurate diagnosis."
+}

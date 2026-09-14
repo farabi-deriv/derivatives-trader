@@ -1,0 +1,25 @@
+{
+  "testcase_id": "873ac3671f06d86afe87-61ddf5b0121e091eede3",
+  "history": [
+    {
+      "status": "passed",
+      "at": "2026-08-05T21:12:00Z"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-13T21:44:00Z",
+      "error": "Deposit coin list picker container should be visible"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-20T21:15:00Z",
+      "error": "Deposit coin list picker container should be visible"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-24T22:03:00Z",
+      "error": "Deposit coin list picker container should be visible"
+    }
+  ],
+  "laterMatchingPass": false
+}

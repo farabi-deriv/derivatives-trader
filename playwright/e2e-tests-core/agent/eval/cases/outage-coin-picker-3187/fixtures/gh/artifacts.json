@@ -1,0 +1,8 @@
+{
+  "artifacts": [
+    {
+      "name": "playwright-test-results",
+      "expired": false
+    }
+  ]
+}

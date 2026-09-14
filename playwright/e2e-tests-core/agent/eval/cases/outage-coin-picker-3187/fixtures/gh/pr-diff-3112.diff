@@ -1,0 +1,29 @@
+diff --git a/playwright/e2e-tests-core b/playwright/e2e-tests-core
+index 981ccc521..5be07ca25 160000
+--- a/playwright/e2e-tests-core
++++ b/playwright/e2e-tests-core
+@@ -1 +1 @@
+-Subproject commit 981ccc52162d5d3a0c0fec5988ffdab9951753c6
++Subproject commit 5be07ca25c1221b26793dde0f278877aedd9baf1
+diff --git a/playwright/pages/PortfolioPage.ts b/playwright/pages/PortfolioPage.ts
+index 9865a30f2..d82117e5a 100644
+--- a/playwright/pages/PortfolioPage.ts
++++ b/playwright/pages/PortfolioPage.ts
+@@ -1251,13 +1251,15 @@ export class PortfolioPage {
+         const detailsPanel = this.optionsTransactionDetailsSection;
+ 
+         // Step 1: Dismiss transaction detail sub-panel if open.
+-        // Uses not.toBeInViewport() — sidebar stays in DOM with translate-x-full after close.
++        // Uses not.toBeInViewport() with ratio:0.001 — sidebar stays in DOM with translate-x-full
++        // after close. The 0.1% ratio threshold tolerates webkit's sub-pixel intersection
++        // artifact (stable ~0.0014% ratio) when translate-x-full lands at the viewport edge.
+         if (await detailsPanel.isVisible({ timeout: 5000 }).catch(() => false)) {
+             await this.tradingTxDetailBackBtn.click();
+             await expect(
+                 this.page.getByTestId('trading-tx-detail-sidebar'),
+                 'Options transaction details sub-panel should slide off-screen after clicking back button',
+-            ).not.toBeInViewport({ timeout: 10000 });
++            ).not.toBeInViewport({ ratio: 0.001, timeout: 10000 });
+         }
+ 
+         // Step 2: Collapse the Options inline panel.

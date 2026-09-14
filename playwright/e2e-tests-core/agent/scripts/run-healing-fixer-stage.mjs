@@ -4,7 +4,10 @@
  */
 import childProcess from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 import { FIXER_ARTIFACT_DIR, HEALING_DIFF_PATHSPEC } from "./healing-diff-utils.mjs";
+
+const submodulePath = (process.env.PW_HEALER_SUBMODULE_PATH || "").trim() || "playwright/e2e-tests-core";
 
 const run = (label, command, args, options = {}) => {
   console.log(`\n== ${label} ==`);
@@ -39,6 +42,9 @@ const hasCodeChanges = () => {
 
   return unstaged.status === 1 || staged.status === 1;
 };
+
+const hasNonEmptyFile = (filePath) =>
+  fs.existsSync(filePath) && fs.statSync(filePath).isFile() && fs.readFileSync(filePath, "utf8").trim().length > 0;
 
 const diffToFile = (args, file) => {
   const result = childProcess.spawnSync("git", args, {
@@ -83,7 +89,7 @@ const writeFixerArtifact = ({ hasChanges, llmStatus }) => {
 
   fs.writeFileSync(`${FIXER_ARTIFACT_DIR}/metadata.json`, JSON.stringify(metadata, null, 2) + "\n");
 
-  for (const fileName of ["pr-body.md", "no-change.md", "triage.md"]) {
+  for (const fileName of ["pr-body.md", "no-change.md"]) {
     const source = `playwright/agent/.healing/${fileName}`;
     if (fs.existsSync(source) && fs.statSync(source).isFile()) {
       fs.copyFileSync(source, `${FIXER_ARTIFACT_DIR}/${fileName}`);
@@ -91,10 +97,10 @@ const writeFixerArtifact = ({ hasChanges, llmStatus }) => {
   }
 };
 
-requireSuccess("Install healing agent dependencies", "npm", ["ci", "--prefix", "playwright/e2e-tests-core/agent"]);
+requireSuccess("Install healing agent dependencies", "npm", ["ci", "--prefix", path.join(submodulePath, "agent")]);
 configureGitIdentity();
 
-const llmStatus = run("Run LLM fixer", "bash", ["playwright/e2e-tests-core/agent/scripts/run-healer-agent.sh"]);
+const llmStatus = run("Run LLM fixer", "bash", [path.join(submodulePath, "agent/scripts/run-healer-agent.sh")]);
 let hasChanges = false;
 try {
   hasChanges = hasCodeChanges();
@@ -102,6 +108,8 @@ try {
   console.error(error.message);
   process.exit(1);
 }
+
+const prBodyPresent = hasNonEmptyFile("playwright/agent/.healing/pr-body.md");
 
 try {
   writeFixerArtifact({ hasChanges, llmStatus });
@@ -113,6 +121,7 @@ try {
 if (process.env.GITHUB_OUTPUT) {
   fs.appendFileSync(process.env.GITHUB_OUTPUT, `has_changes=${hasChanges ? "true" : "false"}\n`);
   fs.appendFileSync(process.env.GITHUB_OUTPUT, `llm_outcome=${llmStatus === 0 ? "success" : "failure"}\n`);
+  fs.appendFileSync(process.env.GITHUB_OUTPUT, `pr_body_present=${prBodyPresent ? "true" : "false"}\n`);
 }
 
 process.exit(llmStatus);

@@ -1,0 +1,18 @@
+{
+  "number": 3122,
+  "title": "Playwright Auto Healer Fix: Error: Cashier iframe should show \"Deposit\" nav button",
+  "state": "MERGED",
+  "isDraft": false,
+  "headRefName": "claude/playwright-healing-ui-change-11fb6251f2cb",
+  "author": {
+    "login": "github-actions[bot]"
+  },
+  "createdAt": "2026-08-18T22:38:58Z",
+  "updatedAt": "2026-08-19T06:38:20Z",
+  "url": "https://github.com/deriv-com/home-app/pull/3122",
+  "labels": [],
+  "body": "## Failing test case(s)\n\n- [VERIFY Launchpad Icon Redirections for Real Account (firefox)](https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_9ff1413b5a17308a541de51c/be5301b1d2e3632bced9-599c50e3d08739e155bc)\n- [VERIFY Launchpad Icon Redirections for Real Account (chromium-mobile)](https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_1eddc1c43c48b37636c321f0/be5301b1d2e3632bced9-890dd280b6db8e60bf0d)\n\n## What is failing\n\nThe \"Share your real name\" modal (`deposit-payment-agent-modal-share-real-name`) on the Payment Agent deposit page blocks the back-button click on the first attempt, causing the test to retry with a stale cashier URL — which then shows \"cashier links cannot be reused\" and `#nav-depositbtn a` times out at `CashierPage.ts:1583`.\n\n## Evidence\n\nPR #2593 (\"feat: payment agent share name\", merged 2026-07-31) introduced the \"Share your real name\" modal to `src/features/deposit/components/payment-agent-share-real-name-modal.tsx`. The modal intercepts pointer events over the back button (confirmed by retry1 screenshot: modal visible, back button unreachable). The retry then navigates back to the USD cashier page where the token-bound URL is already invalidated, producing the \"link cannot be reused\" error in the iframe instead of `#nav-depositbtn a`.\n\nNote: CLI verification was blocked by environment permissions in this runner (staging credentials not available); the fix was validated through visual artifact inspection and src/ testid confirmation.\n\n## Changes\n\n- `playwright/pages/CashierPage.ts`: Added `shareRealNameModal` / `shareRealNameModalMaybeLaterButton` locators and `dismissShareRealNameModalIfPresent()` action that clicks \"Maybe later\" if the modal is visible.\n- `playwright/pages/HomePage.ts`: Added `dismissShareRealNameModalIfPresent()` call between `verifyPaymentAgentDepositPage()` and `depositPaymentAgentBackButton.click()` in `verifyMorePageForReal()`.\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "baseRefName": "main",
+  "mergedAt": "2026-08-19T06:38:09Z",
+  "closedAt": "2026-08-19T06:38:09Z"
+}

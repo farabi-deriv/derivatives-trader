@@ -1,0 +1,19 @@
+{
+  "id": "ui-change-77fb18015e13",
+  "candidates": [
+    {
+      "testCase": {
+        "title": "VERIFY funded state hero shows balance, Deposit, Withdraw, and asset list",
+        "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_577c350e6fe9bb5eb4325c6e/9139829d4a3b1ca0da82-282974441ddc7d5a5855",
+        "id": "9139829d4a3b1ca0da82-282974441ddc7d5a5855"
+      },
+      "spec": {
+        "filePath": "playwright/tests/crypto-exchange/verify-exchange-funded-landing.spec.ts"
+      },
+      "error": "Trade/CFDs nav link should be visible after login",
+      "run": {
+        "id": "test_run_577c350e6fe9bb5eb4325c6e"
+      }
+    }
+  ]
+}

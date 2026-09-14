@@ -1,0 +1,18 @@
+{
+  "number": 3112,
+  "title": "Playwright Auto Healer Fix: Error: Options transaction details sub-panel should slide off-screen after click",
+  "state": "MERGED",
+  "isDraft": false,
+  "headRefName": "claude/playwright-healing-ui-change-befe16649a54",
+  "author": {
+    "login": "github-actions[bot]"
+  },
+  "createdAt": "2026-08-18T09:45:12Z",
+  "updatedAt": "2026-08-18T09:47:54Z",
+  "url": "https://github.com/deriv-com/home-app/pull/3112",
+  "labels": [],
+  "body": "## Failing test case(s)\n\n[VERIFY Transfer from Options account to USD Wallet](https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_6947c1640643820d63e79ea9/618a971bdf19a3debcd8-6aa28683352f36c3cb1d) — webkit, run #6017\n\n## What is failing\n\n`not.toBeInViewport()` on `getByTestId('trading-tx-detail-sidebar')` in `PortfolioPage.dismissOptionsTransactionDetails` times out in webkit after 21 retries, stabilising at intersection ratio `0.000014361` (~0.0014%) even after the slide-out animation completes.\n\n## Evidence\n\n`src/features/portfolio/components/trading-transactions-sidebar.tsx` (line 154–155) positions the sidebar with `inset-s-0 inset-e-0` and applies `ltr:translate-x-full` for the closed state via a 300ms CSS transition. On desktop, `lg:inset-s-[calc(50vw-320px)]` makes the element's left edge land at exactly `x = viewport_width` after the translation, placing its boundary at the precise viewport edge. WebKit's IntersectionObserver reports a stable non-zero ratio (`~0.0014%`) at this boundary due to sub-pixel rendering — it never drops to zero within the 10 s timeout. The previous healer fix (PR #3010, closed unmerged) replaced the assertion with `expect.poll + boundingBox()`; this PR uses the simpler, idiomatic Playwright `ratio` threshold instead. CLI verify was blocked by sandbox permission constraints (env and binary confirmed present by the toolchain).\n\n## Changes\n\n- `playwright/pages/PortfolioPage.ts`: added `ratio: 0.001` to `not.toBeInViewport()` — the 0.1% threshold ignores webkit's sub-pixel boundary artifact while still catching any meaningful presence on screen.\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "baseRefName": "main",
+  "mergedAt": "2026-08-18T09:47:50Z",
+  "closedAt": "2026-08-18T09:47:50Z"
+}

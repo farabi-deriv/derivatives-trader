@@ -1,0 +1,97 @@
+{
+  "items": [
+    {
+      "pw_test_id": "e490c96d368c255eab10-549b7dd478b77e936fc5",
+      "suite_id": "test_suite_473ba10f941a69aaf1afb17a",
+      "title": "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account",
+      "title_path": [
+        "",
+        "chromium-mobile",
+        "options/verify-smarttrader-redirections.spec.ts",
+        "Options — SmartTrader trade type redirections",
+        "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account"
+      ],
+      "location": {
+        "file": "options/verify-smarttrader-redirections.spec.ts",
+        "line": 38,
+        "column": 9
+      },
+      "tags": ["@mobile", "@options", "@smarttrader", "@production"],
+      "status": "failed",
+      "platform": "chromium-mobile",
+      "testrun_id": "test_run_ebfaec190a341c4c7e945cc6",
+      "attempts": [
+        {
+          "attempt_id": "test_case_63b81f0d5c47ae920d1f8b34",
+          "attempt_index": 0,
+          "status": "failed",
+          "outcome": "unexpected",
+          "duration_ms": 33501,
+          "start_time": "2026-08-24T11:01:12.774Z",
+          "worker_index": 2,
+          "parallel_index": 0,
+          "shard_index": null,
+          "split_index": null,
+          "errors": [
+            {
+              "message": "Error: Symbol label should be visible for symbol \"1HZ100V\"\n\nexpect(locator).toBeVisible() failed\n\nLocator: locator('.market-selector-info__label p').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout: 15000ms\n",
+              "stack": "Error: Symbol label should be visible for symbol \"1HZ100V\"\n\n    at DTraderPage.verifyActiveSymbol (/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts:58:38)\n    at /home/runner/work/home-app/home-app/playwright/tests/options/verify-smarttrader-redirections.spec.ts:59:7",
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts",
+                "line": 58,
+                "column": 38
+              }
+            }
+          ],
+          "attachments": [
+            {
+              "name": "screenshot",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/8c4f2a91-5d07-4b63-b2ea-71d9c3f0a845/e490c96d368c255eab10-549b7dd478b77e936fc5/4d90ba7c1e35f082-test-failed-1.png",
+              "contentType": "image/png"
+            },
+            {
+              "name": "error-context",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/8c4f2a91-5d07-4b63-b2ea-71d9c3f0a845/e490c96d368c255eab10-549b7dd478b77e936fc5/e7318c05f4a9b62d-error-context.md",
+              "contentType": "text/markdown"
+            }
+          ],
+          "annotations": [],
+          "logs": [],
+          "steps": [
+            {
+              "id": "test_step_9d3b07c1f8a24e60b5cd1e73",
+              "title": "Expect \"toBeVisible\"",
+              "category": "expect",
+              "status": "failed",
+              "duration_ms": 15038,
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts",
+                "line": 58,
+                "column": 38
+              },
+              "children": []
+            }
+          ],
+          "action_traces": []
+        }
+      ],
+      "evidence": [
+        {
+          "name": "screenshot",
+          "content_type": "image/png",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/8c4f2a91-5d07-4b63-b2ea-71d9c3f0a845/e490c96d368c255eab10-549b7dd478b77e936fc5/4d90ba7c1e35f082-test-failed-1.png?<redacted-sas>",
+          "expires_at": "2026-08-24T12:01:12.000000000Z"
+        },
+        {
+          "name": "error-context",
+          "content_type": "text/markdown",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/8c4f2a91-5d07-4b63-b2ea-71d9c3f0a845/e490c96d368c255eab10-549b7dd478b77e936fc5/e7318c05f4a9b62d-error-context.md?<redacted-sas>",
+          "expires_at": "2026-08-24T12:01:12.000000000Z"
+        }
+      ]
+    }
+  ],
+  "_agent_guidance": "This test case has screenshot images attached. Fetch and view the screenshot URLs (in the 'screenshots' or attachment 'path' fields) to visually inspect the application state at the time of failure — this is critical for accurate diagnosis."
+}

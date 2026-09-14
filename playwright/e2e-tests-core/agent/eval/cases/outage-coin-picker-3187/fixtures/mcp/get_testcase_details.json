@@ -1,0 +1,10 @@
+{
+  "id": "873ac3671f06d86afe87-5813aaffd48d0205a5e4",
+  "title": "VERIFY deposit via USDT_<Network> wallet skips network picker and completes",
+  "status": "failed",
+  "testRunId": "test_run_c6f315f65a3296795b317368",
+  "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_c6f315f65a3296795b317368/873ac3671f06d86afe87-5813aaffd48d0205a5e4",
+  "error": "Deposit coin list picker container should be visible",
+  "spec": "playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts",
+  "projectId": "project_69fc32c04a820df27cf28ac2"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "ui-change-aea0601b7dc2",
+  "candidates": [
+    {
+      "testCase": {
+        "title": "VERIFY Options - DTrader - Trade Types Redirections for Demo Account",
+        "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_6fb6138bd615d9565ebc4916/9dd5607cacbefc6816c6-7ab1090d834996cca2fe",
+        "id": "9dd5607cacbefc6816c6-7ab1090d834996cca2fe"
+      },
+      "spec": {
+        "filePath": "playwright/tests/options/verify-dtrader-redirections.spec.ts"
+      },
+      "error": "Symbol label should be visible for symbol \"1HZ50V\"",
+      "run": {
+        "id": "test_run_6fb6138bd615d9565ebc4916"
+      }
+    },
+    {
+      "testCase": {
+        "title": "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account",
+        "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_6fb6138bd615d9565ebc4916/e490c96d368c255eab10-2adfdf472ef6787e7a45",
+        "id": "e490c96d368c255eab10-2adfdf472ef6787e7a45"
+      },
+      "spec": {
+        "filePath": "playwright/tests/options/verify-smarttrader-redirections.spec.ts"
+      },
+      "error": "Symbol label should be visible for symbol \"1HZ50V\"",
+      "run": {
+        "id": "test_run_6fb6138bd615d9565ebc4916"
+      }
+    }
+  ]
+}

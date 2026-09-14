@@ -1,0 +1,20 @@
+{
+  "testcase_id": "9139829d4a3b1ca0da82-282974441ddc7d5a5855",
+  "history": [
+    {
+      "status": "passed",
+      "at": "2026-07-01T00:00:00Z"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-01T00:00:00Z",
+      "error": "Trade/CFDs nav link should be visible after login"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-20T00:00:00Z",
+      "error": "Trade/CFDs nav link should be visible after login"
+    }
+  ],
+  "laterMatchingPass": false
+}

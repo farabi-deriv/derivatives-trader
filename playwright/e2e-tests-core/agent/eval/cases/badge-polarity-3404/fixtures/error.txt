@@ -1,0 +1,12 @@
+Error: Outstanding financial assessment row should carry a status badge
+
+expect(locator).toBeVisible() failed
+
+Locator: getByTestId('cfd-mt5-verification-modal-badge-fa')
+Expected: visible
+Timeout: 45000ms
+Error: element(s) not found
+
+Call log:
+  - Outstanding financial assessment row should carry a status badge with timeout 45000ms
+  - waiting for getByTestId('cfd-mt5-verification-modal-badge-fa')

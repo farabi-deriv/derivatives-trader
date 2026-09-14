@@ -1,0 +1,12 @@
+Error: Deposit coin list picker container should be visible
+
+expect(locator).toBeVisible() failed
+
+Locator: getByTestId('exchange-deposit-wallet-picker')
+Expected: visible
+Timeout: 45000ms
+Error: element(s) not found
+
+Call log:
+  - Deposit coin list picker container should be visible with timeout 45000ms
+  - waiting for getByTestId('exchange-deposit-wallet-picker')

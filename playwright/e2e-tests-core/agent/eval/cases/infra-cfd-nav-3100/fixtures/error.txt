@@ -1,0 +1,12 @@
+Error: Trade/CFDs nav link should be visible after login
+
+expect(locator).toBeVisible() failed
+
+Locator: locator('nav.lg\\:hidden a[href="/dashboard/cfds"]')
+Expected: visible
+Timeout: 45000ms
+Error: element(s) not found
+
+Call log:
+  - Trade/CFDs nav link should be visible after login with timeout 45000ms
+  - waiting for locator('nav.lg\\:hidden a[href="/dashboard/cfds"]')

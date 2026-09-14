@@ -1,0 +1,55 @@
+diff --git a/playwright/pages/PortfolioPage.ts b/playwright/pages/PortfolioPage.ts
+index fba124b6c..347a60560 100644
+--- a/playwright/pages/PortfolioPage.ts
++++ b/playwright/pages/PortfolioPage.ts
+@@ -764,6 +764,11 @@ export class PortfolioPage {
+         return this.walletTxDetailFieldNth("Amount transferred", 1);
+     }
+ 
++    /** child[1] `<p>` of the "Amount withdrawn" row — the gross withdrawal amount (before fee). */
++    get transactionDetailsAmountWithdrawnField(): Locator {
++        return this.walletTxDetailFieldNth("Amount withdrawn", 0);
++    }
++
+     /** child[1] `<p>` of the "Amount received" row in the detail panel. */
+     get transactionDetailsAmountReceivePrimaryField(): Locator {
+         return this.walletTxDetailFieldNth("Amount received", 0);
+@@ -1563,12 +1568,16 @@ export class PortfolioPage {
+      *
+      * @param amount - Payout amount shown in the transaction list row and detail banner, e.g. 10.00
+      * @param totalDebited - Total amount debited from the account (payout + processing fee).
+-     *                       Shown in the "Amount" field of the detail view. Defaults to `amount`
+-     *                       when no processing fee applies.
++     *                       Defaults to `amount` when no processing fee applies.
++     *
++     * When a processing fee applies (`totalDebited !== amount`), the detail panel replaces the
++     * single "Amount" row with "Amount withdrawn" (gross, = totalDebited) and "Amount received"
++     * (net, = amount) rows — see `isWalletWithdrawalWithFee` in `wallet-tx-helpers.ts`.
+      */
+     async verifyWithdrawalTransactionDetails(amount: number, totalDebited: number = amount): Promise<void> {
+         const amountStr = `${amount.toFixed(2)} USD`;
+         const totalDebitedStr = `${totalDebited.toFixed(2)} USD`;
++        const hasProcessingFee = totalDebited !== amount;
+         const withdrawalTx = this.walletTransactionItem("Withdrawal", amountStr);
+ 
+         await expect(withdrawalTx,
+@@ -1590,9 +1599,16 @@ export class PortfolioPage {
+             'Transaction ID should be a numeric value').toHaveText(/^\d+$/);
+         await expect(this.transactionDetailsType,
+             'Transaction type field should show "Withdrawal"').toHaveText("Withdrawal", { useInnerText: true });
+-        // The "Amount" field records the total debited (payout + processing fee when applicable)
+-        await expect(this.transactionDetailsAmountField,
+-            `Transaction amount field should show "${totalDebitedStr}"`).toHaveText(totalDebitedStr, { useInnerText: true });
++
++        if (hasProcessingFee) {
++            await expect(this.transactionDetailsAmountWithdrawnField,
++                `"Amount withdrawn" field should show "${totalDebitedStr}"`).toHaveText(totalDebitedStr, { useInnerText: true });
++            await expect(this.transactionDetailsAmountReceivePrimaryField,
++                `"Amount received" field should show "${amountStr}"`).toHaveText(amountStr, { useInnerText: true });
++        } else {
++            await expect(this.transactionDetailsAmountField,
++                `Transaction amount field should show "${totalDebitedStr}"`).toHaveText(totalDebitedStr, { useInnerText: true });
++        }
+         await this.verifyTransactionDateTime();
+     }
+ 

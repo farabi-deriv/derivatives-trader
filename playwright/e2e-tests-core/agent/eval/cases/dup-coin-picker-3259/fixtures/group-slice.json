@@ -1,0 +1,19 @@
+{
+  "id": "ui-change-7390fdb56314",
+  "candidates": [
+    {
+      "testCase": {
+        "title": "VERIFY USD Wallet row is excluded from the deposit coin list",
+        "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_5438e60833c88eb09be90f1c/873ac3671f06d86afe87-61ddf5b0121e091eede3",
+        "id": "873ac3671f06d86afe87-61ddf5b0121e091eede3"
+      },
+      "spec": {
+        "filePath": "playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts"
+      },
+      "error": "Deposit coin list picker container should be visible",
+      "run": {
+        "id": "test_run_5438e60833c88eb09be90f1c"
+      }
+    }
+  ]
+}

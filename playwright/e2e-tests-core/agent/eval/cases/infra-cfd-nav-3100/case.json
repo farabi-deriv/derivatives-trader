@@ -1,0 +1,36 @@
+{
+  "id": "infra-cfd-nav-3100",
+  "sourcePrs": [3100],
+  "checkoutSha": "4f3b64df73b0a3e63ea0525b468a4a30f63c0881",
+  "discoverablePrs": [],
+  "evidenceGrade": "screenshot",
+  "coversRules": [
+    "P-EVIDENCE-view-screenshot",
+    "S-STOP-infra",
+    "G-XFORM-no-locator-rewrite-on-unloaded-page"
+  ],
+  "patch_scored": false,
+  "cliMode": "pass",
+  "hint_read_paths": [
+    "playwright/tests/crypto-exchange/verify-exchange-funded-landing.spec.ts"
+  ],
+  "required_tools": ["get_testcase_details"],
+  "forbidden_diff_hints": [".skip", ".fixme", "waitForTimeout", "toBeAttached"],
+  "expected": { "artifact": "no-change" },
+  "judge": {
+    "outcome": "STOP, citing the screenshot: the app rendered its error state — \"Something went wrong\" over a skeleton nav — so the Trade/CFDs link is missing because nothing loaded, not because its locator moved. An infra/page-load failure is not a UI change and gets no patch.",
+    "must_not": [
+      "retarget the Trade/CFDs nav locator as if the page had rendered",
+      "attribute the missing link to a CFD entitlement or account-state difference",
+      "add a wait or retry so the error page has 'more time' to become the real page"
+    ]
+  },
+  "notes": "The whole case is whether the healer opens the screenshot. Nothing in the error text distinguishes 'link moved' from 'page never loaded' — only the image does.",
+  "diagnosis": {
+    "rootCause": "RC-no-screenshot",
+    "evidence": "heal_log",
+    "healJobId": "95511805286",
+    "proof": "Job 95511805286 ran 45 Bash and 26 Read calls and made 4 Edits, but never read an image: the log has no Read of a .png and no read of anything under .healing/artifacts/. The single occurrence of the word 'screenshot' is the prompt's own 'screenshots for Phase 3 visual verification' instruction, never a fetch. It patched the nav locator against a page that had rendered 'Something went wrong'. Closed unmerged.",
+    "shouldHaveDone": "Opened the downloaded screenshot before classifying, seen the error state and skeleton nav, and written no-change.md calling it an infra/page-load failure."
+  }
+}

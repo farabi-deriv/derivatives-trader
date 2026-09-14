@@ -1,0 +1,22 @@
+diff --git a/playwright/pages/DTraderPage.ts b/playwright/pages/DTraderPage.ts
+index fc0e0407c..4fbe2de0f 100644
+--- a/playwright/pages/DTraderPage.ts
++++ b/playwright/pages/DTraderPage.ts
+@@ -36,11 +36,15 @@ export class DTraderPage {
+      *   (`.cq-chart-title .cq-symbol` no longer exists). The `dt_market_tabs` bar always renders
+      *   exactly one active tab (`aria-current="true"`) reflecting the chart's current symbol, so
+      *   the name is read straight off it.
+-     * - Mobile: `.market-selector-info__label p` inside the DTrader market selector header.
++     * - Mobile: the standalone `.market-selector-info__label` header no longer exists — mobile now
++     *   renders the same market-tab chips as desktop. The active chip is identifiable by its
++     *   accessible name, uniquely prefixed "Change market and trade type: <symbol>, <trade type>"
++     *   (inactive chips are plain "<symbol> <trade type> Remove market"), confirmed via CI
++     *   artifacts across DTrader/SmartTrader redirection specs and both demo/real accounts.
+      */
+     get activeSymbolLabel(): Locator {
+         if (this.isMobile) {
+-            return this.page.locator('.market-selector-info__label p').first();
++            return this.page.getByRole('button', { name: /^Change market and trade type:/ }).locator('p').first();
+         }
+         return this.page.getByTestId('dt_market_tab')
+             .and(this.page.locator('[aria-current="true"]'))

@@ -1,0 +1,19 @@
+{
+  "id": "ui-change-440cf46699c4",
+  "candidates": [
+    {
+      "testCase": {
+        "title": "VERIFY Options - SmartTrader - Trade Types Redirections for Demo Account",
+        "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_ebfaec190a341c4c7e945cc6/e490c96d368c255eab10-549b7dd478b77e936fc5",
+        "id": "e490c96d368c255eab10-549b7dd478b77e936fc5"
+      },
+      "spec": {
+        "filePath": "playwright/tests/options/verify-smarttrader-redirections.spec.ts"
+      },
+      "error": "Symbol label should be visible for symbol \"1HZ100V\"",
+      "run": {
+        "id": "test_run_ebfaec190a341c4c7e945cc6"
+      }
+    }
+  ]
+}

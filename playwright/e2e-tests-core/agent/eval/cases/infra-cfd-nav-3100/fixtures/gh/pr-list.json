@@ -1,0 +1,198 @@
+[
+  {
+    "number": 3099,
+    "title": "fix: OTP rate-limit shown as \"Invalid or expired code\" on signup, login, and phone verify",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/otp-rate-limit-error-code",
+    "author": {
+      "login": "lexi-github-app[bot]"
+    },
+    "createdAt": "2026-08-18T03:44:13Z",
+    "updatedAt": "2026-08-18T09:30:54Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3099",
+    "labels": []
+  },
+  {
+    "number": 3098,
+    "title": "fix: surface OTP rate-limit lockout on email signup verify screen",
+    "state": "OPEN",
+    "isDraft": false,
+    "headRefName": "claude/signup-otp-ratelimit-lockout",
+    "author": {
+      "login": "lexi-github-app[bot]"
+    },
+    "createdAt": "2026-08-18T03:41:34Z",
+    "updatedAt": "2026-08-18T03:51:29Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3098",
+    "labels": []
+  },
+  {
+    "number": 3094,
+    "title": "Fix Home content flash after returning from P2P",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/p2p-back-consent-guard",
+    "author": {
+      "login": "suisin-deriv"
+    },
+    "createdAt": "2026-08-17T13:23:42Z",
+    "updatedAt": "2026-08-18T03:15:03Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3094",
+    "labels": []
+  },
+  {
+    "number": 3093,
+    "title": "fix(ui): use real Quill field-height token for placeholder overlay",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/tab-order-placeholder-height-token",
+    "author": {
+      "login": "amina-deriv"
+    },
+    "createdAt": "2026-08-17T12:43:39Z",
+    "updatedAt": "2026-08-17T12:56:13Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3093",
+    "labels": []
+  },
+  {
+    "number": 3091,
+    "title": "fix: keep Home blocked during consent resume race",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/deposit-modal-consent-race",
+    "author": {
+      "login": "suisin-deriv"
+    },
+    "createdAt": "2026-08-17T11:01:30Z",
+    "updatedAt": "2026-08-17T11:11:23Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3091",
+    "labels": []
+  },
+  {
+    "number": 3090,
+    "title": "fix: align Home redirect loader size",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/deposit-modal-consent-race",
+    "author": {
+      "login": "suisin-deriv"
+    },
+    "createdAt": "2026-08-17T10:43:25Z",
+    "updatedAt": "2026-08-17T10:53:57Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3090",
+    "labels": []
+  },
+  {
+    "number": 3089,
+    "title": "Fix consent redirect while deposit sheet is open",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "fix/deposit-modal-consent-race",
+    "author": {
+      "login": "suisin-deriv"
+    },
+    "createdAt": "2026-08-17T10:20:02Z",
+    "updatedAt": "2026-08-17T10:29:26Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3089",
+    "labels": []
+  },
+  {
+    "number": 3088,
+    "title": "fix: crypto exchange deposit locked design",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "lubega/1708_exchange",
+    "author": {
+      "login": "lubega-deriv"
+    },
+    "createdAt": "2026-08-17T10:09:35Z",
+    "updatedAt": "2026-08-17T10:29:46Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3088",
+    "labels": []
+  },
+  {
+    "number": 3068,
+    "title": "Playwright Auto Healer Fix: Error: Transaction detail banner type label should show \"Deposit\"",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-e713d19ba3ba",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-17T03:15:52Z",
+    "updatedAt": "2026-08-17T03:20:01Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3068",
+    "labels": []
+  },
+  {
+    "number": 3012,
+    "title": "Playwright Auto Healer Fix: Error: OTP Digit 1 input should hold pasted digit \"1\"",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-aedb7d6a26d6",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-13T22:31:05Z",
+    "updatedAt": "2026-08-14T03:13:44Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3012",
+    "labels": []
+  },
+  {
+    "number": 3011,
+    "title": "Playwright Auto Healer Fix: Error: Home (/dashboard/home) exceeded API call budget: 32 calls > max 30",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-f9ea8f9cf677",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-13T22:26:47Z",
+    "updatedAt": "2026-08-14T03:12:39Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3011",
+    "labels": []
+  },
+  {
+    "number": 3010,
+    "title": "Playwright Auto Healer Fix: Error: Options transaction details sub-panel should slide off-screen after click",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-befe16649a54",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-13T22:24:21Z",
+    "updatedAt": "2026-08-14T03:12:09Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3010",
+    "labels": []
+  },
+  {
+    "number": 3009,
+    "title": "Playwright Auto Healer Fix: Error: Deposit coin list picker container should be visible",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-7390fdb56314",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-13T22:21:04Z",
+    "updatedAt": "2026-08-14T03:11:45Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3009",
+    "labels": []
+  },
+  {
+    "number": 3002,
+    "title": "Playwright Auto Healer Fix: Error: DTrader URL should contain symbol=CRASH600",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-ba219442ad66",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-13T10:41:13Z",
+    "updatedAt": "2026-08-13T10:49:41Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3002",
+    "labels": []
+  }
+]

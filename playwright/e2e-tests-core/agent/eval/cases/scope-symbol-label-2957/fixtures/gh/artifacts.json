@@ -1,0 +1,101 @@
+{
+  "total_count": 16,
+  "artifacts": [
+    {
+      "id": 9157709120,
+      "name": "_playwright-slack-thread-summary",
+      "expired": true,
+      "size_in_bytes": 458
+    },
+    {
+      "id": 9157700514,
+      "name": "_playwright-slack-result-webkit",
+      "expired": true,
+      "size_in_bytes": 969
+    },
+    {
+      "id": 9157699842,
+      "name": "playwright-test-results-webkit-staging",
+      "expired": true,
+      "size_in_bytes": 446844848
+    },
+    {
+      "id": 9157692121,
+      "name": "playwright-report-webkit-staging",
+      "expired": false,
+      "size_in_bytes": 446058927
+    },
+    {
+      "id": 9157599598,
+      "name": "_playwright-slack-result-webkit-mobile",
+      "expired": true,
+      "size_in_bytes": 968
+    },
+    {
+      "id": 9157599086,
+      "name": "playwright-test-results-webkit-mobile-staging",
+      "expired": true,
+      "size_in_bytes": 427189579
+    },
+    {
+      "id": 9157592001,
+      "name": "playwright-report-webkit-mobile-staging",
+      "expired": false,
+      "size_in_bytes": 427276708
+    },
+    {
+      "id": 9157285462,
+      "name": "_playwright-slack-result-firefox",
+      "expired": true,
+      "size_in_bytes": 913
+    },
+    {
+      "id": 9157284894,
+      "name": "playwright-test-results-firefox-staging",
+      "expired": true,
+      "size_in_bytes": 382792060
+    },
+    {
+      "id": 9157277733,
+      "name": "playwright-report-firefox-staging",
+      "expired": false,
+      "size_in_bytes": 383210348
+    },
+    {
+      "id": 9156956975,
+      "name": "_playwright-slack-result-chromium",
+      "expired": true,
+      "size_in_bytes": 919
+    },
+    {
+      "id": 9156956331,
+      "name": "playwright-test-results-chromium-staging",
+      "expired": true,
+      "size_in_bytes": 481513926
+    },
+    {
+      "id": 9156948077,
+      "name": "playwright-report-chromium-staging",
+      "expired": false,
+      "size_in_bytes": 482142263
+    },
+    {
+      "id": 9156795399,
+      "name": "_playwright-slack-result-chromium-mobile",
+      "expired": true,
+      "size_in_bytes": 982
+    },
+    {
+      "id": 9156794706,
+      "name": "playwright-test-results-chromium-mobile-staging",
+      "expired": true,
+      "size_in_bytes": 528783309
+    },
+    {
+      "id": 9156785312,
+      "name": "playwright-report-chromium-mobile-staging",
+      "expired": false,
+      "size_in_bytes": 528769018
+    }
+  ]
+}

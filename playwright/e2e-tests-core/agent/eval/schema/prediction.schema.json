@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deriv.com/playwright/healer-eval/prediction.schema.json",
+  "title": "Healer eval prediction",
+  "type": "object",
+  "required": ["id", "artifact"],
+  "properties": {
+    "id": { "type": "string" },
+    "tools": { "type": "array", "items": { "type": "string" } },
+    "commands": { "type": "array", "items": { "type": "string" } },
+    "reads": { "type": "array", "items": { "type": "string" } },
+    "writes": { "type": "array", "items": { "type": "string" } },
+    "artifact": { "type": "string", "enum": ["no-change", "pr-body", "none", "both"] },
+    "artifactText": { "type": "string" },
+    "diff": { "type": "string" }
+  }
+}

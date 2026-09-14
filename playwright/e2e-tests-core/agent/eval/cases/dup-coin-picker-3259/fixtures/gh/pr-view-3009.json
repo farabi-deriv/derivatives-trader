@@ -1,0 +1,11 @@
+{
+  "baseRefName": "main",
+  "body": "## Failing test case(s)\n\n- [VERIFY deposit via USDT_\\<Network\\> wallet skips network picker and completes](https://app.testdino.com/projects/project_69fc32c04a820df27cf28ac2/runs/test_run_8807bdb11c6a6fc2ed3875c6/case/873ac3671f06d86afe87-66accd7096243e0ef37d) (chromium-mobile, run 5771)\n- [VERIFY USD Wallet row is excluded from the deposit coin list](https://app.testdino.com/projects/project_69fc32c04a820df27cf28ac2/runs/test_run_8807bdb11c6a6fc2ed3875c6/case/873ac3671f06d86afe87-61ddf5b0121e091eede3) (chromium-mobile, run 5771)\n\n## What is failing\n\n`verifyDepositCoinListVisible()` asserts `getByTestId('exchange-deposit-wallet-picker')` is visible, but the picker is absent from the DOM when `isRateUnavailable=true` (market data error state), which replaces the picker with the rate-unavailable screen.\n\n## Evidence\n\n`src/features/crypto-exchange/components/shared/crypto-exchange-wallet-coin-list.tsx` renders the picker inside a ternary: `isRateUnavailable ? <rate-unavailable-div> : <picker-div>` — so `exchange-deposit-wallet-picker` is never in the DOM when market data fails. The sibling method `waitForDepositCoinListItemsLoaded()` already handles all three terminal states (\"rows\", \"no_funds\", \"rate_unavailable\") and the test correctly skips on rate_unavailable — but it never reaches that check because `verifyDepositCoinListVisible()` times out first. Playwright CLI verify was blocked by permission restrictions in this healing session; the fix is verified structurally through source analysis.\n\n## Changes\n\n- `playwright/pages/CryptoExchangePage.ts`: `verifyDepositCoinListVisible()` — changed picker assertion to use `.or(this.depositRateUnavailable)` so it accepts either the picker (normal/loading state) or the rate-unavailable screen (market data error state).\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "closedAt": "2026-08-14T03:11:39Z",
+  "createdAt": "2026-08-13T22:21:04Z",
+  "headRefName": "claude/playwright-healing-ui-change-7390fdb56314",
+  "mergedAt": null,
+  "number": 3009,
+  "state": "CLOSED",
+  "title": "Playwright Auto Healer Fix: Error: Deposit coin list picker container should be visible"
+}

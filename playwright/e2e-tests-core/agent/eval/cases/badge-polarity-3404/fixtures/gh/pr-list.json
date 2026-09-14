@@ -1,0 +1,202 @@
+[
+  {
+    "number": 3403,
+    "title": "test(portfolio): G-PF-18 UAE migrated payment-transactions history (Flow 24)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/portfolio-uae-migrated-transaction-history",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-31T08:37:53Z",
+    "updatedAt": "2026-09-01T01:28:04Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3403",
+    "labels": []
+  },
+  {
+    "number": 3402,
+    "title": "test(portfolio): G-PF-17/20/23 paused modal, local time, Apple Pay card",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/portfolio-paused-tz-apple-pay",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-31T08:18:17Z",
+    "updatedAt": "2026-09-01T01:24:17Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3402",
+    "labels": []
+  },
+  {
+    "number": 3401,
+    "title": "test(profile): add phone number entry and OTP verification specs",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/profile-phone-number-verification",
+    "author": {
+      "login": "saumya-deriv"
+    },
+    "createdAt": "2026-08-31T08:04:21Z",
+    "updatedAt": "2026-09-01T01:24:58Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3401",
+    "labels": []
+  },
+  {
+    "number": 3400,
+    "title": "test(portfolio): withdrawal fee detail + pending entry (G-PF-27/28)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/portfolio-wallet-withdrawal-fees",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-31T06:57:30Z",
+    "updatedAt": "2026-09-01T01:24:08Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3400",
+    "labels": []
+  },
+  {
+    "number": 3399,
+    "title": "test(portfolio): add G-PF-19 same-currency transfer fee spec (Flow 18)",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/portfolio-same-currency-transfer-fees",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-31T06:03:06Z",
+    "updatedAt": "2026-09-01T01:23:24Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3399",
+    "labels": []
+  },
+  {
+    "number": 3398,
+    "title": "test(portfolio): Flow 10 activate CTAs + G-PF-1 wallet empty state",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "test/portfolio-activate-cta-empty-wallet",
+    "author": {
+      "login": "adithyasunoj-deriv"
+    },
+    "createdAt": "2026-08-31T05:31:39Z",
+    "updatedAt": "2026-09-01T01:22:52Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3398",
+    "labels": []
+  },
+  {
+    "number": 3397,
+    "title": "Playwright Auto Healer Fix: TimeoutError: locator.click: Timeout 45000ms exceeded.",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-0ed72be11b9b",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-30T23:25:52Z",
+    "updatedAt": "2026-09-01T01:17:21Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3397",
+    "labels": []
+  },
+  {
+    "number": 3396,
+    "title": "fix(onboarding): replace history entry on wizard back instead of pushing",
+    "state": "OPEN",
+    "isDraft": false,
+    "headRefName": "claude/onboarding-back-replace-history",
+    "author": {
+      "login": "lexi-github-app[bot]"
+    },
+    "createdAt": "2026-08-29T04:44:45Z",
+    "updatedAt": "2026-09-01T02:50:13Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3396",
+    "labels": [
+      {
+        "name": "needs-human"
+      }
+    ]
+  },
+  {
+    "number": 3395,
+    "title": "fix: deposit crypto network-chooser list cannot be scrolled",
+    "state": "OPEN",
+    "isDraft": false,
+    "headRefName": "claude/deposit-crypto-chooser-scroll",
+    "author": {
+      "login": "lexi-github-app[bot]"
+    },
+    "createdAt": "2026-08-29T04:40:23Z",
+    "updatedAt": "2026-08-29T05:00:19Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3395",
+    "labels": []
+  },
+  {
+    "number": 3318,
+    "title": "Playwright Auto Healer Fix: Error: Transaction amount field should show \"10.40 USD\"",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-8295c5785b3c",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-26T23:41:11Z",
+    "updatedAt": "2026-08-27T02:02:58Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3318",
+    "labels": []
+  },
+  {
+    "number": 3317,
+    "title": "Playwright Auto Healer Fix: TimeoutError: locator.click: Timeout 45000ms exceeded.",
+    "state": "CLOSED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-de97a6eb0425",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-26T23:33:11Z",
+    "updatedAt": "2026-08-27T02:01:47Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3317",
+    "labels": []
+  },
+  {
+    "number": 3279,
+    "title": "Playwright Auto Healer Fix: Error: \"Trade now\" button should be visible on the Trading specifications page",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-a69158ff1e94",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-25T23:00:14Z",
+    "updatedAt": "2026-08-26T01:55:40Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3279",
+    "labels": []
+  },
+  {
+    "number": 3278,
+    "title": "Playwright Auto Healer Fix: Error: Symbol label should be visible for symbol \"CRASH500\"",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-3c59ba3bb928",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-25T22:55:25Z",
+    "updatedAt": "2026-08-26T01:54:49Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3278",
+    "labels": []
+  },
+  {
+    "number": 3277,
+    "title": "Playwright Auto Healer Fix: Error: 2FA success screen should cover the dashboard",
+    "state": "MERGED",
+    "isDraft": false,
+    "headRefName": "claude/playwright-healing-ui-change-41508d633ac6",
+    "author": {
+      "login": "github-actions[bot]"
+    },
+    "createdAt": "2026-08-25T22:52:04Z",
+    "updatedAt": "2026-08-26T01:54:04Z",
+    "url": "https://github.com/deriv-com/home-app/pull/3277",
+    "labels": []
+  }
+]

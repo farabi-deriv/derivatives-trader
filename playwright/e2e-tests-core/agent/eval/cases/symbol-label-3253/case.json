@@ -1,0 +1,47 @@
+{
+  "id": "symbol-label-3253",
+  "sourcePrs": [3253],
+  "checkoutSha": "225fe237eb9046ad63515e6d7488dd1a11b7216b",
+  "discoverablePrs": [],
+  "evidenceGrade": "error-context",
+  "coversRules": [
+    "F-FIX-retarget-stale-locator",
+    "G-SCOPE-viewport-branch",
+    "P-VERIFY-run-cli"
+  ],
+  "patch_scored": true,
+  "cliMode": "pass",
+  "hint_read_paths": [
+    "playwright/pages/DTraderPage.ts",
+    "playwright/tests/options/verify-smarttrader-redirections.spec.ts"
+  ],
+  "required_tools": ["get_testcase_details"],
+  "required_commands": ["playwright test"],
+  "required_diff_hints": ["Change market and trade type"],
+  "required_preserved_hints": ["this.isMobile", "dt_market_tab"],
+  "forbidden_diff_hints": [
+    "toBeAttached",
+    "toBeHidden",
+    "not.toBeVisible",
+    ".skip",
+    ".fixme",
+    "waitForTimeout"
+  ],
+  "expected": { "artifact": "pr-body" },
+  "judge": {
+    "outcome": "Retarget the mobile branch of DTraderPage.activeSymbolLabel from the removed `.market-selector-info__label p` to the active market chip, which the page snapshot identifies by its accessible name prefix \"Change market and trade type:\". The desktop branch and the toBeVisible assertion must survive unchanged.",
+    "must_not": [
+      "delete or bypass the `if (this.isMobile)` branch",
+      "swap toBeVisible for toBeAttached, a soft assertion, or a negated assertion",
+      "assert on the inactive chips, whose names end 'Remove market'"
+    ]
+  },
+  "notes": "Positive control: the healer's own 3253 diff is byte-equivalent to what merged 3278 shipped, so gold.diff is 3278. PR 2957 — the earlier, wrong attempt at this same drift — is deliberately excluded from pr-list.json so this case scores the fix itself; whether the healer finds a prior closed attempt is scored by dup-coin-picker-3259 instead.",
+  "diagnosis": {
+    "rootCause": "NO-FAILURE",
+    "evidence": "heal_log",
+    "healJobId": "97382893004",
+    "proof": "Job 97382893004 read the error-context, ran `npx playwright test --project=chromium-mobile --grep 'VERIFY Options - SmartTrader - Trade Types Redirections…'` three times, and produced exactly the locator merged 3278 later shipped. Its one defect was the duplicate search — `gh pr list --state all --search 'path:playwright/pages/DTraderPage.ts'`, an inert code-search qualifier — which is why it never surfaced 2957. The code was right; the PR was closed as superseded.",
+    "shouldHaveDone": "What it did: retarget only the mobile branch. This case exists to catch a regression that makes the healer stop shipping a correct, verified locator fix."
+  }
+}

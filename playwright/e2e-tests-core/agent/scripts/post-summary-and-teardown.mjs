@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Post the aggregate Slack healing summary and remove internal workflow artifacts.
+ * Post the aggregate Slack healing summary and delete internal workflow artifacts.
  */
 import fs from "node:fs";
 import { getSlackPermalink, postSlackMessage } from "./slack-utils.mjs";
@@ -95,13 +95,13 @@ const githubRequestJson = async (url, options = {}) => {
   return body;
 };
 
+// Matches `_playwright-healing-groups` and `_playwright-healing-group-<id>`.
+// Public zips (`playwright-healing-summary`, `playwright-healing-groups`) stay.
 const shouldDeleteArtifact = (artifact) =>
-  artifact.name === "_playwright-healing-groups" ||
-  artifact.name?.startsWith("_playwright-healing-fix-") ||
-  artifact.name?.startsWith("_playwright-healing-outcome-");
+  String(artifact?.name || "").startsWith("_playwright-healing-group");
 
 const teardownArtifacts = async () => {
-  console.log("\n== Teardown healing artifacts ==");
+  console.log("\n== Teardown internal healing artifacts ==");
   const {
     GH_TOKEN,
     RUN_ID,

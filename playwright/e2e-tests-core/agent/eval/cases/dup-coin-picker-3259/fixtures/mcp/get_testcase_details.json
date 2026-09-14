@@ -1,0 +1,794 @@
+{
+  "items": [
+    {
+      "pw_test_id": "873ac3671f06d86afe87-61ddf5b0121e091eede3",
+      "suite_id": "test_suite_e32fb478d019c5d128da871e",
+      "title": "VERIFY USD Wallet row is excluded from the deposit coin list",
+      "title_path": [
+        "",
+        "chromium-mobile",
+        "crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts",
+        "Crypto Exchange — Deposit via Deriv Wallet",
+        "VERIFY USD Wallet row is excluded from the deposit coin list"
+      ],
+      "location": {
+        "file": "crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts",
+        "line": 181,
+        "column": 9
+      },
+      "tags": [
+        "@desktop",
+        "@mobile",
+        "@crypto-exchange"
+      ],
+      "status": "failed",
+      "platform": "chromium-mobile",
+      "attempts": [
+        {
+          "attempt_id": "test_case_a4f5e7ced45d94bc999ab1dc",
+          "attempt_index": 0,
+          "status": "failed",
+          "outcome": "unexpected",
+          "duration_ms": 57726,
+          "start_time": "2026-08-24T21:08:36.092Z",
+          "worker_index": 1,
+          "parallel_index": 1,
+          "shard_index": null,
+          "split_index": null,
+          "errors": [
+            {
+              "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\nDeposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate",
+              "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\nDeposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1076:11)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:52",
+              "snippet": "   at ../pages/CryptoExchangePage.ts:1076\n\n\u001b[0m \u001b[90m 1074 |\u001b[39m         timeout\u001b[33m,\u001b[39m\n \u001b[90m 1075 |\u001b[39m       }\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1076 |\u001b[39m     )\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoBe(\u001b[32m\"\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m      |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1077 |\u001b[39m     \u001b[36mreturn\u001b[39m state \u001b[36mas\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 1078 |\u001b[39m   }\n \u001b[90m 1079 |\u001b[39m\u001b[0m",
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                "line": 1076,
+                "column": 11
+              }
+            }
+          ],
+          "attachments": [
+            {
+              "name": "screenshot",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/835928a51465b423-test-failed-1.png",
+              "contentType": "image/png"
+            },
+            {
+              "name": "video",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/9bff57386817e34a-video.webm",
+              "contentType": "video/webm"
+            },
+            {
+              "name": "error-context",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/1cdcbbcc3a2e3207-error-context.md",
+              "contentType": "text/markdown"
+            },
+            {
+              "name": "trace",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/b9074f78583ef5fa-trace.zip",
+              "contentType": "application/zip"
+            }
+          ],
+          "annotations": [],
+          "logs": [],
+          "steps": [
+            {
+              "id": "test_step_cc754f5f9cc8330c8922140a",
+              "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+              "category": "expect",
+              "status": "failed",
+              "duration_ms": 19190,
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                "line": 1076,
+                "column": 11
+              },
+              "error": {
+                "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\nDeposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate",
+                "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\nDeposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1076:11)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:52",
+                "snippet": "   at ../pages/CryptoExchangePage.ts:1076\n\n\u001b[0m \u001b[90m 1074 |\u001b[39m         timeout\u001b[33m,\u001b[39m\n \u001b[90m 1075 |\u001b[39m       }\u001b[33m,\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1076 |\u001b[39m     )\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoBe(\u001b[32m\"\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m      |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1077 |\u001b[39m     \u001b[36mreturn\u001b[39m state \u001b[36mas\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 1078 |\u001b[39m   }\n \u001b[90m 1079 |\u001b[39m\u001b[0m",
+                "location": {
+                  "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                  "line": 1076,
+                  "column": 11
+                }
+              },
+              "attachments": [],
+              "annotations": [],
+              "children": [
+                {
+                  "id": "test_step_36e8f6502203278f9b2e3298",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 1,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_ec6b2f2868e773176073b37f",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_08dd277ed9c9ddaf1c6c7927",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_ad64034d179fc8359045ee9a",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_79439fadc169e224205254c1",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_3ba1fc6da3a8524807e7a9f1",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 1,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_a19ccc61e2b6cb7192669723",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_0db493149257204cf4102996",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_461af030a779685a6af9179a",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_3489d467243fccc7bd83e1d5",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_88c95ad55798e39195b357e1",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_6f3ff424df760913bdd4cc92",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_e4cd7c7c2e17400842099841",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_dc39924c25127a12d21d8589",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_eb977a2e4d6b7ef690177849",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_38af28ee3b7cfe230941bcf5",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_c727be94474599dd9f94cefd",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_2d20b2826197b730b94aaba2",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_00f3d6d9e5c80201dd071c6e",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_232f79defc609c143f0f3cd1",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_42c6b3ae9fdef9e8c3c0f2e0",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                },
+                {
+                  "id": "test_step_28c056644f4330d5f47eb5ba",
+                  "title": "Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)",
+                  "category": "expect",
+                  "status": "failed",
+                  "duration_ms": 0,
+                  "location": {
+                    "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                    "line": 1061,
+                    "column": 5
+                  },
+                  "error": {
+                    "message": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m",
+                    "stack": "Error: Deposit coin list should finish loading (rows, no-funds sheet, or rate-unavailable screen)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mnot\u001b[2m.\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: not \u001b[32m\"\"\u001b[39m\n    at CryptoExchangePage.waitForDepositCoinListItemsLoaded (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1061:5)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:218:27",
+                    "snippet": "   at ../pages/CryptoExchangePage.ts:1061\n\n\u001b[0m \u001b[90m 1059 |\u001b[39m   \u001b[36masync\u001b[39m waitForDepositCoinListItemsLoaded(timeout \u001b[33m=\u001b[39m \u001b[35m20\u001b[39m_000)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m\u001b[33m>\u001b[39m {\n \u001b[90m 1060 |\u001b[39m     \u001b[36mlet\u001b[39m state\u001b[33m:\u001b[39m \u001b[32m\"rows\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"no_funds\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"rate_unavailable\"\u001b[39m \u001b[33m|\u001b[39m \u001b[32m\"\"\u001b[39m \u001b[33m=\u001b[39m \u001b[32m\"\"\u001b[39m\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1061 |\u001b[39m     \u001b[36mawait\u001b[39m expect\u001b[33m.\u001b[39mpoll(\n \u001b[90m      |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1062 |\u001b[39m       \u001b[36masync\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 1063 |\u001b[39m         \u001b[36mconst\u001b[39m hasRow \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListFirstRow\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\n \u001b[90m 1064 |\u001b[39m         \u001b[36mconst\u001b[39m noFunds \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositNoFundsSheet\u001b[33m.\u001b[39misVisible()\u001b[33m;\u001b[39m\u001b[0m",
+                    "location": {
+                      "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                      "line": 1061,
+                      "column": 5
+                    }
+                  },
+                  "attachments": [],
+                  "annotations": [],
+                  "children": []
+                }
+              ]
+            }
+          ],
+          "action_traces": []
+        },
+        {
+          "attempt_id": "test_case_4c0fc1cd2a0fc150aef303ce",
+          "attempt_index": 1,
+          "status": "failed",
+          "outcome": "unexpected",
+          "duration_ms": 77749,
+          "start_time": "2026-08-24T21:09:38.15Z",
+          "worker_index": 9,
+          "parallel_index": 1,
+          "shard_index": null,
+          "split_index": null,
+          "errors": [
+            {
+              "message": "Error: Deposit coin list picker container should be visible\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('exchange-deposit-wallet-picker')\nExpected: visible\nTimeout: 45000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Deposit coin list picker container should be visible with timeout 45000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('exchange-deposit-wallet-picker')\u001b[22m\n",
+              "stack": "Error: Deposit coin list picker container should be visible\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('exchange-deposit-wallet-picker')\nExpected: visible\nTimeout: 45000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Deposit coin list picker container should be visible with timeout 45000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('exchange-deposit-wallet-picker')\u001b[22m\n\n    at CryptoExchangePage.verifyDepositCoinListVisible (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1037:7)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:210:9",
+              "snippet": "   at ../pages/CryptoExchangePage.ts:1037\n\n\u001b[0m \u001b[90m 1035 |\u001b[39m       \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListPicker\u001b[33m,\u001b[39m\n \u001b[90m 1036 |\u001b[39m       \u001b[32m\"Deposit coin list picker container should be visible\"\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1037 |\u001b[39m     )\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m      |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1038 |\u001b[39m   }\n \u001b[90m 1039 |\u001b[39m\n \u001b[90m 1040 |\u001b[39m   \u001b[90m/**\u001b[39m\u001b[0m",
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                "line": 1037,
+                "column": 7
+              }
+            }
+          ],
+          "attachments": [
+            {
+              "name": "screenshot",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/4fd0fb6454072783-test-failed-1.png",
+              "contentType": "image/png"
+            },
+            {
+              "name": "video",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/28925d10d4dfc366-video.webm",
+              "contentType": "video/webm"
+            },
+            {
+              "name": "error-context",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/404210f8bda61097-error-context.md",
+              "contentType": "text/markdown"
+            },
+            {
+              "name": "trace",
+              "blobKey": "project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/24eb3bba52328c58-trace.zip",
+              "contentType": "application/zip"
+            }
+          ],
+          "annotations": [],
+          "logs": [],
+          "steps": [
+            {
+              "id": "test_step_05a11142385d681dde465cbb",
+              "title": "Deposit coin list picker container should be visible getByTestId('exchange-deposit-wallet-picker')",
+              "category": "expect",
+              "status": "failed",
+              "duration_ms": 45006,
+              "location": {
+                "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                "line": 1037,
+                "column": 7
+              },
+              "error": {
+                "message": "Error: Deposit coin list picker container should be visible\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('exchange-deposit-wallet-picker')\nExpected: visible\nTimeout: 45000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Deposit coin list picker container should be visible with timeout 45000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('exchange-deposit-wallet-picker')\u001b[22m\n",
+                "stack": "Error: Deposit coin list picker container should be visible\n\n\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('exchange-deposit-wallet-picker')\nExpected: visible\nTimeout: 45000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Deposit coin list picker container should be visible with timeout 45000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('exchange-deposit-wallet-picker')\u001b[22m\n\n    at CryptoExchangePage.verifyDepositCoinListVisible (/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts:1037:7)\n    at /home/runner/work/home-app/home-app/playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts:210:9",
+                "snippet": "   at ../pages/CryptoExchangePage.ts:1037\n\n\u001b[0m \u001b[90m 1035 |\u001b[39m       \u001b[36mthis\u001b[39m\u001b[33m.\u001b[39mdepositCoinListPicker\u001b[33m,\u001b[39m\n \u001b[90m 1036 |\u001b[39m       \u001b[32m\"Deposit coin list picker container should be visible\"\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 1037 |\u001b[39m     )\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m      |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 1038 |\u001b[39m   }\n \u001b[90m 1039 |\u001b[39m\n \u001b[90m 1040 |\u001b[39m   \u001b[90m/**\u001b[39m\u001b[0m",
+                "location": {
+                  "file": "/home/runner/work/home-app/home-app/playwright/pages/CryptoExchangePage.ts",
+                  "line": 1037,
+                  "column": 7
+                }
+              },
+              "attachments": [],
+              "annotations": [],
+              "children": []
+            }
+          ],
+          "action_traces": []
+        }
+      ],
+      "testrun_id": "test_run_5438e60833c88eb09be90f1c",
+      "evidence": [
+        {
+          "name": "screenshot",
+          "content_type": "image/png",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/835928a51465b423-test-failed-1.png?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780326554Z"
+        },
+        {
+          "name": "video",
+          "content_type": "video/webm",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/9bff57386817e34a-video.webm?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780360154Z"
+        },
+        {
+          "name": "error-context",
+          "content_type": "text/markdown",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/1cdcbbcc3a2e3207-error-context.md?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780370853Z"
+        },
+        {
+          "name": "trace",
+          "content_type": "application/zip",
+          "attempt_index": 0,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/b9074f78583ef5fa-trace.zip?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780382853Z"
+        },
+        {
+          "name": "screenshot",
+          "content_type": "image/png",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/4fd0fb6454072783-test-failed-1.png?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780394653Z"
+        },
+        {
+          "name": "video",
+          "content_type": "video/webm",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/28925d10d4dfc366-video.webm?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780403653Z"
+        },
+        {
+          "name": "error-context",
+          "content_type": "text/markdown",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/404210f8bda61097-error-context.md?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780410853Z"
+        },
+        {
+          "name": "trace",
+          "content_type": "application/zip",
+          "attempt_index": 1,
+          "url": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/24eb3bba52328c58-trace.zip?<redacted-sas>",
+          "expires_at": "2026-09-02T10:58:41.780418253Z"
+        }
+      ],
+      "traceDownloadUrl": "https://tdstorageus.blob.core.windows.net/artifacts-prd/project_69fc32c04a820df27cf28ac2/70f648cf-a810-4293-a3a0-12831ad41786/873ac3671f06d86afe87-61ddf5b0121e091eede3/b9074f78583ef5fa-trace.zip?<redacted-sas>",
+      "traceExpiresAt": "2026-09-02T10:58:41.780382853Z"
+    }
+  ]
+}

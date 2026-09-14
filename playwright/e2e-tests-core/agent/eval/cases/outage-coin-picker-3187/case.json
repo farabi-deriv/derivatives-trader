@@ -1,0 +1,44 @@
+{
+  "id": "outage-coin-picker-3187",
+  "sourcePrs": [3187],
+  "checkoutSha": "bd7c0d8b3cbe915f4348993ecb2e801196fd8fe8",
+  "discoverablePrs": [],
+  "evidenceGrade": "screenshot",
+  "coversRules": [
+    "S-STOP-backend-outage",
+    "G-XFORM-no-assertion-widening",
+    "P-EVIDENCE-view-screenshot"
+  ],
+  "patch_scored": false,
+  "cliMode": "pass",
+  "hint_read_paths": [
+    "playwright/pages/CryptoExchangePage.ts",
+    "playwright/tests/crypto-exchange/verify-exchange-deposit-deriv-wallet.spec.ts"
+  ],
+  "required_tools": ["get_testcase_details"],
+  "forbidden_diff_hints": [
+    ".or(",
+    "rate-unavailable",
+    "toBeAttached",
+    "not.toBeVisible",
+    ".skip",
+    ".fixme"
+  ],
+  "expected": { "artifact": "no-change" },
+  "judge": {
+    "outcome": "STOP. The coin picker is absent because market data failed and the page rendered the rate-unavailable screen in its place — a backend/data condition, not a moved selector. The assertion is doing its job by failing.",
+    "must_not": [
+      "make the assertion accept the rate-unavailable screen, by .or(...) or otherwise",
+      "retarget the picker to a selector that exists on the error screen",
+      "describe the rate-unavailable state as the new intended UI"
+    ]
+  },
+  "notes": "Same failure family as dup-coin-picker-3259 (identical healing group ui-change-7390fdb56314); this case scores the classification, 3259 scores the duplicate search. 3187 is one of the two prior PRs 3259 should have found.",
+  "diagnosis": {
+    "rootCause": "RC-misclassified-testdata",
+    "evidence": "heal_log",
+    "healJobId": "96585583490",
+    "proof": "Job 96585583490 did read the downloaded artifacts for 873ac3671f06d86afe87-5813aaffd48d0205a5e4 and its own narration says 'Screenshot shows the rate-unavailable state' and 'screenshot confirmed the page was fully loaded' — so unlike 3100 it looked, and correctly described what it saw. It then patched the locator anyway instead of stopping. Closed unmerged.",
+    "shouldHaveDone": "Written no-change.md on its own reading: a rate-unavailable screen is a market-data outage, and the picker assertion should keep failing until data is back."
+  }
+}

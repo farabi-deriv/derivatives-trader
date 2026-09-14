@@ -1,0 +1,39 @@
+diff --git a/playwright/e2e-tests-core b/playwright/e2e-tests-core
+index a468c99ee..834249b74 160000
+--- a/playwright/e2e-tests-core
++++ b/playwright/e2e-tests-core
+@@ -1 +1 @@
+-Subproject commit a468c99ee1b28d2f7c6ed084b5760348a43262e0
++Subproject commit 834249b74c7be32e07858d716c5bf8042d8c9009
+diff --git a/playwright/pages/CryptoExchangePage.ts b/playwright/pages/CryptoExchangePage.ts
+index 850b566f4..ad1557955 100644
+--- a/playwright/pages/CryptoExchangePage.ts
++++ b/playwright/pages/CryptoExchangePage.ts
+@@ -1019,11 +1019,11 @@ export class CryptoExchangePage {
+   /**
+    * Verify the deposit wallet coin list screen is rendered.
+    *
+-   * NOTE: This only confirms the shell (title + picker container) is present.
+-   * The picker container is rendered during the loading-skeleton phase too, so
+-   * it is NOT a reliable signal that coin rows have loaded. Call
+-   * {@link waitForDepositCoinListItemsLoaded} before asserting on individual
+-   * rows (e.g. USD exclusion).
++   * NOTE: This only confirms the shell (title + content area) is present.
++   * The picker renders during the loading-skeleton phase and when rows are
++   * available; if market-data fails, the rate-unavailable screen replaces it —
++   * this method accepts either. Call {@link waitForDepositCoinListItemsLoaded}
++   * before asserting on individual rows (e.g. USD exclusion).
+    */
+   async verifyDepositCoinListVisible(): Promise<void> {
+     await expect(
+@@ -1032,8 +1032,8 @@ export class CryptoExchangePage {
+     ).toBeVisible({ timeout: 15_000 });
+ 
+     await expect(
+-      this.depositCoinListPicker,
+-      "Deposit coin list picker container should be visible"
++      this.depositCoinListPicker.or(this.depositRateUnavailable),
++      "Deposit coin list picker or rate-unavailable screen should be visible"
+     ).toBeVisible();
+   }
+ 

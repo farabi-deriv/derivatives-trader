@@ -1,0 +1,20 @@
+{
+  "testcase_id": "9dd5607cacbefc6816c6-7ab1090d834996cca2fe",
+  "history": [
+    {
+      "status": "passed",
+      "at": "2026-08-06T20:31:00Z"
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-11T21:02:00Z",
+      "error": "Symbol label should be visible for symbol \"1HZ50V\""
+    },
+    {
+      "status": "failed",
+      "at": "2026-08-12T21:14:00Z",
+      "error": "Symbol label should be visible for symbol \"1HZ50V\""
+    }
+  ],
+  "laterMatchingPass": false
+}

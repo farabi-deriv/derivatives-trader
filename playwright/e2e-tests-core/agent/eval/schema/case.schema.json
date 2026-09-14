@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deriv-com/home-app/playwright/e2e-tests-core/agent/eval/schema/case.schema.json",
+  "title": "Healer eval case.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "id",
+    "sourcePrs",
+    "checkoutSha",
+    "evidenceGrade",
+    "coversRules",
+    "patch_scored",
+    "expected",
+    "diagnosis"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "sourcePrs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "integer" }
+    },
+    "checkoutSha": { "type": "string", "minLength": 7 },
+    "discoverablePrs": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "evidenceGrade": { "enum": ["screenshot", "error-context", "error"] },
+    "coversRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "patch_scored": { "type": "boolean" },
+    "cliMode": { "enum": ["pass", "blocked"] },
+    "hint_read_paths": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_tools": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_diff_hints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_preserved_hints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbidden_diff_hints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expected": {
+      "type": "object",
+      "required": ["artifact"],
+      "properties": {
+        "artifact": { "enum": ["no-change", "pr-body"] }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "properties": {
+        "outcome": { "type": "string" },
+        "must_not": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": { "type": "string" },
+    "diagnosis": {
+      "type": "object",
+      "required": ["rootCause"],
+      "properties": {
+        "rootCause": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "string" },
+        "healJobId": { "type": "string" },
+        "proof": { "type": "string" },
+        "shouldHaveDone": { "type": "string" }
+      }
+    }
+  }
+}

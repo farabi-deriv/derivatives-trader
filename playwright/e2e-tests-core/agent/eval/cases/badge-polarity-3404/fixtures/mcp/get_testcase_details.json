@@ -1,0 +1,10 @@
+{
+  "id": "b3090e016f4c04b490d6-db49d08f722b36c6ac26",
+  "title": "Outstanding financial assessment row should carry a status badge",
+  "status": "failed",
+  "testRunId": "test_run_af8f9e3ec03a493b0ec5080b",
+  "url": "https://app.testdino.com/org_69fc32be4a820df27cf28aa2/projects/project_69fc32c04a820df27cf28ac2/test-runs/test_run_af8f9e3ec03a493b0ec5080b/b3090e016f4c04b490d6-db49d08f722b36c6ac26",
+  "error": "Outstanding financial assessment row should carry a status badge",
+  "spec": "playwright/tests/transfer/verify-transfer-mt5-fa-gate.spec.ts",
+  "projectId": "project_69fc32c04a820df27cf28ac2"
+}

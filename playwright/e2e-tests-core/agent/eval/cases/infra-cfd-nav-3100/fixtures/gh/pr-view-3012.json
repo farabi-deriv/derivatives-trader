@@ -1,0 +1,18 @@
+{
+  "number": 3012,
+  "title": "Playwright Auto Healer Fix: Error: OTP Digit 1 input should hold pasted digit \"1\"",
+  "state": "MERGED",
+  "isDraft": false,
+  "headRefName": "claude/playwright-healing-ui-change-aedb7d6a26d6",
+  "author": {
+    "login": "github-actions[bot]"
+  },
+  "createdAt": "2026-08-13T22:31:05Z",
+  "updatedAt": "2026-08-14T03:13:44Z",
+  "url": "https://github.com/deriv-com/home-app/pull/3012",
+  "labels": [],
+  "body": "## Fix: cross-browser OTP paste simulation in `pasteOTP` (Firefox ClipboardEvent)\n\n### Healing group\n`020-ui-change-aedb7d6a26d6-error-otp-digit-1-input-should-hold-pasted-digit`\n\n### Affected test\n`playwright/tests/auth/verify-otp-code-paste.spec.ts`\n- `VERIFY pasting a full code into OTP box 1 distributes it across all boxes and completes login`\n- Project: `firefox`\n- TestDino case: `f377bc0f884a97ca81f8-eaef9008bdd7e7f91434`\n\n### Root cause\n`LoginPage.pasteOTP` dispatched a synthetic `ClipboardEvent(\"paste\", { clipboardData })`. Per MDN, **Firefox ignores the `clipboardData` constructor parameter** — `event.clipboardData` is `null` in Firefox event handlers for synthetic paste events (Chromium and WebKit do honour it). Quill's `Code` component reads `event.clipboardData?.getData('text/plain')` in its `onPaste` handler; with `null` returned, no digit distribution occurs and all 6 OTP boxes stay empty.\n\n### Classification\n**EXPECTED PRODUCT CHANGE (Playwright mechanism drift)** — the product code (`OtpCodeInput` / Quill `Code`) still implements OTP paste distribution and that code path is unchanged. The test helper was using a Firefox-incompatible API.\n\n### Fix (`playwright/pages/LoginPage.ts`)\n```diff\n-      el.dispatchEvent(\n-        new ClipboardEvent(\"paste\", { bubbles: true, cancelable: true, clipboardData })\n-      );\n+      const event = new ClipboardEvent(\"paste\", { bubbles: true, cancelable: true });\n+      // Firefox ignores the clipboardData constructor parameter (unlike Chromium/WebKit).\n+      // Override via Object.defineProperty so Quill's paste handler reads it cross-browser.\n+      Object.defineProperty(event, \"clipboardData\", { get: () => clipboardData });\n+      el.dispatchEvent(event);\n```\n\n`Object.defineProperty` creates an own-property on the specific event instance that shadows `ClipboardEvent.prototype.clipboardData`, making the `DataTransfer` readable cross-browser. This keeps the test exercising Quill's native `onPaste` → digit-distribution path (unchanged in `src/`).\n\n### Playwright impact\n- `playwright/tests/auth/verify-otp-code-paste.spec.ts` — Firefox project — fix targets the original failure signature\n\n### Phase 7 CLI verification\nSandbox permission restrictions prevented automated CLI execution. The fix is a well-documented cross-browser pattern: `Object.defineProperty` on a `ClipboardEvent` instance is standard JS that works in all engines. Verification requires a staging environment with `TEST_EMAIL`, `MAILISK_API_KEY`, and `TEST_PASSWORD` set.\n\nSuggested verification command:\n```bash\nTEST_ENV=staging npx playwright test \\\n  --grep 'VERIFY pasting a full code into OTP box 1' \\\n  playwright/tests/auth/verify-otp-code-paste.spec.ts \\\n  --project=firefox \\\n  --reporter=list\n```\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "baseRefName": "main",
+  "mergedAt": "2026-08-14T03:13:41Z",
+  "closedAt": "2026-08-14T03:13:41Z"
+}

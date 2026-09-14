@@ -1,0 +1,18 @@
+{
+  "number": 3397,
+  "title": "Playwright Auto Healer Fix: TimeoutError: locator.click: Timeout 45000ms exceeded.",
+  "state": "CLOSED",
+  "isDraft": false,
+  "headRefName": "claude/playwright-healing-ui-change-0ed72be11b9b",
+  "author": {
+    "login": "github-actions[bot]"
+  },
+  "createdAt": "2026-08-30T23:25:52Z",
+  "updatedAt": "2026-09-01T01:17:21Z",
+  "url": "https://github.com/deriv-com/home-app/pull/3397",
+  "labels": [],
+  "body": "## Failing test case(s)\n`transfer/verify-transfer-trading-start-popup.spec.ts` — \"VERIFY cTrader variant shows cTrader-specific popup content\" (chromium desktop, chromium-mobile).\n\n## What is failing\n`selectToAccount()` was passed a stale/mismatched account name resolved via `resolveCTraderAccountName(\"to\")` before the To account was ever selected, so the picker click searched for a row that didn't exist and timed out at 45000ms.\n\n## Evidence\nCI artifact screenshot and accessibility snapshot for the failing run show the To picker fully loaded with real rows (including \"cTrader\"), and no matching entry for the name the test was searching for — confirming a test-side misuse, not a loading/skeleton state or a product change.\n\n## Changes\nRemoved the unnecessary `resolveCTraderAccountName` pre-selection call and replaced it with a direct `selectToAccount(\"cTrader\")`, matching the sibling MT5 tests in the same file. Verified passing via Playwright CLI on both chromium and chromium-mobile.\n\n> [!NOTE]\n> This PR was opened after the healer agent's sample Playwright CLI verification (pass, or original signature fixed with an unrelated/downstream failure). Review the diff before merging.\n",
+  "baseRefName": "main",
+  "mergedAt": null,
+  "closedAt": "2026-09-01T01:17:16Z"
+}

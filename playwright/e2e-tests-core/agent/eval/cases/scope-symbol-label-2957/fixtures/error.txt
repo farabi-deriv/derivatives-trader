@@ -1,0 +1,15 @@
+Error: Symbol label should be visible for symbol "1HZ50V"
+
+expect(locator).toBeVisible() failed
+
+Locator: locator('.market-selector-info__label p').first()
+Expected: visible
+Received: <element(s) not found>
+Timeout: 15000ms
+
+Call log:
+  - Symbol label should be visible for symbol "1HZ50V" with timeout 15000ms
+  - waiting for locator('.market-selector-info__label p').first()
+
+    at DTraderPage.verifyActiveSymbol (/home/runner/work/home-app/home-app/playwright/pages/DTraderPage.ts:58:38)
+    at /home/runner/work/home-app/home-app/playwright/tests/options/verify-dtrader-redirections.spec.ts:64:7

@@ -1,0 +1,70 @@
+diff --git a/playwright/e2e-tests-core b/playwright/e2e-tests-core
+index a468c99ee..5be07ca25 160000
+--- a/playwright/e2e-tests-core
++++ b/playwright/e2e-tests-core
+@@ -1 +1 @@
+-Subproject commit a468c99ee1b28d2f7c6ed084b5760348a43262e0
++Subproject commit 5be07ca25c1221b26793dde0f278877aedd9baf1
+diff --git a/playwright/pages/CashierPage.ts b/playwright/pages/CashierPage.ts
+index b5d284a06..3a1b21e36 100644
+--- a/playwright/pages/CashierPage.ts
++++ b/playwright/pages/CashierPage.ts
+@@ -710,6 +710,23 @@ export class CashierPage {
+         return this.page.getByTestId("deposit-payment-agent-img-empty");
+     }
+ 
++    /**
++     * "Share your real name" modal on the Payment Agent deposit page.
++     * Appears on first visit to `/deposit/payment-agent` for real accounts.
++     * `data-testid="deposit-payment-agent-modal-share-real-name"`
++     */
++    get shareRealNameModal(): Locator {
++        return this.page.getByTestId("deposit-payment-agent-modal-share-real-name");
++    }
++
++    /**
++     * "Maybe later" button inside the "Share your real name" modal.
++     * `data-testid="deposit-payment-agent-modal-share-real-name-btn-later"`
++     */
++    get shareRealNameModalMaybeLaterButton(): Locator {
++        return this.page.getByTestId("deposit-payment-agent-modal-share-real-name-btn-later");
++    }
++
+     /**
+      * "Complete your profile setup" modal — appears on `/deposit` for demo
+      * accounts whose KYC is not complete (e.g. when clicking crypto).
+@@ -1116,6 +1133,22 @@ export class CashierPage {
+             '"Complete your profile setup" modal should be dismissed').not.toBeVisible();
+     }
+ 
++    /**
++     * Dismiss the "Share your real name" modal on the Payment Agent deposit page
++     * if it is currently visible — clicks "Maybe later" so the caller can continue.
++     * The modal is shown on first visit to /deposit/payment-agent for real accounts.
++     */
++    async dismissShareRealNameModalIfPresent(): Promise<void> {
++        const isVisible = await this.shareRealNameModal.isVisible();
++        if (isVisible) {
++            await this.shareRealNameModalMaybeLaterButton.click();
++            await expect(
++                this.shareRealNameModal,
++                '"Share your real name" modal should be dismissed',
++            ).not.toBeVisible();
++        }
++    }
++
+     /**
+      * Wait for and dismiss the "Try real trading" modal that appears when a
+      * demo / incomplete-PII account taps USD/EUR deposit.
+diff --git a/playwright/pages/HomePage.ts b/playwright/pages/HomePage.ts
+index 03a6857ed..19cf915cf 100644
+--- a/playwright/pages/HomePage.ts
++++ b/playwright/pages/HomePage.ts
+@@ -2797,6 +2797,7 @@ export class HomePage {
+     // 6c. Deposit section — Payment Agent → PA deposit page directly
+     await this.moreDrawerDepPaymentAgent.click();
+     await this.cashierPage.verifyPaymentAgentDepositPage();
++    await this.cashierPage.dismissShareRealNameModalIfPresent();
+     // Click back → deposit hub
+     await this.cashierPage.depositPaymentAgentBackButton.click();
+ 

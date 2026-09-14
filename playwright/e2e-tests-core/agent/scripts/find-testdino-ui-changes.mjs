@@ -7,7 +7,9 @@
  *
  * Required env:
  *   TESTDINO_ACCESS_TOKEN  Public API PAT (`td_pat_...`, public-api scope)
- *   TESTDINO_PROJECT_ID    Project ID (`project_...`)
+ *   TESTDINO_PROJECT_ID    Project ID (`project_...`). Repo variable.
+ *   TESTDINO_ORG_ID        Org ID (`org_...`). Repo variable. Used to build app.testdino.com deep links
+ *                          (API links.uiUrl is the old /runs/.../case/ router and is not used).
  *
  * Optional env:
  *   TESTDINO_LOOKBACK_HOURS  Lookback window, default 24
@@ -32,6 +34,7 @@ import path from "node:path";
 const {
   TESTDINO_ACCESS_TOKEN,
   TESTDINO_PROJECT_ID,
+  TESTDINO_ORG_ID,
   TESTDINO_LOOKBACK_HOURS = "24",
   TESTDINO_MAX_RUNS = "100",
   TESTDINO_BRANCH,
@@ -51,8 +54,10 @@ const {
 /** Trimmed filter values; empty/whitespace means "do not apply this filter". */
 const testdinoBranch = String(TESTDINO_BRANCH || "").trim();
 const testdinoEnvironment = String(TESTDINO_ENVIRONMENT || "").trim();
+const testdinoOrgId = String(TESTDINO_ORG_ID || "").trim();
 
 const PROJECT_RE = /^project_[a-zA-Z0-9_-]+$/;
+const ORG_RE = /^org_[a-zA-Z0-9_-]+$/;
 const PUBLIC_API_PREFIX = "/api/v1/public";
 const LIST_PAGE_LIMIT = 100; // Public API allowlist: 10 | 25 | 50 | 100
 const FAILED_RUN_STATUSES = new Set(["failed", "interrupted", "incomplete"]);
@@ -77,6 +82,7 @@ if (!TESTDINO_ACCESS_TOKEN.startsWith("td_pat_")) {
   fail("TESTDINO_ACCESS_TOKEN must be a public API PAT with the td_pat_ prefix (see https://docs.testdino.com/api-reference/quickstart).");
 }
 if (!PROJECT_RE.test(TESTDINO_PROJECT_ID ?? "")) fail("Missing or invalid TESTDINO_PROJECT_ID.");
+if (!ORG_RE.test(testdinoOrgId)) fail("Missing or invalid TESTDINO_ORG_ID.");
 
 const lookbackHours = Number(TESTDINO_LOOKBACK_HOURS);
 if (!Number.isFinite(lookbackHours) || lookbackHours <= 0) fail("TESTDINO_LOOKBACK_HOURS must be a positive number.");
@@ -154,7 +160,7 @@ const requestEnvelope = async (url) => {
         throw new Error(`HTTP ${res.status}: ${message}`);
       }
       // Live public API mixes envelopes:
-      // - { success, data } (token-info, context, test-cases)
+      // - { success, data } (token-info, debug-bundle, test-cases)
       // - { items, pagination } (test-runs list)
       // - bare resource object (test-run detail)
       if (body?.success === false) {
@@ -207,6 +213,22 @@ const requestPage = async (url) => {
 };
 
 const firstPresent = (...values) => values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
+/** Browser UI host. Deep links are built here; API `links.uiUrl` is the old /runs/.../case/ router. */
+const TESTDINO_APP_BASE_URL = String(process.env.TESTDINO_APP_BASE_URL || "https://app.testdino.com").replace(/\/$/, "");
+
+const constructedRunUiUrl = (runId) => {
+  const id = String(runId || "").trim();
+  if (!id || !ORG_RE.test(testdinoOrgId) || !TESTDINO_PROJECT_ID) return null;
+  return `${TESTDINO_APP_BASE_URL}/${testdinoOrgId}/projects/${TESTDINO_PROJECT_ID}/test-runs/${encodeURIComponent(id)}`;
+};
+
+const constructedCaseUiUrl = (runId, caseId) => {
+  const run = constructedRunUiUrl(runId);
+  const id = String(caseId || "").trim();
+  if (!run || !id) return null;
+  return `${run}/${encodeURIComponent(id)}`;
+};
 
 const normalizeRun = (run) => {
   if (!run || typeof run !== "object") return run;
@@ -267,7 +289,7 @@ const normalizeRun = (run) => {
 const runBranch = (run) => run?.metadata?.git?.branch ?? run?.branch ?? null;
 const runEnvironment = (run) =>
   run?.metadata?.git?.environment ?? run?.metadata?.ci?.environment?.name ?? run?.environment ?? null;
-const runUrl = (run) => run?.url || run?.links?.uiUrl || null;
+const runUrl = (run) => constructedRunUiUrl(run?.id || run?._id);
 const runKey = (run) => run?.id || run?._id || (run?.counter ? `counter:${run.counter}` : null);
 const arrayValues = (...values) => values.flatMap((value) => Array.isArray(value) ? value : []);
 const uniqueValues = (...values) => [
@@ -490,21 +512,8 @@ const attachSlackThreadMetadata = async (candidates) => {
   return { count: Object.keys(threadsByRunId).length, threadsByRunId };
 };
 
-const testCaseUrl = (run, testCase) => {
-  const baseRunUrl = runUrl(run);
-  const testCaseId = testCase?.id || testCase?._id;
-  if (!baseRunUrl || !testCaseId) return null;
-
-  try {
-    const url = new URL(baseRunUrl);
-    url.pathname = `${url.pathname.replace(/\/$/, "")}/${encodeURIComponent(testCaseId)}`;
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return null;
-  }
-};
+const testCaseUrl = (run, testCase) =>
+  constructedCaseUiUrl(run?.id || run?._id, testCase?.id || testCase?._id);
 
 const normalizeWhitespace = (value) => String(value || "").replace(/\s+/g, " ").trim();
 const firstLineMatching = (text, patterns) => {
@@ -604,81 +613,119 @@ const buildFailureDetails = (detail) => {
   };
 };
 
-const fetchRunFailureContext = async (runId) => {
-  const contextPath = publicApiPath("/context");
+const asObject = (value) => (value && typeof value === "object" && !Array.isArray(value) ? value : {});
+
+/** Run-scope debug-bundle pages: { scope: "run", items[], total, nextPage }. */
+const fetchRunFailedItems = async (runId) => {
+  const bundlePath = publicApiPath("/debug-bundle");
   const items = [];
   let page = 1;
   while (page <= 20) {
-    const { data, pagination, payload } = await requestPage(apiUrl(contextPath, {
+    const body = await requestEnvelope(apiUrl(bundlePath, {
       runId,
       page,
       limit: 50,
-      detail: "compact",
     }));
-    const pageItems = data.length > 0 ? data : Array.isArray(payload?.list) ? payload.list : [];
+    const payload = unwrapPayload(body);
+    if (!payload || payload.scope !== "run") {
+      throw new Error(`Unexpected debug-bundle payload for run ${runId}: scope=${payload?.scope ?? "missing"}`);
+    }
+    const pageItems = Array.isArray(payload.items) ? payload.items : [];
     items.push(...pageItems);
-    if (!pagination.hasNext || pageItems.length === 0) break;
+    const total = Number(payload.total) || items.length;
+    const hasNext = Boolean(payload.nextPage) || page * 50 < total;
+    if (!hasNext || pageItems.length === 0) break;
     page += 1;
   }
   return items;
 };
 
-const titleFromContextItem = (item) => {
-  if (Array.isArray(item?.title)) {
-    const parts = item.title.map((part) => String(part || "").trim()).filter(Boolean);
+const titlePathFromItem = (item) => {
+  const testObj = asObject(item?.test);
+  const raw = Array.isArray(item?.title_path)
+    ? item.title_path
+    : Array.isArray(testObj.title_path)
+      ? testObj.title_path
+      : Array.isArray(testObj.titlePath)
+        ? testObj.titlePath
+        : Array.isArray(item?.title)
+          ? item.title
+          : [];
+  return raw.map((part) => String(part || "").trim()).filter(Boolean);
+};
+
+const titleFromFailureItem = (item) => {
+  const testObj = asObject(item?.test);
+  const parts = titlePathFromItem(item);
+  if (parts.length) {
     return {
       title: parts[parts.length - 1] || null,
-      fullTitle: parts.length ? parts.join(" > ") : null,
+      fullTitle: parts.join(" > "),
       titlePath: parts,
     };
   }
   if (typeof item?.title === "string" && item.title.trim()) {
     return { title: item.title.trim(), fullTitle: item.fullTitle || item.title.trim(), titlePath: [item.title.trim()] };
   }
-  const title = item?.test?.title || null;
-  return { title, fullTitle: item?.test?.fullTitle || title, titlePath: title ? [title] : [] };
+  const title = testObj.title || null;
+  return { title, fullTitle: testObj.fullTitle || title, titlePath: title ? [title] : [] };
+};
+
+const errorFromFailureItem = (item) => {
+  const testObj = asObject(item?.test);
+  const raw = item?.error || testObj.error || null;
+  if (!raw) return null;
+  if (typeof raw === "string") return { message: raw };
+  return raw;
 };
 
 const collectFailedTestEntries = async (runId) => {
-  console.log(`Fetching /context for failing cases in run ${runId}.`);
-  const contextItems = await fetchRunFailureContext(runId);
-  return contextItems
+  console.log(`Fetching /debug-bundle for failing cases in run ${runId}.`);
+  const failedItems = await fetchRunFailedItems(runId);
+  const entries = failedItems
     .filter((item) => (item.status || item.test?.status || "failed") === "failed")
     .map((item) => {
-      const titles = titleFromContextItem(item);
+      const titles = titleFromFailureItem(item);
       const titlePath = titles.titlePath;
+      const testObj = asObject(item.test);
+      const specObj = asObject(item.spec);
       const browserId = firstPresent(
         item.browserId,
         item.groupId,
         item.platform,
-        item.test?.platform,
+        testObj.platform,
+        item.environment?.platform,
         titlePath.find((part) => /chromium|firefox|webkit|mobile|desktop/i.test(part)),
       );
       const filePath = firstPresent(
         typeof item.spec === "string" ? item.spec : null,
-        item.spec?.filePath,
+        specObj.filePath,
+        specObj.path,
+        item.file_path,
         item.filePath,
         titlePath.find((part) => /\.(spec|test)\.[jt]sx?$/.test(part) || String(part).includes("/")),
       );
       const testCase = {
-        id: item.caseId || item.id || item.testCaseId || item.pw_test_id,
+        id: item.caseId || testObj.caseId || item.id || item.testCaseId || item.pw_test_id || testObj.pw_test_id,
         title: titles.title,
         fullTitle: titles.fullTitle,
-        status: item.status || item.test?.status || "failed",
-        duration: item.duration ?? item.test?.duration ?? null,
+        status: item.status || testObj.status || "failed",
+        duration: item.duration ?? testObj.duration ?? null,
         browserId: browserId || null,
-        metadata: item.metadata || {},
-        confidence: item.confidence ?? item.test?.confidence ?? null,
-        error_type: item.error_type ?? item.errorType ?? item.test?.error_type ?? null,
-        contextError: item.error || null,
+        metadata: item.metadata || testObj.metadata || {},
+        confidence: item.confidence ?? testObj.confidence ?? null,
+        error_type: item.error_type ?? item.errorType ?? testObj.error_type ?? null,
+        contextError: errorFromFailureItem(item),
       };
       const spec = {
-        name: item.spec?.name || (typeof item.spec === "string" ? item.spec : null),
-        fileName: item.spec?.fileName || null,
+        name: specObj.name || (typeof item.spec === "string" ? item.spec : null),
+        fileName: specObj.fileName || null,
         filePath: filePath || null,
       };
       return { spec, testCase };
     });
+
+  return { entries };
 };
 
 const summarizeCandidate = (run, spec, testCase) => {
@@ -812,7 +859,7 @@ const main = async () => {
       failed: run.testStats?.failed ?? 0,
     });
 
-    const failedEntries = await collectFailedTestEntries(runId);
+    const { entries: failedEntries } = await collectFailedTestEntries(runId);
     for (const { spec, testCase } of failedEntries) {
       candidates.push(summarizeCandidate(run, spec, testCase));
     }
@@ -832,6 +879,7 @@ const main = async () => {
     workflowRunId: GITHUB_RUN_ID || null,
     workflowSha: GITHUB_SHA || null,
     projectId: TESTDINO_PROJECT_ID,
+    orgId: testdinoOrgId,
     filters: {
       lookbackHours,
       since: since.toISOString(),

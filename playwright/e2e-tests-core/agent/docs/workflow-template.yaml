@@ -45,6 +45,7 @@ jobs:
       run_counters: ${{ inputs.run_counters || '' }}
       create_pr: ${{ github.event_name == 'schedule' || inputs.create_pr }}
       testdino_project_id: ${{ vars.TESTDINO_PROJECT_ID }}
+      testdino_org_id: ${{ vars.TESTDINO_ORG_ID }}
       testdino_branch: main
       # Leave empty (or omit) to skip environment filtering — many CI runs are tagged "unmapped", not "staging".
       testdino_environment: ""

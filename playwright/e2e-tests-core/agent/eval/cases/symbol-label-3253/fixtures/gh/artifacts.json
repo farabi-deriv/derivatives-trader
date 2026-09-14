@@ -1,0 +1,47 @@
+{
+  "total_count": 7,
+  "artifacts": [
+    {
+      "id": 9512826147,
+      "name": "_playwright-slack-thread-summary",
+      "expired": true,
+      "size_in_bytes": 438
+    },
+    {
+      "id": 9512815458,
+      "name": "_playwright-slack-result-chromium",
+      "expired": true,
+      "size_in_bytes": 1791
+    },
+    {
+      "id": 9512814757,
+      "name": "playwright-test-results-chromium-staging",
+      "expired": true,
+      "size_in_bytes": 1433905324
+    },
+    {
+      "id": 9512792834,
+      "name": "playwright-report-chromium-staging",
+      "expired": false,
+      "size_in_bytes": 1436847431
+    },
+    {
+      "id": 9512637905,
+      "name": "_playwright-slack-result-chromium-mobile",
+      "expired": true,
+      "size_in_bytes": 1778
+    },
+    {
+      "id": 9512637063,
+      "name": "playwright-test-results-chromium-mobile-staging",
+      "expired": true,
+      "size_in_bytes": 1286448123
+    },
+    {
+      "id": 9512618502,
+      "name": "playwright-report-chromium-mobile-staging",
+      "expired": false,
+      "size_in_bytes": 1288896125
+    }
+  ]
+}

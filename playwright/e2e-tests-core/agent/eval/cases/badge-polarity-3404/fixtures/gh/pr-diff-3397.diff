@@ -1,0 +1,14 @@
+diff --git a/playwright/tests/transfer/verify-transfer-trading-start-popup.spec.ts b/playwright/tests/transfer/verify-transfer-trading-start-popup.spec.ts
+index 9ef6cf593..666807ac7 100644
+--- a/playwright/tests/transfer/verify-transfer-trading-start-popup.spec.ts
++++ b/playwright/tests/transfer/verify-transfer-trading-start-popup.spec.ts
+@@ -146,8 +146,7 @@ test.describe("Transfer — TradingStartPopup cTrader variant", { tag: ["@deskto
+ 
+         // Transfer USD → cTrader (minimal amount)
+         await transferPage.selectFromAccount("US Dollar", "USD");
+-        const ctraderName = await transferPage.resolveCTraderAccountName("to");
+-        await transferPage.selectToAccount(ctraderName);
++        await transferPage.selectToAccount("cTrader");
+         await transferPage.enterAmount("0.10");
+         await transferPage.openReview();
+         await transferPage.confirmTransfer();

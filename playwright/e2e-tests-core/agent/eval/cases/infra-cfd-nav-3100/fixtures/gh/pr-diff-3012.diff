@@ -1,0 +1,26 @@
+diff --git a/playwright/e2e-tests-core b/playwright/e2e-tests-core
+index a468c99ee..834249b74 160000
+--- a/playwright/e2e-tests-core
++++ b/playwright/e2e-tests-core
+@@ -1 +1 @@
+-Subproject commit a468c99ee1b28d2f7c6ed084b5760348a43262e0
++Subproject commit 834249b74c7be32e07858d716c5bf8042d8c9009
+diff --git a/playwright/pages/LoginPage.ts b/playwright/pages/LoginPage.ts
+index aff8003a9..6b1eb5e3f 100644
+--- a/playwright/pages/LoginPage.ts
++++ b/playwright/pages/LoginPage.ts
+@@ -510,9 +510,11 @@ export class LoginPage {
+     await targetInput.evaluate((el, text) => {
+       const clipboardData = new DataTransfer();
+       clipboardData.setData("text/plain", text);
+-      el.dispatchEvent(
+-        new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData })
+-      );
++      const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
++      // Firefox ignores the clipboardData constructor parameter (unlike Chromium/WebKit).
++      // Override via Object.defineProperty so Quill's paste handler reads it cross-browser.
++      Object.defineProperty(event, "clipboardData", { get: () => clipboardData });
++      el.dispatchEvent(event);
+     }, code);
+   }
+ 

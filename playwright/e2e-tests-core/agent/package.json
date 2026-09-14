@@ -3,17 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "eval": "node eval/replay-healer-eval.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "2.1.207",
     "testdino-mcp": "1.0.10"
   },
   "overrides": {
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.6",
     "@hono/node-server": "2.0.12",
     "body-parser": "2.3.0",
-    "hono": "4.12.34",
-    "ip-address": "10.3.1"
+    "hono": "4.13.7",
+    "ip-address": "10.4.0",
+    "qs": "6.16.0"
   }
 }

@@ -1,0 +1,22 @@
+diff --git a/playwright/e2e-tests-core b/playwright/e2e-tests-core
+index a468c99ee..47c89b4a5 160000
+--- a/playwright/e2e-tests-core
++++ b/playwright/e2e-tests-core
+@@ -1 +1 @@
+-Subproject commit a468c99ee1b28d2f7c6ed084b5760348a43262e0
++Subproject commit 47c89b4a588025207522fedbdba61150b32c0bc4
+diff --git a/playwright/pages/CryptoExchangePage.ts b/playwright/pages/CryptoExchangePage.ts
+index 850b566f4..<redacted-phone>
+--- a/playwright/pages/CryptoExchangePage.ts
++++ b/playwright/pages/CryptoExchangePage.ts
+@@ -1032,8 +1032,8 @@ export class CryptoExchangePage {
+     ).toBeVisible({ timeout: 15_000 });
+ 
+     await expect(
+-      this.depositCoinListPicker,
+-      "Deposit coin list picker container should be visible"
++      this.depositCoinListPicker.or(this.depositRateUnavailable),
++      "Deposit coin list picker container or rate-unavailable screen should be visible"
+     ).toBeVisible();
+   }
+ 

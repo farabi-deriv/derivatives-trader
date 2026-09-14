@@ -1,0 +1,42 @@
+{
+  "id": "scope-symbol-label-2957",
+  "sourcePrs": [2957],
+  "checkoutSha": "4a031da3de7b70d03458385292fc4907504004a6",
+  "discoverablePrs": [],
+  "evidenceGrade": "error-context",
+  "coversRules": [
+    "P-EVIDENCE-read-artifacts",
+    "G-SCOPE-shared-pom-callers"
+  ],
+  "patch_scored": false,
+  "cliMode": "pass",
+  "hint_read_paths": [
+    "playwright/pages/DTraderPage.ts",
+    "playwright/tests/options/verify-dtrader-redirections.spec.ts"
+  ],
+  "required_tools": ["get_testcase_details"],
+  "required_preserved_hints": ["this.isMobile"],
+  "forbidden_diff_hints": [
+    "dt_market_tab')\n            .and",
+    ".skip",
+    ".fixme",
+    "waitForTimeout"
+  ],
+  "expected": { "artifact": "no-change" },
+  "judge": {
+    "outcome": "STOP. This case has no screenshot and only chromium-mobile error-context, so there is not enough evidence to retarget a shared POM. A later golden (symbol-label-3253) scores the verified mobile-only fix. What must not happen here is deleting the `if (this.isMobile)` branch so both viewports fall through to the desktop `dt_market_tab` locator.",
+    "must_not": [
+      "collapse the mobile and desktop branches of activeSymbolLabel into one locator",
+      "claim the desktop chart-title bar was verified when only mobile evidence exists",
+      "weaken the symbol assertion so an empty label would pass"
+    ]
+  },
+  "notes": "First of two attempts at the same DTrader mobile symbol-label drift; PR 3253 twelve days later is the second, and merged 3278 shipped 3253's approach. Kept as a separate case because 2957 fails on scope, not on the locator choice. 2957 is deliberately absent from symbol-label-3253's pr-list so that case scores the fix in isolation — the duplicate rule is covered by dup-coin-picker-3259.",
+  "diagnosis": {
+    "rootCause": "RC-no-screenshot",
+    "evidence": "heal_log",
+    "healJobId": "94267606095",
+    "proof": "Job 94267606095 made 13 Read calls, none on a .png — it read the downloaded error-context artifacts for 9dd5607c… but never opened a screenshot. It also never ran `npx playwright test`, and its only duplicate search was `gh pr list --state all --search 'path:playwright/pages/DTraderPage.ts'`, an inert code-search qualifier that issue/PR search answers with []. On that evidence it deleted the `if (this.isMobile)` branch and pointed both viewports at the desktop `dt_market_tab` locator. Closed unmerged.",
+    "shouldHaveDone": "Kept the change inside the mobile branch it had evidence for — the group is entirely chromium-mobile — or written no-change.md, since it had neither a screenshot of the new mobile header nor any CLI run to verify the collapsed locator against desktop."
+  }
+}

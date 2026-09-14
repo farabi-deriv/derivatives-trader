@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
  * Apply a per-group fixer artifact and expose patch/diff status to GitHub Actions.
+ *
+ * PR creation requires: successful fixer, applied patch with changes, and pr-body.md
+ * (agent is responsible for sample Playwright CLI verification before writing pr-body).
  */
 import childProcess from "node:child_process";
 import fs from "node:fs";
@@ -17,6 +20,9 @@ const run = (command, args) =>
     stdio: "inherit",
   });
 
+const hasNonEmptyFile = (filePath) =>
+  fs.existsSync(filePath) && fs.statSync(filePath).isFile() && fs.readFileSync(filePath, "utf8").trim().length > 0;
+
 let fixerFailed = false;
 let applyFailed = false;
 let hasChanges = false;
@@ -30,7 +36,7 @@ if (fs.existsSync(`${FIXER_ARTIFACT_DIR}/metadata.json`)) {
 }
 
 if (!fixerFailed) {
-  for (const fileName of ["pr-body.md", "no-change.md", "triage.md"]) {
+  for (const fileName of ["pr-body.md", "no-change.md"]) {
     const source = `${FIXER_ARTIFACT_DIR}/${fileName}`;
     if (fs.existsSync(source) && fs.statSync(source).isFile()) {
       fs.copyFileSync(source, `playwright/agent/.healing/${fileName}`);
@@ -50,8 +56,26 @@ if (!fixerFailed) {
     });
     hasChanges = diff.status === 1;
   }
+} else {
+  console.warn("Fixer failed or timed out (llmSucceeded=false); skipping patch apply and PR body.");
 }
+
+const prBodyPresent =
+  !fixerFailed &&
+  !applyFailed &&
+  (
+    hasNonEmptyFile(`${FIXER_ARTIFACT_DIR}/pr-body.md`) ||
+    hasNonEmptyFile("playwright/agent/.healing/pr-body.md")
+  );
+
+const prEligible =
+  !fixerFailed &&
+  !applyFailed &&
+  hasChanges &&
+  prBodyPresent;
 
 appendOutput("fixer_failed", fixerFailed ? "true" : "false");
 appendOutput("apply_failed", applyFailed ? "true" : "false");
 appendOutput("has_changes", hasChanges ? "true" : "false");
+appendOutput("pr_body_present", prBodyPresent ? "true" : "false");
+appendOutput("pr_eligible", prEligible ? "true" : "false");

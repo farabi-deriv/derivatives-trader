@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 /**
- * Build the aggregate healing report, Slack summary text, and per-group summary artifacts.
+ * Build the aggregate healing report and Slack summary text.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 const groupCount = Number(process.env.GROUP_COUNT || "0");
-const outcomesDir = path.resolve("playwright/agent/.healing/outcomes");
+const publishDir = path.resolve("playwright/agent/.healing/publish");
 const summaryDir = path.resolve("playwright/agent/.healing/summary");
-const summaryGroupsDir = path.join(summaryDir, "groups");
 const summaryPath = path.join(summaryDir, "healing-summary.md");
 const slackPath = path.resolve("playwright/agent/.healing/slack-message.txt");
-fs.mkdirSync(summaryGroupsDir, { recursive: true });
+fs.mkdirSync(summaryDir, { recursive: true });
 
 const parseMatrix = () => {
   const raw = JSON.parse(process.env.MATRIX_JSON || '{"include":[]}');
@@ -24,29 +23,36 @@ const parseMatrix = () => {
 
 const matrix = parseMatrix();
 
-let files = [];
-if (fs.existsSync(outcomesDir)) {
-  files = fs
-    .readdirSync(outcomesDir)
-    .filter((name) => name.endsWith(".json"))
-    .map((name) => path.join(outcomesDir, name));
-}
+const readJsonIfPresent = (file) => {
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+};
 
-const outcomes = files
-  .map((file) => {
-    try {
-      return JSON.parse(fs.readFileSync(file, "utf8"));
-    } catch {
-      return null;
-    }
-  })
-  .filter(Boolean);
+const outcomes = [];
+if (fs.existsSync(publishDir)) {
+  for (const entry of fs.readdirSync(publishDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const loaded = readJsonIfPresent(path.join(publishDir, entry.name, "outcome.json"));
+    if (loaded) outcomes.push(loaded);
+  }
+}
 
 const outcomeByGroup = new Map(outcomes.map((outcome) => [String(outcome.groupId), outcome]));
 const readGroupMarkdown = (groupId) => {
-  const file = path.join(outcomesDir, `${groupId}.md`);
-  if (!fs.existsSync(file)) return "";
-  return fs.readFileSync(file, "utf8").trim();
+  const publishMd = [
+    path.join(publishDir, groupId, "pr-body.md"),
+    path.join(publishDir, groupId, "no-change.md"),
+  ];
+  for (const file of publishMd) {
+    if (!fs.existsSync(file)) continue;
+    const raw = fs.readFileSync(file, "utf8").trim();
+    if (raw) return raw;
+  }
+  return "";
 };
 
 const rows = matrix.map((item) => {
@@ -63,13 +69,6 @@ const rows = matrix.map((item) => {
     prUrl: null,
     prTitle: null,
     slackThreads: [],
-    triage: false,
-    triageText: null,
-    playwrightVerificationPassed: null,
-    playwrightRepairLikelyValid: null,
-    playwrightVerificationTargets: null,
-    playwrightVerificationReason: null,
-    changedCandidateSpecsDiffer: null,
     jobStatus: "missing",
     reason: "missing_outcome",
     detailMarkdown: readGroupMarkdown(groupId),
@@ -77,25 +76,13 @@ const rows = matrix.map((item) => {
   };
 });
 
-for (const row of rows) {
-  const jsonPath = path.join(summaryGroupsDir, `${row.groupId}.json`);
-  const markdownPath = path.join(summaryGroupsDir, `${row.groupId}.md`);
-  fs.writeFileSync(jsonPath, JSON.stringify(row, null, 2) + "\n");
-  fs.writeFileSync(markdownPath, `${row.detailMarkdown || "_No per-group detail markdown was produced._"}\n`);
-}
-
 const totals = {
   groups: groupCount,
   withChanges: rows.filter((row) => row.hasChanges).length,
   prCreated: rows.filter((row) => row.prCreated).length,
-  triage: rows.filter((row) => row.triage || row.reason === "triage").length,
   prDisabled: rows.filter((row) => row.reason === "pr_disabled").length,
   noChanges: rows.filter((row) => row.reason === "no_changes").length,
   notCreated: rows.filter((row) => row.reason === "pr_not_created").length,
-  verificationFailed: rows.filter((row) => row.reason === "playwright_verification_failed").length,
-  blockedByUnrelatedFailure: rows.filter((row) => row.playwrightVerificationReason === "blocked_by_unrelated_failure").length,
-  sameFailureStillPresent: rows.filter((row) => row.playwrightVerificationReason === "same_failure_still_present").length,
-  failedBeforeCandidateStep: rows.filter((row) => row.playwrightVerificationReason === "verification_failed_before_candidate_step").length,
   patchApplyFailed: rows.filter((row) => row.reason === "patch_apply_failed").length,
   failedJobs: rows.filter((row) => row.jobStatus === "failure" || row.jobStatus === "cancelled").length,
   missingOutcome: rows.filter((row) => row.reason === "missing_outcome").length,
@@ -136,23 +123,11 @@ const markdownCell = (value) =>
     .replace(/\r?\n/g, " ")
     .replace(/\|/g, "\\|")
     .trim() || "-";
-const verificationLabel = (row) => {
-  if (row.playwrightVerificationPassed === true) return "passed";
-  if (row.playwrightVerificationPassed === false) return row.playwrightVerificationReason || "failed";
-  return "-";
-};
 const prLabel = (row) => {
   if (row.prUrl) return `[PR](${row.prUrl})`;
   if (row.reason === "pr_disabled") return "disabled";
   if (row.reason === "pr_not_created") return "not created";
   return "-";
-};
-const slackThreadLabel = (row) => {
-  const threads = Array.isArray(row.slackThreads) ? row.slackThreads : [];
-  if (threads.length === 0) return "-";
-  return threads
-    .map((thread, index) => thread.permalink ? `[thread ${index + 1}](${thread.permalink})` : `${thread.channel}/${thread.threadTs}`)
-    .join(", ");
 };
 
 const lines = [];
@@ -161,20 +136,19 @@ lines.push("");
 if (rows.length > 0) {
   lines.push("### UI Change Groups");
   lines.push("");
-  lines.push("| Group | Candidates | Outcome | Verification | PR |");
-  lines.push("| --- | ---: | --- | --- | --- |");
+  lines.push("| Group | Candidates | Outcome | PR |");
+  lines.push("| --- | ---: | --- | --- |");
   for (const row of rows) {
     lines.push([
       markdownCell(row.groupTitle || row.groupId),
       markdownCell(row.candidateCount),
       markdownCell(row.reason),
-      markdownCell(verificationLabel(row)),
       prLabel(row),
     ].join(" | ").replace(/^/, "| ").replace(/$/, " |"));
   }
   lines.push("");
 }
-lines.push("Per-group details are available in the `playwright-healing-summary` artifact.");
+lines.push("Per-group details are in the `playwright-healing-groups` artifact.");
 
 fs.writeFileSync(summaryPath, lines.join("\n") + "\n");
 if (process.env.GITHUB_STEP_SUMMARY) {
