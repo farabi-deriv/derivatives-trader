@@ -1,10 +1,11 @@
 import { action, makeObservable, observable, override } from 'mobx';
 
+import { BaseStore } from '@deriv/stores';
+
 import { getFilteredContractTypes } from 'AppV2/Utils/positions-utils';
-import BaseStore from 'Stores/base-store';
 import { TRootStore } from 'Types';
 
-export default class PositionsStore extends BaseStore {
+export default class PositionsStore extends BaseStore<TRootStore> {
     openContractTypeFilter: string[] | [] = [];
     closedContractTypeFilter: string[] | [] = [];
     filteredContractTypes: string[] | [] = [];

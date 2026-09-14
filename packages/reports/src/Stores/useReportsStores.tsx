@@ -22,32 +22,15 @@ type TOverrideProfitStore = Omit<ProfitStores, 'data' | 'date_from' | 'totals' |
 
 type TOverrideStatementStore = Omit<
     StatementStores,
-    | 'account_statistics'
-    | 'action_type'
-    | 'data'
-    | 'date_from'
-    | 'date_to'
-    | 'filtered_date_range'
-    | 'handleDateChange'
-    | 'handleFilterChange'
-    | 'handleScroll'
-    | 'suffix_icon'
+    'action_type' | 'data' | 'date_from' | 'date_to' | 'handleDateChange' | 'handleFilterChange' | 'handleScroll'
 > & {
-    account_statistics: { total_deposits: number; total_withdrawals: number };
     action_type: string;
     data: { [key: string]: string }[];
     date_from: number;
     date_to: number;
-    filtered_date_range: {
-        duration: number;
-        label: string;
-        onClick?: () => void;
-        value?: string;
-    };
     handleDateChange: () => void;
     handleFilterChange: () => void;
     handleScroll: React.UIEventHandler<HTMLDivElement>;
-    suffix_icon: string;
 };
 
 export type TReportsStore = {

@@ -43,9 +43,7 @@ describe('StatementStore', () => {
         expect(statement_store.date_to).toBe(toMoment().startOf('day').add(1, 'd').subtract(1, 's').unix());
         expect(statement_store.error).toBe('');
         expect(statement_store.action_type).toBe('all');
-        expect(statement_store.filtered_date_range).toBeUndefined();
         expect(statement_store.client_loginid).toBe('');
-        expect(statement_store.account_statistics).toEqual({});
         expect(statement_store.has_selected_date).toBe(true);
         expect(statement_store.is_empty).toBe(false);
     });
@@ -139,6 +137,16 @@ describe('StatementStore', () => {
         expect(statement_store.action_type).toBe(filterValue);
     });
 
+    it("[RSF-001] resets action_type to the string 'all' when handleFilterChange is called with no argument", () => {
+        WS.statement.mockResolvedValue(response);
+        statement_store.shouldFetchNextBatch = jest.fn().mockReturnValue(true);
+        statement_store.action_type = 'deposit';
+
+        statement_store.handleFilterChange();
+
+        expect(statement_store.action_type).toBe('all');
+    });
+
     it('should fetch statement when fetchOnScroll is called with left less than 1500', () => {
         WS.statement.mockResolvedValue(response);
         statement_store.shouldFetchNextBatch = jest.fn().mockReturnValue(true);
@@ -205,5 +213,24 @@ describe('StatementStore', () => {
         statement_store.onUnmount();
 
         expect(WS.forgetAll).not.toHaveBeenCalledWith('proposal');
+    });
+
+    // Characterization guard: never went red; pins that the dead members are gone while the live
+    // statement surfaces survive.
+    it('[SMC-018] drops account_statistics/filtered_date_range and keeps the live statement members', () => {
+        expect('account_statistics' in statement_store).toBe(false);
+        expect('filtered_date_range' in statement_store).toBe(false);
+
+        [
+            'data',
+            'is_loading',
+            'has_loaded_all',
+            'date_from',
+            'date_to',
+            'error',
+            'action_type',
+            'client_loginid',
+        ].forEach(member => expect(member in statement_store).toBe(true));
+        expect(typeof statement_store.handleFilterChange).toBe('function');
     });
 });

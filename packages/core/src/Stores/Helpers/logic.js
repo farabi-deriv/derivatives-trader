@@ -49,10 +49,6 @@ export const getChartGranularity = (start_time, expiry_time) =>
 export const calculateGranularity = duration =>
     (hour_to_granularity_map.find(m => duration <= m[0] * 3600) || [null, 86400])[1];
 
-export const getBuyPrice = contract_store => {
-    return contract_store.contract_info.buy_price;
-};
-
 /**
  * Set contract update form initial values
  * @param {object} contract_update - contract_update response

@@ -1,9 +1,7 @@
-import { isHourValid, isMinuteValid, isTimeValid, toMoment, TRuleOptions } from '@deriv/shared';
+import { isHourValid, isMinuteValid, isTimeValid, TRuleOptions } from '@deriv/shared';
 import { localize } from '@deriv-com/translations';
 
 import { TTradeStore } from 'Types';
-
-import { isSessionAvailable } from '../Helpers/start-date';
 
 type TValidationRules = {
     [key: string]: {
@@ -100,45 +98,8 @@ export const getValidationRules = (): TValidationRules => ({
             ],
         ],
     },
-    start_date: {
-        trigger: 'start_time',
-    },
     expiry_date: {
         trigger: 'expiry_time',
-    },
-    start_time: {
-        rules: [
-            [
-                'custom',
-                {
-                    func: (value: TTradeStore['start_time'], options, store) => !value || isTimeValid(value),
-                    message: getDynamicMessage('Please enter the start time in the format "HH:MM".'),
-                },
-            ],
-            [
-                'custom',
-                {
-                    func: (value: TTradeStore['start_time'], options, store) => !value || isHourValid(value),
-                    message: getDynamicMessage('Hour must be between 0 and 23.'),
-                },
-            ],
-            [
-                'custom',
-                {
-                    func: (value: TTradeStore['start_time'], options, store) => !value || isMinuteValid(value),
-                    message: getDynamicMessage('Minute must be between 0 and 59.'),
-                },
-            ],
-            [
-                'custom',
-                {
-                    func: (value: TTradeStore['start_time'], options, store) => {
-                        return true; // Always valid since all contracts now default to spot behavior
-                    },
-                    message: getDynamicMessage('Start time cannot be in the past.'),
-                },
-            ],
-        ],
     },
     expiry_time: {
         rules: [
@@ -161,15 +122,6 @@ export const getValidationRules = (): TValidationRules => ({
                 {
                     func: (value: TTradeStore['expiry_time'], options, store) => !value || isMinuteValid(value),
                     message: getDynamicMessage('Minute must be between 0 and 59.'),
-                },
-            ],
-            [
-                'custom',
-                {
-                    func: (value: TTradeStore['expiry_time'], options, store) => {
-                        return true; // Always valid since all contracts now default to spot behavior
-                    },
-                    message: getDynamicMessage('Expiry time cannot be in the past.'),
                 },
             ],
         ],

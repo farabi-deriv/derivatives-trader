@@ -13,17 +13,12 @@ import {
 } from 'mobx';
 
 import {
-    TActiveSymbolsRequest,
     TActiveSymbolsResponse,
     TBuyContractRequest,
     TBuyContractResponse,
     TPriceProposalRequest,
     TPriceProposalResponse,
-    TServerTimeRequest,
-    TTicksHistoryRequest,
-    TTicksHistoryResponse,
     TTicksStreamResponse,
-    TTradingTimesRequest,
 } from '@deriv/api';
 import {
     BARRIER_COLORS,
@@ -31,9 +26,7 @@ import {
     cloneObject,
     CONTRACT_TYPES,
     convertDurationLimit,
-    type Dayjs,
     extractInfoFromShortcode,
-    findFirstOpenMarket,
     findSymbolForTradeType,
     formatMoney,
     getBarrierPipSize,
@@ -73,6 +66,7 @@ import {
     TRADE_TYPES,
     WS,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { safeParse } from '@deriv/utils';
 import { localize } from '@deriv-com/translations';
 
@@ -115,8 +109,6 @@ import { getMultiplierValidationRules, getValidationRules } from 'Stores/Modules
 import { isRiseFallEqual } from 'Stores/Modules/Trading/Helpers/allow-equals';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { TContractTypesList, TRootStore, TTextValueNumber, TTextValueStrings } from 'Types';
-
-import BaseStore from '../../base-store';
 
 import { processPurchase } from './Actions/purchase';
 import { getUpdatedTicksHistoryStats } from './Helpers/accumulator';
@@ -161,9 +153,8 @@ type DurationSupportType = 'ticks' | 'endtime';
 // Local type definitions for compatibility
 type ActiveSymbols = NonNullable<TActiveSymbolsResponse['active_symbols']>;
 type TickSpotData = NonNullable<TTicksStreamResponse['tick']>;
-type History = NonNullable<TTicksHistoryResponse['history']>;
 
-export type TProposalResponse = TPriceProposalResponse & {
+type TProposalResponse = TPriceProposalResponse & {
     proposal: TPriceProposalResponse['proposal'];
     error?: TPriceProposalResponse['error'] & {
         code: string;
@@ -274,7 +265,6 @@ type TStakeBoundary = Record<
         max_stake?: number;
     }
 >;
-type TTicksResponse = TTicksHistoryResponse | TTicksStreamResponse;
 type TBarriersData = Record<string, never> | { barrier: string; barrier_choices?: string[] };
 /** What the tab currently being activated should settle on — see `pending_tab_params`. */
 type TPendingTabParams = { mode: 'restore'; params: TTabTradeParams } | { mode: 'defaults' } | null;
@@ -300,7 +290,6 @@ type TUnknownTabTradeParamKeys = Exclude<TTabTradeParamKey, keyof TradeStore>;
 type TAssertTabTradeParamKeysExistOnStore<T extends never> = T;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- compile-time assertion only
 type TTabTradeParamKeysExistOnStore = TAssertTabTradeParamKeysExistOnStore<TUnknownTabTradeParamKeys>;
-const g_subscribers_map: Partial<Record<string, ReturnType<typeof WS.subscribeTicksHistory>>> = {}; // blame amin.m
 
 /**
  * How long a purchase attempt may wait for a usable proposal before giving up. Needed because the
@@ -321,7 +310,7 @@ const getInitialTradePanelTab = (): TTradePanelTab => {
     return valid_values.includes(stored ?? '') ? (stored as TTradePanelTab) : TRADE_PANEL_TABS.TRADE;
 };
 
-export default class TradeStore extends BaseStore {
+export default class TradeStore extends BaseStore<TRootStore> {
     // Control values
     is_trade_component_mounted = false;
     is_purchase_enabled = false;
@@ -479,9 +468,7 @@ export default class TradeStore extends BaseStore {
     payout_choices: string[] = [];
     // Start Time
     start_date = 0; // 0 refers to 'now'
-    start_dates_list: Array<{ text: string; value: number }> = [];
     start_time: string | null = null;
-    sessions: Array<{ open: Dayjs; close: Dayjs }> = [];
 
     market_open_times: string[] = [];
     // End Date Time
@@ -499,7 +486,6 @@ export default class TradeStore extends BaseStore {
     // Last Digit
     digit_stats: number[] = [];
     last_digit = 5;
-    is_mobile_digit_view_selected = false;
     tick_data: TickSpotData | null = null;
 
     // Purchase
@@ -585,7 +571,6 @@ export default class TradeStore extends BaseStore {
 
     initial_barriers?: { barrier_1: string; barrier_2: string };
     is_initial_barrier_applied = false;
-    is_digits_widget_active = false;
     should_skip_prepost_lifecycle = false;
     reconnectHandler?: () => Promise<void>;
 
@@ -691,15 +676,11 @@ export default class TradeStore extends BaseStore {
             hovered_contract_type: observable,
             is_accumulator: computed,
             is_chart_loading: observable,
-            is_digits_widget_active: observable,
-            is_dtrader_v2: computed,
             is_awaiting_contracts_for: observable,
             is_equal: observable,
             is_market_closed: observable,
-            is_mobile_digit_view_selected: observable,
             is_purchase_enabled: observable,
             is_purchase_pending: observable,
-            is_synthetics_trading_market_available: computed,
             is_trade_component_mounted: observable,
             is_trade_enabled: observable,
             is_trade_enabled_v2: observable,
@@ -720,7 +701,6 @@ export default class TradeStore extends BaseStore {
             proposal_info: observable.ref,
             purchase_info: observable.ref,
             setDefaultStake: action.bound,
-            sessions: observable,
             setDefaultGrowthRate: action.bound,
             setDigitStats: action.bound,
             setTickData: action.bound,
@@ -734,7 +714,6 @@ export default class TradeStore extends BaseStore {
             // tick would re-render both stake surfaces for an identical ladder.
             stake_preset_limits: computed.struct,
             start_date: observable,
-            start_dates_list: observable.ref, // Array of objects - use ref
             start_time: observable,
             strike_price_choices: observable.ref, // Object - use ref
             stop_loss: observable,
@@ -784,12 +763,10 @@ export default class TradeStore extends BaseStore {
             endPurchaseAttempt: action.bound,
             exportLayout: action.bound,
             forgetAllProposal: action.bound,
-            getFirstOpenMarket: action.bound,
             has_alternative_source: computed,
             initAccountCurrency: action.bound,
             is_multiplier: computed,
             is_symbol_in_active_symbols: computed,
-            is_synthetics_available: computed,
             is_vanilla: computed,
             is_vanilla_fx: computed,
             loadActiveSymbols: action.bound,
@@ -835,10 +812,8 @@ export default class TradeStore extends BaseStore {
             setChartStatus: action.bound,
             setContractTypesListV2: action.bound,
             setIsTradeParamsExpanded: action.bound,
-            setIsDigitsWidgetActive: action.bound,
             setMarketStatus: action.bound,
             getTurbosChartBarrier: action.bound,
-            setMobileDigitView: action.bound,
             setSkipPrePostLifecycle: action.bound,
             setStakeBoundary: action.bound,
             setTradeTypeTab: action.bound,
@@ -853,12 +828,10 @@ export default class TradeStore extends BaseStore {
         // Early symbol initialization from URL params enables contracts_for to fire
         // in parallel with active_symbols, eliminating one sequential round trip.
         // Must be set before reactions so reaction(() => this.symbol) sees this as initial value.
-        if (this.is_dtrader_v2) {
-            const searchParams = new URLSearchParams(window.location.search);
-            const urlSymbol = searchParams.get('symbol');
-            if (urlSymbol) {
-                this.symbol = urlSymbol;
-            }
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlSymbol = searchParams.get('symbol');
+        if (urlSymbol) {
+            this.symbol = urlSymbol;
         }
 
         // Queue the cold-load activation intent SYNCHRONOUSLY, before anything can consume it.
@@ -867,7 +840,7 @@ export default class TradeStore extends BaseStore {
         // `useContractsFor` dispatches from the URL-seeded symbol above and which therefore routinely
         // lands FIRST. Queuing here removes the race: whichever response wins, an intent is already
         // waiting, so a refresh restores its tab and a fresh browser tab gets defaults.
-        if (this.is_dtrader_v2) this.queueInitialTabTradeParams();
+        this.queueInitialTabTradeParams();
 
         // The single owner of initial market/trade-type selection. Fire-and-forget: each phase waits for the
         // data it needs and aborts if a user selection supersedes it.
@@ -2058,17 +2031,12 @@ export default class TradeStore extends BaseStore {
                 // Reset expiry type to duration for ALL Vanilla contract selections
                 // This ensures the duration toggle always resets to "Duration" tab
                 this.expiry_type = 'duration';
-                this.root_store.ui.advanced_expiry_type = 'duration';
                 this.expiry_time = null;
                 this.expiry_date = null;
 
                 // ALWAYS reset duration_unit to minutes for ALL Vanilla contract switches
                 // This ensures that switching back to Vanilla always shows minutes, not days/hours
                 this.duration_unit = 'm';
-
-                // Also reset UI store duration units to ensure dropdowns show minutes
-                this.root_store.ui.advanced_duration_unit = 'm';
-                this.root_store.ui.simple_duration_unit = 'm';
 
                 // Only reset the barrier when switching from non-Vanilla to Vanilla.
                 // Duration is owned by applyDefaultDuration (runs after the new limits load).
@@ -2303,7 +2271,7 @@ export default class TradeStore extends BaseStore {
             // An errored proposal is still stored under its contract type, but carries no id.
             // Dispatching on it sends a buy the server cannot match, so treat it as no proposal.
             if (info?.id && !info.has_error) {
-                this.onPurchase(info.id, info.stake, trade_type, isMobile, callback, true);
+                this.onPurchase(info.id, info.stake, trade_type, isMobile, callback);
             } else {
                 this.endPurchaseAttempt();
             }
@@ -2319,7 +2287,7 @@ export default class TradeStore extends BaseStore {
                         code: 'ProposalTimeout',
                         message: localize('Something went wrong. Please try again.'),
                     },
-                    this.is_dtrader_v2
+                    true
                 );
                 return;
             }
@@ -2339,8 +2307,7 @@ export default class TradeStore extends BaseStore {
         price: string | number,
         type: string,
         isMobile: boolean,
-        callback?: (params: { message: string; redirectTo: string; title: string }, contract_id: number) => void,
-        is_dtrader_v2?: boolean
+        callback?: (params: { message: string; redirectTo: string; title: string }, contract_id: number) => void
     ) {
         // Purchasing is disabled while a buy is already in flight, and briefly whenever trade
         // params change until the next proposal re-enables it. Either way this attempt cannot
@@ -2381,7 +2348,7 @@ export default class TradeStore extends BaseStore {
                                         "Connection lost — we couldn't confirm this request. Please check your positions before retrying."
                                     ),
                                 },
-                                this.is_dtrader_v2
+                                true
                             );
                             this.proposal_info = {};
                             this.forgetAllProposal();
@@ -2398,7 +2365,7 @@ export default class TradeStore extends BaseStore {
                                     type: response.msg_type,
                                     ...response.error,
                                 },
-                                this.is_dtrader_v2
+                                true
                             );
                         }
                     } else if (response.buy) {
@@ -2460,7 +2427,7 @@ export default class TradeStore extends BaseStore {
                             // and then set the chart view to the start_time
                             // draw the start time line and show longcode then mount contract
                             // this.root_store.modules.contract_trade.drawContractStartTime(start_time, longcode, contract_id);
-                            if (!is_dtrader_v2 || !isMobile) {
+                            if (!isMobile) {
                                 // Convert raw technical values to user-friendly display names
                                 // For trade_type_name, use the title from getContractTypesConfig which has human-friendly names
                                 const contract_types_config = getContractTypesConfig(this.symbol);
@@ -2600,8 +2567,8 @@ export default class TradeStore extends BaseStore {
                     new_state.start_date = parseInt(new_state.start_date);
                 }
 
-                // Clear barrier validation errors when barriers are programmatically updated (V2 only)
-                if (this.is_dtrader_v2 && (key === 'barrier_1' || key === 'barrier_2')) {
+                // Clear barrier validation errors when barriers are programmatically updated
+                if (key === 'barrier_1' || key === 'barrier_2') {
                     this.validation_errors.barrier_1 = [];
                     this.validation_errors.barrier_2 = [];
                 }
@@ -2685,11 +2652,9 @@ export default class TradeStore extends BaseStore {
         }
 
         if (Object.keys(obj_new_values).includes('symbol')) {
-            // Clear barrier validation errors immediately when symbol change starts (V2 only)
-            if (this.is_dtrader_v2) {
-                this.validation_errors.barrier_1 = [];
-                this.validation_errors.barrier_2 = [];
-            }
+            // Clear barrier validation errors immediately when symbol change starts
+            this.validation_errors.barrier_1 = [];
+            this.validation_errors.barrier_2 = [];
 
             const symbol_to_check = obj_new_values.symbol ?? '';
             if (symbol_to_check && symbol_to_check.trim() !== '') {
@@ -2713,7 +2678,7 @@ export default class TradeStore extends BaseStore {
 
         // Set stake to default one (from contracts_for) on symbol or contract type switch.
         // On contract type we also additionally reset take profit and stop loss
-        if (this.default_stake && this.is_dtrader_v2) {
+        if (this.default_stake) {
             const has_symbol_changed = obj_new_values.symbol && this.symbol && this.symbol !== obj_new_values.symbol;
             // A within-group sub-type flip (e.g. Allow equals: rise_fall ↔ rise_fall_equal) is not a
             // trade-type switch, so it must not reset the stake — mirrors the duration-group guard.
@@ -2775,8 +2740,8 @@ export default class TradeStore extends BaseStore {
                 this.validateAllProperties();
             }
 
-            // Clear barrier validation errors after processing symbol changes (V2 only)
-            if (this.is_dtrader_v2 && Object.keys(obj_new_values).includes('symbol')) {
+            // Clear barrier validation errors after processing symbol changes
+            if (Object.keys(obj_new_values).includes('symbol')) {
                 // Use setTimeout to ensure this runs after all synchronous validation
                 setTimeout(() => {
                     this.validation_errors.barrier_1 = [];
@@ -2786,23 +2751,6 @@ export default class TradeStore extends BaseStore {
 
             this.debouncedProposal();
         }
-    }
-
-    get is_dtrader_v2() {
-        // V2 is now active on both mobile and desktop — always use V2 init paths
-        // to avoid duplicate API calls (V1 loadActiveSymbols/setContractTypes
-        // duplicated what useActiveSymbols/useContractsFor React Query hooks already do).
-        return true;
-    }
-
-    get is_synthetics_available() {
-        return !!this.active_symbols?.find(item => item.market === 'synthetic_index');
-    }
-
-    get is_synthetics_trading_market_available() {
-        return !!this.active_symbols?.find(
-            item => item.subgroup === 'synthetics' && !isMarketClosed(this.active_symbols, item.underlying_symbol)
-        );
     }
 
     get show_digits_stats() {
@@ -2815,10 +2763,6 @@ export default class TradeStore extends BaseStore {
 
     setTickData(tick: TickSpotData | null) {
         this.tick_data = tick;
-    }
-
-    setMobileDigitView(bool: boolean) {
-        this.is_mobile_digit_view_selected = bool;
     }
 
     pushPurchaseDataToGtm(contract_data: TContractDataForGTM) {
@@ -2880,7 +2824,7 @@ export default class TradeStore extends BaseStore {
 
         // Hold proposals until the symbol's contracts_for values are applied
         // (see is_awaiting_contracts_for); processContractsForV2 re-triggers once released.
-        if (this.is_dtrader_v2 && this.is_awaiting_contracts_for) {
+        if (this.is_awaiting_contracts_for) {
             runInAction(() => {
                 this.proposal_info = {};
                 this.purchase_info = {};
@@ -3428,7 +3372,6 @@ export default class TradeStore extends BaseStore {
         this.disposeLogout();
         this.disposeClientInit();
         this.disposeNetworkStatusChange();
-        this.disposeThemeChange();
         if (this.reconnectHandler) {
             WS.removeOnReconnect(this.reconnectHandler);
         }
@@ -3480,100 +3423,6 @@ export default class TradeStore extends BaseStore {
             };
         }
     }
-
-    // ---------- WS ----------
-    wsSubscribe = (req: TTicksHistoryRequest, callback: (response: TTicksResponse) => void) => {
-        const passthrough_callback = (...args: [TTicksResponse]) => {
-            callback(...args);
-            if ('ohlc' in args[0] && this.root_store.contract_trade.granularity !== 0) {
-                const { close, pip_size } = args[0].ohlc as { close: string; pip_size: number };
-                if (close && pip_size) this.setTickData({ pip_size, quote: Number(close) });
-            }
-            interface AccumulatorBarriersData {
-                current_spot?: number;
-                current_spot_time?: number;
-                tick_update_timestamp?: number;
-                accumulators_high_barrier?: string;
-                accumulators_low_barrier?: string;
-                barrier_spot_distance?: string;
-                previous_spot_time?: number;
-                underlying?: string;
-            }
-
-            if (this.is_accumulator) {
-                let current_spot_data: AccumulatorBarriersData = {};
-
-                if ('tick' in args[0]) {
-                    const { epoch, quote, symbol } = args[0].tick as TickSpotData;
-                    if (this.symbol !== symbol) return;
-                    current_spot_data = {
-                        current_spot: quote,
-                        current_spot_time: epoch,
-                        underlying: symbol,
-                    };
-                } else if ('history' in args[0]) {
-                    const { prices, times } = args[0].history as History;
-                    const symbol = args[0].echo_req.ticks_history;
-                    if (this.symbol !== symbol) return;
-                    current_spot_data = {
-                        current_spot: prices?.[prices?.length - 1],
-                        current_spot_time: times?.[times?.length - 1],
-                        previous_spot_time: times?.[times?.length - 2],
-                        underlying: symbol,
-                    };
-                } else {
-                    return;
-                }
-
-                this.root_store.contract_trade.updateAccumulatorBarriersData(current_spot_data);
-            }
-        };
-        if (isMarketClosed(this.active_symbols, req.ticks_history)) {
-            delete req.subscribe;
-            WS.getTicksHistory(req).then(passthrough_callback, passthrough_callback);
-        } else if (req.subscribe === 1) {
-            const key = JSON.stringify(req);
-            const subscriber = WS.subscribeTicksHistory(req, passthrough_callback);
-            g_subscribers_map[key] = subscriber;
-        }
-    };
-
-    wsForget = (req: TTicksHistoryRequest) => {
-        const key = JSON.stringify(req);
-        if (g_subscribers_map[key]) {
-            g_subscribers_map[key]?.unsubscribe();
-            delete g_subscribers_map[key];
-        }
-        // WS.forget('ticks_history', callback, match);
-    };
-
-    wsForgetStream = (stream_id: string) => {
-        WS.forgetStream(stream_id);
-    };
-
-    wsSendRequest = (req: TTradingTimesRequest | TActiveSymbolsRequest | TServerTimeRequest) => {
-        if ('time' in req) {
-            return ServerTime.timePromise().then(server_time => {
-                if (server_time) {
-                    return {
-                        msg_type: 'time',
-                        time: server_time.unix(),
-                    };
-                }
-                return WS.time();
-            });
-        }
-        if ('active_symbols' in req) {
-            if (this.root_store.client.is_logged_in) {
-                return WS.authorized.activeSymbols('brief');
-            }
-            return WS.activeSymbols('brief');
-        }
-        if ('trading_times' in req) {
-            return WS.tradingTimes(req.trading_times);
-        }
-        return WS.storage.send(req);
-    };
 
     chartStateChange(state: string, option?: TChartStateChangeOption) {
         if (
@@ -3677,20 +3526,6 @@ export default class TradeStore extends BaseStore {
 
     get is_touch() {
         return isTouchContract(this.contract_type);
-    }
-
-    async getFirstOpenMarket(markets_to_search: string[]) {
-        // Wait for active_symbols to be populated instead of fetching again
-        if (!this.active_symbols?.length) {
-            try {
-                await when(() => !!this.active_symbols?.length, { timeout: 10000 });
-            } catch (error) {
-                // eslint-disable-next-line no-console
-                console.error('[TradeStore] Timeout waiting for active_symbols:', error);
-                return undefined;
-            }
-        }
-        return findFirstOpenMarket(this.active_symbols, markets_to_search);
     }
 
     /**
@@ -3843,10 +3678,6 @@ export default class TradeStore extends BaseStore {
             });
         }
     }
-    setIsDigitsWidgetActive(is_active: boolean) {
-        this.is_digits_widget_active = is_active;
-    }
-
     setTradeTypeTab(label = '') {
         this.trade_type_tab = label;
     }
@@ -4203,10 +4034,8 @@ export default class TradeStore extends BaseStore {
      * This method ensures validation errors are cleared when barriers are programmatically updated
      */
     private clearBarrierValidationErrors(): void {
-        if (this.is_dtrader_v2) {
-            this.validation_errors.barrier_1 = [];
-            this.validation_errors.barrier_2 = [];
-        }
+        this.validation_errors.barrier_1 = [];
+        this.validation_errors.barrier_2 = [];
     }
 
     /**

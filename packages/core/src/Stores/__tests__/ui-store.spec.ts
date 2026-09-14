@@ -503,3 +503,59 @@ describe('UIStore.toggleUrlUnavailableModal', () => {
         expect(ui.urlUnavailableModalReason).toBe('symbol');
     });
 });
+
+describe('UIStore dead-cluster cleanup', () => {
+    let ui: InstanceType<typeof UIStore>;
+
+    beforeEach(() => {
+        ui = new UIStore({ common: {}, client: {} } as never);
+    });
+
+    it('[SMC-014] removes the dead modal/flow/duration clusters', () => {
+        const dead = [
+            'pwa_prompt_event',
+            'setPWAPromptEvent',
+            'removePWAPromptEvent',
+            'is_link_expired_modal_visible',
+            'toggleResetEmailModal',
+            'setResetTradingPasswordModalOpen',
+            'is_from_signup_account',
+            'should_show_phone_number_otp',
+            'is_forced_to_exit_pnv',
+            'is_tnc_update_modal_open',
+            'toggleTncUpdateModal',
+            'is_settings_modal_on',
+            'toggleSettingsModal',
+            'settings_extension',
+            'populateSettingsExtensions',
+            'is_nativepicker_visible',
+            'show_positions_toggle',
+            'is_cfd_page',
+            'modal_index',
+            'field_ref_to_focus',
+            'sub_section_index',
+            'url_hashed_values',
+            'setHashedValue',
+            'is_landscape',
+            'onChangeUiStore',
+            'getDurationFromUnit',
+            'duration_t',
+            'advanced_duration_unit',
+            'simple_duration_unit',
+            'advanced_expiry_type',
+            'setChartCountdown',
+        ];
+        dead.forEach(member => expect(member in ui).toBe(false));
+    });
+
+    it('[SMC-014] keeps the live surfaces', () => {
+        expect(ui.is_try_real_modal_visible).toBe(false);
+        expect(typeof ui.toggleTryRealModal).toBe('function');
+        expect(typeof ui.setPromptHandler).toBe('function');
+        expect(typeof ui.notifyAppInstall).toBe('function');
+        expect(typeof ui.installWithDeferredPrompt).toBe('function');
+        expect(ui.is_advanced_duration).toBe(false);
+        expect(ui.is_chart_countdown_visible).toBe(false);
+        expect(typeof ui.setThemePreference).toBe('function');
+    });
+});

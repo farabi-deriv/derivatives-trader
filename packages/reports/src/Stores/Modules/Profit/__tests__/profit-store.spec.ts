@@ -362,23 +362,20 @@ describe('ProfitTableStore', () => {
         });
     });
     describe('handleDateChange', () => {
-        it('should set filtered_date_range with date_range value, call clearTable & fetchNextBatch with shouldFilterContractTypes value', () => {
+        it('should call clearTable & fetchNextBatch with shouldFilterContractTypes value', () => {
             const spyClearTable = jest.spyOn(mocked_profit_table_store, 'clearTable');
             const spyFetchNextBatch = jest.spyOn(mocked_profit_table_store, 'fetchNextBatch');
             mocked_profit_table_store.handleDateChange(
                 {},
                 {
-                    date_range: { duration: 0, label: 'Today' },
                     shouldFilterContractTypes: true,
                 }
             );
 
-            expect(mocked_profit_table_store.filtered_date_range).toEqual({ duration: 0, label: 'Today' });
             expect(spyClearTable).toHaveBeenCalled();
             expect(spyFetchNextBatch).toBeCalledWith(true);
 
             mocked_profit_table_store.handleDateChange({});
-            expect(mocked_profit_table_store.filtered_date_range).not.toBeDefined();
             expect(spyFetchNextBatch).toBeCalledWith(undefined);
         });
         it('should set date_from when from is present in date_values', () => {
@@ -392,6 +389,19 @@ describe('ProfitTableStore', () => {
         it('should set date_from to null when from is missing from date_values and is_batch={true}', () => {
             mocked_profit_table_store.handleDateChange({ is_batch: true });
             expect(mocked_profit_table_store.date_from).toBeNull();
+        });
+    });
+    // Characterization guard: never went red; pins that the dead write-only member is gone while
+    // the live profit-table surfaces survive.
+    describe('[SMC-018] dead reports-store members removed', () => {
+        it('[SMC-018] drops write-only filtered_date_range and keeps the live profit members', () => {
+            expect('filtered_date_range' in mocked_profit_table_store).toBe(false);
+
+            ['data', 'is_loading', 'has_loaded_all', 'date_from', 'date_to', 'error', 'client_loginid'].forEach(
+                member => expect(member in mocked_profit_table_store).toBe(true)
+            );
+            expect(typeof mocked_profit_table_store.handleDateChange).toBe('function');
+            expect(typeof mocked_profit_table_store.fetchNextBatch).toBe('function');
         });
     });
 });

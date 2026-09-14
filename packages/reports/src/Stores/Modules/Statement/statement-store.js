@@ -2,8 +2,8 @@ import debounce from 'lodash.debounce';
 import { action, computed, makeObservable, observable, override, reaction } from 'mobx';
 
 import { mapErrorMessage, toMoment, WS } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 
-import BaseStore from '../../base-store';
 import getDateBoundaries from '../Profit/Helpers/format-request';
 
 import { formatStatementTransaction } from './Helpers/format-response';
@@ -19,13 +19,10 @@ export default class StatementStore extends BaseStore {
     date_to = toMoment().startOf('day').add(1, 'd').subtract(1, 's').unix();
     error = '';
     action_type = 'all';
-    filtered_date_range;
 
     // `client_loginid` is only used to detect if this is in sync with the client-store, don't rely on
     // this for calculations. Use the client.currency instead.
     client_loginid = '';
-
-    account_statistics = {};
 
     constructor({ root_store }) {
         // TODO: [mobx-undecorate] verify the constructor arguments and the arguments of this automatically generated super call
@@ -43,9 +40,7 @@ export default class StatementStore extends BaseStore {
             date_to: observable,
             error: observable,
             action_type: observable,
-            filtered_date_range: observable,
             client_loginid: observable,
-            account_statistics: observable,
             is_empty: computed,
             has_selected_date: computed,
             clearTable: action.bound,
@@ -133,10 +128,8 @@ export default class StatementStore extends BaseStore {
         }
     }
 
-    handleDateChange(date_values, { date_range } = {}) {
+    handleDateChange(date_values) {
         const { from, to, is_batch } = date_values;
-
-        this.filtered_date_range = date_range;
 
         if (from) {
             this.date_from = toMoment(from).unix();
@@ -150,7 +143,7 @@ export default class StatementStore extends BaseStore {
         this.fetchNextBatch();
     }
 
-    handleFilterChange(filterValue = {}) {
+    handleFilterChange(filterValue = 'all') {
         this.action_type = filterValue;
         this.clearTable();
         this.fetchNextBatch();

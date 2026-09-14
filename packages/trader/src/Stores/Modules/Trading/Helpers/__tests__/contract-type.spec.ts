@@ -404,9 +404,6 @@ describe('ContractType Helper Functions', () => {
             expect(result).toHaveProperty('basis_list');
             expect(result).toHaveProperty('basis');
             expect(result).toHaveProperty('trade_types');
-            expect(result).toHaveProperty('start_date');
-            expect(result).toHaveProperty('start_dates_list');
-            expect(result).toHaveProperty('contract_start_type', 'spot');
             expect(result).toHaveProperty('barrier_count');
             expect(result).toHaveProperty('duration_unit');
             expect(result).toHaveProperty('duration_units_list');
@@ -575,7 +572,7 @@ describe('ContractType Helper Functions', () => {
         });
 
         it('should return null if expiry_type is not endtime', () => {
-            const result = ContractType.getExpiryTime(null, '21:00:00', 'duration', undefined, [], 0, null);
+            const result = ContractType.getExpiryTime(null, '21:00:00', 'duration', undefined, 0, null);
             expect(result.expiry_time).toBe(null);
         });
 
@@ -584,7 +581,7 @@ describe('ContractType Helper Functions', () => {
                 isBefore: jest.fn(() => true),
             });
 
-            const result = ContractType.getExpiryTime('2023-12-14', '21:00:00', 'endtime', ['21:00:00'], [], 0, null);
+            const result = ContractType.getExpiryTime('2023-12-14', '21:00:00', 'endtime', ['21:00:00'], 0, null);
             expect(result.expiry_time).toBe('21:00:00');
         });
 
@@ -603,7 +600,7 @@ describe('ContractType Helper Functions', () => {
             };
             (server_time_get_spy as jest.Mock).mockReturnValue(mockMoment);
 
-            const result = ContractType.getExpiryTime(null, '21:00:00', 'endtime', undefined, [], 1701388800, '03:03');
+            const result = ContractType.getExpiryTime(null, '21:00:00', 'endtime', undefined, 1701388800, '03:03');
 
             // The function should return a calculated time
             expect(typeof result.expiry_time).toBe('string');
@@ -615,7 +612,7 @@ describe('ContractType Helper Functions', () => {
             it('[DCE-005] does not roll a 23:56 clamp into the next day', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T23:56:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('23:56');
             });
@@ -623,7 +620,7 @@ describe('ContractType Helper Functions', () => {
             it('[DCE-005] does not roll a 23:58 clamp into the next day', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T23:58:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('23:58');
             });
@@ -634,7 +631,7 @@ describe('ContractType Helper Functions', () => {
             it('[DCE-005] clamps a 23:51 clamp to the end of the day instead of rolling over', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T23:51:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('23:59');
             });
@@ -642,7 +639,7 @@ describe('ContractType Helper Functions', () => {
             it('[DCE-005] clamps a 23:54 clamp to the end of the day instead of rolling over', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T23:54:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('23:59');
             });
@@ -650,7 +647,7 @@ describe('ContractType Helper Functions', () => {
             it('[DCE-005] leaves ordinary rounding just below the clamp window unaffected', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T23:50:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('23:55');
             });
@@ -660,22 +657,10 @@ describe('ContractType Helper Functions', () => {
             it('characterizes ordinary rounding away from end-of-day', () => {
                 (server_time_get_spy as jest.Mock).mockReturnValue(dayjs.utc('2024-06-10T14:33:00Z'));
 
-                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, [], 0, null);
+                const result = ContractType.getExpiryTime('2024-06-10', null, 'endtime', undefined, 0, null);
 
                 expect(result.expiry_time).toBe('14:40');
             });
-        });
-    });
-
-    describe('getSessions', () => {
-        it('should always return sessions as undefined', () => {
-            const result = ContractType.getSessions('frxAUDJPY', 'touch', 1701388800);
-            expect(result).toEqual({ sessions: undefined });
-        });
-
-        it('should return sessions as undefined for any contract type', () => {
-            const result = ContractType.getSessions('frxAUDJPY', 'high_low', 1701388800);
-            expect(result).toEqual({ sessions: undefined });
         });
     });
 
@@ -689,18 +674,18 @@ describe('ContractType Helper Functions', () => {
         });
 
         it('should return null if start_date is 0', () => {
-            const result = ContractType.getStartTime(undefined, 0, '03:03');
+            const result = ContractType.getStartTime(0, '03:03');
             expect(result.start_time).toBe(null);
         });
 
         it('should return formatted time if start_date is valid', () => {
-            const result = ContractType.getStartTime(undefined, 1701388800, '03:03');
+            const result = ContractType.getStartTime(1701388800, '03:03');
             expect(typeof result.start_time).toBe('string');
             expect(result.start_time).toMatch(/^\d{2}:\d{2}$/);
         });
 
         it('should handle null start_time gracefully', () => {
-            const result = ContractType.getStartTime(undefined, 1701388800, null);
+            const result = ContractType.getStartTime(1701388800, null);
             expect(typeof result.start_time).toBe('string');
         });
     });

@@ -21,11 +21,8 @@ import {
     unsupported_contract_types_list,
     WS,
 } from '@deriv/shared';
-import { localize } from '@deriv-com/translations';
 
 import { TConfig, TTradeStore } from 'Types';
-
-import { isSessionAvailable } from './start-date';
 
 import ServerTime from '_common/base/server_time';
 
@@ -60,7 +57,6 @@ export const ContractType = (() => {
     type TContractValues = ReturnType<typeof getComponents> &
         ReturnType<typeof getBasis> &
         ReturnType<typeof getTradeTypes> &
-        ReturnType<typeof getStartDates> &
         ReturnType<typeof getBarriers> &
         ReturnType<typeof getDurationUnit> &
         ReturnType<typeof getDurationUnitsList> &
@@ -212,9 +208,7 @@ export const ContractType = (() => {
     const getArrayDefaultValue = <T>(arr_new_values: Array<T>, value: T): T =>
         arr_new_values.indexOf(value) !== -1 ? value : arr_new_values[0];
 
-    const getContractValues = (
-        store: TTradeStore
-    ): (TContractValues & { contract_start_type: 'spot' }) | Record<string, never> => {
+    const getContractValues = (store: TTradeStore): TContractValues | Record<string, never> => {
         const {
             contract_expiry_type,
             contract_type,
@@ -222,7 +216,6 @@ export const ContractType = (() => {
             duration_unit,
             expiry_type,
             multiplier,
-            start_date,
             cancellation_duration,
             short_barriers,
             long_barriers,
@@ -266,7 +259,6 @@ export const ContractType = (() => {
         const form_components = getComponents(symbol, contract_type);
         const obj_basis = getBasis(symbol, contract_type, basis);
         const obj_trade_types = getTradeTypes(symbol, contract_type);
-        const obj_start_dates = getStartDates(symbol, contract_type, start_date);
         const obj_duration_unit = getDurationUnit(symbol, duration_unit, contract_type);
 
         const obj_duration_units_list = getDurationUnitsList(symbol, contract_type);
@@ -312,8 +304,6 @@ export const ContractType = (() => {
             ...form_components,
             ...obj_basis,
             ...obj_trade_types,
-            ...obj_start_dates,
-            contract_start_type: 'spot' as const, // All contracts now default to spot behavior
             ...obj_barrier,
             ...obj_duration_unit,
             ...obj_duration_units_list,
@@ -445,66 +435,6 @@ export const ContractType = (() => {
 
     const getFullContractTypes = (symbol: string | null) => configFor(symbol).available_contract_types;
 
-    const getStartDates = (symbol: string | null, contract_type: string, current_start_date: number) => {
-        const { available_contract_types } = configFor(symbol);
-        const config: TConfig = getPropertyValue(available_contract_types, [contract_type, 'config']);
-        const start_dates_list = [];
-
-        if (config?.has_spot) {
-            // Number(0) refers to 'now'
-            start_dates_list.push({ text: localize('Now'), value: Number(0) });
-        }
-
-        const start_date = start_dates_list.find(item => item.value === current_start_date)
-            ? current_start_date
-            : start_dates_list[0]?.value;
-
-        return { start_date, start_dates_list };
-    };
-
-    const getSessions = (symbol: string | null, contract_type: string, start_date: number) => {
-        const { available_contract_types } = configFor(symbol);
-        const config: TConfig = getPropertyValue(available_contract_types, [contract_type, 'config']) || {};
-        const sessions = undefined;
-        return { sessions };
-    };
-
-    const hours = [...Array(24).keys()].map(a => `0${a}`.slice(-2));
-    const minutes = [...Array(12).keys()].map(a => `0${a * 5}`.slice(-2));
-
-    const getValidTime = (
-        sessions: ReturnType<typeof getSessions>['sessions'],
-        compare_moment: Dayjs,
-        start_moment?: Dayjs
-    ) => {
-        if (sessions && !isSessionAvailable(sessions, compare_moment)) {
-            // first see if changing the minute brings it to the right session
-            compare_moment.minute(
-                Number(
-                    minutes.find(m => isSessionAvailable(sessions, compare_moment.minute(+m))) ||
-                        compare_moment.format('mm')
-                )
-            );
-            // if not, also change the hour
-            if (!isSessionAvailable(sessions, compare_moment)) {
-                compare_moment.minute(0);
-                compare_moment.hour(
-                    Number(
-                        hours.find(h => isSessionAvailable(sessions, compare_moment.hour(+h), start_moment, true)) ||
-                            compare_moment.format('HH')
-                    )
-                );
-                compare_moment.minute(
-                    Number(
-                        minutes.find(m => isSessionAvailable(sessions, compare_moment.minute(+m))) ||
-                            compare_moment.format('mm')
-                    )
-                );
-            }
-        }
-        return compare_moment.format('HH:mm');
-    };
-
     const buildMoment = (date: string | number | null, time?: string | null) => {
         const [hour, minute] = isTimeValid(time ?? '') ? (time?.split(':') ?? []) : [0, 0];
         return toMoment(date || ServerTime.get())
@@ -512,12 +442,8 @@ export const ContractType = (() => {
             .minute(+minute);
     };
 
-    const getStartTime = (
-        sessions: ReturnType<typeof getSessions>['sessions'],
-        start_date: number,
-        start_time?: string | null
-    ) => ({
-        start_time: start_date ? getValidTime(sessions, buildMoment(start_date, start_time)) : null,
+    const getStartTime = (start_date: number, start_time?: string | null) => ({
+        start_time: start_date ? buildMoment(start_date, start_time).format('HH:mm') : null,
     });
 
     const getTradingEvents = async (date: string, underlying: string | null = null) => {
@@ -700,15 +626,12 @@ export const ContractType = (() => {
         return { expiry_date: proper_expiry_date };
     };
 
-    // It has to follow the correct order of checks:
-    // first check if end time is within available sessions
-    // then confirm that end time is at least 5 minute after start time
+    // Confirm that end time is at least 5 minutes after start time.
     const getExpiryTime = (
         expiry_date: string | null,
         expiry_time: string | null,
         expiry_type: string | null,
         market_close_times: string[] | undefined | TTimes,
-        sessions: TTradeStore['sessions'],
         start_date: number,
         start_time?: string | null
     ) => {
@@ -736,12 +659,10 @@ export const ContractType = (() => {
                 end_time = end_moment.format('HH:mm');
                 if (end_moment.isSameOrBefore(start_moment) || end_moment.diff(start_moment, 'minute') < 5) {
                     const is_end_of_day = start_moment.get('hours') === 23 && start_moment.get('minute') >= 55;
-                    const is_end_of_session =
-                        sessions && !isSessionAvailable(sessions, start_moment.clone().add(5, 'minutes'));
-                    // Only round when 5 minutes was actually added: is_end_of_day/is_end_of_session
-                    // already decided not to push the clamp past the end of the day, and rounding
-                    // that unrounded value can roll `.minute(60)` into the next day (DCE-005).
-                    const should_add_five_minutes = !(is_end_of_day || is_end_of_session);
+                    // Only round when 5 minutes was actually added: is_end_of_day already decided not
+                    // to push the clamp past the end of the day, and rounding that unrounded value can
+                    // roll `.minute(60)` into the next day (DCE-005).
+                    const should_add_five_minutes = !is_end_of_day;
                     end_time = start_moment.clone().add(should_add_five_minutes ? 5 : 0, 'minutes');
                     if (should_add_five_minutes) {
                         // Set the end_time to be multiple of 5 to be equal as the SELECTED_TIME that shown to the client.
@@ -898,7 +819,6 @@ export const ContractType = (() => {
         getExpiryDate,
         getExpiryTime,
         getExpiryType,
-        getSessions,
         getStartTime,
         getTradingEvents,
         getTradingDays,

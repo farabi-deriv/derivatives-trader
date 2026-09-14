@@ -132,6 +132,23 @@ describe('getStatementTableColumnsTemplate', () => {
         render(amountColumn.renderCellContent(mockProps) as JSX.Element);
         expect(screen.getByText('+1000.00')).toBeInTheDocument();
     });
+
+    it("[RSF-002] uses the row's refid as the statement icon key", () => {
+        const iconColumn = columns[0];
+        const mockProps: TCellContentProps = {
+            cell_value: '',
+            row_obj: { refid: 490981792908 },
+            is_footer: false,
+            passthrough: {
+                isTopUp: jest.fn(() => false),
+            },
+            is_vanilla: false,
+            is_turbos: false,
+        };
+
+        const element = iconColumn.renderCellContent(mockProps) as JSX.Element;
+        expect(element.key).toBe('490981792908');
+    });
 });
 
 describe('getProfitTableColumnsTemplate', () => {

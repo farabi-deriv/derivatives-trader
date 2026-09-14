@@ -1,9 +1,8 @@
 import { action, computed, makeObservable } from 'mobx';
 
 import { getPlatformName, isProduction } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { getInitialLanguage } from '@deriv-com/translations';
-
-import BaseStore from './base-store';
 
 import BinarySocket from '_common/base/socket_base';
 

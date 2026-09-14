@@ -11,12 +11,11 @@ import useNativeAppAllowedTradeTypes from './useNativeAppAllowedTradeTypes';
  * by useContractsFor when Guide is displayed during scrolling.
  */
 const useGuideContractTypes = () => {
-    const { contract_types_list_v2, contract_types_list, is_dtrader_v2 } = useTraderStore();
+    const { contract_types_list_v2 } = useTraderStore();
     const nativeAppAllowedTradeTypes = useNativeAppAllowedTradeTypes();
 
     const trade_types = useMemo(() => {
-        // Use the appropriate contract types list based on dtrader version
-        const contract_list = is_dtrader_v2 ? contract_types_list_v2 : contract_types_list;
+        const contract_list = contract_types_list_v2;
 
         // If no contract types are available, return empty array
         if (!contract_list || Object.keys(contract_list).length === 0) {
@@ -25,7 +24,7 @@ const useGuideContractTypes = () => {
 
         // Use the same logic as useContractsFor but without API calls
         return getTradeTypesList(contract_list, nativeAppAllowedTradeTypes);
-    }, [contract_types_list_v2, contract_types_list, is_dtrader_v2, nativeAppAllowedTradeTypes]);
+    }, [contract_types_list_v2, nativeAppAllowedTradeTypes]);
 
     return { trade_types };
 };

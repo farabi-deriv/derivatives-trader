@@ -1,9 +1,8 @@
 import { action, makeObservable, observable } from 'mobx';
 
 import { isMobile, mapErrorMessage, routes, setLocale, toMoment, UNSUPPORTED_LANGUAGES } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { getAllowedLanguages, getInitialLanguage } from '@deriv-com/translations';
-
-import BaseStore from './base-store';
 
 import ServerTime from '_common/base/server_time';
 import * as SocketCache from '_common/base/socket_cache';
@@ -15,7 +14,6 @@ export default class CommonStore extends BaseStore {
         makeObservable(this, {
             addRouteHistoryItem: action.bound,
             allowed_languages: observable,
-            app_router: observable,
             app_routing_history: observable,
             changeCurrentLanguage: action.bound,
             changeSelectedLanguage: action.bound,
@@ -28,13 +26,10 @@ export default class CommonStore extends BaseStore {
             is_network_online: observable,
             is_socket_opened: observable,
             network_status: observable,
-            platform: observable,
             routeBackInApp: action.bound,
-            routeTo: action.bound,
             selected_contract_type: observable,
             server_time: observable,
             services_error: observable,
-            setAppRouterHistory: action.bound,
             setError: action.bound,
             setInitialRouteHistoryItem: action.bound,
             setIsSocketOpened: action.bound,
@@ -45,12 +40,10 @@ export default class CommonStore extends BaseStore {
             setServicesError: action.bound,
             resetServicesError: action.bound,
             showError: action.bound,
-            was_socket_opened: observable,
         });
     }
 
     allowed_languages = Object.keys(getAllowedLanguages(UNSUPPORTED_LANGUAGES));
-    app_router = { history: null };
     app_routing_history = [];
     changing_language_timer_id = '';
     current_language = getInitialLanguage();
@@ -63,11 +56,9 @@ export default class CommonStore extends BaseStore {
         message: '',
     };
     network_status = {};
-    platform = '';
     selected_contract_type = '';
     server_time = ServerTime.get() || toMoment(); // fallback: get current time from moment.js
     services_error = {};
-    was_socket_opened = false;
 
     setSelectedContractType(contract_type) {
         this.selected_contract_type = contract_type;
@@ -121,20 +112,13 @@ export default class CommonStore extends BaseStore {
             const url_params = new URLSearchParams(search);
             const platform = url_params.get('platform');
             if (platform) {
-                this.platform = platform;
-                window.sessionStorage.setItem('config.platform', this.platform);
+                window.sessionStorage.setItem('config.platform', platform);
             }
         }
     }
 
     setInitialRouteHistoryItem(location) {
         if (window.location.href.indexOf('?ext_platform_url=') !== -1) {
-            const ext_url = decodeURI(new URL(window.location.href).searchParams.get('ext_platform_url'));
-            const { setExternalParams } = this.root_store.client;
-            setExternalParams({
-                url: ext_url,
-                should_redirect: true,
-            });
             this.addRouteHistoryItem({ ...location, action: 'PUSH' });
 
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -152,7 +136,6 @@ export default class CommonStore extends BaseStore {
         // but rather to reset account related stores like portfolio and contract-trade
 
         this.is_socket_opened = is_socket_opened;
-        this.was_socket_opened = this.was_socket_opened || is_socket_opened;
     }
 
     setNetworkStatus(status, is_online) {
@@ -227,14 +210,6 @@ export default class CommonStore extends BaseStore {
         }
     }
 
-    setAppRouterHistory(history) {
-        this.app_router.history = history;
-    }
-
-    routeTo(pathname) {
-        if (this.app_router.history) this.app_router.history.push(pathname);
-    }
-
     addRouteHistoryItem(router_action) {
         const check_existing = this.app_routing_history.findIndex(
             i => i.pathname === router_action.pathname && i.action === 'PUSH'
@@ -244,8 +219,6 @@ export default class CommonStore extends BaseStore {
         }
         this.app_routing_history.unshift(router_action);
     }
-
-    isCurrentLanguage = lang => lang === this.current_language;
 
     routeBackInApp(history) {
         history.push(routes.index);

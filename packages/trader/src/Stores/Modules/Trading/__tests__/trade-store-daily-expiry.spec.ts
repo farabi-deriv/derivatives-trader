@@ -78,7 +78,7 @@ jest.mock('@deriv/shared', () => ({
 }));
 
 // Keep the real date/time derivation (getNextTradingDayDate, getTradingTimes, getExpiryTime,
-// getExpiryDate, getExpiryType, getSessions, getStartTime) — that's what this suite verifies.
+// getExpiryDate, getExpiryType, getStartTime) — that's what this suite verifies.
 // Only the contracts_for-derived config lookups are stubbed, since building a real
 // `available_contract_types` config is orthogonal to the daily-expiry seed under test.
 jest.mock('../Helpers/contract-type', () => {
@@ -122,9 +122,6 @@ describe('TradeStore — daily-only expiry seed (DCE-001, DCE-002)', () => {
                 selectCurrency: jest.fn(),
             },
             ui: {
-                advanced_expiry_type: 'duration',
-                advanced_duration_unit: 'm',
-                simple_duration_unit: 'm',
                 is_mobile: false,
                 is_advanced_duration: false,
                 toggleUrlUnavailableModal: jest.fn(),

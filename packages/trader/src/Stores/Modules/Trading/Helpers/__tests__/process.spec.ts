@@ -12,7 +12,6 @@ jest.mock('Stores/Modules/Trading/Helpers/contract-type', () => ({
         getContractCategories: jest.fn(() => ({ contract_types_list: {}, non_available_contract_types_list: {} })),
         getContractValues: jest.fn(() => ({ form_components: ['duration', 'amount'] })),
         getContractType: jest.fn(() => ({ contract_type: 'rise_fall' })),
-        getSessions: jest.fn(() => ({ sessions: [] })),
         getStartTime: jest.fn(() => ({})),
         getDurationUnitsList: jest.fn(() => ({ duration_units_list: [] })),
         getDurationUnit: jest.fn(() => ({ duration_unit: 't' })),

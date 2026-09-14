@@ -2,6 +2,7 @@ import { action, computed, makeObservable, observable, reaction } from 'mobx';
 
 import type { TAutoRun, TAutoStopReasonCode, TAutoStrategyDescriptor } from '@deriv/api';
 import { trackStrategySessionCompleted, type TStrategyRunPayload } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { localize } from '@deriv-com/translations';
 
 import { TRootStore } from 'Types';
@@ -10,7 +11,6 @@ import {
     DEFAULT_AUTOMATION_CONFIG,
     TAutomationConfig,
 } from '../../../AppV2/Components/AutomationPanel/automation-config';
-import BaseStore from '../../base-store';
 
 type TAutoRunStatus = 'idle' | 'starting' | 'running' | 'paused' | 'stopping' | 'stopped';
 
@@ -20,7 +20,7 @@ type TStopEvent = {
     code: TAutoStopReasonCode;
 };
 
-export default class AutomationStore extends BaseStore {
+export default class AutomationStore extends BaseStore<TRootStore> {
     config: TAutomationConfig = { ...DEFAULT_AUTOMATION_CONFIG };
     active_run_id: string | null = null;
     active_run: TAutoRun | null = null;

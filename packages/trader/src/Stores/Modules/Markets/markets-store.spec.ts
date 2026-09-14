@@ -17,7 +17,8 @@ describe('MarketsStore', () => {
             root_store: mockStore({}) as unknown as TRootStore,
         });
     });
-    it('should initialize localStorage if it does not exist', () => {
+
+    it('should seed the cq-favorites key when it does not exist', () => {
         const storedFavorites = JSON.parse(localStorage.getItem('cq-favorites') || '{}');
 
         expect(storedFavorites).toEqual({
@@ -25,51 +26,23 @@ describe('MarketsStore', () => {
             'chartTitle&Comparison': [],
         });
     });
-    it('should initialize favoriteIndicators and favoriteSymbols from localStorage', () => {
-        const initialData = {
-            indicators: ['indicator1', 'indicator2'],
-            'chartTitle&Comparison': ['symbol1', 'symbol2'],
-        };
-        localStorage.setItem('cq-favorites', JSON.stringify(initialData));
-        mockedMarketsStore = new MarketsStore({
-            root_store: mockStore({}) as unknown as TRootStore,
-        });
 
-        expect(mockedMarketsStore.favoriteIndicators).toEqual(initialData.indicators);
-        expect(mockedMarketsStore.favoriteSymbols).toEqual(initialData['chartTitle&Comparison']);
+    it('[SMC-013] removes the dead favorites cluster and keeps favouriteMarkets', () => {
+        expect('favoriteIndicators' in mockedMarketsStore).toBe(false);
+        expect('favoriteSymbols' in mockedMarketsStore).toBe(false);
+        expect('setFavoriteIndicators' in mockedMarketsStore).toBe(false);
+        expect('setFavoriteSymbols' in mockedMarketsStore).toBe(false);
+        expect('removeFavoriteIndicator' in mockedMarketsStore).toBe(false);
+        expect('removeFavoriteSymbol' in mockedMarketsStore).toBe(false);
+        expect('syncLocalStorage' in mockedMarketsStore).toBe(false);
+        expect(typeof mockedMarketsStore.setFavouriteMarkets).toBe('function');
     });
-    it('should set favoriteIndicators and sync with localStorage', () => {
-        const indicators = ['indicator1', 'indicator2'];
-        mockedMarketsStore.setFavoriteIndicators(indicators);
 
-        expect(mockedMarketsStore.favoriteIndicators).toEqual(indicators);
-        const storedFavorites = JSON.parse(localStorage.getItem('cq-favorites') || '{}');
-        expect(storedFavorites.indicators).toEqual(indicators);
-    });
-    it('should set favoriteSymbols and sync with localStorage', () => {
-        const symbols = ['symbol1', 'symbol2'];
-        mockedMarketsStore.setFavoriteSymbols(symbols);
+    it('persists favouriteMarkets to localStorage', () => {
+        const markets = [{ symbol: 'frxEURUSD', trade_type: 'rise_fall' }];
+        mockedMarketsStore.setFavouriteMarkets(markets);
 
-        expect(mockedMarketsStore.favoriteSymbols).toEqual(symbols);
-        const storedFavorites = JSON.parse(localStorage.getItem('cq-favorites') || '{}');
-        expect(storedFavorites['chartTitle&Comparison']).toEqual(symbols);
-    });
-    it('should remove favoriteIndicator and sync with localStorage', () => {
-        const indicators = ['indicator1', 'indicator2'];
-        mockedMarketsStore.setFavoriteIndicators(indicators);
-        mockedMarketsStore.removeFavoriteIndicator('indicator1');
-
-        expect(mockedMarketsStore.favoriteIndicators).toEqual(['indicator2']);
-        const storedFavorites = JSON.parse(localStorage.getItem('cq-favorites') || '{}');
-        expect(storedFavorites.indicators).toEqual(['indicator2']);
-    });
-    it('should remove favoriteSymbol and sync with localStorage', () => {
-        const symbols = ['symbol1', 'symbol2'];
-        mockedMarketsStore.setFavoriteSymbols(symbols);
-        mockedMarketsStore.removeFavoriteSymbol('symbol1');
-
-        expect(mockedMarketsStore.favoriteSymbols).toEqual(['symbol2']);
-        const storedFavorites = JSON.parse(localStorage.getItem('cq-favorites') || '{}');
-        expect(storedFavorites['chartTitle&Comparison']).toEqual(['symbol2']);
+        expect(mockedMarketsStore.favouriteMarkets).toEqual(markets);
+        expect(JSON.parse(localStorage.getItem('favourite_markets_v2') || '[]')).toEqual(markets);
     });
 });

@@ -4,7 +4,6 @@ import { computedFn } from 'mobx-utils';
 
 import { Money } from '@deriv/components';
 import {
-    ChartBarrierStore,
     contractCancelled,
     contractSold,
     formatMoney,
@@ -20,20 +19,16 @@ import {
     getTradeNotificationMessage,
     isAccumulatorContract,
     isEmptyObject,
-    isEnded,
     isMultiplierContract,
     isValidToSell,
     mapErrorMessage,
-    removeBarrier,
     routes,
-    setLimitOrderBarriers,
     trackAnalyticsEvent,
     TRADE_TYPES,
     WS,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { localize } from '@deriv-com/translations';
-
-import BaseStore from './base-store';
 
 export default class PortfolioStore extends BaseStore {
     positions = [];
@@ -49,7 +44,6 @@ export default class PortfolioStore extends BaseStore {
 
     // barriers
     barriers = [];
-    main_barrier = null;
     contract_type = '';
 
     responseQueue = [];
@@ -73,7 +67,6 @@ export default class PortfolioStore extends BaseStore {
             is_loading: observable,
             error: observable,
             barriers: observable,
-            main_barrier: observable,
             contract_type: observable,
             active_positions: observable.shallow,
             initializePortfolio: action.bound,
@@ -91,7 +84,6 @@ export default class PortfolioStore extends BaseStore {
             populateContractUpdate: action.bound,
             pushNewPosition: action.bound,
             removePositionById: action.bound,
-            onHoverPosition: action.bound,
             logoutListener: action.bound,
             networkStatusChangeListener: action.bound,
             onMount: action.bound,
@@ -103,12 +95,8 @@ export default class PortfolioStore extends BaseStore {
             is_active_empty: computed,
             active_positions_count: computed,
             is_empty: computed,
-            setPurchaseSpotBarrier: action,
-            updateLimitOrderBarriers: action,
             setContractType: action,
-            is_accumulator: computed,
             is_multiplier: computed,
-            is_turbos: computed,
         });
 
         this.root_store = root_store;
@@ -227,14 +215,6 @@ export default class PortfolioStore extends BaseStore {
         }
     }
 
-    updateTradeStore(is_over, portfolio_position, is_limit_order_update) {
-        // const trade = this.root_store.modules.trade;
-        if (!is_limit_order_update) {
-            this.setPurchaseSpotBarrier(is_over, portfolio_position);
-        }
-        this.updateLimitOrderBarriers(is_over, portfolio_position);
-    }
-
     proposalOpenContractQueueHandler = response => {
         this.responseQueue.push(response);
         this.throttledUpdatePositions();
@@ -293,14 +273,6 @@ export default class PortfolioStore extends BaseStore {
             portfolio_position.status = 'loss';
         } else {
             portfolio_position.status = null;
-        }
-
-        if (this.hovered_position_id === portfolio_position.id) {
-            if (portfolio_position.contract_info.is_sold === 1) {
-                this.updateTradeStore(false, portfolio_position);
-            } else {
-                this.updateTradeStore(true, portfolio_position, true);
-            }
         }
 
         if (portfolio_position.contract_info.is_sold === 1) {
@@ -392,12 +364,6 @@ export default class PortfolioStore extends BaseStore {
                 );
             }
         } else if (!response.error && response.sell) {
-            // update contract store sell info after sell
-            this.root_store.contract_trade.sell_info = {
-                sell_price: response.sell.sold_for,
-                transaction_id: response.sell.transaction_id,
-            };
-
             this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
             if (window.location.pathname !== routes.index || !this.root_store.ui.is_mobile) {
                 this.root_store.notifications.addNotificationMessage(
@@ -527,20 +493,6 @@ export default class PortfolioStore extends BaseStore {
         delete this.positions_map[contract_id];
         this.updatePositions();
         this.root_store.contract_trade.removeContract({ contract_id });
-    }
-
-    onHoverPosition(is_over, position, underlying_symbol) {
-        const position_underlying = position.contract_info.underlying_symbol;
-        if (
-            position_underlying !== underlying_symbol ||
-            isEnded(position.contract_info) ||
-            !isMultiplierContract(position.type)
-        ) {
-            return;
-        }
-
-        this.hovered_position_id = is_over ? position.id : null;
-        this.updateTradeStore(is_over, position);
     }
 
     logoutListener() {
@@ -680,55 +632,11 @@ export default class PortfolioStore extends BaseStore {
         return !this.is_loading && this.all_positions.length === 0;
     }
 
-    // from trade store
-    setPurchaseSpotBarrier(is_over, position) {
-        const key = 'PURCHASE_SPOT_BARRIER';
-        if (!is_over) {
-            removeBarrier(this.barriers, key);
-            return;
-        }
-
-        let purchase_spot_barrier = this.barriers.find(b => b.key === key);
-        if (purchase_spot_barrier) {
-            if (+purchase_spot_barrier.high !== +position.contract_info.entry_spot) {
-                purchase_spot_barrier.onChange({
-                    high: position.contract_info.entry_spot,
-                });
-            }
-        } else {
-            purchase_spot_barrier = new ChartBarrierStore(position.contract_info.entry_spot);
-            purchase_spot_barrier.key = key;
-            purchase_spot_barrier.draggable = false;
-            purchase_spot_barrier.hideOffscreenBarrier = true;
-            purchase_spot_barrier.isSingleBarrier = true;
-            this.barriers.push(purchase_spot_barrier);
-        }
-    }
-
-    updateLimitOrderBarriers(is_over, position) {
-        const contract_info = position.contract_info;
-        const { barriers } = this;
-        setLimitOrderBarriers({
-            barriers,
-            contract_info,
-            contract_type: contract_info.contract_type,
-            is_over,
-        });
-    }
-
     setContractType(contract_type) {
         this.contract_type = contract_type;
     }
 
-    get is_accumulator() {
-        return this.contract_type === TRADE_TYPES.ACCUMULATOR;
-    }
-
     get is_multiplier() {
         return this.contract_type === TRADE_TYPES.MULTIPLIER;
-    }
-
-    get is_turbos() {
-        return this.contract_type === TRADE_TYPES.TURBOS.LONG || this.contract_type === TRADE_TYPES.TURBOS.SHORT;
     }
 }

@@ -1,4 +1,6 @@
+import fs from 'fs';
 import { configure, reaction } from 'mobx';
+import path from 'path';
 
 import { TActiveSymbolsResponse } from '@deriv/api';
 import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
@@ -130,9 +132,6 @@ describe('TradeStore', () => {
                 selectCurrency: jest.fn(),
             },
             ui: {
-                advanced_expiry_type: 'duration',
-                advanced_duration_unit: 'm',
-                simple_duration_unit: 'm',
                 is_mobile: false,
                 is_advanced_duration: false,
                 toggleUrlUnavailableModal: jest.fn(),
@@ -490,7 +489,7 @@ describe('TradeStore', () => {
                 tradeStore.is_purchase_enabled = false;
                 tradeStore.is_purchase_pending = true;
 
-                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined, true);
+                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined);
 
                 expect(tradeStore.is_purchase_pending).toBe(false);
                 expect(buyContract).not.toHaveBeenCalled();
@@ -500,7 +499,7 @@ describe('TradeStore', () => {
                 tradeStore.is_purchase_enabled = true;
                 tradeStore.is_purchase_pending = true;
 
-                tradeStore.processPurchase('', 10, 'CALL', false, undefined, true);
+                tradeStore.processPurchase('', 10, 'CALL', false, undefined);
 
                 expect(tradeStore.is_purchase_pending).toBe(false);
                 expect(buyContract).not.toHaveBeenCalled();
@@ -515,7 +514,7 @@ describe('TradeStore', () => {
                     error: { code: 'InsufficientBalance', message: 'Insufficient balance' },
                 });
 
-                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined, true);
+                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined);
                 await flushMicrotasks();
 
                 expect(tradeStore.is_purchase_pending).toBe(false);
@@ -537,7 +536,7 @@ describe('TradeStore', () => {
                     },
                 });
 
-                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined, true);
+                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined);
                 await flushMicrotasks();
 
                 // Spinner cleared, rest of the UI live…
@@ -561,7 +560,7 @@ describe('TradeStore', () => {
                 tradeStore.is_purchase_pending = true;
                 (buyContract as jest.Mock).mockResolvedValueOnce({ msg_type: 'buy', buy: { contract_id: 1 } });
 
-                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined, true);
+                tradeStore.processPurchase('proposal-1', 10, 'CALL', false, undefined);
                 await flushMicrotasks();
 
                 expect(tradeStore.is_purchase_pending).toBe(false);
@@ -580,7 +579,7 @@ describe('TradeStore', () => {
 
                 // Pending stays set — the real buy is now in flight and will clear it on settle.
                 expect(tradeStore.is_purchase_pending).toBe(true);
-                expect(onPurchaseSpy).toHaveBeenCalledWith('abc', '10', 'CALL', false, undefined, true);
+                expect(onPurchaseSpy).toHaveBeenCalledWith('abc', '10', 'CALL', false, undefined);
 
                 onPurchaseSpy.mockRestore();
             });
@@ -825,16 +824,6 @@ describe('TradeStore', () => {
     });
 
     describe('Mobile and UI State', () => {
-        describe('setMobileDigitView', () => {
-            it('should set mobile digit view', () => {
-                tradeStore.setMobileDigitView(true);
-                expect(tradeStore.is_mobile_digit_view_selected).toBe(true);
-
-                tradeStore.setMobileDigitView(false);
-                expect(tradeStore.is_mobile_digit_view_selected).toBe(false);
-            });
-        });
-
         describe('setIsTradeParamsExpanded', () => {
             it('should set trade params expanded state', () => {
                 tradeStore.setIsTradeParamsExpanded(false);
@@ -845,13 +834,60 @@ describe('TradeStore', () => {
             });
         });
 
-        describe('setIsDigitsWidgetActive', () => {
-            it('should set digits widget active state', () => {
-                tradeStore.setIsDigitsWidgetActive(true);
-                expect(tradeStore.is_digits_widget_active).toBe(true);
+        describe('[SMC-012] removed dead trade-store members', () => {
+            it('no longer exposes the dead digit-view/digits-widget/synthetics/open-market members', () => {
+                expect('setMobileDigitView' in tradeStore).toBe(false);
+                expect('is_mobile_digit_view_selected' in tradeStore).toBe(false);
+                expect('setIsDigitsWidgetActive' in tradeStore).toBe(false);
+                expect('is_digits_widget_active' in tradeStore).toBe(false);
+                expect('is_synthetics_available' in tradeStore).toBe(false);
+                expect('is_synthetics_trading_market_available' in tradeStore).toBe(false);
+                expect('getFirstOpenMarket' in tradeStore).toBe(false);
+                expect('wsSubscribe' in tradeStore).toBe(false);
+                expect('wsForget' in tradeStore).toBe(false);
+                expect('wsForgetStream' in tradeStore).toBe(false);
+                expect('wsSendRequest' in tradeStore).toBe(false);
+            });
 
-                tradeStore.setIsDigitsWidgetActive(false);
-                expect(tradeStore.is_digits_widget_active).toBe(false);
+            it('keeps the live WS/ServerTime/TickSpotData layer wired after the dead WS layer is gone', () => {
+                // TickSpotData member survives and round-trips (its type import was kept).
+                const tick = { symbol: '1HZ100V', quote: 1234.56, epoch: 1708948799, pip_size: 2 };
+                tradeStore.setTickData(tick as never);
+                expect(tradeStore.tick_data).toEqual(tick);
+
+                // The kept `WS` import is still wired into the live proposal-forget path (the dead
+                // wsSubscribe/wsForget/wsSendRequest wrappers around it were what got removed).
+                (WS.forgetAll as jest.Mock).mockClear();
+                tradeStore.forgetAllProposal();
+                expect(WS.forgetAll).toHaveBeenCalledWith('proposal');
+            });
+
+            it('[SMC-012] drops g_subscribers_map + the WS-layer-only type imports from source, keeps ServerTime/WS/stream-response', () => {
+                // The module-private `g_subscribers_map` and the type imports the dead WS layer alone
+                // kept live cannot be probed on an instance, so the "no orphaned type import left
+                // dangling" clause is verified against the source itself.
+                const source = fs.readFileSync(path.join(__dirname, '../trade-store.ts'), 'utf8');
+
+                ['g_subscribers_map', 'wsSubscribe', 'wsForget', 'wsForgetStream', 'wsSendRequest'].forEach(symbol =>
+                    expect(source).not.toMatch(new RegExp(`\\b${symbol}\\b`))
+                );
+
+                // The type imports the WS wrappers alone kept live are gone (no dangling import).
+                [
+                    'TTicksResponse',
+                    'TActiveSymbolsRequest',
+                    'TServerTimeRequest',
+                    'TTicksHistoryRequest',
+                    'TTradingTimesRequest',
+                ].forEach(type => expect(source).not.toMatch(new RegExp(`\\b${type}\\b`)));
+
+                // The live layer the requirement says to KEEP is still imported/used.
+                expect(source).toMatch(/import ServerTime from '_common\/base\/server_time'/);
+                expect(source).toMatch(/\bTTicksStreamResponse\b/);
+                expect(source).toMatch(/\bWS\b/);
+
+                // ...and the orphaned `findFirstOpenMarket` import (kept alive only by getFirstOpenMarket) is gone.
+                expect(source).not.toMatch(/\bfindFirstOpenMarket\b/);
             });
         });
 
@@ -1034,43 +1070,8 @@ describe('TradeStore', () => {
         });
 
         describe('is_dtrader_v2', () => {
-            it('should always return true', () => {
-                mockRootStore.ui.is_mobile = true;
-                expect(tradeStore.is_dtrader_v2).toBe(true);
-                mockRootStore.ui.is_mobile = false;
-                expect(tradeStore.is_dtrader_v2).toBe(true);
-            });
-        });
-
-        describe('is_synthetics_available', () => {
-            it('should return true when synthetics market exists', () => {
-                tradeStore.active_symbols = [
-                    {
-                        market: 'synthetic_index',
-                        underlying_symbol: 'R_100',
-                        display_order: 1,
-                        exchange_is_open: 1,
-                        submarket: 'random_index',
-                        is_trading_suspended: 0,
-                        subgroup: 'volatility',
-                    },
-                ] as NonNullable<TActiveSymbolsResponse['active_symbols']>;
-                expect(tradeStore.is_synthetics_available).toBe(true);
-            });
-
-            it('should return false when no synthetics market', () => {
-                tradeStore.active_symbols = [
-                    {
-                        market: 'forex',
-                        underlying_symbol: 'EURUSD',
-                        display_order: 1,
-                        exchange_is_open: 1,
-                        submarket: 'major_pairs',
-                        is_trading_suspended: 0,
-                        subgroup: 'none',
-                    },
-                ] as NonNullable<TActiveSymbolsResponse['active_symbols']>;
-                expect(tradeStore.is_synthetics_available).toBe(false);
+            it('[SMC-011] no longer exposes the collapsed is_dtrader_v2 gate', () => {
+                expect('is_dtrader_v2' in tradeStore).toBe(false);
             });
         });
     });

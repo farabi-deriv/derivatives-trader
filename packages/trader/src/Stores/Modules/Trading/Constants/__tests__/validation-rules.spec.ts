@@ -2,7 +2,6 @@ import { TRuleOptions } from '@deriv/shared';
 
 import { TTradeStore } from 'Types';
 
-import { isSessionAvailable } from '../../Helpers/start-date';
 import { getMultiplierValidationRules, getValidationRules } from '../validation-rules';
 
 type TPartialRestParams = [Partial<TRuleOptions<TTradeStore>>, TTradeStore];
@@ -12,9 +11,6 @@ type TExtendedRuleOptions = TRuleOptions<TTradeStore> & {
     message: string | (() => string);
 };
 
-const test_spot = 'test_spot';
-const spot = 'spot';
-const time_in_past = '00:01';
 const valid_time = '11:45'; // '11:45:00' is also valid format
 const unformatted_time = '11:45:00:000';
 const time_with_incorrect_hours = '24:45';
@@ -46,11 +42,6 @@ jest.mock('@deriv/shared', () => ({
         start_date: 'start_date',
         clone: jest.fn(() => ({ hour: jest.fn(() => ({ minute: jest.fn() })) })),
     })),
-}));
-
-jest.mock('../../Helpers/start-date', () => ({
-    ...jest.requireActual('../../Helpers/start-date'),
-    isSessionAvailable: jest.fn(() => false),
 }));
 
 describe('getMultiplierValidationRules', () => {
@@ -189,75 +180,9 @@ describe('getValidationRules', () => {
         );
     });
 
-    it('should contain rules for start_date', () => {
-        expect(validation_rules).toHaveProperty('start_date');
-        expect(validation_rules.start_date.trigger).toBe('start_time');
-    });
-
     it('should contain rules for expiry_date', () => {
         expect(validation_rules).toHaveProperty('expiry_date');
         expect(validation_rules.expiry_date.trigger).toBe('expiry_time');
-    });
-
-    it('should contain rules for start_time', () => {
-        expect(validation_rules).toHaveProperty('start_time');
-
-        // Please enter the start time in the format "HH:MM".:
-        expect(
-            (validation_rules.start_time.rules?.[0][1] as TExtendedRuleOptions).func?.(
-                unformatted_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(false);
-        expect(
-            (validation_rules.start_time.rules?.[0][1] as TExtendedRuleOptions).func?.(
-                valid_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        // Hour must be between 0 and 23.:
-        expect(
-            (validation_rules.start_time.rules?.[1][1] as TExtendedRuleOptions).func?.(
-                time_with_incorrect_hours,
-                ...mocked_rest_time_params
-            )
-        ).toBe(false);
-        expect(
-            (validation_rules.start_time.rules?.[1][1] as TExtendedRuleOptions).func?.(
-                valid_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        // Minute must be between 0 and 59.:
-        expect(
-            (validation_rules.start_time.rules?.[2][1] as TExtendedRuleOptions).func?.(
-                time_with_incorrect_minutes,
-                ...mocked_rest_time_params
-            )
-        ).toBe(false);
-        expect(
-            (validation_rules.start_time.rules?.[2][1] as TExtendedRuleOptions).func?.(
-                valid_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        // All contracts now default to spot behavior, so validation always passes
-        expect(
-            (validation_rules.start_time.rules?.[3][1] as TExtendedRuleOptions).func?.(
-                time_in_past,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        expect(
-            (validation_rules.start_time.rules?.[3][1] as TExtendedRuleOptions).func?.(
-                valid_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
     });
 
     it('should contain rules for expiry_time', () => {
@@ -300,22 +225,6 @@ describe('getValidationRules', () => {
         ).toBe(false);
         expect(
             (validation_rules.expiry_time.rules?.[2][1] as TExtendedRuleOptions).func?.(
-                valid_time,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        // Expiry time cannot be in the past:
-        // All contracts now default to spot behavior, so validation always passes
-        expect(
-            (validation_rules.expiry_time.rules?.[3][1] as TExtendedRuleOptions).func?.(
-                time_in_past,
-                ...mocked_rest_time_params
-            )
-        ).toBe(true);
-
-        expect(
-            (validation_rules.expiry_time.rules?.[3][1] as TExtendedRuleOptions).func?.(
                 valid_time,
                 ...mocked_rest_time_params
             )

@@ -18,12 +18,12 @@ import {
     trackAnalyticsEvent,
     unique,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { Localize, localize } from '@deriv-com/translations';
 
 import { sortNotifications, sortNotificationsMobile } from '../App/Components/Elements/NotificationMessage/constants';
 
 import { excluded_notifications } from './Helpers/client-notifications';
-import BaseStore from './base-store';
 
 export default class NotificationStore extends BaseStore {
     is_notifications_visible = false;
@@ -382,12 +382,6 @@ export default class NotificationStore extends BaseStore {
                 }),
                 type: 'announce',
                 should_hide_close_btn: false,
-            },
-            is_virtual: {
-                key: 'is_virtual',
-                header: localize('You are on your demo account'),
-                message: localize('Please switch to your real account or create one.'),
-                type: 'warning',
             },
             new_version_available: {
                 action: {

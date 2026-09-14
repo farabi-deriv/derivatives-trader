@@ -2,9 +2,9 @@ import { action, makeObservable, observable, override, when } from 'mobx';
 
 import { Money } from '@deriv/components';
 import { contractCancelled, contractSold, isEmptyObject, trackAnalyticsEvent, WS } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { localize } from '@deriv-com/translations';
 
-import BaseStore from './base-store';
 import ContractStore from './contract-store';
 
 export default class ContractReplayStore extends BaseStore {
@@ -17,14 +17,12 @@ export default class ContractReplayStore extends BaseStore {
     error_message = '';
     error_code = '';
     is_chart_loading = true;
-    is_chart_scaling = false;
     // ---- chart props
     margin;
 
     // ---- Replay Contract Config ----
     contract_id;
     contract_info = observable.object({});
-    is_static_chart = false;
 
     // ---- Normal properties ---
     is_ongoing_contract = false;
@@ -75,11 +73,9 @@ export default class ContractReplayStore extends BaseStore {
             error_message: observable,
             error_code: observable,
             is_chart_loading: observable,
-            is_chart_scaling: observable,
             margin: observable,
             contract_id: observable,
             contract_info: observable.ref,
-            is_static_chart: observable,
             contract_update: observable.ref,
             onMount: action.bound,
             onUnmount: override,
@@ -116,7 +112,6 @@ export default class ContractReplayStore extends BaseStore {
         this.forgetProposalOpenContract(this.contract_id, this.populateConfig);
         this.contract_id = null;
         this.is_ongoing_contract = false;
-        this.is_static_chart = false;
         this.is_chart_loading = true;
         this.contract_info = {};
         this.chart_state = '';
@@ -167,15 +162,6 @@ export default class ContractReplayStore extends BaseStore {
 
         if (!end_time) this.is_ongoing_contract = true;
 
-        // finish contracts if end_time exists
-        if (end_time) {
-            if (!this.is_ongoing_contract) {
-                this.is_static_chart = true;
-            } else {
-                this.is_static_chart = false;
-            }
-        }
-
         if (this.contract_info.is_sold) {
             this.contract_store.cacheProposalOpenContractResponse(response);
         }
@@ -198,16 +184,9 @@ export default class ContractReplayStore extends BaseStore {
         // hide the loading.
         switch (state) {
             case 'INITIAL':
-                this.is_chart_scaling = false;
                 // this is for deriv resizing from desktop to mobile,
                 // that show the loading till the chart reflect complete
                 if (!this.is_chart_loading) this.is_chart_loading = true;
-                break;
-            case 'READY':
-                setTimeout(
-                    action(() => (this.is_chart_scaling = true)),
-                    10
-                );
                 break;
             case 'SCROLL_TO_LEFT':
                 // this Delay is for when the chart try to sacle 1:1 and we want to hide
@@ -269,11 +248,6 @@ export default class ContractReplayStore extends BaseStore {
             );
         } else if (!response.error && response.sell) {
             this.is_sell_requested = false;
-            // update contract store sell info after sell
-            this.sell_info = {
-                sell_price: response.sell.sold_for,
-                transaction_id: response.sell.transaction_id,
-            };
 
             // Clear accumulator barriers data when contract is sold from contract details
             // This prevents stale barriers from being displayed when navigating back to trade page

@@ -131,16 +131,8 @@ describe('onChangeContractType', () => {
         ],
         cached_multiplier_cancellation_list: [],
         cancellation_range_list: [],
-        contract_start_type: 'spot',
         has_cancellation: false,
         multiplier_range_list: [],
-        start_date: 0,
-        start_dates_list: [
-            {
-                text: 'Now',
-                value: 0,
-            },
-        ],
     };
 
     beforeAll(() => {

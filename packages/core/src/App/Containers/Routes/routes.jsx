@@ -19,8 +19,7 @@ const Error = props => (
 const Routes = observer(({ history, location, passthrough }) => {
     const { client, common } = useStore();
     const { is_logged_in, is_logging_in } = client;
-    const { current_language, error, has_error, setAppRouterHistory, addRouteHistoryItem, setInitialRouteHistoryItem } =
-        common;
+    const { current_language, error, has_error, addRouteHistoryItem, setInitialRouteHistoryItem } = common;
     const initial_route = React.useRef(null);
     const unlisten_to_change = React.useRef(null);
 
@@ -34,8 +33,6 @@ const Routes = observer(({ history, location, passthrough }) => {
         unlisten_to_change.current = history.listen((route_to, action) => {
             if (['PUSH', 'POP'].includes(action)) addRouteHistoryItem({ ...route_to, action });
         });
-
-        setAppRouterHistory(history);
 
         return () => {
             if (typeof unlisten_to_change.current === 'function') {

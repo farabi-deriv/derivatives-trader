@@ -1,10 +1,9 @@
 import { action, autorun, computed, makeObservable, observable, override } from 'mobx';
 
 import { isTouchDevice } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 
 import { MAX_MOBILE_WIDTH, MAX_TABLET_WIDTH } from 'Constants/ui';
-
-import BaseStore from './base-store';
 
 const store_name = 'ui_store';
 
@@ -73,7 +72,6 @@ const setThemeColorMeta = color => {
 };
 
 export default class UIStore extends BaseStore {
-    url_hashed_values = '';
     is_reports_visible = false;
     reports_route_tab_index = 0;
     is_history_tab_active = false;
@@ -83,7 +81,6 @@ export default class UIStore extends BaseStore {
     should_show_cancellation_warning = true;
 
     // Extensions
-    settings_extension = undefined;
     notification_messages_ui = undefined;
 
     // 'system' | 'light' | 'dark'. Source of truth for the theme; `is_dark_mode_on` is its resolved
@@ -91,17 +88,11 @@ export default class UIStore extends BaseStore {
     // than on rehydrate — see readStoredThemePreference().
     theme_preference = readStoredThemePreference();
     is_dark_mode_on = resolvePreference(this.theme_preference);
-    is_settings_modal_on = false;
     is_mobile_language_menu_open = false;
 
     // Purchase Controls
     // @observable is_purchase_confirm_on    = false;
     is_services_error_visible = false;
-    is_link_expired_modal_visible = false;
-    is_reset_password_modal_visible = false;
-    is_reset_email_modal_visible = false;
-    is_update_email_modal_visible = false;
-    is_reset_trading_password_modal_visible = false;
     // @observable is_purchase_lock_on       = false;
     // SmartCharts Controls
     // TODO: enable asset information
@@ -119,22 +110,11 @@ export default class UIStore extends BaseStore {
     // NOT on unrelated height changes (trade-type switches, viewport/keyboard resize).
     is_chart_maximize_animating = false;
 
-    // PWA event and config
-    pwa_prompt_event = null;
-
     screen_width = window.innerWidth;
     screen_height = window.innerHeight;
     is_onscreen_keyboard_active = false;
 
     is_advanced_duration = false;
-    advanced_duration_unit = 't';
-    advanced_expiry_type = 'duration';
-    simple_duration_unit = 't';
-    duration_t = 5;
-    duration_s = 15;
-    duration_m = 3;
-    duration_h = 1;
-    duration_d = 1;
 
     // purchase button states
     purchase_states = [false, false];
@@ -143,17 +123,6 @@ export default class UIStore extends BaseStore {
     is_app_disabled = false;
     is_route_modal_on = false;
 
-    // real account signup
-    is_from_signup_account = false;
-
-    // position states
-    show_positions_toggle = true;
-
-    modal_index = 0;
-
-    // MT5 create real STP from demo, show only real accounts from switcher
-    should_show_real_accounts_list = false;
-
     // UI Focus retention
     current_focus = null;
 
@@ -161,49 +130,21 @@ export default class UIStore extends BaseStore {
     mobile_toast_timeout = 3500;
     toasts = [];
 
-    is_cfd_page = false;
-    is_nativepicker_visible = false;
-    is_landscape = false;
-
     prompt_when = false;
     promptFn = () => {};
 
-    //phone number verification
-    should_show_phone_number_otp = false;
-    is_forced_to_exit_pnv = false;
-    is_phone_verification_completed = false;
-
-    //warn user if they want to close create real account modal
-    is_closing_create_real_account_modal = false;
-
     app_contents_scroll_ref = null;
-    is_redirected_from_email = false;
     isUrlUnavailableModalVisible = false;
     // 'trade_type' | 'symbol' | 'both' — which URL value(s) were invalid
     urlUnavailableModalReason = 'trade_type';
     is_logout_success_modal_visible = false;
     is_try_real_modal_visible = false;
-    sub_section_index = 0;
-    field_ref_to_focus = null;
     is_switching_account = false;
     is_chart_loading = false;
 
-    // tnc update
-    is_tnc_update_modal_open = false;
-
-    getDurationFromUnit = unit => this[`duration_${unit}`];
-
     constructor(root_store) {
         const local_storage_properties = [
-            'advanced_duration_unit',
             'is_advanced_duration',
-            'advanced_expiry_type',
-            'simple_duration_unit',
-            'duration_t',
-            'duration_s',
-            'duration_m',
-            'duration_h',
-            'duration_d',
             'is_chart_asset_info_visible',
             'is_chart_countdown_visible',
             'is_chart_layout_default',
@@ -222,73 +163,43 @@ export default class UIStore extends BaseStore {
 
         makeObservable(this, {
             is_services_error_visible: observable,
-            is_link_expired_modal_visible: observable,
-            is_reset_password_modal_visible: observable,
-            is_reset_email_modal_visible: observable,
-            is_update_email_modal_visible: observable,
-            is_reset_trading_password_modal_visible: observable,
-            sub_section_index: observable,
             is_chart_countdown_visible: observable,
             is_chart_layout_default: observable,
             is_chart_maximized: observable,
             is_chart_maximize_animating: observable,
-            pwa_prompt_event: observable,
             screen_width: observable,
             screen_height: observable,
             is_onscreen_keyboard_active: observable,
             is_advanced_duration: observable,
-            advanced_duration_unit: observable,
-            advanced_expiry_type: observable,
             app_contents_scroll_ref: observable,
             current_focus: observable,
-            duration_d: observable,
-            duration_h: observable,
-            duration_m: observable,
-            duration_s: observable,
-            duration_t: observable,
-            is_forced_to_exit_pnv: observable,
-            is_phone_verification_completed: observable,
 
             is_app_disabled: observable,
-            is_cfd_page: observable,
 
-            is_closing_create_real_account_modal: observable,
             is_dark_mode_on: observable,
             theme_preference: observable,
             resolveTheme: action.bound,
             onUnmount: override,
-            is_from_signup_account: observable,
-            is_redirected_from_email: observable,
 
             is_history_tab_active: observable,
-            is_landscape: observable,
             is_mobile_language_menu_open: observable,
-            is_nativepicker_visible: observable,
 
             active_sidebar_flyout: observable,
             is_positions_drawer_on: computed,
             is_reports_visible: observable,
             is_route_modal_on: observable,
-            is_settings_modal_on: observable,
-            is_tnc_update_modal_open: observable,
             isUrlUnavailableModalVisible: observable,
             urlUnavailableModalReason: observable,
             is_logout_success_modal_visible: observable,
             is_try_real_modal_visible: observable,
             is_switching_account: observable,
             is_chart_loading: observable,
-            modal_index: observable,
             notification_messages_ui: observable,
             prompt_when: observable,
             promptFn: observable,
             purchase_states: observable,
             reports_route_tab_index: observable,
-            settings_extension: observable,
-            should_show_phone_number_otp: observable,
             should_show_cancellation_warning: observable,
-            should_show_real_accounts_list: observable,
-            show_positions_toggle: observable,
-            simple_duration_unit: observable,
             toasts: observable.shallow,
             addToast: action.bound,
             disableApp: action.bound,
@@ -300,17 +211,11 @@ export default class UIStore extends BaseStore {
             is_desktop: computed,
             is_mobile: computed,
             is_tablet: computed,
-            url_hashed_values: observable,
             notifyAppInstall: action.bound,
-            onChangeUiStore: action.bound,
             openPositionsDrawer: action.bound,
-            populateSettingsExtensions: action.bound,
-            removePWAPromptEvent: action.bound,
             removeToast: action.bound,
             resetPurchaseStates: action.bound,
-            setShouldShowPhoneNumberOTP: action.bound,
             setAppContentsScrollRef: action.bound,
-            setChartCountdown: action.bound,
             setChartLayout: action.bound,
             setIsChartMaximized: action.bound,
             setChartMaximizeAnimating: action.bound,
@@ -318,36 +223,17 @@ export default class UIStore extends BaseStore {
             setCurrentFocus: action.bound,
             setDarkMode: action.bound,
             setThemePreference: action.bound,
-            setHashedValue: action.bound,
-            setIsForcedToExitPnv: action.bound,
-            setIsPhoneVerificationCompleted: action.bound,
-            setIsClosingCreateRealAccountModal: action.bound,
-            setIsFromSignupAccount: action.bound,
-            setIsNativepickerVisible: action.bound,
             setReportsTabIndex: action.bound,
-            toggleShouldShowRealAccountsList: action.bound,
-            setRedirectFromEmail: action.bound,
-            setModalIndex: action.bound,
             setPromptHandler: action.bound,
             setPurchaseState: action.bound,
-            setPWAPromptEvent: action.bound,
-            setResetTradingPasswordModalOpen: action.bound,
             setRouteModal: action.bound,
-            setSubSectionIndex: action.bound,
             setMobileLanguageMenuOpen: action.bound,
             toggleCancellationWarning: action.bound,
             toggleHistoryTab: action.bound,
             toggleOnScreenKeyboard: action.bound,
             toggleReports: action.bound,
-            toggleResetEmailModal: action.bound,
-            toggleResetPasswordModal: action.bound,
             toggleServicesErrorModal: action.bound,
-            toggleSettingsModal: action.bound,
-            toggleUpdateEmailModal: action.bound,
             toggleUrlUnavailableModal: action.bound,
-            field_ref_to_focus: observable,
-            setFieldRefToFocus: action.bound,
-            toggleTncUpdateModal: action.bound,
             toggleLogoutSuccessModal: action.bound,
             toggleTryRealModal: action.bound,
             setSidebarFlyout: action.bound,
@@ -454,48 +340,12 @@ export default class UIStore extends BaseStore {
         setThemeColorMeta(surface || FALLBACK_SURFACE_COLORS[theme]);
     };
 
-    setFieldRefToFocus(field_ref) {
-        this.field_ref_to_focus = field_ref;
-    }
-
-    setIsClosingCreateRealAccountModal(is_closing_create_real_account_modal) {
-        this.is_closing_create_real_account_modal = is_closing_create_real_account_modal;
-    }
-
-    setShouldShowPhoneNumberOTP(should_show_phone_number_otp) {
-        this.should_show_phone_number_otp = should_show_phone_number_otp;
-    }
-
-    async setIsForcedToExitPnv(is_forced_to_exit_pnv) {
-        this.is_forced_to_exit_pnv = is_forced_to_exit_pnv;
-    }
-
-    setIsPhoneVerificationCompleted(is_phone_verification_completed) {
-        this.is_phone_verification_completed = is_phone_verification_completed;
-    }
-
-    setHashedValue(url_hashed_values) {
-        this.url_hashed_values = url_hashed_values;
-    }
-
     init(notification_messages) {
-        this.setHashedValue(window.location.hash);
         this.notification_messages_ui = notification_messages;
     }
 
     setAppContentsScrollRef(value) {
         this.app_contents_scroll_ref = value;
-    }
-
-    populateSettingsExtensions(menu_items) {
-        this.settings_extension = menu_items;
-    }
-
-    onChangeUiStore({ name, value }) {
-        if (!(name in this)) {
-            throw new Error(`Invalid Argument: ${name}`);
-        }
-        this[name] = value;
     }
 
     handleResize() {
@@ -540,10 +390,6 @@ export default class UIStore extends BaseStore {
         this.is_app_disabled = false;
     }
 
-    setIsFromSignupAccount(is_from_signup_account) {
-        this.is_from_signup_account = is_from_signup_account;
-    }
-
     setPurchaseState(index) {
         this.purchase_states[index] = true;
 
@@ -575,10 +421,6 @@ export default class UIStore extends BaseStore {
     // setChartAssetInfo(is_visible) {
     //     this.is_chart_asset_info_visible = is_visible;
     // }
-
-    setChartCountdown(is_visible) {
-        this.is_chart_countdown_visible = is_visible;
-    }
 
     setIsChartMaximized(is_maximized) {
         this.is_chart_maximized = is_maximized;
@@ -636,14 +478,6 @@ export default class UIStore extends BaseStore {
         this.is_mobile_language_menu_open = is_mobile_language_menu_open;
     }
 
-    setModalIndex(index = 0) {
-        this.modal_index = index;
-    }
-
-    toggleSettingsModal() {
-        this.is_settings_modal_on = !this.is_settings_modal_on;
-    }
-
     openPositionsDrawer() {
         // show and hide Positions Drawer
         this.active_sidebar_flyout = 'positions';
@@ -657,46 +491,12 @@ export default class UIStore extends BaseStore {
         this.is_services_error_visible = is_visible;
     }
 
-    removePWAPromptEvent() {
-        this.pwa_prompt_event = null;
-    }
-
-    setPWAPromptEvent(e) {
-        this.pwa_prompt_event = e;
-    }
-
     toggleCancellationWarning(state_change = !this.should_show_cancellation_warning) {
         this.should_show_cancellation_warning = state_change;
     }
 
     toggleHistoryTab(state_change = !this.is_history_tab_active) {
         this.is_history_tab_active = state_change;
-    }
-
-    toggleResetPasswordModal(state_change = !this.is_reset_password_modal_visible) {
-        this.is_reset_password_modal_visible = state_change;
-    }
-
-    toggleLinkExpiredModal(state_change = !this.is_link_expired_modal_visible) {
-        this.is_link_expired_modal_visible = state_change;
-    }
-
-    toggleResetEmailModal(state_change = !this.is_reset_email_modal_visible) {
-        if (!state_change) {
-            this.root_store.client.setPreventRedirectToHub(false);
-        }
-        this.is_reset_email_modal_visible = state_change;
-    }
-
-    toggleUpdateEmailModal(state_change = !this.is_update_email_modal_visible) {
-        this.is_update_email_modal_visible = state_change;
-    }
-
-    setResetTradingPasswordModalOpen(is_reset_trading_password_modal_visible) {
-        if (!is_reset_trading_password_modal_visible) {
-            this.root_store.client.setPreventRedirectToHub(false);
-        }
-        this.is_reset_trading_password_modal_visible = is_reset_trading_password_modal_visible;
     }
 
     toggleOnScreenKeyboard() {
@@ -730,10 +530,6 @@ export default class UIStore extends BaseStore {
         }
     }
 
-    setIsNativepickerVisible(is_nativepicker_visible) {
-        this.is_nativepicker_visible = is_nativepicker_visible;
-    }
-
     setReportsTabIndex(tab_index = 0) {
         this.reports_route_tab_index = tab_index;
     }
@@ -758,18 +554,6 @@ export default class UIStore extends BaseStore {
         }
     }
 
-    toggleShouldShowRealAccountsList(value) {
-        this.should_show_real_accounts_list = value;
-    }
-
-    setRedirectFromEmail(value) {
-        this.is_redirected_from_email = value;
-    }
-
-    setSubSectionIndex(index) {
-        this.sub_section_index = index;
-    }
-
     toggleUrlUnavailableModal(value, reason = 'trade_type') {
         if (value && this.isUrlUnavailableModalVisible && this.urlUnavailableModalReason !== reason) {
             // A second validation reported a different invalid URL value while the popup was already
@@ -785,10 +569,6 @@ export default class UIStore extends BaseStore {
         }
         this.isUrlUnavailableModalVisible = value;
         if (value) this.urlUnavailableModalReason = reason;
-    }
-
-    toggleTncUpdateModal(value) {
-        this.is_tnc_update_modal_open = value;
     }
 
     toggleLogoutSuccessModal(value) {

@@ -1,4 +1,5 @@
 export { observer } from 'mobx-react-lite';
+export { default as BaseStore } from './base-store';
 export { default as mockStore } from './mockStore';
 export { default as StoreContext } from './storeContext';
 export { default as StoreProvider } from './storeProvider';

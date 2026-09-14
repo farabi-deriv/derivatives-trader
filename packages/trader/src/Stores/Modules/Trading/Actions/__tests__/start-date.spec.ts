@@ -185,7 +185,6 @@ describe('onChangeStartDate', () => {
     });
     it('should return an object with start_time equal to null when start_date is 0', async () => {
         const result = {
-            contract_start_type: 'spot',
             duration_units_list,
             duration_min_max: {
                 daily: { min: 86400, max: 31536000 },
@@ -210,7 +209,6 @@ describe('onChangeStartDate', () => {
     });
     it('should return an object with defined start_time when start_date is not 0', async () => {
         const result = {
-            contract_start_type: 'spot',
             duration_units_list,
             duration_min_max: {
                 daily: { min: 86400, max: 31536000 },

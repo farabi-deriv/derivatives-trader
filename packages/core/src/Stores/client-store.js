@@ -15,6 +15,7 @@ import {
     routes,
     urlForLanguage,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 import { Analytics } from '@deriv-com/analytics';
 import { getInitialLanguage, localize } from '@deriv-com/translations';
 import { CountryUtils } from '@deriv-com/utils';
@@ -22,7 +23,6 @@ import { CountryUtils } from '@deriv-com/utils';
 import { checkWhoAmI, requestRestLogout, WS } from 'Services';
 
 import { buildCurrenciesList } from './Modules/Trading/Helpers/currency';
-import BaseStore from './base-store';
 
 import BinarySocket from '_common/base/socket_base';
 import { getRegion } from '_common/utility';
@@ -85,7 +85,6 @@ export default class ClientStore extends BaseStore {
             email_address: computed,
             landing_company_shortcode: computed,
 
-            setPreferredLanguage: action.bound,
             setCookieAccount: action.bound,
             responsePayoutCurrencies: action.bound,
             responseAuthorize: action.bound,
@@ -181,11 +180,6 @@ export default class ClientStore extends BaseStore {
     setIsAuthorize(value) {
         this.is_authorize = value;
     }
-
-    setPreferredLanguage = lang => {
-        this.preferred_language = lang;
-        LocalStore.setObject(LANGUAGE_KEY, lang);
-    };
 
     setCookieAccount() {
         const domain = getTrustedDomainName();

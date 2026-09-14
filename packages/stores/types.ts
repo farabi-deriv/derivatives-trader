@@ -37,12 +37,6 @@ type TRoutes =
     | '/'
     | '/endpoint';
 
-type TPopulateSettingsExtensionsMenuItem = {
-    icon: React.ReactElement;
-    label: string;
-    value: <T extends object>(props: T) => JSX.Element;
-};
-
 export type TPortfolioPosition = {
     barrier?: number;
     contract_info: ProposalOpenContract &
@@ -253,12 +247,10 @@ export type TCommonStoreServicesError = {
 };
 
 type TCommonStore = {
-    isCurrentLanguage(language_code: string): boolean;
     error: TCommonStoreError;
     has_error: boolean;
     is_network_online: boolean;
     routeBackInApp: (history: Pick<RouteComponentProps, 'history'>, additional_platform_path?: string[]) => void;
-    routeTo: (pathname: string) => void;
     server_time: Dayjs;
     changeCurrentLanguage: (new_language: string) => void;
     changeSelectedLanguage: (key: string) => void;
@@ -277,47 +269,34 @@ type TCommonStore = {
 };
 
 type TUiStore = {
-    advanced_duration_unit: string;
-    advanced_expiry_type: string;
     addToast: (toast_config: TAddToastProps) => void;
     app_contents_scroll_ref: React.MutableRefObject<null | HTMLDivElement>;
     current_focus: string | null;
     disableApp: () => void;
-    duration_t: number;
     enableApp: () => void;
-    getDurationFromUnit: (unit: string) => number;
     is_advanced_duration: boolean;
     is_history_tab_active: boolean;
-    is_forced_to_exit_pnv: boolean;
-    is_phone_verification_completed: boolean;
-    is_redirected_from_email: boolean;
     is_chart_asset_info_visible?: boolean;
     is_chart_layout_default: boolean;
     is_chart_countdown_visible: boolean;
     is_chart_maximized: boolean;
     is_chart_maximize_animating: boolean;
-    is_closing_create_real_account_modal: boolean;
-    is_from_signup_account: boolean;
     is_dark_mode_on: boolean;
     theme_preference: 'light' | 'dark' | 'system';
     is_loading: boolean;
     is_reports_visible: boolean;
-    is_reset_password_modal_visible: boolean;
     is_route_modal_on: boolean;
     is_desktop: boolean;
     is_app_disabled: boolean;
-    is_link_expired_modal_visible: boolean;
     is_mobile: boolean;
     is_tablet: boolean;
     is_mobile_language_menu_open: boolean;
     active_sidebar_flyout: 'language' | 'positions' | 'account' | null;
     is_positions_drawer_on: boolean;
-    is_reset_email_modal_visible: boolean;
     is_services_error_visible: boolean;
     isUrlUnavailableModalVisible: boolean;
     urlUnavailableModalReason: TUrlUnavailableModalReason;
     is_logout_success_modal_visible: boolean;
-    onChangeUiStore: ({ name, value }: { name: string; value: unknown }) => void;
     openPositionsDrawer: () => void;
     notification_messages_ui: (props?: {
         is_notification_loaded?: boolean;
@@ -325,7 +304,6 @@ type TUiStore = {
         stopNotificationLoading?: () => void;
         show_trade_notifications?: boolean;
     }) => JSX.Element;
-    setChartCountdown: (value: boolean) => void;
     setIsChartMaximized: (value: boolean) => void;
     setChartMaximizeAnimating: (value: boolean) => void;
     toggleChartMaximized: () => void;
@@ -334,30 +312,15 @@ type TUiStore = {
     setCurrentFocus: (value: string | null) => void;
     setDarkMode: (is_dark_mode_on: boolean) => boolean;
     setThemePreference: (preference: 'light' | 'dark' | 'system') => void;
-    setIsForcedToExitPnv: (value: boolean) => void;
-    setIsPhoneVerificationCompleted: (value: boolean) => void;
-    setRedirectFromEmail: (value: boolean) => void;
     setMobileLanguageMenuOpen: (is_mobile_language_menu_open: boolean) => void;
     setReportsTabIndex: (value: number) => void;
-    setIsClosingCreateRealAccountModal: (value: boolean) => void;
-    setIsFromSignupAccount: (value: boolean) => void;
     setPurchaseState: (index: number) => void;
-    simple_duration_unit: string;
-    should_show_phone_number_otp: boolean;
-    setShouldShowPhoneNumberOTP: (value: boolean) => void;
-    sub_section_index: number;
     setPromptHandler: (
         condition: boolean,
         cb?: (() => void) | ((route_to: RouteComponentProps['location'], action: string) => boolean)
     ) => void;
-    setSubSectionIndex: (index: number) => void;
-    should_show_real_accounts_list?: boolean;
     toggleHistoryTab: (state_change?: boolean) => void;
-    toggleLinkExpiredModal: (state_change: boolean) => void;
-    toggleResetEmailModal: (state_change: boolean) => void;
-    toggleResetPasswordModal: (state_change: boolean) => void;
     toggleServicesErrorModal: (is_visible: boolean) => void;
-    toggleShouldShowRealAccountsList: (value: boolean) => void;
     toggleUrlUnavailableModal: (value: boolean, reason?: TUrlUnavailableModalReason) => void;
     toggleLogoutSuccessModal: (value: boolean) => void;
     is_try_real_modal_visible: boolean;
@@ -373,17 +336,8 @@ type TUiStore = {
     should_show_cancellation_warning: boolean;
     toggleCancellationWarning: (state_change?: boolean) => void;
     toggleReports: (is_visible: boolean) => void;
-    is_reset_trading_password_modal_visible: boolean;
-    setResetTradingPasswordModalOpen: () => void;
-    populateSettingsExtensions: (menu_items: Array<TPopulateSettingsExtensionsMenuItem> | null) => void;
     purchase_states: boolean[];
     vanilla_trade_type: 'VANILLALONGCALL' | 'VANILLALONGPUT';
-    field_ref_to_focus: string | null; // field_ref_to_focus accepts a field identifier which will be focused
-    setFieldRefToFocus: (value: string | null) => void;
-    setHashedValue: (value: string) => void;
-    url_hashed_values: string;
-    is_tnc_update_modal_open: boolean;
-    toggleTncUpdateModal: (value: boolean) => void;
 };
 
 type TPortfolioStore = {
@@ -396,10 +350,7 @@ type TPortfolioStore = {
     is_active_empty: boolean;
     is_loading: boolean;
     is_multiplier: boolean;
-    is_accumulator: boolean;
-    is_turbos: boolean;
     onBuyResponse: (contract_info: { contract_id: number; longcode: string; contract_type: string }) => void;
-    onHoverPosition: (is_over: boolean, position: TPortfolioPosition, underlying: string) => void;
     onClickCancel: (contract_id?: number) => void;
     onClickSell: (contract_id?: number) => void;
     onMount: () => void;

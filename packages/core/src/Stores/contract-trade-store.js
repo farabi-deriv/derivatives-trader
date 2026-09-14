@@ -17,9 +17,9 @@ import {
     switch_to_tick_chart,
     TRADE_TYPES,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 
 import { getAccumulatorMarkers } from './Helpers/chart-markers';
-import BaseStore from './base-store';
 import ContractStore from './contract-store';
 
 export default class ContractTradeStore extends BaseStore {

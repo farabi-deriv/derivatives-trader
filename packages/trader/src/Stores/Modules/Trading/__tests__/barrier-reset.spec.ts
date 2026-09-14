@@ -58,9 +58,6 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
         mockRootStore = mockStore({
             ui: {
                 is_mobile: true,
-                advanced_expiry_type: 'duration',
-                simple_duration_unit: 'm',
-                advanced_duration_unit: 'm',
                 is_advanced_duration: false,
             },
             client: {
@@ -411,7 +408,7 @@ describe('TradeStore - Barrier Reset on Symbol Change', () => {
             // Set up initial state with synthetic symbol and relative barrier using actions
             trade_store.updateStore({ symbol: '1HZ100V', barrier_1: '+1.17' });
 
-            // Mock the is_dtrader_v2 getter to return true by modifying the root store
+            // Simulate mobile viewport
             mockRootStore.ui.is_mobile = true;
 
             // Spy on the barrier reset method

@@ -2,8 +2,7 @@ import debounce from 'lodash.debounce';
 import { action, computed, makeObservable, observable, override, reaction } from 'mobx';
 
 import { mapErrorMessage, toMoment, WS } from '@deriv/shared';
-
-import BaseStore from '../../base-store';
+import { BaseStore } from '@deriv/stores';
 
 import getDateBoundaries from './Helpers/format-request';
 import { formatProfitTableTransactions } from './Helpers/format-response';
@@ -18,7 +17,6 @@ export default class ProfitTableStore extends BaseStore {
     error = '';
     has_loaded_all = false;
     is_loading = true;
-    filtered_date_range;
 
     // `client_loginid` is only used to detect if this is in sync with the client-store, don't rely on
     // this for calculations. Use the client.currency instead.
@@ -39,7 +37,6 @@ export default class ProfitTableStore extends BaseStore {
             error: observable,
             has_loaded_all: observable,
             is_loading: observable,
-            filtered_date_range: observable,
             client_loginid: observable,
             is_empty: computed,
             has_selected_date: computed,
@@ -199,10 +196,8 @@ export default class ProfitTableStore extends BaseStore {
         this.date_to = toMoment().startOf('day').add(1, 'd').subtract(1, 's').unix();
     }
 
-    handleDateChange(date_values, { date_range, shouldFilterContractTypes } = {}) {
+    handleDateChange(date_values, { shouldFilterContractTypes } = {}) {
         const { from, to, is_batch } = date_values;
-
-        this.filtered_date_range = date_range;
 
         if (from) {
             this.date_from = toMoment(from).unix();

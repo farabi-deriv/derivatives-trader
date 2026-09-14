@@ -27,10 +27,10 @@ import {
     setLimitOrderBarriers,
     WS,
 } from '@deriv/shared';
+import { BaseStore } from '@deriv/stores';
 
 import { calculateMarker, createChartMarkers, getAccumulatorMarkers } from './Helpers/chart-markers';
 import { getChartConfig } from './Helpers/logic';
-import BaseStore from './base-store';
 
 export default class ContractStore extends BaseStore {
     constructor(root_store, { contract_id }) {
@@ -44,14 +44,12 @@ export default class ContractStore extends BaseStore {
             accu_low_barrier: observable,
             cached_barriers_data: observable,
             digits_info: observable,
-            sell_info: observable,
             contract_config: observable.ref,
             display_status: observable,
             is_ended: observable,
             is_digit_contract: observable,
             error_message: observable,
             contract_info: observable.ref,
-            is_static_chart: observable,
             end_time: observable,
             contract_update_take_profit: observable,
             contract_update_stop_loss: observable,
@@ -78,7 +76,6 @@ export default class ContractStore extends BaseStore {
 
     // --- Observable properties ---
     digits_info = observable.object({});
-    sell_info = observable.object({});
 
     contract_config = {};
     display_status = 'purchased';
@@ -90,7 +87,6 @@ export default class ContractStore extends BaseStore {
 
     contract_info = observable.object({});
 
-    is_static_chart = false;
     end_time = null;
 
     // Accumulator contract

@@ -8,11 +8,7 @@ export const onChangeStartDate = async (store: TTradeStore) => {
 
     start_time = start_time || server_time?.clone().add(6, 'minute').format('HH:mm'); // when there is not a default value for start_time, it should be set more than 5 min after server_time
 
-    // All contracts now default to spot behavior since start_type was removed from API
-    const contract_start_type = 'spot';
-    const obj_sessions = ContractType.getSessions(store.symbol, contract_type, start_date);
-    const sessions = obj_sessions.sessions;
-    const obj_start_time = ContractType.getStartTime(sessions, start_date, start_time);
+    const obj_start_time = ContractType.getStartTime(start_date, start_time);
 
     const obj_duration_units_list = ContractType.getDurationUnitsList(store.symbol, contract_type);
     const duration_units_list = obj_duration_units_list.duration_units_list;
@@ -25,11 +21,9 @@ export const onChangeStartDate = async (store: TTradeStore) => {
     const obj_duration_min_max = ContractType.getDurationMinMax(store.symbol, contract_type);
 
     return {
-        contract_start_type, // Already set to 'spot' above
         ...obj_duration_units_list,
         ...obj_duration_min_max,
         ...obj_duration_unit,
-        ...obj_sessions,
         ...obj_start_time,
         ...obj_expiry_date,
         ...obj_expiry_type,
@@ -37,7 +31,7 @@ export const onChangeStartDate = async (store: TTradeStore) => {
 };
 
 export const onChangeExpiry = async (store: TTradeStore) => {
-    const { start_time, expiry_date, expiry_type, expiry_time, start_date, symbol, sessions } = store;
+    const { start_time, expiry_date, expiry_type, expiry_time, start_date, symbol } = store;
     const trading_times = await ContractType.getTradingTimes(expiry_date, symbol);
     const obj_market_open_times = { market_open_times: trading_times.open };
     const obj_market_close_times = { market_close_times: trading_times.close };
@@ -48,7 +42,6 @@ export const onChangeExpiry = async (store: TTradeStore) => {
         expiry_time,
         expiry_type,
         market_close_times,
-        sessions,
         start_date,
         start_time
     );

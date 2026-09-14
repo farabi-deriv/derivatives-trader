@@ -64,7 +64,7 @@ export const getStatementTableColumnsTemplate = (currency: string, isDesktop: bo
         col_index: 'icon',
         renderCellContent: ({ passthrough, row_obj }: TCellContentProps) => {
             const icon = passthrough.isTopUp(row_obj) ? 'icCashierTopUp' : null;
-            return <MarketSymbolIconRow icon={icon} key={row_obj.transaction_id} payload={row_obj} />;
+            return <MarketSymbolIconRow icon={icon} key={row_obj.refid} payload={row_obj} />;
         },
     },
     {
