@@ -261,9 +261,8 @@ describe('Stake', () => {
         expect(screen.getByRole('textbox')).toBeDisabled();
     });
 
-    describe('desktop Stake field, unaffordable charge', () => {
-        // Buy is disabled by PurchaseButton in this state; without the field's own error the desktop
-        // user gets a dead button and no indication of which parameter is at fault.
+    describe('collapsed stake trade parameter stays neutral for a stake-field error', () => {
+        // The stake error is confined to the editor; the collapsed control never reddens for it.
         const ERROR_CLASS = '.quill-input__wrapper__variant--fill--error';
 
         beforeEach(() => {
@@ -274,17 +273,17 @@ describe('Stake', () => {
             };
         });
 
-        it('marks the Stake field as errored when the balance cannot cover the charge', () => {
+        it('[SEC-001] leaves the desktop popover trigger neutral for an unaffordable committed stake', () => {
             default_mock_store.client.balance = '0.77';
             const { container } = render(<MockedStake />);
 
             // The errored state is a wrapper class only — quill exposes no role, testid or aria
             // attribute for it, so the class is the only observable signal.
             // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-            expect(container.querySelector(ERROR_CLASS)).toBeInTheDocument();
+            expect(container.querySelector(ERROR_CLASS)).not.toBeInTheDocument();
         });
 
-        it('leaves the Stake field neutral when the balance covers the charge', () => {
+        it('[SEC-001] leaves the desktop popover trigger neutral when the balance covers the charge', () => {
             default_mock_store.client.balance = '20.00';
             const { container } = render(<MockedStake />);
 
@@ -292,10 +291,22 @@ describe('Stake', () => {
             expect(container.querySelector(ERROR_CLASS)).not.toBeInTheDocument();
         });
 
-        it('leaves the Stake field neutral while an account switch is in flight', () => {
-            // The balance in hand may still be the outgoing account's.
-            default_mock_store.client.balance = '0.77';
-            default_mock_store.ui.is_switching_account = true;
+        it('[SEC-001] leaves the mobile collapsed field neutral for a stake-field proposal error', () => {
+            default_mock_store.ui.is_mobile = true;
+            default_mock_store.modules.trade.root_store = default_mock_store;
+            default_mock_store.modules.trade.contract_type = TRADE_TYPES.HIGH_LOW;
+            default_mock_store.modules.trade.trade_type_tab = 'CALL';
+            default_mock_store.modules.trade.trade_types = {
+                [CONTRACT_TYPES.CALL]: 'Higher',
+                [CONTRACT_TYPES.PUT]: 'Lower',
+            };
+            default_mock_store.modules.trade.proposal_info = {
+                [CONTRACT_TYPES.CALL]: {
+                    has_error: true,
+                    error_field: 'stake',
+                    message: 'Please enter a stake amount that is at least 0.35.',
+                },
+            };
             const { container } = render(<MockedStake />);
 
             // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -504,7 +515,7 @@ describe('StakeInput', () => {
             expect(screen.getByText('Range $0.35 - $50,000.00')).toBeInTheDocument();
         });
 
-        it('blocks Save for an unaffordable stake and unblocks once it is affordable again', async () => {
+        it('[SEC-004] blocks Save for an unaffordable stake and unblocks once it is affordable again', async () => {
             const onClose = jest.fn();
             const registerHeaderActions = jest.fn();
             const user = userEvent.setup();
@@ -597,6 +608,39 @@ describe('StakeInput', () => {
                 expect(screen.getByText('Range $0.35 - $50,000.00')).toBeInTheDocument();
             }
         );
+    });
+
+    // SEC-003: confining the error to the editor must not change the editor's own behaviour —
+    // the input still shows the stake-field error in its error state and the mobile header Save
+    // stays disabled while it shows.
+    describe('[SEC-003] stake editor error display and Save gating unchanged', () => {
+        beforeEach(() => {
+            default_mock_store.client.balance = '4.00';
+            default_mock_store.client.currency = 'USD';
+        });
+
+        it('[SEC-003] keeps the inline hint in the input error state and the mobile header Save disabled for an unaffordable preset', async () => {
+            const registerHeaderActions = jest.fn();
+            const user = userEvent.setup();
+            render(
+                <TraderProviders store={default_mock_store}>
+                    <ModulesProvider store={default_mock_store}>
+                        <StakeInput onClose={jest.fn()} is_open registerHeaderActions={registerHeaderActions} />
+                    </ModulesProvider>
+                </TraderProviders>
+            );
+
+            // Balance is 4.00 USD; tapping the 20 USD preset drafts an unaffordable stake.
+            await user.click(screen.getByRole('button', { name: 'Select value $20' }));
+
+            // The editor still surfaces the inline hint in the input, styled as an error...
+            expect(screen.getByText('You only have 4.00 USD left. Try a lower stake.')).toBeInTheDocument();
+            // The error state is a class only — quill exposes no role/testid/aria for it.
+            // eslint-disable-next-line testing-library/no-node-access
+            expect(document.querySelector('[class*="status--error"]')).toBeInTheDocument();
+            // ...and the header Save action stays disabled, exactly as before this change.
+            expect(registerHeaderActions.mock.calls.at(-1)[0].is_save_disabled).toBe(true);
+        });
     });
 });
 
@@ -713,6 +757,24 @@ describe('StakeInputDesktop', () => {
             expect(screen.getByText('Range: $0.35 to $50,000.00')).toBeInTheDocument();
         });
 
+        it('[SEC-004] disables the footer Save while the balance hint shows and re-enables it once affordable', async () => {
+            const user = userEvent.setup();
+            renderStakeInputDesktop();
+
+            const input = screen.getByDisplayValue('10');
+            await user.clear(input);
+            await user.type(input, '10');
+
+            expect(screen.getByText('You only have 4.00 USD left. Try a lower stake.')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+            await user.clear(input);
+            await user.type(input, '4');
+
+            expect(screen.queryByText(/left\. Try a lower stake\./)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+        });
+
         it('shows no hint when the balance is unknown', async () => {
             default_mock_store.client.balance = undefined;
             const user = userEvent.setup();
@@ -756,6 +818,39 @@ describe('StakeInputDesktop', () => {
                 expect(screen.getByText('Range: $0.35 to $50,000.00')).toBeInTheDocument();
             }
         );
+    });
+
+    // SEC-003: the desktop popover must keep showing an applicable proposal stake error in the
+    // input's error state, with the footer Save disabled while it shows — unchanged by confinement.
+    describe('[SEC-003] stake editor error display and Save gating unchanged', () => {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { useProposal } = require('AppV2/Hooks/useProposal');
+
+        afterEach(() => {
+            useProposal.mockReturnValue({ data: mockProposalData, error: null, isFetching: false });
+        });
+
+        it('[SEC-003] shows a proposal stake error in the input error state and disables the footer Save', async () => {
+            // The proposal rejects the drafted stake with a stake-field error.
+            useProposal.mockReturnValue({
+                data: undefined,
+                error: {
+                    message: 'Please enter a stake amount that is at least 0.35.',
+                    details: { field: 'stake' },
+                },
+                isFetching: false,
+            });
+
+            renderStakeInputDesktop();
+
+            // The input still shows that error message...
+            expect(await screen.findByText('Please enter a stake amount that is at least 0.35.')).toBeInTheDocument();
+            // ...in its error state (a class only — quill exposes no role/testid/aria for it)...
+            // eslint-disable-next-line testing-library/no-node-access
+            expect(document.querySelector('[class*="status--error"]')).toBeInTheDocument();
+            // ...and the footer Save button stays disabled while the stake error shows.
+            expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+        });
     });
 });
 

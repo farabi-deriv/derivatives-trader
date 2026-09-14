@@ -6,7 +6,7 @@ TBD - created by archiving change p2-buy-button-stays-enabled-and-quotes-a-payou
 
 ## Requirements
 
-### Requirement: Buy is unavailable when the charge exceeds the available balance
+### Requirement: [BABG-001] Buy is unavailable when the charge exceeds the available balance
 
 The trade page's **Buy** control SHALL be unavailable — not pressable, and visibly presented as such — whenever the amount that buying the currently displayed contract would charge the account is greater than the account's available balance.
 
@@ -29,7 +29,7 @@ Pressing the control while it is unavailable SHALL NOT send a buy request and SH
 - **WHEN** the available balance is `0` (or negative)
 - **THEN** **Buy** is unavailable, whether or not the contract has been priced yet, because no charge can be met from that balance
 
-### Requirement: The compared amount is the sum the account will be charged
+### Requirement: [BABG-002] The compared amount is the sum the account will be charged
 
 The comparison SHALL use the charge quoted by the current price for the displayed contract — the sum a buy would debit — and SHALL NOT use the stake the user typed or the payout being quoted.
 
@@ -45,7 +45,7 @@ Consequently the gate SHALL be correct without knowing which basis the trade for
 - **WHEN** the balance is `5.00 USD`, a multiplier's stake is `5.00 USD`, and deal cancellation adds a `0.50 USD` fee so the charge is `5.50 USD`
 - **THEN** **Buy** is unavailable, even though the stake on its own does not exceed the balance
 
-### Requirement: The reason is stated inline, next to the Buy control
+### Requirement: [BABG-003] The reason is stated inline, next to the Buy control
 
 Whenever **Buy** is unavailable for this reason, an inline message SHALL be shown adjacent to the control, stating the balance and what to do about it. The user SHALL NOT have to open the stake editor, press a disabled control, or wait for a sheet in order to see it.
 
@@ -78,7 +78,7 @@ The message SHALL disappear as soon as the charge is affordable again — with n
 - **WHEN** the message is showing and the user commits a stake whose charge is at or below the balance
 - **THEN** the message is gone and **Buy** is available again
 
-### Requirement: No payout is quoted while Buy is unavailable for this reason
+### Requirement: [BABG-004] No payout is quoted while Buy is unavailable for this reason
 
 While the gate is active, the **Buy** control SHALL NOT display a payout, total cost, or max payout amount. Its value slot SHALL fall back to the same placeholder already used when a contract cannot be priced, so nothing on the control implies a return the user cannot obtain.
 
@@ -94,7 +94,7 @@ The basis label (for example `Payout`) SHALL remain, because it never depends on
 - **WHEN** the balance is `20.00 USD` and the charge is `4.00 USD`
 - **THEN** the payout amount is displayed exactly as it is today
 
-### Requirement: The gate stays inert whenever the comparison cannot be trusted
+### Requirement: [BABG-005] The gate stays inert whenever the comparison cannot be trusted
 
 The gate SHALL only engage when both the available balance and the charge are readable, finite amounts. In every other state it SHALL be completely inert — **Buy** behaves exactly as it did before this capability existed, with no inline message and no withheld payout.
 
@@ -127,7 +127,7 @@ A readable balance of zero or less is **not** an inert state: it engages the gat
 - **WHEN** an account switch is in flight
 - **THEN** no inline balance reason is shown, so a balance belonging to the previous account is never quoted
 
-### Requirement: The server-driven insufficient-balance path is preserved
+### Requirement: [BABG-006] The server-driven insufficient-balance path is preserved
 
 The existing insufficient-balance error path SHALL be unchanged and SHALL remain the authority for every rejection the client cannot predict. When the balance state is reported by the price response or by a failed buy — rather than derived by the gate above — **Buy** SHALL stay pressable and pressing it SHALL open the existing insufficient-balance sheet with its existing title, message, and **Deposit now** (real account) / **OK** (virtual account) actions.
 
@@ -143,7 +143,7 @@ This is the deliberate division of responsibility: the gate covers what the clie
 - **WHEN** a buy is rejected for insufficient balance — a balance that fell between the last price and the request
 - **THEN** the same sheet is shown with the same message and actions, and the gate does not alter or replace it
 
-### Requirement: The stake is never silently capped
+### Requirement: [BABG-007] The stake is never silently capped
 
 The committed stake SHALL NOT be reduced, clamped, or rewritten to fit the available balance. The value the user set SHALL remain exactly as they set it, and the gate SHALL make it visible instead.
 
@@ -159,7 +159,7 @@ Capping would rewrite a user's own input without asking, and would frequently pr
 - **WHEN** the balance is `0.77 USD` and the contract's minimum stake is `1.00 USD`, so no affordable stake exists
 - **THEN** the inline reason is shown and **Buy** stays unavailable, rather than a sub-minimum stake being substituted
 
-### Requirement: Surfaces other than the Buy control are unchanged
+### Requirement: [BABG-008] Surfaces other than the Buy control are unchanged
 
 This capability SHALL change only the trade page's **Buy** control and its adjacent message. It SHALL NOT change the stake editor's own warning or its commit behaviour on either breakpoint, the automation **Run** control's existing balance handling, or the stake preset values offered.
 

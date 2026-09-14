@@ -395,13 +395,31 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
         decimalGuard(e);
     };
 
+    // The drafted amount is only the sum being charged while `basis` is `stake` — on `payout`
+    // basis (kept for Rise/Fall by `PurchaseButton`, and persisted) it is a target payout, so
+    // comparing it against the balance would warn about a trade the user can afford. Anything
+    // other than `stake` therefore stays silent and leaves the gate at Buy as the authority.
+    const parsed_balance = parseAmount(balance);
+    // A zero/negative balance is surfaced here too (the helper's empty-balance branch), not just
+    // Buy: an unaffordable draft must show something rather than nothing while the balance is 0.
+    const balance_hint =
+        basis === 'stake' && Number.isFinite(parsed_balance)
+            ? getInsufficientBalanceMessage({
+                  balance,
+                  stake: proposal_request_values.amount,
+                  currency: account_currency,
+                  fallback: null,
+              })
+            : null;
+
     const onSave = () => {
         // Prevent from saving if user clicks before we get theAPI response or if we get an error in response or the field is empty
         if (
             is_fetching_1 ||
             (should_send_multiple_proposals && is_fetching_2) ||
             (should_show_stake_error && stake_error) ||
-            fe_stake_error
+            fe_stake_error ||
+            balance_hint
         )
             return;
         if (proposal_request_values.amount === '') {
@@ -427,29 +445,12 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             const isSaveDisabled =
-                is_loading_proposal || !!fe_stake_error || !!(should_show_stake_error && stake_error);
+                is_loading_proposal || !!fe_stake_error || !!(should_show_stake_error && stake_error) || !!balance_hint;
             if (!isSaveDisabled) {
                 onSave();
             }
         }
     };
-
-    // The drafted amount is only the sum being charged while `basis` is `stake` — on `payout`
-    // basis (kept for Rise/Fall by `PurchaseButton`, and persisted) it is a target payout, so
-    // comparing it against the balance would warn about a trade the user can afford. Anything
-    // other than `stake` therefore stays silent and leaves the gate at Buy as the authority.
-    const parsed_balance = parseAmount(balance);
-    // A zero/negative balance is surfaced here too (the helper's empty-balance branch), not just
-    // Buy: an unaffordable draft must show something rather than nothing while the balance is 0.
-    const balance_hint =
-        basis === 'stake' && Number.isFinite(parsed_balance)
-            ? getInsufficientBalanceMessage({
-                  balance,
-                  stake: proposal_request_values.amount,
-                  currency: account_currency,
-                  fallback: null,
-              })
-            : null;
 
     return (
         <div className='stake-input-desktop__wrapper'>
@@ -495,7 +496,12 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
                     variant='primary'
                     color='black-white'
                     onClick={onSave}
-                    disabled={is_loading_proposal || !!fe_stake_error || !!(should_show_stake_error && stake_error)}
+                    disabled={
+                        is_loading_proposal ||
+                        !!fe_stake_error ||
+                        !!(should_show_stake_error && stake_error) ||
+                        !!balance_hint
+                    }
                     className='stake-input-desktop__save-button'
                     label={localize('Save')}
                 />

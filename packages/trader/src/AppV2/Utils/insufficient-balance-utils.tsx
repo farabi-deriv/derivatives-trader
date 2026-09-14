@@ -13,25 +13,6 @@ export const parseAmount = (value?: string | number) =>
     value === undefined || value === null || value === '' ? NaN : Number(String(value).replace(/,/g, ''));
 
 /**
- * Whether the account provably cannot pay `stake`. The single source for that judgement, so the
- * Buy button's disabled state and the stake field's error outline can never disagree.
- *
- * Unreadable on either side means `false`: a balance that has merely not loaded must not be
- * reported as insufficient, and an unpriced proposal is not a balance problem. A readable `0`
- * balance is a real answer, matching `getInsufficientBalanceMessage`'s empty-balance branch.
- */
-export const isStakeAboveBalance = ({ balance, stake }: { balance?: string | number; stake?: string | number }) => {
-    const parsed_balance = parseAmount(balance);
-    if (!Number.isFinite(parsed_balance)) return false;
-    if (parsed_balance <= 0) return true;
-
-    const parsed_stake = parseAmount(stake);
-    if (!Number.isFinite(parsed_stake) || parsed_stake <= 0) return false;
-
-    return parsed_balance < parsed_stake;
-};
-
-/**
  * Chooses the copy that warns a drafted stake is above the available balance. Consumed by the
  * mobile and desktop stake inputs, which pass `fallback: null` so an affordable stake — or a
  * balance/stake that cannot be read — renders no hint at all.

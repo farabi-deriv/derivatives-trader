@@ -10,9 +10,7 @@ import { Localize, useTranslations } from '@deriv-com/translations';
 import Carousel from 'AppV2/Components/Carousel';
 import CarouselHeader from 'AppV2/Components/Carousel/carousel-header';
 import TradeParamDefinition from 'AppV2/Components/TradeParamDefinition';
-import useTradeError from 'AppV2/Hooks/useTradeError';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
-import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { AutomationStoreContext } from 'Stores/useAutomationStore';
 import { useTraderStore } from 'Stores/useTraderStores';
 
@@ -66,18 +64,14 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
     const {
         amount,
         currency,
-        contract_type,
         has_open_accu_contract,
         is_automation_params_locked,
         is_market_closed,
         is_multiplier,
-        trade_types,
-        trade_type_tab,
         proposal_info,
         is_automation_tab,
     } = useTraderStore();
     const automation_store = React.useContext(AutomationStoreContext);
-    const { is_error_matching_field: has_error } = useTradeError({ error_fields: ['stake', 'amount'] });
     const { localize } = useTranslations();
 
     const [is_open, setIsOpen] = React.useState(false);
@@ -95,12 +89,6 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
         },
         []
     );
-
-    const contract_types = getDisplayedContractTypes(trade_types, contract_type, trade_type_tab);
-    const is_all_types_with_errors = contract_types.every(item => proposal_info?.[item]?.has_error);
-
-    // Showing snackbar for all cases, except when it is Rise/Fall or Digits and only one subtype has error
-    const should_show_snackbar = contract_types.length === 1 || is_multiplier || is_all_types_with_errors;
 
     const onClose = React.useCallback(() => {
         setCarouselIndex(STAKE_PAGE);
@@ -204,7 +192,7 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
                     onClick={() => setIsOpen(true)}
                     value={`${getCurrencySymbol(currency)}${amount}`}
                     className={clsx('trade-params__option', is_minimized && 'trade-params__option--minimized')}
-                    status={has_error && should_show_snackbar ? 'error' : 'neutral'}
+                    status='neutral'
                 />
                 {is_automation_params_locked && <AutomationLockOverlay />}
             </div>

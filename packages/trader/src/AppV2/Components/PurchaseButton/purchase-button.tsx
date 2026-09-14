@@ -27,7 +27,6 @@ import useContractsFor from 'AppV2/Hooks/useContractsFor';
 import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
 import { useRiskDisclosure } from 'AppV2/Hooks/useRiskDisclosure';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
-import { isStakeAboveBalance } from 'AppV2/Utils/insufficient-balance-utils';
 import { getErrorSnackbarBottomOffset, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 import { getTradeTypeTabsList } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
@@ -51,8 +50,7 @@ const PurchaseButton = observer(() => {
         common: { services_error, setServicesError },
         ui: { is_chart_maximized, is_switching_account },
     } = useStore();
-    // `currency` is aliased because `useTraderStore()` below already destructures one of its own.
-    const { balance, currency: account_currency, is_logged_in } = client;
+    const { is_logged_in } = client;
     const { trade_types: trade_types_list } = useContractsFor();
     const risk_disclosure = useRiskDisclosure();
     const {
@@ -319,28 +317,13 @@ const PurchaseButton = observer(() => {
                         const is_insufficient_balance =
                             (info.has_error && info.error_code === SERVICE_ERROR.INSUFFICIENT_BALANCE) ||
                             services_error?.code === SERVICE_ERROR.INSUFFICIENT_BALANCE;
-                        // Client-provable affordability. `info.stake` is `proposal.ask_price` — the
-                        // exact sum the buy will debit — so this needs no `basis` guard and already
-                        // accounts for the multiplier commission and the deal-cancellation fee.
-                        // Anything unreadable leaves the gate off: logged out keeps the auth path,
-                        // and because `formatMoney` coerces undefined/NaN to "0.00", a balance that
-                        // has merely not loaded must never reach the comparison. Mid account-switch
-                        // is excluded too — the balance in hand may still be the previous account's.
-                        const is_stake_above_balance =
-                            is_logged_in &&
-                            !is_switching_account &&
-                            isStakeAboveBalance({ balance, stake: info.stake });
                         const is_disabled =
                             !is_trade_enabled_v2 ||
                             (info.has_error && !is_insufficient_balance) ||
                             is_switching_account ||
                             // No price yet — nothing to buy. An error also has no id but sets
                             // has_error, keeping insufficient-balance's inform-don't-disable intact.
-                            (!info.id && !info.has_error) ||
-                            // The account cannot pay the quoted charge. Unlike the server-reported
-                            // path above, this is provable before the buy, so the attempt is stopped
-                            // rather than sent and rejected.
-                            is_stake_above_balance;
+                            (!info.id && !info.has_error);
                         // Driven straight off the store flag, which the store sets for the whole
                         // attempt and clears on every exit. Mirroring it into local state and
                         // resetting on an is_purchase_enabled transition left the spinner stuck
@@ -408,7 +391,6 @@ const PurchaseButton = observer(() => {
                                         {...purchase_button_content_props}
                                         has_no_button_content={has_no_button_content}
                                         info={info}
-                                        is_stake_above_balance={is_stake_above_balance}
                                     />
                                 )}
                             </Button>
