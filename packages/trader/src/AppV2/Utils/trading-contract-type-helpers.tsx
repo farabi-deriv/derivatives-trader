@@ -25,12 +25,6 @@ type TItem = {
     value: string;
 };
 
-export const isMajorPairsSymbol = (checked_symbol: string, active_symbols: ActiveSymbols) =>
-    active_symbols.some(
-        ({ submarket, underlying_symbol }) =>
-            /major_pairs/i.test(submarket || '') && checked_symbol === underlying_symbol
-    );
-
 export const ordered_trade_categories = [
     'Accumulators',
     'Vanillas',
@@ -103,7 +97,7 @@ export const getAvailableContractTypes = (
     return filtered_contract_types;
 };
 
-export const findContractCategory = (list: Partial<TList[]>, item: TItem) =>
+const findContractCategory = (list: Partial<TList[]>, item: TItem) =>
     list?.find(list_item => list_item?.contract_types?.some(i => i.value.includes(item.value))) ||
     ({} as TContractCategory);
 

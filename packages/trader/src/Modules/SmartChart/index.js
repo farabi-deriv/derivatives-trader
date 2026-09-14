@@ -8,7 +8,6 @@ setSmartChartsPublicPath(getUrlBase('/js/smartcharts/'));
 export {
     SmartChart,
     ChartTitle,
-    ChartSize,
     ChartMode,
     DrawTools,
     Share,
@@ -16,5 +15,4 @@ export {
     Views,
     ToolbarWidget,
     FastMarker,
-    RawMarker,
 } from '@deriv-com/smartcharts-champion';

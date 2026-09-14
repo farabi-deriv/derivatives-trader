@@ -3,7 +3,6 @@ import React from 'react';
 import { observer, useStore } from '@deriv/stores';
 
 import Digits from 'Modules/Contract/Components/Digits';
-import InfoBox from 'Modules/Contract/Components/InfoBox';
 
 import BottomWidgets from '../../SmartChart/Components/bottom-widgets';
 import TopWidgets from '../../SmartChart/Components/top-widgets';
@@ -26,16 +25,8 @@ export const DigitsWidget = observer(() => {
     );
 });
 
-export const InfoBoxWidget = observer(() => {
-    const { contract_replay } = useStore();
-    const { contract_store, removeErrorMessage: removeError, error_message } = contract_replay;
-    const { contract_info } = contract_store;
-
-    return <InfoBox contract_info={contract_info} error_message={error_message} removeError={removeError} />;
-});
-
 // Chart widgets passed into SmartCharts
 export const ChartTopWidgets = () => {
-    return <TopWidgets InfoBox={<InfoBoxWidget />} is_title_enabled={false} />;
+    return <TopWidgets is_title_enabled={false} />;
 };
 export const ChartBottomWidgets = () => <BottomWidgets Widget={<DigitsWidget />} />;

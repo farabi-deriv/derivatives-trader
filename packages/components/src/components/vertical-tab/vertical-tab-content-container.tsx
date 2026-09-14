@@ -14,20 +14,8 @@ type TContent = {
     selected: TItem;
 };
 
-export type TAction_bar = {
-    component?: typeof React.Component;
-    onClick?: () => void;
-    icon: React.ReactElement;
-    title?: string;
-};
-
 type TVerticalTabContentContainer = TContent & {
-    action_bar?: TAction_bar[];
-    action_bar_classname?: string;
-    className?: string;
-    id?: string;
     is_floating?: boolean;
-    tab_container_classname?: string;
 };
 
 const SideNotes = ({ class_name, side_notes }: TSideNotes) => {
@@ -88,59 +76,17 @@ const Content = memo(({ is_routed, items, selected }: TContent) => {
 
 Content.displayName = 'Content';
 
-const VerticalTabContentContainer = ({
-    action_bar,
-    action_bar_classname,
-    className,
-    id,
-    is_floating,
-    is_routed,
-    items,
-    selected,
-    tab_container_classname,
-}: TVerticalTabContentContainer) => {
+const VerticalTabContentContainer = ({ is_floating, is_routed, items, selected }: TVerticalTabContentContainer) => {
     return (
         <div
             className={classNames('dc-vertical-tab__content', {
                 'dc-vertical-tab__content--floating': is_floating,
-                [`dc-vertical-tab__content--${className}`]: className,
             })}
         >
-            {!is_floating && action_bar && (
-                <div
-                    className={classNames('dc-vertical-tab__action-bar', {
-                        [action_bar_classname as string]: !!action_bar_classname,
-                    })}
-                >
-                    {action_bar.map(({ component, icon, onClick }, idx) => {
-                        const Component = component;
-                        return Component ? (
-                            <Component key={idx} />
-                        ) : (
-                            <div
-                                id={`dt_${id}_close_icon`}
-                                className='dc-vertical-tab__action-bar-wrapper'
-                                key={idx}
-                                onClick={onClick}
-                            >
-                                {React.cloneElement(icon, {
-                                    className: 'dc-vertical-tab__action-bar--icon',
-                                    iconSize: icon.props.iconSize || 'xs',
-                                    fill: icon.props.fill || 'var(--color-text-primary)',
-                                })}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
             <div
-                className={classNames(
-                    'dc-vertical-tab__content-container',
-                    {
-                        'dc-vertical-tab__content-container--has-side-note': selected.has_side_note,
-                    },
-                    tab_container_classname
-                )}
+                className={classNames('dc-vertical-tab__content-container', {
+                    'dc-vertical-tab__content-container--has-side-note': selected.has_side_note,
+                })}
             >
                 <Content is_routed={is_routed} items={items} selected={selected} />
             </div>

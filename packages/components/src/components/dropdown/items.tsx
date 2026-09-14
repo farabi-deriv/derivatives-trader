@@ -1,14 +1,11 @@
 import React from 'react';
 import classNames from 'classnames';
-import { getCurrencyDisplayCode } from '@deriv/shared';
-import Popover from '../popover';
 import Text from '../text';
 import { TListItem } from './utility';
 
 type TItem = {
     className?: string;
     handleSelect: (item: TListItem) => void;
-    has_symbol?: boolean;
     onKeyPressed: (event: KeyboardEvent, item: TListItem) => void;
     value?: string | number;
     is_align_text_left?: boolean;
@@ -37,14 +34,11 @@ const Item = ({
     item,
     handleSelect,
     nodes,
-    has_symbol,
     is_align_text_left,
     className,
     setScrollHeight,
 }: TItem) => {
     const item_ref = React.useRef<HTMLDivElement>(null);
-    const symbol_type_class_name =
-        item.text && typeof item.text === 'string' ? `symbols--${item.text.toLowerCase()}` : null;
     const is_selected = value === item.value;
 
     React.useEffect(() => {
@@ -82,34 +76,17 @@ const Item = ({
             tabIndex={item.disabled ? undefined : 0}
             id={item.value}
         >
-            {!!has_symbol && item.has_tooltip && (
-                <Popover alignment='left' message={getCurrencyDisplayCode(item.text)}>
-                    <Text
-                        size='xs'
-                        line_height='s'
-                        align='center'
-                        className={classNames('dc-list__item-symbol', symbol_type_class_name)}
-                    />
-                </Popover>
-            )}
-
-            {!!has_symbol && !item.has_tooltip && (
-                <Text size='xs' line_height='s' className={classNames('dc-list__item-text', symbol_type_class_name)} />
-            )}
-
-            {!has_symbol && (
-                <Text
-                    size='xs'
-                    line_height='s'
-                    className={classNames(
-                        'dc-list__item-text',
-                        { 'dc-list__item-text--left': is_align_text_left },
-                        className
-                    )}
-                >
-                    {item.text}
-                </Text>
-            )}
+            <Text
+                size='xs'
+                line_height='s'
+                className={classNames(
+                    'dc-list__item-text',
+                    { 'dc-list__item-text--left': is_align_text_left },
+                    className
+                )}
+            >
+                {item.text}
+            </Text>
         </div>
     );
 };

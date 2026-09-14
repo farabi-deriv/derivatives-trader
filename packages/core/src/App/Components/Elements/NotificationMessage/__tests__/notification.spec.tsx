@@ -7,12 +7,6 @@ jest.mock('../../../Routes', () => ({
 }));
 
 describe('Notification component', () => {
-    it('should render the NotificationBanner component when "data.type" is "news"', () => {
-        render(<Notification data={{ type: 'news' }} />);
-        const element = screen.getByTestId('dt_notification_banner');
-        expect(element).toBeInTheDocument();
-    });
-
     it('should render the NotificationBanner component when "data.type" is "trustpilot"', () => {
         render(<Notification data={{ type: 'trustpilot' }} />);
         const element = screen.getByTestId('dt_notification_banner');

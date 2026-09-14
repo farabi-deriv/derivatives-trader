@@ -90,8 +90,6 @@ const BinarySocketBase = (() => {
 
     const isClose = () => !binary_socket || hasReadyState(2, 3);
 
-    const blockRequest = value => deriv_api?.blockRequest(value);
-
     const close = () => {
         binary_socket?.close();
     };
@@ -357,7 +355,6 @@ const BinarySocketBase = (() => {
         forgetStream,
         wait,
         hasReadyState,
-        getSocket: () => binary_socket,
         get: () => deriv_api,
         setOnDisconnect: onDisconnect => {
             config.onDisconnect = onDisconnect;
@@ -380,12 +377,8 @@ const BinarySocketBase = (() => {
                 reconnect_handlers = [];
             }
         },
-        removeOnDisconnect: () => {
-            delete config.onDisconnect;
-        },
         cache: delegateToObject({}, () => deriv_api.cache),
         storage: delegateToObject({}, () => deriv_api.storage),
-        blockRequest,
         buy,
         sell,
         cancelContract,

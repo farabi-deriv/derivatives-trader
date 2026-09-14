@@ -1,8 +1,6 @@
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 // const CopyPlugin = require('copy-webpack-plugin');
-// const HtmlWebPackPlugin = require('html-webpack-plugin');
-// const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 const { createDayjsLocalePlugin } = require('../../shared/build/dayjs-locale-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
@@ -16,8 +14,6 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const {
     // copyConfig,
     cssConfig,
-    // htmlInjectConfig,
-    // htmlOutputConfig,
     stylelintConfig,
 } = require('./config');
 const {
@@ -43,34 +39,6 @@ const ALIASES = {
 };
 
 const rules = (is_test_env = false) => [
-    ...(is_test_env
-        ? [
-              {
-                  test: /\.(js|jsx)$/,
-                  exclude: /node_modules|__tests__|(build\/.*\.js$)|(_common\/lib)/,
-                  include: /src/,
-                  loader: 'eslint-loader',
-                  enforce: 'pre',
-                  options: {
-                      formatter: require('eslint-formatter-pretty'),
-                      configFile: path.resolve(__dirname, '../.eslintrc.js'),
-                      ignorePath: path.resolve(__dirname, '../.eslintignore'),
-                  },
-              },
-              {
-                  test: /\.(ts|tsx)$/,
-                  exclude: /node_modules|__tests__|(build\/.*\.js$)|(_common\/lib)/,
-                  include: /src/,
-                  loader: 'eslint-loader',
-                  enforce: 'pre',
-                  options: {
-                      formatter: require('eslint-formatter-pretty'),
-                      configFile: path.resolve(__dirname, '../.eslintrc.ts'),
-                      ignorePath: path.resolve(__dirname, '../.eslintignore'),
-                  },
-              },
-          ]
-        : []),
     {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: is_test_env ? /node_modules/ : /node_modules|__tests__/,
@@ -124,8 +92,6 @@ const MINIMIZERS = !IS_RELEASE
 
 const plugins = (base, is_test_env) => [
     new CleanWebpackPlugin(),
-    // new HtmlWebPackPlugin(htmlOutputConfig()),
-    // new HtmlWebpackTagsPlugin(htmlInjectConfig()),
     createDayjsLocalePlugin(),
     new MiniCssExtractPlugin(cssConfig()),
     new CircularDependencyPlugin({ exclude: /node_modules/, failOnError: true }),

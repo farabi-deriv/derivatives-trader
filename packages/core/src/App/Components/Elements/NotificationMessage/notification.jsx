@@ -68,20 +68,6 @@ const Notification = ({ data, removeNotificationMessage }) => {
     if (closed_toast_notifications.includes(data.key)) return null;
 
     switch (data.type) {
-        case 'news':
-            return (
-                <NotificationBanner
-                    className={data.className}
-                    header={data.header}
-                    message={data.message}
-                    primary_btn={data.primary_btn}
-                    secondary_btn={data.secondary_btn}
-                    img_src={data.img_src}
-                    img_alt={data.img_alt}
-                    onClose={destroy}
-                    icon={data.icon}
-                />
-            );
         case 'trustpilot':
             return (
                 <NotificationBanner
@@ -221,7 +207,6 @@ Notification.propTypes = {
             'success',
             'danger',
             'contract_sold',
-            'news',
             'trustpilot',
             'announce',
             'promotions',

@@ -85,7 +85,6 @@ The `@deriv/components` package is a foundational UI library that provides a wid
 
 ### Utility Components
 
-- **AutoSizer** - Automatic sizing component
 - **DesktopWrapper** - Desktop-only wrapper
 - **MobileWrapper** - Mobile-only wrapper
 - **Div100vhContainer** - 100vh container component
@@ -125,20 +124,10 @@ The package also provides a collection of custom React hooks:
 - **useConstructor** - Constructor-like hook
 - **useCopyToClipboard** - Copy text to clipboard
 - **useDebounce** - Debounce values
-- **useDeepEffect** - Deep comparison useEffect
-- **useDevice** - Device detection
 - **useDocumentTitle** - Browser tab label, kept in sync with the active language
-- **useEventListener** - Event listener management
 - **useHover** - Hover state detection
-- **useInterval** - Interval management
-- **useIsomorphicLayoutEffect** - Isomorphic layout effect
-- **useOnScroll** - Scroll event handling
 - **useOnClickOutside** - Click outside detection
-- **useOnLongPress** - Long press detection
-- **usePreventIOSZoom** - Prevent iOS zoom
 - **usePrevious** - Previous value tracking
-- **useSafeState** - Safe state management
-- **useStateCallback** - State with callback
 
 ## Usage Examples
 
@@ -175,7 +164,9 @@ const MyComponent = () => {
 ### Using Custom Hooks
 
 ```tsx
-import { useDevice, useDebounce, useCopyToClipboard } from '@deriv/components';
+import { useDevice } from '@deriv-com/ui';
+
+import { useDebounce, useCopyToClipboard } from '@deriv/components';
 
 const MyComponent = () => {
     const { isMobile, isDesktop } = useDevice();
@@ -255,7 +246,7 @@ const TableComponent = () => {
         { name: 'Trade 2', amount: 250 },
     ];
 
-    return <DataTable columns={columns} data_source={data} keyMapper={row => row.name} />;
+    return <DataTable columns={columns} data_source={data} />;
 };
 ```
 

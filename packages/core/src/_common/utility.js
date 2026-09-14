@@ -1,25 +1,3 @@
-/**
- * Creates a DOM element and adds any attributes to it.
- *
- * @param {String} tag_name: the tag to create, e.g. 'div', 'a', etc
- * @param {Object} attributes: all the attributes to assign, e.g. { id: '...', class: '...', html: '...', ... }
- * @return the created DOM element
- */
-const createElement = (tag_name, attributes = {}) => {
-    const el = document.createElement(tag_name);
-    Object.keys(attributes).forEach(attr => {
-        const value = attributes[attr];
-        if (attr === 'text') {
-            el.textContent = value;
-        } else if (attr === 'html') {
-            el.html(value);
-        } else {
-            el.setAttribute(attr, value);
-        }
-    });
-    return el;
-};
-
 let static_hash;
 const getStaticHash = () => {
     static_hash =
@@ -64,10 +42,6 @@ const eu_countries = [
 // TODO: [duplicate_code] - Move this to shared package
 // check if client is from EU
 const isEuCountry = country => eu_countries.includes(country);
-// countries where synthetics are not offered
-const countries_without_synthetics = ['sg', 'de', 'gr', 'es', 'au', 'it', 'lu'];
-// check if synthetics are offered based on country
-const isSyntheticsUnavailable = country => countries_without_synthetics.includes(country);
 
 const getRegion = (landing_company_shortcode, residence) => {
     if (landing_company_shortcode === 'virtual') {
@@ -77,9 +51,7 @@ const getRegion = (landing_company_shortcode, residence) => {
 };
 
 module.exports = {
-    createElement,
     getStaticHash,
     isEuCountry,
-    isSyntheticsUnavailable,
     getRegion,
 };

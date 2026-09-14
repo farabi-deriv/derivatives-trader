@@ -27,23 +27,6 @@
                 width: calc(100vw - 4.8rem) !important;
             }
         }
-        &--is-vertical-top {
-            top: $HEADER_HEIGHT;
-            position: absolute;
-            @include mobile-screen {
-                top: $MOBILE_HEADER_HEIGHT;
-                left: 1.6rem;
-                width: calc(100vw - 3.2rem) !important;
-            }
-        }
-        &--is-vertical-bottom {
-            bottom: $FOOTER_HEIGHT;
-            position: absolute;
-            @include mobile-screen {
-                left: 1.6rem;
-                width: calc(100vw - 3.2rem) !important;
-            }
-        }
         &--hide {
             display: none;
         }
@@ -63,23 +46,6 @@
 
             .dc-modal-header {
                 border-bottom: none;
-            }
-        }
-        &--is-confirmation-modal {
-            .dc-modal {
-                &-header {
-                    border-bottom: none;
-
-                    &__title {
-                        padding: 2.4rem;
-                    }
-                }
-                &-body {
-                    padding: 0 2.4rem;
-                }
-                &-footer {
-                    padding: 2.4rem;
-                }
             }
         }
         @include tablet-or-desktop-screen {
@@ -133,13 +99,6 @@
                 line-height: 1.2;
             }
         }
-        &__section {
-            flex-grow: 1;
-            padding: 1.6rem;
-            line-height: 24px;
-            display: flex;
-            align-items: center;
-        }
         &__close {
             display: block;
             cursor: pointer;
@@ -152,22 +111,6 @@
                 margin: 0.8rem;
             }
         }
-        &--is-title-centered {
-            justify-content: flex-end;
-            position: relative;
-
-            .dc-modal-header__title {
-                @include mobile {
-                    position: absolute;
-                }
-                justify-content: center;
-                width: 100%;
-            }
-            .dc-modal-header__close {
-                z-index: 1;
-            }
-        }
-
         // fix for safari bug with header being truncated
         @media not all and (min-resolution: 0.001dpcm) {
             // stylelint-disable-line

@@ -1,20 +1,4 @@
 .dc-dropdown {
-    &__label {
-        position: absolute;
-        font-size: var(--text-size-xs);
-        inset-inline-start: 0;
-        transform: translate(0.5rem, -1rem) scale(0.75);
-        z-index: 2;
-        color: var(--color-text-primary);
-        padding: 0 4px;
-        background-color: var(--color-surface-primary);
-        pointer-events: none;
-        transition: 0.25s ease all;
-
-        &--clicked {
-            color: var(--brand-secondary);
-        }
-    }
     &__display {
         cursor: pointer;
         border-radius: $BORDER_RADIUS;
@@ -79,9 +63,6 @@
                 padding: 0 !important;
             }
         }
-        &--has-symbol {
-            justify-content: unset;
-        }
         &--no-border {
             border-color: var(--color-surface-border);
         }
@@ -123,9 +104,6 @@
     &__container {
         position: relative;
     }
-    &__hint {
-        margin-left: 1.2rem;
-    }
     &--no-margin .dc-dropdown__display {
         margin: 0;
     }
@@ -152,9 +130,6 @@
         &--up {
             transform: rotate(-180deg);
         }
-        &--error {
-            top: 1.4rem;
-        }
     }
     &:active,
     &:focus,
@@ -164,19 +139,6 @@
 
         .dc-dropdown__select-arrow {
             color: var(--color-text-secondary);
-        }
-    }
-    &--error {
-        margin-bottom: -1.8rem;
-
-        & .dc-dropdown__display {
-            border-color: var(--brand-primary) !important;
-        }
-        & .dc-dropdown__label {
-            color: var(--brand-primary) !important;
-        }
-        & .dc-dropdown__display-placeholder-text {
-            color: var(--brand-primary) !important;
         }
     }
     &__list {
@@ -206,61 +168,6 @@
             bottom: unset;
             top: 0.8em;
         }
-        &--left {
-            top: -0.1em;
-
-            &--enter,
-            &--exit {
-                /*rtl:ignore*/
-                transform: scale(1, 1) translate3d(2em, 0, 0px);
-                opacity: 0;
-            }
-            &--enter-done {
-                opacity: 1;
-            }
-        }
-        &--portal {
-            height: auto;
-            margin: 0.4rem 0;
-
-            .dc-list {
-                position: static;
-            }
-        }
-    }
-    &--left {
-        .dc-dropdown__display {
-            text-align: center;
-
-            &-text {
-                padding-left: unset;
-            }
-            &-symbol {
-                right: 0;
-                float: right;
-                position: relative;
-                margin-left: auto;
-                margin-right: 0.6em;
-            }
-        }
-        .dc-dropdown__select-arrow {
-            /*rtl:ignore*/
-            left: 0.6em;
-            /*rtl:ignore*/
-            right: unset;
-        }
-    }
-    &--show {
-        .dc-dropdown__display {
-            border: 1px solid var(--color-interactive-active);
-        }
-        & > .dc-dropdown__select-arrow {
-            transform: rotate(-180deg);
-
-            &--left {
-                transform: rotate(-180deg);
-            }
-        }
     }
     &--disabled {
         pointer-events: none;
@@ -280,12 +187,10 @@
         width: 100%;
 
         &:not(.cfd-personal-details-modal__form *):not(.trade-container__multiplier-dropdown):not(
-                .dc-dropdown--left
-            ):not(.contract-type-info__dropdown) {
+                .contract-type-info__dropdown
+            ) {
             margin-top: unset;
         }
-
-        // keep <select /> element on top of .dc_dropdown__label
     }
     &--has-placeholder {
         .dc-dropdown__display {
@@ -326,8 +231,4 @@
     left: 20px;
     transition: transform 0.2s ease;
     transform: rotate(0deg);
-
-    &--flip {
-        transform: rotate(-180deg);
-    }
 }

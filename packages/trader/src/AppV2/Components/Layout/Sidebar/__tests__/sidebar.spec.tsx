@@ -53,10 +53,6 @@ jest.mock('@deriv/quill-icons', () => ({
 }));
 
 jest.mock('../language-selector', () => jest.fn(() => <div>LanguageSelector</div>));
-jest.mock('../../PositionsDrawer', () => ({
-    PositionsDrawerContent: jest.fn(() => <div>PositionsDrawerContent</div>),
-    PositionsDrawerFooter: jest.fn(() => <div>PositionsDrawerFooter</div>),
-}));
 jest.mock('../../PositionsDrawer/positions-drawer-tabs', () => jest.fn(() => <div>PositionsDrawerTabs</div>));
 
 describe('<Sidebar />', () => {

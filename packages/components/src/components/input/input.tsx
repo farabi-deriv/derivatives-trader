@@ -14,17 +14,14 @@ export type TInputProps = {
     disabled?: boolean;
     error?: string;
     field_className?: string;
-    has_character_counter?: boolean;
     hint?: React.ReactNode;
     id?: string;
-    initial_character_count?: number;
     inputMode?: React.HTMLAttributes<HTMLInputElement | HTMLTextAreaElement>['inputMode'];
     input_id?: string;
     is_relative_hint?: boolean;
     label_className?: string;
     label?: string;
     leading_icon?: React.ReactElement;
-    max_characters?: number;
     maxLength?: number;
     name?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
@@ -74,15 +71,12 @@ const Input = React.forwardRef<HTMLInputElement & HTMLTextAreaElement, TInputPro
             disabled = false,
             error,
             field_className,
-            has_character_counter,
             hint,
-            initial_character_count,
             input_id,
             is_relative_hint,
             label_className,
             label,
             leading_icon,
-            max_characters,
             trailing_icon,
             warn,
             data_testId,
@@ -92,25 +86,7 @@ const Input = React.forwardRef<HTMLInputElement & HTMLTextAreaElement, TInputPro
         },
         ref?
     ) => {
-        const [counter, setCounter] = React.useState(0);
-
-        React.useEffect(() => {
-            if (initial_character_count || initial_character_count === 0) {
-                setCounter(initial_character_count);
-            }
-        }, [initial_character_count]);
-
-        const changeHandler: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement> = e => {
-            let input_value = e.target.value;
-            if (max_characters && input_value.length >= max_characters) {
-                input_value = input_value.slice(0, max_characters);
-            }
-            setCounter(input_value.length);
-            e.target.value = input_value;
-            props.onChange?.(e);
-        };
-
-        const has_footer = !!has_character_counter || (!!hint && !!is_relative_hint);
+        const has_footer = !!hint && !!is_relative_hint;
         const field_placeholder = label ? '' : placeholder;
 
         return (
@@ -143,7 +119,7 @@ const Input = React.forwardRef<HTMLInputElement & HTMLTextAreaElement, TInputPro
                                 className={classNames('dc-input__field dc-input__textarea', {
                                     'dc-input__field--placeholder-visible': !label && placeholder,
                                 })}
-                                onChange={changeHandler}
+                                onChange={props.onChange}
                                 disabled={disabled}
                                 id={input_id}
                                 maxLength={maxLength}
@@ -210,14 +186,6 @@ const Input = React.forwardRef<HTMLInputElement & HTMLTextAreaElement, TInputPro
                             <div className='dc-input__hint dc-input__hint--relative'>
                                 <Text color='secondary' line-height='m' size='xxs'>
                                     {hint}
-                                </Text>
-                            </div>
-                        )}
-                        {has_character_counter && (
-                            <div className='dc-input__counter'>
-                                <Text color='secondary' line-height='m' size='xxs'>
-                                    {counter}
-                                    {max_characters ? `/${max_characters}` : ''}
                                 </Text>
                             </div>
                         )}

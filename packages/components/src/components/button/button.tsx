@@ -38,14 +38,6 @@ export type TButtonProps = React.PropsWithChildren<React.ButtonHTMLAttributes<HT
         wrapperClassName: string;
     };
 
-export type TButtonGroupProps = {
-    children: React.ReactNode | React.ReactNode[];
-    className?: string;
-};
-
-const ButtonGroup = ({ children, className }: TButtonGroupProps) => (
-    <div className={classNames('dc-btn__group', className)}>{children}</div>
-);
 const Button = ({
     black,
     blue,
@@ -141,7 +133,5 @@ const Button = ({
 
     return wrapperClassName ? wrapper : button;
 };
-
-Button.Group = ButtonGroup;
 
 export default Button;

@@ -4,10 +4,9 @@ import { mockStore } from '@deriv/stores';
 import { render, screen } from '@testing-library/react';
 
 import TraderProviders from '../../../../trader-providers';
-import { ChartBottomWidgets, ChartTopWidgets, DigitsWidget, InfoBoxWidget } from '../contract-replay-widget';
+import { ChartBottomWidgets, ChartTopWidgets, DigitsWidget } from '../contract-replay-widget';
 
 jest.mock('../../Components/Digits/digits.tsx', () => jest.fn(() => <div>mockedDigits</div>));
-jest.mock('../../Components/InfoBox/info-box.tsx', () => jest.fn(() => <div>mockedInfoBox</div>));
 jest.mock('../../../SmartChart/Components/top-widgets.tsx', () => jest.fn(() => <div>mockedTopWidgets</div>));
 jest.mock('../../../SmartChart/Components/bottom-widgets.tsx', () => jest.fn(() => <div>mockedBottomWidget</div>));
 
@@ -34,30 +33,6 @@ describe('<DigitsWidget />', () => {
     it('Should render mocked digits', () => {
         render(mockMobileWidget());
         expect(screen.getByText(/mockeddigits/i)).toBeInTheDocument();
-    });
-});
-
-describe('<InfoBoxWidget />', () => {
-    const mocked_store_props = {
-        contract_replay: {
-            contract_store: {
-                contract_info: {},
-            },
-            removeErrorMessage: jest.fn(),
-            error_message: '',
-        },
-    };
-
-    const store = mockStore(mocked_store_props);
-
-    const mockInfoBoxWidget = () => (
-        <TraderProviders store={store}>
-            <InfoBoxWidget />
-        </TraderProviders>
-    );
-    it('Should render mocked digits', () => {
-        render(mockInfoBoxWidget());
-        expect(screen.getByText(/mockedInfoBox/i)).toBeInTheDocument();
     });
 });
 

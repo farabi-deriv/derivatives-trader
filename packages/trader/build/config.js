@@ -1,28 +1,5 @@
 const path = require('path');
 const stylelintFormatter = require('stylelint-formatter-pretty');
-const { IS_RELEASE } = require('./loaders-config');
-// const { transformContentUrlBase } = require('./helpers');
-
-const generateSWConfig = () => ({
-    importWorkboxFrom: 'local',
-    cleanupOutdatedCaches: true,
-    exclude: [/CNAME$/, /index\.html$/, /custom404\.html$/, /^public\/images\/favicons\//, /^favicon\.ico$/],
-    skipWaiting: true,
-    clientsClaim: true,
-});
-
-const htmlOutputConfig = () => ({
-    template: 'index.html',
-    filename: 'index.html',
-    minify: !IS_RELEASE
-        ? false
-        : {
-              collapseWhitespace: true,
-              removeComments: true,
-              removeRedundantAttributes: true,
-              useShortDoctype: true,
-          },
-});
 
 const cssConfig = () => ({
     filename: 'trader/css/trader.main.[contenthash].css',
@@ -37,8 +14,6 @@ const stylelintConfig = () => ({
 });
 
 module.exports = {
-    htmlOutputConfig,
     cssConfig,
     stylelintConfig,
-    generateSWConfig,
 };

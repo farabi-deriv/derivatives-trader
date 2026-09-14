@@ -14,7 +14,6 @@ const REMOVED_ROUTE_PATTERNS = [
     /^\/mt5\/.*/,
     /^\/derivx\/.*/,
     /^\/bot\/.*/,
-    /^\/account-closed\/?$/,
     /^\/complaints-policy\/?$/,
     /^\/onboarding\/?$/,
     /^\/cfd-compare-accounts\/?$/,

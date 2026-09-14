@@ -55,13 +55,11 @@ const ALIASES = {
     App: path.resolve(__dirname, '../src/App'),
     Assets: path.resolve(__dirname, '../src/Assets'),
     Constants: path.resolve(__dirname, '../src/Constants'),
-    Fonts: path.resolve(__dirname, '../src/public/fonts'),
     Images: path.resolve(__dirname, '../src/public/images'),
     Modules: path.resolve(__dirname, '../src/Modules'),
     Sass: path.resolve(__dirname, '../src/sass'),
     Services: path.resolve(__dirname, '../src/Services'),
     Stores: path.resolve(__dirname, '../src/Stores'),
-    Translations: path.resolve(__dirname, '../src/public/translations'),
     Utils: path.resolve(__dirname, '../src/Utils'),
     ...HOISTED_PACKAGES,
 };

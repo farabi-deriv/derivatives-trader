@@ -4,39 +4,19 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 
 import { ThemedScrollbars } from '@deriv/components';
-import { CookieStorage, redirectToLogin, TRACKING_STATUS_KEY } from '@deriv/shared';
+import { redirectToLogin } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Analytics } from '@deriv-com/analytics';
 import { useDevice } from '@deriv-com/ui';
 
-import CookieBanner from '../../Components/Elements/CookieBanner/cookie-banner.jsx';
-
-const tracking_status_cookie = new CookieStorage(TRACKING_STATUS_KEY);
-
 const AppContents = observer(({ children }) => {
-    const [show_cookie_banner, setShowCookieBanner] = React.useState(false);
-    const [is_gtm_tracking, setIsGtmTracking] = React.useState(false);
-    const {
-        client,
-        common,
-        gtm: { pushDataLayer },
-        ui,
-    } = useStore();
+    const { client, common, ui } = useStore();
     const { isDesktop, isMobile } = useDevice();
     const location = useLocation();
     const has_access_denied_error = location.search.includes('access_denied');
 
-    const { is_logged_in, is_logging_in, should_redirect_user_to_login, setShouldRedirectToLogin } = client;
-    const {
-        is_app_disabled,
-        active_sidebar_flyout,
-        is_route_modal_on,
-        notifyAppInstall,
-        setAppContentsScrollRef,
-        is_dark_mode_on: is_dark_mode,
-    } = ui;
-
-    const tracking_status = tracking_status_cookie.get(TRACKING_STATUS_KEY);
+    const { is_logged_in, should_redirect_user_to_login, setShouldRedirectToLogin } = client;
+    const { is_app_disabled, active_sidebar_flyout, is_route_modal_on, notifyAppInstall, setAppContentsScrollRef } = ui;
 
     const scroll_ref = React.useRef(null);
     const child_ref = React.useRef(null);
@@ -72,21 +52,6 @@ const AppContents = observer(({ children }) => {
     }, [window.location.href]);
 
     React.useEffect(() => {
-        const allow_tracking = tracking_status === 'accepted';
-        if (allow_tracking && !is_gtm_tracking) {
-            pushDataLayer({ event: 'allow_tracking' });
-            setIsGtmTracking(true);
-        }
-    }, [is_gtm_tracking, pushDataLayer, tracking_status]);
-
-    React.useEffect(() => {
-        if (!tracking_status && !is_logged_in && !is_logging_in) {
-            // Don't show cookie banner for now
-            setShowCookieBanner(false);
-        }
-    }, [tracking_status, is_logged_in, is_logging_in]);
-
-    React.useEffect(() => {
         // Gets the reference of the child element and scrolls it to the top
         if (child_ref.current) {
             child_ref.current.scrollTop = 0;
@@ -105,19 +70,6 @@ const AppContents = observer(({ children }) => {
 
         return () => window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
     }, [notifyAppInstall]);
-
-    // handle accept/decline cookies
-    const onAccept = () => {
-        tracking_status_cookie.set(TRACKING_STATUS_KEY, 'accepted', { sameSite: 'none', secure: true });
-        pushDataLayer({ event: 'allow_tracking' });
-        setShowCookieBanner(false);
-        setIsGtmTracking(true);
-    };
-
-    const onDecline = () => {
-        tracking_status_cookie.set(TRACKING_STATUS_KEY, 'declined', { sameSite: 'none', secure: true });
-        setShowCookieBanner(false);
-    };
 
     return (
         <div
@@ -138,14 +90,6 @@ const AppContents = observer(({ children }) => {
                 <ThemedScrollbars height={isDesktop ? '100vh' : undefined} has_horizontal refSetter={child_ref}>
                     {children}
                 </ThemedScrollbars>
-            )}
-            {show_cookie_banner && (
-                <CookieBanner
-                    onAccept={onAccept}
-                    onDecline={onDecline}
-                    is_open={show_cookie_banner}
-                    is_dark_mode={is_dark_mode}
-                />
             )}
         </div>
     );

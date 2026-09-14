@@ -53,3 +53,7 @@ playwright/.env.*
 
 # spec-to-pr run state
 .spec-to-pr/
+
+# Claude Code harness artifacts (regenerated per worktree, never part of a change)
+AGENTS.md
+.agents/

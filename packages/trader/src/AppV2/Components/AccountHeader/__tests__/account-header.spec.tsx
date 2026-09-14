@@ -78,10 +78,6 @@ jest.mock('@deriv/core/src/App/Components/Layout/Header/account-switcher', () =>
     return jest.fn(() => <div data-testid='account-switcher'>Account Switcher</div>);
 });
 
-jest.mock('@deriv/core/src/App/Components/Layout/Header/account-info-icon', () => {
-    return jest.fn(() => <div data-testid='account-info-icon'>Icon</div>);
-});
-
 jest.mock('@deriv/core/src/App/Containers/Modals/TryRealModal', () => {
     return jest.fn(() => <div data-testid='try-real-modal'>Try Real Modal</div>);
 });

@@ -5,7 +5,6 @@ import Text from '../text';
 
 type TDisplayText = {
     className: string;
-    has_symbol?: boolean;
     list: TList;
     name?: string;
     placeholder?: string;
@@ -13,24 +12,19 @@ type TDisplayText = {
     is_align_text_left?: boolean;
 };
 
-const DisplayText = ({ className, has_symbol, list, is_align_text_left, placeholder, name, value }: TDisplayText) => {
-    const symbol_value_class = value && has_symbol ? `symbols--${value.toString().toLowerCase()}` : null;
+const DisplayText = ({ className, list, is_align_text_left, placeholder, name, value }: TDisplayText) => {
     return (
         <React.Fragment>
-            {has_symbol ? (
-                <span className={classNames('symbols dc-dropdown__display-symbol', symbol_value_class, className)} />
-            ) : (
-                <Text
-                    size='xs'
-                    color='primary'
-                    align='center'
-                    className={classNames('dc-dropdown__display-text', className)}
-                    name={name}
-                    value={value}
-                >
-                    {getDisplayText(list, value)}
-                </Text>
-            )}
+            <Text
+                size='xs'
+                color='primary'
+                align='center'
+                className={classNames('dc-dropdown__display-text', className)}
+                name={name}
+                value={value}
+            >
+                {getDisplayText(list, value)}
+            </Text>
             {placeholder && (
                 <div
                     className={classNames('dc-dropdown__display-placeholder', {

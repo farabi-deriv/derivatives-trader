@@ -4,15 +4,12 @@ A lightweight utility library providing essential helper functions for account m
 
 ## Overview
 
-The `@deriv/utils` package provides a focused collection of utility functions specifically designed for Deriv applications. It includes essential helpers for account management, localStorage operations, authentication token handling, chat integration, logging, and date/time utilities. This package serves as a lightweight alternative to the more comprehensive `@deriv/shared` package, focusing on core utilities needed across multiple applications.
+The `@deriv/utils` package provides a focused collection of utility functions specifically designed for Deriv applications. It includes essential helpers for localStorage operations, logging, and URL parsing. This package serves as a lightweight alternative to the more comprehensive `@deriv/shared` package, focusing on core utilities needed across multiple applications.
 
 ## Key Features
 
-- **Account Management**: Utilities for handling user accounts and authentication tokens
 - **Storage Operations**: Safe localStorage access with JSON parsing capabilities
-- **Chat Integration**: Intercom chat management utilities
 - **Error Logging**: PostHog integration for error tracking and logging
-- **Date/Time Utilities**: Moment.js integration with UTC handling
 - **URL Parsing**: External link detection and URL validation
 - **Type Safety**: Full TypeScript support with proper type definitions
 
@@ -22,16 +19,10 @@ The package follows a simple, functional architecture with individual utility mo
 
 ```
 src/
-├── index.ts                           # Main exports
-├── getAccountsFromLocalStorage.ts     # Account list retrieval
-├── getAccountListWithAuthToken.ts     # Account list with tokens
-├── getActiveLoginIDFromLocalStorage.ts # Active login ID retrieval
-├── getLocalStorage.ts                 # Safe localStorage operations
-├── getToken.ts                        # Authentication token utilities
-├── chat.ts                           # Intercom chat integration
-├── logging.ts                        # Error logging with PostHog
-├── moment.ts                         # Date/time utilities
-└── parse-url.ts                      # URL parsing utilities
+├── index.ts            # Main exports
+├── getLocalStorage.ts  # Safe localStorage operations
+├── logging.ts          # Error logging with PostHog
+└── parse-url.ts        # URL parsing utilities
 ```
 
 ## Usage/Development
@@ -54,41 +45,6 @@ npm run build
 
 ```bash
 npm run test:eslint
-```
-
-## Account Management Utilities
-
-### getAccountsFromLocalStorage
-
-Retrieves the complete accounts list from localStorage with proper type safety:
-
-```typescript
-import { getAccountsFromLocalStorage } from '@deriv/utils';
-
-const accounts = getAccountsFromLocalStorage();
-// Returns: TLocalStorageAccountsList | undefined
-```
-
-### getToken
-
-Gets the authentication token for a specific login ID:
-
-```typescript
-import { getToken } from '@deriv/utils';
-
-const token = getToken('CR1234567');
-// Returns: string | undefined
-```
-
-### getActiveLoginIDFromLocalStorage
-
-Retrieves the currently active login ID:
-
-```typescript
-import { getActiveLoginIDFromLocalStorage } from '@deriv/utils';
-
-const activeLoginId = getActiveLoginIDFromLocalStorage();
-// Returns: string | undefined
 ```
 
 ## Storage Utilities
@@ -115,25 +71,6 @@ const value = getLocalStorage('key');
 // Returns: any | null
 ```
 
-## Chat Integration
-
-### Chat
-
-Intercom chat management utilities:
-
-```typescript
-import { Chat } from '@deriv/utils';
-
-// Open chat widget
-Chat.open();
-
-// Close chat widget
-Chat.close();
-
-// Clear chat session
-Chat.clear();
-```
-
 ## Error Logging
 
 ### logError
@@ -148,27 +85,6 @@ logError('Something went wrong', {
     action: 'trade_execution',
     additionalData: { symbol: 'EURUSD' },
 });
-```
-
-## Date/Time Utilities
-
-### toMoment
-
-Converts various input types to UTC Moment objects:
-
-```typescript
-import { toMoment } from '@deriv/utils';
-
-// From epoch timestamp
-const momentFromEpoch = toMoment(1640995200);
-
-// From date string
-const momentFromString = toMoment('2022-01-01');
-
-// Current time if no input
-const momentNow = toMoment();
-
-// All return moment.Moment objects in UTC
 ```
 
 ## URL Utilities
@@ -195,7 +111,7 @@ const isExternal = isExternalLink('https://example.com');
 
 ### Dependencies Management
 
-- **Minimal Dependencies**: Only essential external dependencies (moment, lodash utilities, bowser)
+- **Minimal Dependencies**: Only essential external dependencies (`@deriv-com/analytics`)
 - **Tree Shaking**: All utilities support tree shaking for optimal bundle sizes
 - **No Side Effects**: Pure functions without global state modifications
 

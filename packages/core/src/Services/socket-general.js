@@ -193,7 +193,6 @@ const BinarySocketGeneral = (() => {
     return {
         init,
         setBalanceActiveAccount,
-        authorizeAccount,
     };
 })();
 

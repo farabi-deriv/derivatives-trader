@@ -1,4 +1,3 @@
-import useInfiniteQuery from './useInfiniteQuery';
 import useMutation from './useMutation';
 import useQueries from './useQueries';
 import useQuery from './useQuery';
@@ -10,7 +9,7 @@ export { default as useRemoteConfig } from './hooks/useRemoteConfig';
 export { useRestAPI } from './useRestAPI';
 export * from './hooks';
 
-export { useInfiniteQuery, useMutation, useQueries, useQuery };
+export { useMutation, useQueries, useQuery };
 
 // Export types from types.ts
 export type {

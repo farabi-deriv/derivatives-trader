@@ -26,7 +26,6 @@ describe('<TopWidgets />', () => {
     });
     beforeEach(() => {
         mocked_props = {
-            InfoBox: <div>Info Box Content</div>,
             is_mobile: false,
             is_title_enabled: true,
             y_axis_width: 100,
@@ -38,12 +37,6 @@ describe('<TopWidgets />', () => {
             is_digits_widget_active: true,
         };
     });
-    // it('Should render info box and mocked chart title and should not render toast notification or recent trade info for Desktop', () => {
-    //     render(<TopWidgets {...mocked_props} />);
-    //     const chart_title = screen.getByText(/mockedcharttitle/i);
-    //     expect(screen.getByText(/info box content/i)).toBeInTheDocument();
-    //     expect(chart_title).toBeInTheDocument();
-    // });
     it('Should render only one mocked chart title and toast notification for Mobile', () => {
         mocked_props.is_mobile = true;
         (isMobile as jest.Mock).mockReturnValue(true);

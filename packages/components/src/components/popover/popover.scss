@@ -46,10 +46,6 @@
             flex-grow: 2;
             direction: ltr;
         }
-        &--error {
-            direction: ltr;
-            background-color: var(--color-status-danger);
-        }
     }
     &__trade-params {
         @include mobile {

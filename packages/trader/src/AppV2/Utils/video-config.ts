@@ -71,7 +71,7 @@ export const UNIFIED_MODE_VIDEO_ID: TDtraderVideoUrl = {
 };
 
 // Onboarding videos
-export const ONBOARDING_VIDEO_ID: TDtraderVideoUrl = {
+const ONBOARDING_VIDEO_ID: TDtraderVideoUrl = {
     trade_page: {
         light: '166b342c39cdf08e3700590800ea0059', // user-onboarding-guide-trade-page.mp4
         dark: 'c1706dfdee97113ca2c85b65d70cddac', // user-onboarding-guide-trade-page-dark.mp4
@@ -83,7 +83,7 @@ export const ONBOARDING_VIDEO_ID: TDtraderVideoUrl = {
 };
 
 // Accumulator manual videos
-export const ACCUMULATOR_MANUAL_VIDEO_ID = {
+const ACCUMULATOR_MANUAL_VIDEO_ID = {
     desktop: {
         light: '7221d8b2b532def533e0448a8a410d62', // accumulators_manual_desktop.mp4
         dark: '2627ac2a8744e9c42e8dea01790edc93', // accumulators_manual_desktop_dark.mp4
@@ -91,18 +91,6 @@ export const ACCUMULATOR_MANUAL_VIDEO_ID = {
     mobile: {
         light: 'b7909afcfea13c6ee05caf1b1272f184', // accumulators_manual_mobile.mp4
         dark: '385da1df9eabcae32e45d7e3b8f44602', // accumulators_manual_mobile_dark.mp4
-    },
-};
-
-// Automation onboarding videos
-export const AUTOMATION_ONBOARDING_VIDEO_ID = {
-    desktop: {
-        light: 'c4b8c07440ec81e7d3058885e257d10e', // automation-guide-desktop-light.mp4
-        dark: '86fbd6b7dfecef9179d70c750a7ffad9', // automation-guide-desktop-dark.mp4
-    },
-    mobile: {
-        light: '8dd11c29f00a148ec29917ff35024516', // automation-guide-mobile-light.mp4
-        dark: 'd3566c4429888cc14b1256441162ada9', // automation-guide-mobile-dark.mp4
     },
 };
 
@@ -126,7 +114,3 @@ export const getOnboardingVideoId = (page_type: 'trade_page' | 'positions_page',
 // Helper function to get accumulator manual video ID
 export const getAccumulatorManualVideoId = (device: 'desktop' | 'mobile', is_dark_theme = false) =>
     ACCUMULATOR_MANUAL_VIDEO_ID[device]?.[is_dark_theme ? 'dark' : 'light'];
-
-// Helper function to get the automation onboarding video ID
-export const getAutomationOnboardingVideoId = (device: 'desktop' | 'mobile', is_dark_theme = false) =>
-    AUTOMATION_ONBOARDING_VIDEO_ID[device]?.[is_dark_theme ? 'dark' : 'light'];

@@ -41,7 +41,6 @@ type TInputField = {
     is_error_tooltip_hidden?: boolean;
     is_float?: boolean;
     is_hj_whitelisted?: boolean;
-    is_incrementable_on_long_press?: boolean;
     is_incrementable?: boolean;
     is_negative_disabled?: boolean;
     is_read_only?: boolean;
@@ -92,7 +91,6 @@ const InputField = ({
     is_float,
     is_hj_whitelisted = false,
     is_incrementable,
-    is_incrementable_on_long_press,
     is_negative_disabled,
     is_read_only = false,
     is_signed = false,
@@ -118,11 +116,10 @@ const InputField = ({
     value,
     data_testid,
 }: TInputField) => {
-    const [local_value, setLocalValue] = React.useState<string>();
     const Icon = icon as React.ElementType;
     const has_error = error_messages && !!error_messages.length && !is_error_tooltip_hidden;
-    const max_is_disabled = max_value && (+value >= +max_value || Number(local_value) >= +max_value);
-    const min_is_disabled = min_value && (+value <= +min_value || Number(local_value) <= +min_value);
+    const max_is_disabled = max_value && +value >= +max_value;
+    const min_is_disabled = min_value && +value <= +min_value;
     let has_valid_length = true;
 
     const changeValue = (
@@ -179,36 +176,16 @@ const InputField = ({
         return array_value && array_value.length > 1 ? array_value[1].length : 0;
     };
 
-    const getClampedValue = (val: number) => {
-        let new_value = val;
-        if (min_value) {
-            new_value = Math.max(new_value, min_value);
-        }
-        if (max_value) {
-            new_value = Math.min(new_value, max_value);
-        }
-        return new_value;
-    };
-
-    const incrementValue = (
-        ev?: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>,
-        long_press_step?: number
-    ) => {
+    const incrementValue = () => {
         if (max_is_disabled) return;
         let increment_value;
 
-        const current_value = local_value || value.toString();
+        const current_value = value.toString();
 
         const decimal_places = current_value ? getDecimals(current_value) : 0;
         const is_crypto = !!currency && isCryptocurrency(currency);
 
-        if (long_press_step) {
-            const increase_percentage = Math.min(long_press_step, Math.max(long_press_step, 10)) / 10;
-            const increase = (+value * increase_percentage) / 100;
-            const new_value = parseFloat(current_value || '0') + Math.abs(increase);
-
-            increment_value = parseFloat(getClampedValue(new_value).toString()).toFixed(decimal_places);
-        } else if (is_crypto || (!currency && is_float)) {
+        if (is_crypto || (!currency && is_float)) {
             const new_value =
                 parseFloat(current_value || '0') +
                 parseFloat((1 * 10 ** (0 - (decimal_point_change || decimal_places))).toString());
@@ -217,23 +194,17 @@ const InputField = ({
             increment_value = parseFloat(((+current_value || 0) + 1).toString()).toFixed(decimal_places);
         }
 
-        updateValue(increment_value, !!long_press_step);
+        updateValue(increment_value);
     };
 
-    const calculateDecrementedValue = (long_press_step?: number) => {
+    const calculateDecrementedValue = () => {
         let decrement_value;
-        const current_value = local_value || value?.toString();
+        const current_value = value?.toString();
 
         const decimal_places = current_value ? getDecimals(current_value) : 0;
         const is_crypto = !!currency && isCryptocurrency(currency);
 
-        if (long_press_step) {
-            const decrease_percentage = Math.min(long_press_step, Math.max(long_press_step, 10)) / 10;
-            const decrease = (+value * decrease_percentage) / 100;
-            const new_value = parseFloat(current_value || '0') - Math.abs(decrease);
-
-            decrement_value = parseFloat(getClampedValue(new_value).toString()).toFixed(decimal_places);
-        } else if (is_crypto || (!currency && is_float)) {
+        if (is_crypto || (!currency && is_float)) {
             const new_value =
                 parseFloat(current_value || '0') -
                 parseFloat((1 * 10 ** (0 - (decimal_point_change || decimal_places))).toString());
@@ -244,39 +215,24 @@ const InputField = ({
         return decrement_value;
     };
 
-    const decrementValue = (
-        ev?: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>,
-        long_press_step?: number
-    ) => {
+    const decrementValue = () => {
         if (min_is_disabled) {
             return;
         }
-        const decrement_value = calculateDecrementedValue(long_press_step);
+        const decrement_value = calculateDecrementedValue();
         if (is_negative_disabled && +decrement_value < 0) {
             return;
         }
 
-        updateValue(decrement_value, !!long_press_step);
+        updateValue(decrement_value);
     };
 
-    const updateValue = (new_value: string, is_long_press: boolean) => {
+    const updateValue = (new_value: string) => {
         let formatted_value = format ? format(new_value) : new_value;
-        if (is_long_press) {
-            setLocalValue(formatted_value);
-        } else {
-            if (is_signed && /^\d+/.test(formatted_value) && +formatted_value > 0) {
-                formatted_value = `+${formatted_value}`;
-            }
-            onChange?.({ target: { value: formatted_value, name } });
+        if (is_signed && /^\d+/.test(formatted_value) && +formatted_value > 0) {
+            formatted_value = `+${formatted_value}`;
         }
-    };
-
-    const onLongPressEnd = () => {
-        const new_value = local_value;
-        const formatted_value = format ? format(new_value) : new_value;
-        onChange?.({ target: { value: formatted_value || '', name } });
-
-        setLocalValue('');
+        onChange?.({ target: { value: formatted_value, name } });
     };
 
     const onKeyPressed = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -284,7 +240,7 @@ const InputField = ({
         if (e.keyCode === 40) decrementValue(); // down-arrow pressed
     };
 
-    let display_value = local_value || value;
+    let display_value = value;
 
     if (unit) {
         display_value = is_unit_at_right ? `${value} ${unit}` : `${unit} ${value}`;
@@ -342,8 +298,6 @@ const InputField = ({
                 min_is_disabled || (is_negative_disabled && +calculateDecrementedValue() < 0) || !!is_disabled
             }
             decrementValue={decrementValue}
-            onLongPressEnd={onLongPressEnd}
-            is_incrementable_on_long_press={is_incrementable_on_long_press}
             type={increment_button_type}
         />
     );

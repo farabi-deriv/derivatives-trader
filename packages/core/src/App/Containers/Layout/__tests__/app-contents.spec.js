@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { mockStore, StoreProvider } from '@deriv/stores';
 import { ThemedScrollbars } from '@deriv/components';
 import AppContents from '../app-contents';
@@ -60,32 +60,6 @@ describe('<AppContents/>', () => {
             </BrowserRouter>
         );
     };
-
-    it('should render the Cookie banner with Accept reject button', () => {
-        const new_store = {
-            ...store,
-            client: {
-                ...store.client,
-                is_eu_country: true,
-            },
-        };
-
-        renderComponent(new_store);
-
-        waitFor(async () => {
-            expect(await screen.findByText('Don’t accept')).toBeInTheDocument();
-            expect(await screen.findByText('Accept')).toBeInTheDocument();
-        });
-    });
-
-    it('should not render the cookie banner when it is not a eu country', () => {
-        renderComponent();
-
-        waitFor(() => {
-            expect(screen.queryByText('Don’t accept')).not.toBeInTheDocument();
-            expect(screen.queryByText('Accept')).not.toBeInTheDocument();
-        });
-    });
 
     it('should move scroll to top', async () => {
         renderComponent();

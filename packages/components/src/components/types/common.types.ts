@@ -3,9 +3,6 @@ import React from 'react';
 import { type Dayjs, getCardLabels, getContractTypeDisplay } from '@deriv/shared';
 import { TContractOptions } from '@deriv/shared/src/utils/contract/contract-types';
 
-export type TGenericObjectType = {
-    [key: string]: React.ReactNode;
-};
 export type TGetCardLables = () => ReturnType<typeof getCardLabels>;
 
 export type TGetContractTypeDisplay = (

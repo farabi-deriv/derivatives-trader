@@ -21,11 +21,9 @@
             "entry": ["src/index.tsx", "build/webpack.config.js", "jest.config.js"],
             "project": ["src/**/*.{ts,tsx,js,jsx}"],
             "paths": {
-                "Fonts/*": ["src/public/fonts/*"],
                 "Images": ["src/public/images"],
                 "Images/*": ["src/public/images/*"],
-                "Sass/*": ["src/sass/*"],
-                "Translations/*": ["src/public/translations/*"]
+                "Sass/*": ["src/sass/*"]
             }
         },
         "packages/components": {

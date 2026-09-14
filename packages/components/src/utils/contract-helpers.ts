@@ -27,24 +27,3 @@ export const getUnderlyingFromShortcode = (shortcode?: string | null): string | 
     }
     return null;
 };
-
-/**
- * @deprecated Use `underlying || getUnderlyingFromShortcode(shortcode)` pattern instead.
- * This function is kept for backward compatibility but will be removed in future versions.
- *
- * Extracts the effective underlying symbol from contract info.
- * First tries to use the underlying property, then falls back to extracting from shortcode.
- *
- * @param underlying - The underlying symbol from contract info
- * @param shortcode - The contract shortcode (format: "CONTRACT_UNDERLYING_...")
- * @returns The underlying symbol or null if not found
- */
-export const getEffectiveUnderlying = (underlying?: string | null, shortcode?: string | null): string | null => {
-    // Return underlying if it exists
-    if (underlying) {
-        return underlying;
-    }
-
-    // Fallback: Extract underlying from shortcode if missing
-    return getUnderlyingFromShortcode(shortcode);
-};

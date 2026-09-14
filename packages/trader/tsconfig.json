@@ -6,13 +6,10 @@
             "AppV2/*": ["src/AppV2/*"],
             "Assets/*": ["src/Assets/*"],
             "Constants/*": ["src/Constants/*"],
-            "Fonts/*": ["src/public/fonts/*"],
-            "Images": ["src/public/images"],
             "Modules/*": ["src/Modules/*"],
             "Sass/*": ["src/sass/*"],
             "Services/*": ["src/Services/*"],
             "Stores/*": ["src/Stores/*"],
-            "Translations/*": ["src/public/translations/*"],
             "Types": ["src/Types"],
             "Utils/*": ["src/Utils/*"],
             "@deriv/*": ["../*/src"]

@@ -1,5 +1,4 @@
 import { RouteComponentProps, Redirect, matchPath, RouteProps } from 'react-router';
-import { routes } from '@deriv/shared';
 
 type TRoute = {
     component?: React.ComponentType<RouteComponentProps> | React.ComponentType<Record<string, never>> | typeof Redirect;
@@ -11,7 +10,6 @@ type TRoute = {
 };
 
 type TRouteConfig = TRoute & {
-    is_authenticated?: boolean;
     routes?: TRoute[];
 };
 
@@ -42,11 +40,3 @@ export const findRouteByPath = (path: string, routes_config?: TRouteConfig[]): R
 
     return result;
 };
-
-export const isRouteVisible = (route?: TRouteConfig, is_logged_in?: boolean) =>
-    !(route && route.is_authenticated && !is_logged_in);
-
-export const getPath = (route_path: string, params: { [key: string]: string } = {}) =>
-    Object.keys(params).reduce((p, name) => p.replace(`:${name}`, params[name]), route_path);
-
-export const getContractPath = (contract_id = '') => getPath(routes.contract, { contract_id });

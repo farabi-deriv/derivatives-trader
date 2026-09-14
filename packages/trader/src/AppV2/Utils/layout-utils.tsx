@@ -28,8 +28,6 @@ export const HEIGHT = {
 // if they drift, the chart snaps mid-animation.
 export const CHART_MAXIMIZE_ANIMATION_MS = 300;
 
-export const ASPECT_RATIO = 0.5625;
-
 export const isTradeParamVisible = ({
     component_key,
     contract_type,

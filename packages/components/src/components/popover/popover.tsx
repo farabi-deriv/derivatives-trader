@@ -19,25 +19,17 @@ const Popover = ({
     classNameBubble,
     classNameTarget,
     classNameTargetIcon,
-    counter,
-    disable_message_icon,
     disable_target_icon,
-    has_error,
     icon,
     id,
-    is_open,
     is_bubble_hover_enabled,
     margin = 0,
     message,
     onBubbleClose,
-    onBubbleOpen,
-    onClick = () => undefined,
     relative_render = false,
     should_disable_pointer_events = false,
     should_show_cursor,
     zIndex = '1',
-    data_testid,
-    arrow_styles,
 }: React.PropsWithChildren<TPopoverProps>) => {
     const ref = React.useRef<HTMLDivElement | undefined>();
     const [popover_ref, setPopoverRef] = React.useState<HTMLDivElement | undefined>(undefined);
@@ -45,22 +37,18 @@ const Popover = ({
     const { isDesktop } = useDevice();
     const [hover_ref, is_hovered] = useHover(null, true);
     const [bubble_hover_ref, is_bubble_hovered] = useHoverCallback();
-    const should_toggle_on_target_tap = React.useMemo(() => !isDesktop && is_open === undefined, [isDesktop, is_open]);
+    const should_toggle_on_target_tap = !isDesktop;
 
     React.useEffect(() => {
         if (ref.current) {
             setPopoverRef(ref.current);
         }
-    }, [has_error]);
+    }, []);
     React.useEffect(() => {
         if (!is_hovered && should_toggle_on_target_tap) {
             setIsBubbleVisible(false);
         }
     }, [is_hovered, should_toggle_on_target_tap]);
-
-    const onMouseEnter = () => {
-        if (onBubbleOpen) onBubbleOpen();
-    };
 
     const onMouseLeave = () => {
         if (onBubbleClose) onBubbleClose();
@@ -73,8 +61,7 @@ const Popover = ({
         <div
             ref={hover_ref as RefObject<HTMLDivElement & SVGSVGElement>}
             className={classNames({ 'dc-popover__wrapper': relative_render })}
-            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                onClick(e);
+            onClick={() => {
                 if (should_toggle_on_target_tap) setIsBubbleVisible(!is_bubble_visible);
             }}
             data-testid='dt_popover_wrapper'
@@ -90,9 +77,7 @@ const Popover = ({
             )}
             {(popover_ref || !relative_render) && (
                 <TinyPopover
-                    isOpen={
-                        is_open ?? ((is_open_on_focus || (is_bubble_hover_enabled && is_bubble_hovered)) as boolean)
-                    }
+                    isOpen={(is_open_on_focus || (is_bubble_hover_enabled && is_bubble_hovered)) as boolean}
                     positions={[alignment]}
                     padding={margin + 8}
                     containerClassName={classNames({
@@ -162,20 +147,14 @@ const Popover = ({
                                 position={position}
                                 childRect={childRect}
                                 popoverRect={popoverRect}
-                                arrowColor={
-                                    has_error ? 'var(--color-status-danger)' : 'var(--color-interactive-active)'
-                                }
+                                arrowColor='var(--color-interactive-active)'
                                 arrowSize={5}
                                 arrowStyle={
                                     relative_render
                                         ? {
                                               borderTop: '10px solid transparent',
                                               borderLeft: '10px solid transparent',
-                                              borderRight: `10px solid ${
-                                                  has_error
-                                                      ? 'var(--color-status-danger)'
-                                                      : 'var(--color-interactive-active)'
-                                              }`,
+                                              borderRight: '10px solid var(--color-interactive-active)',
                                               transform: 'rotate(315deg)',
                                               right: '0px',
                                               top: '5px',
@@ -183,40 +162,29 @@ const Popover = ({
                                               margin: 'auto',
                                               bottom: '0px',
                                           }
-                                        : {
-                                              ...arrow_styles,
-                                          }
+                                        : {}
                                 }
                             >
                                 <div
                                     id={id}
-                                    onMouseEnter={onMouseEnter}
                                     onMouseLeave={onMouseLeave}
-                                    className={classNames(classNameBubble, 'dc-popover__bubble', {
-                                        'dc-popover__bubble--error': has_error,
-                                    })}
+                                    className={classNames(classNameBubble, 'dc-popover__bubble')}
                                     ref={bubble_hover_ref as (node: HTMLDivElement) => void}
                                 >
-                                    {!disable_message_icon && icon === 'info' && (
+                                    {icon === 'info' && (
                                         <i className='dc-popover__bubble__icon'>
                                             <LegacyInformationIcon fill='var(--color-text-info)' iconSize='xs' />
                                         </i>
                                     )}
-                                    {(has_error && (
-                                        <Text size='xxs' color='white'>
-                                            {message}
-                                        </Text>
-                                    )) || (
-                                        <Text line_height='m' size='xxs' className='dc-popover__bubble__text'>
-                                            {message}
-                                        </Text>
-                                    )}
+                                    <Text line_height='m' size='xxs' className='dc-popover__bubble__text'>
+                                        {message}
+                                    </Text>
                                 </div>
                             </ArrowContainer>
                         );
                     }}
                 >
-                    <div data-testid={data_testid} className={classNames('dc-popover', className)} id={id}>
+                    <div className={classNames('dc-popover', className)} id={id}>
                         <div className={classNames(classNameTarget, 'dc-popover__target')}>
                             {!disable_target_icon && (
                                 <i
@@ -245,7 +213,6 @@ const Popover = ({
                                             fill='var(--color-status-danger)'
                                         />
                                     )}
-                                    {icon === 'counter' && <span className={icon_class_name}>{counter}</span>}
                                 </i>
                             )}
 

@@ -284,12 +284,8 @@
         flex-direction: row;
         margin-bottom: -1.6rem;
 
-        > :not(.dc-input__counter) {
+        > * {
             margin-right: 1.2rem;
-        }
-
-        > .dc-input__counter {
-            margin-left: auto;
         }
     }
     &__wrapper {

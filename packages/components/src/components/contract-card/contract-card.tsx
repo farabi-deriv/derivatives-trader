@@ -3,7 +3,6 @@ import ContractCardLoader from './contract-card-loader';
 import ContractCardHeader from './contract-card-items/contract-card-header';
 import ContractCardBody from './contract-card-items/contract-card-body';
 import ContractCardFooter from './contract-card-items/contract-card-footer';
-import ContractTypeCell from './contract-card-items/contract-type-cell';
 import ContractCardSell from './contract-card-items/contract-card-sell';
 import MultiplierCloseActions from './contract-card-items/multiplier-close-actions';
 import ResultOverlay from './result-overlay';
@@ -68,7 +67,6 @@ ContractCard.Header = ContractCardHeader;
 ContractCard.Body = ContractCardBody;
 ContractCard.Footer = ContractCardFooter;
 ContractCard.Loader = ContractCardLoader;
-ContractCard.ContractTypeCell = ContractTypeCell;
 ContractCard.MultiplierCloseActions = MultiplierCloseActions;
 ContractCard.Sell = ContractCardSell;
 

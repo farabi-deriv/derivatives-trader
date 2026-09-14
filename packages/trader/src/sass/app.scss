@@ -5,9 +5,6 @@
 // Drawers
 @import 'app/_common/drawer/contract-drawer';
 
-// Form
-@import 'app/_common/form/time-picker';
-
 // Components
 @import 'app/_common/components/action-sheet';
 @import 'app/_common/components/strike';
@@ -15,19 +12,13 @@
 @import 'app/_common/components/contract-audit';
 @import 'app/_common/components/contract-replay';
 @import 'app/_common/components/contract-type-dialog';
-@import 'app/_common/components/contract-type-widget';
-@import 'app/_common/components/contract-type-list';
-@import 'app/_common/components/contract-type-info';
-@import 'app/_common/components/contract-type-no-result';
 @import 'app/_common/components/market-is-closed-overlay';
 @import 'app/_common/components/number-selector';
 @import 'app/_common/components/positions-drawer';
 @import 'app/_common/components/purchase-button';
-@import 'app/_common/components/range-slider';
 @import 'app/_common/components/tooltip';
 
 // Modules
-@import 'app/modules/contract';
 @import 'app/modules/contract/digits';
 @import 'app/modules/contract/bottom-widgets';
 @import 'app/modules/portfolio';

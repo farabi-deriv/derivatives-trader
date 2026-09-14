@@ -20,7 +20,6 @@ type TTableRow<T> = {
     measure?: () => void;
     is_dynamic_height: boolean;
     row_obj?: T;
-    getActionColumns?: (params: { row_obj?: T; is_header?: boolean; is_footer: boolean }) => any;
     content_loader: React.ElementType;
     columns?: any;
 };
@@ -37,7 +36,6 @@ const TableRow = ({
     className,
     columns,
     content_loader,
-    getActionColumns,
     id,
     is_footer,
     is_header,
@@ -49,8 +47,6 @@ const TableRow = ({
     measure,
     is_dynamic_height,
 }: TTableRow<any>) => {
-    const action_columns = getActionColumns && getActionColumns({ row_obj, is_header, is_footer });
-
     const cells = columns.map(
         ({
             col_index,
@@ -101,7 +97,6 @@ const TableRow = ({
             >
                 {cells}
             </NavLink>
-            {action_columns}
         </div>
     ) : (
         <div className={`${className}__row_wrapper`}>
@@ -113,7 +108,6 @@ const TableRow = ({
                 is_dynamic_height={is_dynamic_height}
                 measure={measure}
             />
-            {action_columns}
         </div>
     );
 };

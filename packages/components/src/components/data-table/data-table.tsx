@@ -36,19 +36,13 @@ type TDataTable = {
     className: string;
     content_loader: React.ElementType;
     columns: TSource[];
-    contract_id?: number;
-    getActionColumns?: (params: { row_obj?: TSource; is_header?: boolean; is_footer: boolean }) => TTableRowItem[];
     getRowSize?: ((params: { index: number }) => number) | number;
-    measure?: () => void;
     getRowAction?: (item: TSource) => TTableRowItem;
     onScroll?: React.UIEventHandler<HTMLDivElement>;
-    id?: number;
     passthrough?: React.ComponentProps<typeof TableRow>['passthrough'];
-    autoHide?: boolean;
     footer?: Record<string, unknown> | React.ReactNode;
     preloaderCheck?: (param: TSource) => boolean;
     data_source?: TSource[];
-    keyMapper?: (row: TSource) => number | string;
 };
 
 const DataTable = ({
@@ -58,11 +52,8 @@ const DataTable = ({
     content_loader,
     data_source,
     footer,
-    getActionColumns,
     getRowAction,
     getRowSize,
-    id,
-    keyMapper,
     onScroll,
     passthrough,
     preloaderCheck,
@@ -77,11 +68,6 @@ const DataTable = ({
         if (is_dynamic_height) {
             cache_ref.current = new CellMeasurerCache({
                 fixedWidth: true,
-                keyMapper: row_index => {
-                    if (data_source && row_index < data_source.length)
-                        return keyMapper?.(data_source[row_index]) || row_index;
-                    return row_index;
-                },
             });
         }
         setLoading(false);
@@ -104,7 +90,7 @@ const DataTable = ({
         let action: TTableRowItem | undefined, row_key;
         if (item) {
             action = getRowAction && getRowAction(item);
-            row_key = keyMapper?.(item) || key;
+            row_key = key;
         }
 
         // If row content is complex, consider rendering a light-weight placeholder while scrolling.
@@ -113,9 +99,7 @@ const DataTable = ({
                 className={className}
                 columns={columns}
                 content_loader={content_loader}
-                getActionColumns={getActionColumns}
                 id={contract_id as string}
-                key={id}
                 measure={measure}
                 passthrough={passthrough}
                 replace={typeof action === 'object' ? action : undefined}
@@ -162,7 +146,6 @@ const DataTable = ({
                     className={className}
                     columns={columns}
                     content_loader={content_loader}
-                    getActionColumns={getActionColumns}
                     is_header
                     is_footer={false}
                     is_dynamic_height={false}
@@ -210,7 +193,6 @@ const DataTable = ({
                         className={className}
                         columns={columns}
                         content_loader={content_loader}
-                        getActionColumns={getActionColumns}
                         is_footer
                         row_obj={footer}
                         is_dynamic_height={false}

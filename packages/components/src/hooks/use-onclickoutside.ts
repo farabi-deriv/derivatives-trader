@@ -1,5 +1,4 @@
-import { RefObject } from 'react';
-import useEventListener from './use-event-listener';
+import { RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 
 type Handler = (event: MouseEvent) => void;
 export function useOnClickOutside<T extends HTMLElement = HTMLElement>(
@@ -8,16 +7,31 @@ export function useOnClickOutside<T extends HTMLElement = HTMLElement>(
     validationFn?: (event: MouseEvent) => boolean,
     mouseEvent: 'mousedown' | 'mouseup' = 'mousedown'
 ): void {
-    useEventListener(mouseEvent, event => {
-        const el = ref?.current;
+    const savedHandler = useRef(handler);
+    const savedValidationFn = useRef(validationFn);
 
-        // Do nothing if clicking ref's element or descendent elements
-        if (!el || el.contains(event.target as Node)) {
-            return;
-        }
+    useLayoutEffect(() => {
+        savedHandler.current = handler;
+        savedValidationFn.current = validationFn;
+    }, [handler, validationFn]);
 
-        if (validationFn && !validationFn(event)) return;
+    useEffect(() => {
+        const listener = (event: Event) => {
+            const el = ref?.current;
+            const mouse_event = event as MouseEvent;
 
-        handler(event);
-    });
+            // Do nothing if clicking ref's element or descendent elements
+            if (!el || el.contains(mouse_event.target as Node)) {
+                return;
+            }
+
+            if (savedValidationFn.current && !savedValidationFn.current(mouse_event)) return;
+
+            savedHandler.current(mouse_event);
+        };
+
+        window.addEventListener(mouseEvent, listener);
+
+        return () => window.removeEventListener(mouseEvent, listener);
+    }, [mouseEvent, ref]);
 }

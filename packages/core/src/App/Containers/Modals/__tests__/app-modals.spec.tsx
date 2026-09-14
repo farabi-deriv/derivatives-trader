@@ -16,11 +16,6 @@ jest.mock('../UrlUnavailableModal', () => {
     UrlUnavailableModal.displayName = 'UrlUnavailableModal';
     return { __esModule: true, default: UrlUnavailableModal };
 });
-jest.mock('../LogoutSuccessModal', () => {
-    const LogoutSuccessModal = () => <div>LogoutSuccessModal</div>;
-    LogoutSuccessModal.displayName = 'LogoutSuccessModal';
-    return { __esModule: true, default: LogoutSuccessModal };
-});
 jest.mock('../TryRealModal', () => {
     const TryRealModal = () => <div>TryRealModal</div>;
     TryRealModal.displayName = 'TryRealModal';

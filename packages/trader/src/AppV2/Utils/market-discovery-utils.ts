@@ -42,7 +42,7 @@ export const DEFAULT_DISCOVERY_WINDOW: TDiscoveryWindow = '5m';
 export const DISCOVERY_WINDOWS: TDiscoveryWindow[] = ['1m', '5m', '15m', '1h'];
 
 /** Number of items shown per discovery section (Trending / Gainers / Losers). */
-export const DISCOVERY_SECTION_LIMIT = 5;
+const DISCOVERY_SECTION_LIMIT = 5;
 
 /** Formats a windowed change for display, e.g. `1.25` → `+1.25%`, `-2.4` → `-2.40%`, `null` → `–`. */
 export const formatChangePercentage = (value: number | null): string => {

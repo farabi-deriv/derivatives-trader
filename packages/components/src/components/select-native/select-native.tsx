@@ -1,32 +1,20 @@
 import classNames from 'classnames';
 import React from 'react';
-import Field from '../field/field';
-import Text from '../text/text';
 import { LegacyChevronDown1pxIcon } from '@deriv/quill-icons';
 
 type TSelectNative = {
     className?: string;
-    classNameDisplay?: string;
-    classNameHint?: string;
-    error?: string;
-    hint?: string;
     label?: string;
-    placeholder?: string;
     should_show_empty_option?: boolean;
     suffix_icon?: React.ReactElement;
-    data_testid?: string;
-    is_country_code_dropdown?: boolean;
     hide_selected_value?: boolean;
     hide_top_placeholder?: boolean;
     value?: string | number;
     list_items: Array<TListItem> | { [key: string]: Array<TListItem> };
-} & Omit<TSelectNativeOptions, 'list_items'> &
-    Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'>; // Default type of value in HTMLSelectElement is only string but here string | number is required
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value'>; // Default type of value in HTMLSelectElement is only string but here string | number is required
 
 type TSelectNativeOptions = {
     list_items: Array<TListItem>;
-    should_hide_disabled_options?: boolean;
-    use_text?: boolean;
 };
 
 type TListItem = {
@@ -52,8 +40,8 @@ const getDisplayText = (list_items: Array<TListItem> | { [key: string]: Array<TL
     return '';
 };
 
-const SelectNativeOptions = ({ list_items, should_hide_disabled_options, use_text }: TSelectNativeOptions) => {
-    const options = should_hide_disabled_options ? list_items.filter(opt => !opt.disabled) : list_items;
+const SelectNativeOptions = ({ list_items }: TSelectNativeOptions) => {
+    const options = list_items.filter(opt => !opt.disabled);
     const has_group = Array.isArray(list_items) && !!list_items[0]?.group;
 
     if (has_group) {
@@ -71,7 +59,7 @@ const SelectNativeOptions = ({ list_items, should_hide_disabled_options, use_tex
                 {group_names.map(option => (
                     <optgroup key={option} label={option}>
                         {dropdown_items[option].map((value: TListItem) => (
-                            <option key={value.id || value.value} value={use_text ? value.text : value.value}>
+                            <option key={value.id || value.value} value={value.value}>
                                 {value.nativepicker_text || value.text}
                             </option>
                         ))}
@@ -83,7 +71,7 @@ const SelectNativeOptions = ({ list_items, should_hide_disabled_options, use_tex
     return (
         <React.Fragment>
             {options.map(option => (
-                <option key={option.id || option.value} value={use_text ? option.text : option.value}>
+                <option key={option.id || option.value} value={option.value}>
                     {option.nativepicker_text || option.text}
                 </option>
             ))}
@@ -93,52 +81,33 @@ const SelectNativeOptions = ({ list_items, should_hide_disabled_options, use_tex
 
 const SelectNative = ({
     className,
-    classNameDisplay,
-    classNameHint,
     disabled,
-    error,
     hide_selected_value,
-    hint,
     label,
     list_items,
-    placeholder,
-    is_country_code_dropdown,
-    should_hide_disabled_options = true,
     should_show_empty_option = true,
     suffix_icon,
-    use_text,
     value,
-    data_testid,
     hide_top_placeholder = false,
     ...props
 }: TSelectNative) => (
     <div
         className={classNames(className, 'dc-select-native', {
             'dc-select-native--disabled': disabled,
-            'dc-select-native--error': error,
             'dc-select-native--hide-selected-value': hide_selected_value,
         })}
     >
         <div className='dc-select-native__wrapper'>
-            <div
-                className={classNames('dc-input', {
-                    'dc-input--disabled': disabled,
-                    'dc-input--error': error,
-                })}
-            >
+            <div className={classNames('dc-input', { 'dc-input--disabled': disabled })}>
                 <div
                     className={classNames('dc-select-native__container', {
-                        'dc-select-native__container--error': error,
                         'dc-select-native__container--disabled': disabled,
                     })}
                 >
                     <div className='dc-select-native__display'>
                         {list_items && value && (
-                            <div
-                                className={classNames('dc-select-native__display-text', classNameDisplay)}
-                                data-testid='selected_value'
-                            >
-                                {!hide_selected_value && (use_text ? value : getDisplayText(list_items, value))}
+                            <div className='dc-select-native__display-text' data-testid='selected_value'>
+                                {!hide_selected_value && getDisplayText(list_items, value)}
                             </div>
                         )}
                     </div>
@@ -168,7 +137,6 @@ const SelectNative = ({
                         className='dc-select-native__picker'
                         value={value}
                         disabled={disabled}
-                        data-testid={data_testid}
                         {...props}
                         id='dt_components_select-native_select-tag'
                     >
@@ -179,21 +147,15 @@ const SelectNative = ({
                                  * Added an empty option to avoid it from selecting first item
                                  * from list_items provided
                                  */}
-                                {should_show_empty_option && <option value=''>{placeholder}</option>}
+                                {should_show_empty_option && <option value='' />}
                                 {/*
                                  * Safari on ios allows to select a disabled option. So, we should avoid showing it
                                  */}
-                                <SelectNativeOptions
-                                    list_items={list_items}
-                                    should_hide_disabled_options={should_hide_disabled_options}
-                                    use_text={use_text && !is_country_code_dropdown}
-                                />
+                                <SelectNativeOptions list_items={list_items} />
                             </React.Fragment>
                         ) : (
                             Object.keys(list_items).map((key: string) => {
-                                const items = should_hide_disabled_options
-                                    ? list_items[key].filter((opt: TListItem) => !opt.disabled)
-                                    : list_items[key];
+                                const items = list_items[key].filter((opt: TListItem) => !opt.disabled);
 
                                 if (items.length > 0) {
                                     return (
@@ -201,11 +163,7 @@ const SelectNative = ({
                                             {/*
                                              * Safari on ios allows to select a disabled option. So, we should avoid showing it
                                              */}
-                                            <SelectNativeOptions
-                                                list_items={list_items[key]}
-                                                should_hide_disabled_options={should_hide_disabled_options}
-                                                use_text={use_text}
-                                            />
+                                            <SelectNativeOptions list_items={list_items[key]} />
                                         </optgroup>
                                     );
                                 }
@@ -215,20 +173,8 @@ const SelectNative = ({
                         )}
                     </select>
                 </div>
-                {error && <Field message={error} type='error' />}
             </div>
         </div>
-        {!error && hint && (
-            <Text
-                as='p'
-                color='less-prominent'
-                size='xxs'
-                line_height='l'
-                className={classNames('dc-select-native__hint', classNameHint)}
-            >
-                {hint}
-            </Text>
-        )}
     </div>
 );
 

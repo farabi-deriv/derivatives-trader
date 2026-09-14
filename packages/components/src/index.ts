@@ -10,7 +10,6 @@
 // export default { Label, Button };
 
 export { default as ArrowIndicator } from './components/arrow-indicator';
-export { default as AutoSizer } from './components/autosizer';
 export { default as Button } from './components/button';
 export { default as ButtonLink } from './components/button-link';
 export { default as Calendar } from './components/calendar';
@@ -35,7 +34,6 @@ export { default as Field } from './components/field';
 export { default as FilterDropdown } from './components/filter-dropdown';
 export { default as Flyout } from './components/flyout';
 export { default as IconTradeTypes } from './components/icon-trade-types';
-export * from './components/inline-message';
 export { default as Input } from './components/input';
 export { default as InputField } from './components/input-field';
 export { default as InputWithCheckbox } from './components/input-wth-checkbox';

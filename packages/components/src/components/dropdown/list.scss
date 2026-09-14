@@ -11,53 +11,6 @@
         width: 21rem;
     }
 
-    &--left {
-        width: unset;
-
-        .dc-list__item-text,
-        .dc-list__item-symbol {
-            padding-left: 2.286em;
-            padding-right: 2.286em;
-            overflow: hidden;
-            white-space: nowrap;
-            text-align: center;
-        }
-    }
-    &--large {
-        padding-bottom: 1.6rem;
-        max-height: 404px;
-
-        .dc-list {
-            &__label {
-                padding: 1.6rem 0.8rem 0.8rem;
-                color: var(--color-text-primary);
-                height: 4rem;
-            }
-            &__item {
-                &-text {
-                    width: calc(100% - 1.6rem);
-                    padding: 1rem 1.6rem;
-                    margin: 0 0.8rem;
-                }
-                &:not(&--disabled):not(&--selected):hover,
-                &:not(&--disabled):not(&--selected):focus {
-                    border-radius: $BORDER_RADIUS;
-                    width: calc(100% - 1.6rem);
-                    margin: 0 0.8rem;
-
-                    .dc-list__item-text {
-                        width: 100%;
-                        margin: 0;
-                    }
-                }
-            }
-            &__separator {
-                width: 100%;
-                border-bottom: 4px solid var(--color-surface-border);
-                margin: 1.6rem 0 0;
-            }
-        }
-    }
     &__label {
         padding: 0.6rem;
         font-size: 1.4rem;
@@ -72,8 +25,7 @@
         width: 100%;
         cursor: pointer;
 
-        &-text,
-        &-symbol {
+        &-text {
             display: flex;
             width: 100%;
             justify-content: center;
@@ -90,7 +42,6 @@
             color: var(--color-text-secondary);
         }
         &--selected .dc-list__item-text,
-        &--selected .dc-list__item-symbol,
         &--selected .dc-list__item-tooltip {
             @include typeface(--paragraph-left-bold-primary);
             line-height: 1.43;
@@ -107,13 +58,6 @@
             color: var(--color-text-disabled);
             opacity: 0.3;
             cursor: default;
-        }
-        &-symbol {
-            width: 100%;
-            padding: 0.6rem 0;
-            margin: 0;
-            justify-content: center;
-            display: flex;
         }
     }
     &__separator {

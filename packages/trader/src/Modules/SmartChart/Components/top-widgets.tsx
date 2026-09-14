@@ -7,7 +7,6 @@ import { useTraderStore } from 'Stores/useTraderStores';
 import RecentTradeInfo from './recent-trade-info';
 
 type TTopWidgets = {
-    InfoBox?: React.ReactNode;
     is_digits_widget_active?: boolean;
     is_mobile?: boolean;
     is_title_enabled?: boolean;
@@ -22,7 +21,6 @@ type TTopWidgets = {
 };
 
 const TopWidgets = ({
-    InfoBox,
     is_mobile,
     is_title_enabled = true,
     onSymbolChange,
@@ -53,14 +51,7 @@ const TopWidgets = ({
         document.getElementById('app_contents') as Element | DocumentFragment
     );
 
-    return (
-        <React.Fragment>
-            {/* Hidden as we disable longcode temporarily */}
-            {/* TODO: enable or delete when decision is made */}
-            {/* {InfoBox} */}
-            {is_mobile ? portal : ChartTitleLocal}
-        </React.Fragment>
-    );
+    return <React.Fragment>{is_mobile ? portal : ChartTitleLocal}</React.Fragment>;
 };
 
 export default TopWidgets;

@@ -22,7 +22,7 @@ export const getApiContractType = (store: TradeStore): string => {
  * Maps trade store field names to the API's contract_template shape.
  * Only includes fields that are relevant to the selected contract type.
  */
-export const buildContractTemplate = (store: TradeStore): TAutoContractTemplate => {
+const buildContractTemplate = (store: TradeStore): TAutoContractTemplate => {
     const contract_type = getApiContractType(store);
 
     const template: TAutoContractTemplate = {
@@ -98,7 +98,7 @@ export const buildContractTemplate = (store: TradeStore): TAutoContractTemplate 
  * Validates that a contract template has all required fields for auto_start.
  * Returns an error message string if invalid, or null if valid.
  */
-export const validateContractTemplate = (template: TAutoContractTemplate): string | null => {
+const validateContractTemplate = (template: TAutoContractTemplate): string | null => {
     if (!template.contract_type) return 'Contract type is required';
     if (!template.currency) return 'Currency is required';
     if (!template.underlying_symbol) return 'Symbol is required';

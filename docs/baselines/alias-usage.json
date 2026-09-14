@@ -13,13 +13,11 @@
             "App",
             "Assets",
             "Constants",
-            "Fonts",
             "Images",
             "Modules",
             "Sass",
             "Services",
             "Stores",
-            "Translations",
             "Utils",
             "_common"
         ],
@@ -35,8 +33,8 @@
         ]
     },
     "counts": {
-        "trader": 348,
-        "core": 32,
-        "reports": 30
+        "trader": 338,
+        "core": 26,
+        "reports": 28
     }
 }

@@ -13,9 +13,7 @@ This package provides a set of React hooks and utilities for making API calls to
 - **WebSocket Support**: Real-time data subscriptions via WebSocket connections
 - **Caching**: Intelligent caching and background refetching
 - **Error Handling**: Comprehensive error handling and retry mechanisms
-- **Analytics Integration**: Built-in analytics tracking with `@deriv-com/analytics`
 - **Feature Flags**: Support for feature flag management
-- **Internationalization**: i18n support with `react-i18next`
 
 ## Usage
 
@@ -128,36 +126,6 @@ function PriceComponent() {
 
 ### Advanced Hooks
 
-#### useInfiniteQuery
-
-For paginated data:
-
-```tsx
-import { useInfiniteQuery } from '@deriv/api';
-
-function TransactionHistory() {
-    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery('statement');
-
-    return (
-        <div>
-            {data?.pages.map((page, i) => (
-                <div key={i}>
-                    {page.transactions.map(transaction => (
-                        <div key={transaction.id}>{transaction.description}</div>
-                    ))}
-                </div>
-            ))}
-
-            {hasNextPage && (
-                <button onClick={fetchNextPage} disabled={isFetchingNextPage}>
-                    {isFetchingNextPage ? 'Loading more...' : 'Load More'}
-                </button>
-            )}
-        </div>
-    );
-}
-```
-
 #### usePaginatedFetch
 
 For server-side paginated data:
@@ -223,13 +191,12 @@ function FeatureComponent() {
 
 ### Core Hooks
 
-| Hook                | Description                 | Parameters             | Returns               |
-| ------------------- | --------------------------- | ---------------------- | --------------------- |
-| `useQuery`          | Fetch data from API         | `(endpoint, options?)` | `QueryResult`         |
-| `useMutation`       | Perform mutations           | `(endpoint, options?)` | `MutationResult`      |
-| `useSubscription`   | Subscribe to real-time data | `(endpoint, params?)`  | `SubscriptionResult`  |
-| `useInfiniteQuery`  | Paginated data fetching     | `(endpoint, options?)` | `InfiniteQueryResult` |
-| `usePaginatedFetch` | Server-side pagination      | `(endpoint, options?)` | `PaginatedResult`     |
+| Hook                | Description                 | Parameters             | Returns              |
+| ------------------- | --------------------------- | ---------------------- | -------------------- |
+| `useQuery`          | Fetch data from API         | `(endpoint, options?)` | `QueryResult`        |
+| `useMutation`       | Perform mutations           | `(endpoint, options?)` | `MutationResult`     |
+| `useSubscription`   | Subscribe to real-time data | `(endpoint, params?)`  | `SubscriptionResult` |
+| `usePaginatedFetch` | Server-side pagination      | `(endpoint, options?)` | `PaginatedResult`    |
 
 ### Utility Hooks
 
@@ -247,16 +214,12 @@ function FeatureComponent() {
 
 - `@tanstack/react-query`: ^4.28.0 - Data fetching and caching
 - `@deriv/deriv-api`: ^1.0.15 - Deriv API client
-- `@deriv-com/analytics`: 1.31.6 - Analytics tracking
-- `@deriv-com/ui`: 1.36.4 - UI components
-- `react`: ^17.0.2 - React framework
-- `react-i18next`: ^11.11.0 - Internationalization
+- `react`: ^18.2.0 - React framework
 
 ### Utility Dependencies
 
-- `dayjs`: ^1.11.11 - Date manipulation
-- `js-cookie`: ^2.2.1 - Cookie management
-- `usehooks-ts`: ^2.7.0 - TypeScript React hooks
+- `@deriv-com/utils`: ^0.0.42 - Shared platform utilities
+- `@deriv/utils`: ^1.0.0 - Storage, logging and URL helpers
 
 ## Development
 

@@ -72,14 +72,14 @@ const MyComponent = observer(() => {
 
 ### Core Store Types
 
-The package provides comprehensive TypeScript types for all stores:
+`TCoreStores` (aliased as `TStores`) is the exported root type; each store below is reached through one of its members rather than exported on its own:
 
-- **TClientStore**: User authentication and account management
-- **TCommonStore**: Shared application state
-- **TUiStore**: UI state and modal management
-- **TPortfolioStore**: Trading portfolio management
-- **TContractTradeStore**: Contract trading state
-- **TNotificationStore**: Notification management
+- **client**: User authentication and account management
+- **common**: Shared application state
+- **ui**: UI state and modal management
+- **portfolio**: Trading portfolio management
+- **contract_trade**: Contract trading state
+- **notifications**: Notification management
 
 ### Portfolio Management
 

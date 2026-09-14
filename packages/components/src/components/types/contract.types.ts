@@ -7,8 +7,3 @@ export type TToastConfig = {
     timeout?: number;
     type: string;
 };
-
-export type TErrorMessages = Readonly<{
-    take_profit: string;
-    stop_loss: string;
-}>;

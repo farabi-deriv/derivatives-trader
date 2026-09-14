@@ -25,7 +25,7 @@ type ProposalOpenContract = TPriceProposalOpenContractsResponse['proposal_open_c
  * where the trade type *and* the market are dead ends, so the popup can name both instead of showing
  * one reason and then flipping to the other as the second validation resolves (GRWT-9320).
  */
-export type TUrlUnavailableModalReason = 'trade_type' | 'symbol' | 'both';
+type TUrlUnavailableModalReason = 'trade_type' | 'symbol' | 'both';
 
 type TRoutes =
     | '/404'
@@ -162,7 +162,7 @@ type TNotification =
     | ((withdrawal_locked: boolean, deposit_locked: boolean) => TNotificationMessage)
     | ((excluded_until: number) => TNotificationMessage);
 
-export type TCurrentAccount = {
+type TCurrentAccount = {
     loginid: string;
     balance: number;
     currency: string;
@@ -176,7 +176,7 @@ export type TCurrentAccount = {
     last_name?: string;
 };
 
-export type TClientStore = {
+type TClientStore = {
     account_type: string;
     current_account: TCurrentAccount | null;
     setIsLoggingIn: (value: boolean) => void;

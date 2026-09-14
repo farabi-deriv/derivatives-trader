@@ -14,12 +14,9 @@
 // Components
 @import 'app/_common/components/account-settings-toggle';
 @import 'app/_common/components/error-boundary';
-@import 'app/_common/components/media-item';
 @import 'app/_common/components/side-menu';
-@import 'app/_common/components/cookie-banner';
 @import 'app/_common/components/notification-banner';
 @import 'app/_common/components/notification-promo';
-@import 'app/_common/components/account-common';
 @import 'app/_common/components/flyout-selector';
 
 // Modules
@@ -27,5 +24,4 @@
 @import 'app/modules/page-unavailable';
 @import 'app/modules/account-closed';
 @import 'app/modules/reset-password';
-@import 'app/modules/reset-email';
 @import 'app/modules/external-link';

@@ -18,8 +18,7 @@
                     transform: translate3d(130px, 0, 0) !important;
                 }
                 .cq-bottom-ui-widgets {
-                    .digits__container,
-                    .accumulators-stats {
+                    .digits__container {
                         transform: translate3d(144px, 0, 0) !important;
                     }
                 }
@@ -28,8 +27,7 @@
                         transform: translate3d(#{$POSITIONS_DRAWER_WIDTH}, 0, 0) !important;
                     }
                     .cq-bottom-ui-widgets {
-                        .digits__container,
-                        .accumulators-stats {
+                        .digits__container {
                             transform: translate3d(170px, 40px, 0) !important;
                         }
                     }
@@ -268,23 +266,13 @@ $FLOATING_HEADER_HEIGHT: 41px;
                 border-radius: $BORDER_RADIUS;
 
                 .ciq-chart {
-                    .cq-top-ui-widgets,
-                    & .info-box {
+                    .cq-top-ui-widgets {
                         transition: transform 0.25s ease;
                         z-index: initial;
                         .cq-symbols-display {
                             z-index: 1;
 
                             &.ciq-disabled {
-                                display: none;
-                            }
-                        }
-                        .info-box-container {
-                            transform: none;
-                            opacity: 1;
-                            left: 1px;
-                            z-index: 102;
-                            .chart-close-btn {
                                 display: none;
                             }
                         }
@@ -483,9 +471,6 @@ $FLOATING_HEADER_HEIGHT: 41px;
                 bottom: 15px;
                 left: calc(45% - 150px);
             }
-            .info-box div.cq-chart-controls {
-                box-shadow: none;
-            }
             // TODO: enable asset information
             // div.ciq-asset-information {
             //     z-index: 0;
@@ -525,15 +510,10 @@ $FLOATING_HEADER_HEIGHT: 41px;
         }
         .cq-top-ui-widgets {
             left: 9em;
-
-            .info-box {
-                transform: translate3d(0, 0, 0);
-            }
         }
     }
     .ciq-chart {
-        .cq-top-ui-widgets,
-        & .info-box {
+        .cq-top-ui-widgets {
             transition: transform 0.25s ease;
 
             .cq-symbols-display {

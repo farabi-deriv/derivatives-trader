@@ -5,22 +5,15 @@
     &--top {
         grid-template-rows: auto 1fr;
     }
-    &--100vw {
-        width: 100vw;
-    }
 
     &__list {
         width: 100%;
         line-height: 38px;
         display: flex;
         position: relative;
+        justify-content: center;
         @include mobile {
             justify-content: center;
-        }
-
-        &--overflow-hidden {
-            overflow-y: hidden;
-            display: block;
         }
 
         &--border-bottom {
@@ -29,38 +22,6 @@
 
         &--top {
             order: 0;
-        }
-        &--bottom {
-            order: 1;
-            border-top: 2px solid var(--color-surface-border);
-        }
-        &--center {
-            justify-content: center;
-            width: fit-content;
-            margin: auto;
-
-            .dc-tabs__item {
-                padding: 0 2.2rem;
-            }
-        }
-        &--fit-content {
-            @include mobile {
-                width: fit-content;
-            }
-        }
-        &--header-fit-content {
-            width: fit-content;
-
-            @include mobile {
-                display: flex;
-                justify-content: space-evenly;
-            }
-        }
-        &:not(&--header-fit-content) {
-            justify-content: center;
-        }
-        &--full-width {
-            width: 100vw;
         }
     }
     &__item {
@@ -71,6 +32,7 @@
         color: var(--color-text-secondary);
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent;
+        width: var(--tab-width);
 
         &__counter {
             margin-top: -2rem;
@@ -84,30 +46,9 @@
                 padding-top: 0.5rem;
             }
         }
-        &--header-fit-content {
-            padding: 0px 29px;
-        }
-        &--is-hidden {
-            display: none;
-        }
-        &--is-scrollable-and-active {
-            position: relative;
-
-            &:after {
-                border-bottom: 2px solid var(--brand-primary);
-                content: '';
-                position: absolute;
-                left: 0;
-                display: block;
-                width: 100%;
-            }
-        }
         &:not(.dc-tabs__active) {
             cursor: pointer;
             color: var(--color-text-secondary);
-        }
-        &:not(&--header-fit-content) {
-            width: var(--tab-width);
         }
     }
     &__active {
@@ -124,23 +65,10 @@
         height: 2px;
         background: var(--brand-primary);
         transition: all ease-in-out 0.3s;
+        width: var(--tab-width);
 
         &--top {
             bottom: -2px;
-        }
-        &--bottom {
-            top: -2px;
-        }
-        &--is-hidden {
-            display: none;
-        }
-        &--fit-content {
-            @include mobile {
-                width: 120px;
-            }
-        }
-        &:not(&--header-fit-content) {
-            width: var(--tab-width);
         }
     }
 }

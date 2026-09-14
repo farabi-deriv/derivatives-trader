@@ -1,7 +1,7 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 
-import { getSupportedContracts, getUnsupportedContracts } from '@deriv/shared';
+import { getUnsupportedContracts } from '@deriv/shared';
 import { TCoreStores } from '@deriv/stores/types';
 
 import {
@@ -13,7 +13,7 @@ import {
     TKeys,
 } from 'Constants/data-table-constants';
 
-export type TPassthrough = {
+type TPassthrough = {
     root_store: TCoreStores;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     WS: Record<string, any>;
@@ -92,22 +92,4 @@ export type THeaderProps = {
     is_vanilla: boolean;
 };
 
-export type TColumnTemplateType = {
-    key?: string;
-    title?: React.ReactNode;
-    col_index: TColIndex;
-    renderCellContent?: (props: TCellContentProps) => React.ReactNode;
-    renderHeader?: (props: THeaderProps) => React.ReactNode;
-    icon?: string;
-    action_type?: string;
-    refid?: string;
-    date?: string;
-    balance?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map?: any;
-};
-
-export type TSupportedContractType = keyof ReturnType<typeof getSupportedContracts>;
 export type TUnsupportedContractType = keyof ReturnType<typeof getUnsupportedContracts>;
