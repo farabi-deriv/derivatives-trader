@@ -9,15 +9,22 @@ import { AutomationLockOverlay } from 'AppV2/Components/TradeParameters/Shared';
 import { createDecimalInputGuard, getDecimalInputMaxLength } from 'AppV2/Utils/decimal-input';
 
 import {
+    DEFAULT_MULTIPLIER_BOUNDS,
+    getStakeMultiplierError,
+    getStakeMultiplierPresets,
+    getStakeMultiplierRangeText,
+    KNOWN_PARAM_KEYS,
     MULTIPLIER_DECIMALS,
-    MULTIPLIER_MAX,
-    MULTIPLIER_MIN,
     MULTIPLIER_PRESETS,
-    TAutomationConfig,
+    TStakeMultiplierBounds,
+    TStakeMultiplierParamKey,
 } from '../automation-config';
 
 type TStakeMultiplierMobileProps = {
-    strategy: TAutomationConfig['strategy'];
+    /** Which strategy parameter this editor edits — drives the bounds, hint and copy. */
+    param_key: TStakeMultiplierParamKey;
+    /** Bounds from the strategy schema; defaults to the client fallbacks. */
+    bounds?: TStakeMultiplierBounds;
     selectedValue: number;
     description?: string;
     disabled?: boolean;
@@ -25,24 +32,33 @@ type TStakeMultiplierMobileProps = {
 };
 
 const StakeMultiplierMobile = ({
-    strategy,
+    param_key,
+    bounds = DEFAULT_MULTIPLIER_BOUNDS,
     selectedValue,
     description,
     disabled,
     onSelect,
 }: TStakeMultiplierMobileProps) => {
-    const is_martingale = strategy === 'martingale';
-    const { localize } = useTranslations();
+    const is_multiplier = param_key === KNOWN_PARAM_KEYS.MULTIPLIER;
+    const { localize: localizeForLanguage, instance } = useTranslations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const localize = React.useCallback(localizeForLanguage, [instance.language]);
     const [is_open, setIsOpen] = React.useState(false);
     const [inputValue, setInputValue] = React.useState(String(selectedValue));
     const [error, setError] = React.useState('');
     const onBeforeInput = createDecimalInputGuard(MULTIPLIER_DECIMALS);
-    const label = is_martingale ? localize('Stake multiplier') : localize('Stake increment');
+    const label = is_multiplier ? localize('Stake multiplier') : localize('Stake increment');
 
-    const range_message = is_martingale ? (
-        <Localize i18n_default_text='Range {{min}} - {{max}}' values={{ min: MULTIPLIER_MIN, max: MULTIPLIER_MAX }} />
-    ) : (
-        <Localize i18n_default_text='Minimum 1' />
+    const range_message = React.useMemo(
+        () =>
+            is_multiplier ? getStakeMultiplierRangeText(bounds, localize) : <Localize i18n_default_text='Minimum 1' />,
+        [is_multiplier, bounds, localize]
+    );
+
+    // Increment keeps full presets — `unit` has no schema bounds.
+    const preset_values = React.useMemo(
+        () => (is_multiplier ? getStakeMultiplierPresets(bounds) : MULTIPLIER_PRESETS),
+        [is_multiplier, bounds]
     );
 
     const onClose = React.useCallback(() => {
@@ -66,25 +82,18 @@ const StakeMultiplierMobile = ({
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
-        setError('');
+        const value = e.target.value;
+        setInputValue(value);
+        setError(value ? getStakeMultiplierError(value, param_key, localize, bounds) : '');
     };
 
     const handleInputSave = () => {
-        const num = Number(inputValue);
-        if (!inputValue || isNaN(num) || (is_martingale ? num < MULTIPLIER_MIN : num < 1)) {
-            setError(
-                is_martingale
-                    ? localize('Multiplier must be at least {{min}}', { min: MULTIPLIER_MIN })
-                    : localize('Increment must be at least 1')
-            );
+        const validation_error = getStakeMultiplierError(inputValue, param_key, localize, bounds);
+        if (validation_error) {
+            setError(validation_error);
             return;
         }
-        if (is_martingale && num > MULTIPLIER_MAX) {
-            setError(localize('Multiplier cannot exceed {{max}}', { max: MULTIPLIER_MAX }));
-            return;
-        }
-        onSelect(num);
+        onSelect(Number(inputValue));
         setIsOpen(false);
     };
 
@@ -98,13 +107,13 @@ const StakeMultiplierMobile = ({
                     readOnly
                     disabled={disabled}
                     label={
-                        is_martingale ? (
+                        is_multiplier ? (
                             <Localize i18n_default_text='Stake multiplier' />
                         ) : (
                             <Localize i18n_default_text='Stake increment' />
                         )
                     }
-                    value={is_martingale ? `x${selectedValue}` : `${selectedValue} ${localize('unit')}`}
+                    value={is_multiplier ? `x${selectedValue}` : `${selectedValue} ${localize('unit')}`}
                     noStatusIcon
                     className='trade-params__option'
                     onClick={() => setIsOpen(true)}
@@ -123,7 +132,7 @@ const StakeMultiplierMobile = ({
                     <ActionSheet.Content>
                         <div className='automation-popover__input-wrapper'>
                             <TextField
-                                label={is_martingale ? localize('Stake multiplier') : localize('Stake increment')}
+                                label={is_multiplier ? localize('Stake multiplier') : localize('Stake increment')}
                                 value={inputValue}
                                 onChange={handleInputChange}
                                 onBeforeInput={onBeforeInput}
@@ -141,7 +150,7 @@ const StakeMultiplierMobile = ({
                             />
                             <ValueChips
                                 className='value-chips--pills'
-                                values={MULTIPLIER_PRESETS}
+                                values={preset_values}
                                 selectedValue={Number(inputValue)}
                                 onSelect={handlePresetSelect}
                             />

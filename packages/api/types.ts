@@ -370,7 +370,11 @@ export type TAutoRun = {
 export type TAutoStrategyParameterProperty = {
     description?: string;
     type?: string;
+    /** Inclusive lower bound (JSON Schema `minimum`). */
     minimum?: number;
+    /** Exclusive lower bound — the value must be strictly greater than this. */
+    exclusiveMinimum?: number;
+    /** Inclusive upper bound — the value may equal this. */
     maximum?: number;
     default?: unknown;
 };

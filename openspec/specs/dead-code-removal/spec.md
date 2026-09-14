@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change c1-c2-extraction-remnant-deletions-store-1. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [DCR-001] Per-unit re-verification precedes every deletion
 
 Every deletion in this change SHALL be re-verified as dead at HEAD immediately before the file, export or dependency is removed. Verification SHALL grep for ANY importer — including lazy and `makeLazyLoader`/`React.lazy` dynamic-import patterns — not only static `import` statements. A unit that turns out to have a live importer SHALL NOT be deleted, and the discrepancy SHALL be reported instead.
@@ -389,4 +391,3 @@ Playwright SHALL NOT be run for this change: the suite has no `pull_request` tri
 
 - **WHEN** the change is committed
 - **THEN** `.gitignore` contains `.spec-to-pr/` and no file under that directory is staged
-

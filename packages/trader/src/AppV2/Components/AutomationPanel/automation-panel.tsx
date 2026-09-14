@@ -54,6 +54,7 @@ const AutomationPanel = observer(() => {
         strategy_description,
         schema_keys,
         getSchemaDescription,
+        getParamBounds,
         getParamNumber,
         getParamNumberOrNull,
         setParamFromNumber,
@@ -81,7 +82,8 @@ const AutomationPanel = observer(() => {
 
                     {schema_keys.has(KNOWN_PARAM_KEYS.MULTIPLIER) && (
                         <StakeMultiplier
-                            strategy={config.strategy}
+                            param_key={KNOWN_PARAM_KEYS.MULTIPLIER}
+                            bounds={getParamBounds(KNOWN_PARAM_KEYS.MULTIPLIER)}
                             selectedValue={getParamNumber(KNOWN_PARAM_KEYS.MULTIPLIER)}
                             description={getSchemaDescription(KNOWN_PARAM_KEYS.MULTIPLIER)}
                             disabled={is_automation_params_locked}
@@ -91,7 +93,8 @@ const AutomationPanel = observer(() => {
 
                     {schema_keys.has(KNOWN_PARAM_KEYS.UNIT) && (
                         <StakeMultiplier
-                            strategy={config.strategy}
+                            param_key={KNOWN_PARAM_KEYS.UNIT}
+                            bounds={getParamBounds(KNOWN_PARAM_KEYS.UNIT)}
                             selectedValue={getParamNumber(KNOWN_PARAM_KEYS.UNIT)}
                             description={getSchemaDescription(KNOWN_PARAM_KEYS.UNIT)}
                             disabled={is_automation_params_locked}

@@ -317,16 +317,26 @@ export default class AutomationStore extends BaseStore<TRootStore> {
      * parameter across all strategies (e.g. both `multiplier` for Martingale
      * and `unit` for D'Alembert), so without this filter Martingale would
      * send a stray `unit` and D'Alembert would send a stray `multiplier`.
+     *
+     * Emits each value in the JSON type the schema declares (`number`, `integer`
+     * or `string`). Unparseable numeric values pass through for the server to reject.
      */
-    buildStrategyParameters(): Record<string, string> {
+    buildStrategyParameters(): Record<string, unknown> {
         const strategy = this.getSelectedStrategy();
-        const allowed_keys = strategy?.parameters?.properties
-            ? new Set(Object.keys(strategy.parameters.properties))
-            : null;
+        const properties = strategy?.parameters?.properties;
+        const allowed_keys = properties ? new Set(Object.keys(properties)) : null;
 
-        return Object.entries(this.config.strategy_params).reduce<Record<string, string>>((params, [key, value]) => {
+        return Object.entries(this.config.strategy_params).reduce<Record<string, unknown>>((params, [key, value]) => {
             if (value === '' || value === undefined) return params;
             if (allowed_keys && !allowed_keys.has(key)) return params;
+
+            const declared_type = properties?.[key]?.type;
+            if (declared_type === 'number' || declared_type === 'integer') {
+                const num = Number(value);
+                params[key] = Number.isFinite(num) ? num : value;
+                return params;
+            }
+
             params[key] = value;
             return params;
         }, {});

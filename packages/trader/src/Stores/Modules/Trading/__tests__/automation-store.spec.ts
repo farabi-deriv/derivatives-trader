@@ -171,3 +171,67 @@ describe('AutomationStore stop-event delivery', () => {
         expect(store.last_stop_event).toBeNull();
     });
 });
+
+describe('AutomationStore buildStrategyParameters', () => {
+    let store: AutomationStore;
+
+    // Mirrors auto_list_strategies: `multiplier` is declared `number`, everything
+    // else the UI edits is `string`.
+    const martingale = {
+        strategy_id: 'martingale',
+        display_name: 'Martingale',
+        supported_contract_types: ['CALL'],
+        parameters: {
+            type: 'object',
+            properties: {
+                initial_stake: { type: 'string' },
+                multiplier: { type: 'number', exclusiveMinimum: 1, maximum: 10 },
+                take_profit: { type: 'string' },
+                stop_loss: { type: 'string' },
+                max_stake: { type: 'string' },
+                max_contracts: { type: 'integer' },
+            },
+            required: [],
+        },
+    } as unknown as Parameters<AutomationStore['setStrategies']>[0][number];
+
+    beforeEach(() => {
+        const root = mockStore({ client: { loginid: 'ROT1' } }) as unknown as TRootStore;
+        store = new AutomationStore({ root_store: root });
+        store.setStrategies([martingale]);
+        store.setConfig('strategy', 'martingale');
+    });
+
+    it('emits a schema `number` parameter as a number, not a string', () => {
+        store.setStrategyParam('multiplier', '2.5');
+        expect(store.buildStrategyParameters().multiplier).toBe(2.5);
+    });
+
+    it('emits a schema `integer` parameter as a number', () => {
+        store.setStrategyParam('max_contracts', '10');
+        expect(store.buildStrategyParameters().max_contracts).toBe(10);
+    });
+
+    it('leaves schema `string` parameters as strings', () => {
+        store.setStrategyParam('initial_stake', '1.00');
+        store.setStrategyParam('take_profit', '10');
+        const params = store.buildStrategyParameters();
+        expect(params.initial_stake).toBe('1.00');
+        expect(params.take_profit).toBe('10');
+    });
+
+    it('passes an unparseable numeric value through untouched for the server to reject', () => {
+        store.setStrategyParam('multiplier', 'abc');
+        expect(store.buildStrategyParameters().multiplier).toBe('abc');
+    });
+
+    it('still drops empty values and keys outside the strategy schema', () => {
+        store.setStrategyParam('multiplier', '2');
+        store.setStrategyParam('max_stake', '');
+        store.setStrategyParam('unit', '3');
+        const params = store.buildStrategyParameters();
+        expect(params).not.toHaveProperty('max_stake');
+        expect(params).not.toHaveProperty('unit');
+        expect(params.multiplier).toBe(2);
+    });
+});

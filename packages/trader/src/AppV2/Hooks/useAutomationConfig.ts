@@ -5,10 +5,12 @@ import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import {
+    DEFAULT_MULTIPLIER_BOUNDS,
     getParamDescription,
     getStrategyDescription,
     getStrategyOrderIndex,
     KNOWN_PARAM_KEYS,
+    TStakeMultiplierBounds,
     TStrategyOption,
 } from 'AppV2/Components/AutomationPanel/automation-config';
 import { useAutomationStore } from 'Stores/useAutomationStore';
@@ -63,10 +65,41 @@ const useAutomationConfig = () => {
         return new Set(Object.values(KNOWN_PARAM_KEYS) as string[]);
     }, [selected_strategy]);
 
+    /** Reads per-parameter bounds from the schema; falls back per end to defaults. */
+    // `selected_strategy` isn't read in the factory — it's the cache-invalidation key,
+    // so the Map resets whenever the strategy changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const bounds_cache = React.useMemo(() => new Map<string, TStakeMultiplierBounds>(), [selected_strategy]);
+
+    const getParamBounds = React.useCallback(
+        (key: string): TStakeMultiplierBounds => {
+            // Cached per key for stable identity (avoids invalidating consumers' useMemo).
+            const cached = bounds_cache.get(key);
+            if (cached) return cached;
+
+            const property = selected_strategy?.parameters.properties?.[key];
+            const toNum = (v: unknown) => (typeof v === 'number' ? v : undefined);
+            const exclusive_min = toNum(property?.exclusiveMinimum);
+            const inclusive_min = toNum(property?.minimum);
+            const has_min = exclusive_min !== undefined || inclusive_min !== undefined;
+
+            const bounds: TStakeMultiplierBounds = {
+                min: exclusive_min ?? inclusive_min ?? DEFAULT_MULTIPLIER_BOUNDS.min,
+                max: toNum(property?.maximum) ?? DEFAULT_MULTIPLIER_BOUNDS.max,
+                is_min_exclusive: has_min ? exclusive_min !== undefined : DEFAULT_MULTIPLIER_BOUNDS.is_min_exclusive,
+            };
+            bounds_cache.set(key, bounds);
+            return bounds;
+        },
+        [selected_strategy, bounds_cache]
+    );
+
     // Prefer our own localized copy; fall back to the (English-only) BE schema
-    // description for any param we don't map.
+    // description for any param we don't map. The bounds keep the copy in step with
+    // what `getParamBounds` actually enforces.
     const getSchemaDescription = (key: string) =>
-        getParamDescription(config.strategy, key) ?? selected_strategy?.parameters.properties[key]?.description;
+        getParamDescription(config.strategy, key, getParamBounds(key)) ??
+        selected_strategy?.parameters.properties[key]?.description;
 
     const getParamNumber = (key: string): number => Number(config.strategy_params[key]) || 0;
 
@@ -110,6 +143,7 @@ const useAutomationConfig = () => {
         strategy_description,
         schema_keys,
         getSchemaDescription,
+        getParamBounds,
         getParamNumber,
         getParamNumberOrNull,
         setParamFromNumber,

@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { KNOWN_PARAM_KEYS } from '../automation-config';
 import StakeMultiplierMobile from '../StakeMultiplier/stake-multiplier-mobile';
 
 const defaultProps = {
-    strategy: 'martingale' as const,
+    param_key: KNOWN_PARAM_KEYS.MULTIPLIER,
     selectedValue: 2,
     onSelect: jest.fn(),
 };
@@ -32,13 +33,13 @@ describe('StakeMultiplierMobile', () => {
         expect(screen.getByRole('button', { name: /Select value 5/ })).toBeInTheDocument();
     });
 
-    it('shows the range for the multiplier and a minimum for the increment', async () => {
+    it('shows the exclusive range for the multiplier and a minimum for the increment', async () => {
         const { unmount } = render(<StakeMultiplierMobile {...defaultProps} />);
         await openSheet();
-        expect(screen.getByText('Range 2 - 10')).toBeInTheDocument();
+        expect(screen.getByText('The value must be greater than 1 and no more than 10.')).toBeInTheDocument();
         unmount();
 
-        render(<StakeMultiplierMobile {...defaultProps} strategy='dalembert' />);
+        render(<StakeMultiplierMobile {...defaultProps} param_key={KNOWN_PARAM_KEYS.UNIT} />);
         await openSheet();
         expect(screen.getByText('Minimum 1')).toBeInTheDocument();
     });
@@ -66,7 +67,7 @@ describe('StakeMultiplierMobile', () => {
         expect(onSelect).toHaveBeenCalledWith(5);
     });
 
-    it('rejects a multiplier below 2 but allows 1 as an increment', async () => {
+    it('rejects a multiplier of 1 but allows 1 as an increment', async () => {
         const onSelect = jest.fn();
         const { unmount } = render(<StakeMultiplierMobile {...defaultProps} onSelect={onSelect} />);
         await openSheet();
@@ -76,10 +77,10 @@ describe('StakeMultiplierMobile', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSelect).not.toHaveBeenCalled();
-        expect(screen.getByText('Multiplier must be at least 2')).toBeInTheDocument();
+        expect(screen.getByText('The value must be greater than 1 and no more than 10.')).toBeInTheDocument();
         unmount();
 
-        render(<StakeMultiplierMobile {...defaultProps} strategy='dalembert' onSelect={onSelect} />);
+        render(<StakeMultiplierMobile {...defaultProps} param_key={KNOWN_PARAM_KEYS.UNIT} onSelect={onSelect} />);
         await openSheet();
         await userEvent.clear(getSheetInput());
         await userEvent.type(getSheetInput(), '1');
@@ -88,7 +89,7 @@ describe('StakeMultiplierMobile', () => {
         expect(onSelect).toHaveBeenCalledWith(1);
     });
 
-    it('rejects a multiplier above the cap instead of committing', async () => {
+    it('rejects a multiplier above the inclusive upper bound', async () => {
         const onSelect = jest.fn();
         render(<StakeMultiplierMobile {...defaultProps} onSelect={onSelect} />);
         await openSheet();
@@ -98,6 +99,6 @@ describe('StakeMultiplierMobile', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSelect).not.toHaveBeenCalled();
-        expect(screen.getByText('Multiplier cannot exceed 10')).toBeInTheDocument();
+        expect(screen.getByText('The value must be greater than 1 and no more than 10.')).toBeInTheDocument();
     });
 });
