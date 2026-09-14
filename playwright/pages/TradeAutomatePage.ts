@@ -81,6 +81,12 @@ export class TradeAutomatePage extends TradeParametersPage {
 
     private static readonly LOSS_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE = 'Loss threshold reached. Automation stopped.';
 
+    /**
+     * Snackbar shown when Run is clicked while the server already has an active run
+     * for the account (stale-tab guard). Source: useRunControls.ts `handleRunClick`.
+     */
+    private static readonly ALREADY_RUNNING_SNACKBAR_MESSAGE = 'Automation is already running for this account.';
+
     private static readonly PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE =
         'Profit threshold reached. Automation stopped.';
 
@@ -383,6 +389,17 @@ export class TradeAutomatePage extends TradeParametersPage {
      */
     get automationStats(): Locator {
         return this.automationActionsStatus.getByText(/Contracts:\s*\d+\s*\|\s*P\/L:/);
+    }
+
+    /**
+     * "Automation is already running for this account." snackbar — shown when Run is
+     * clicked from a stale tab while another context already has an active run.
+     * Source: useRunControls.ts — resync guard inside `handleRunClick`.
+     */
+    get alreadyRunningSnackbar(): Locator {
+        return this.page
+            .locator('.snackbar--container')
+            .getByText(TradeAutomatePage.ALREADY_RUNNING_SNACKBAR_MESSAGE, { exact: true });
     }
 
     /**

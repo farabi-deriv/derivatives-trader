@@ -1,8 +1,8 @@
 # 📋 Notifications Journey Spec — What to Test
 
-> **Purpose:** Describes the two notification systems on `staging-dtrader.deriv.com`. Defines _what_ to verify at each step.
+> **Purpose:** Describes the notification surfaces on `staging-dtrader.deriv.com`. Defines _what_ to verify at each step.
 >
-> **Feature location:** Two distinct surfaces — (1) Trade page banner (AppV2 trade route `/`) and (2) Notification centre dialog triggered by the bell icon in the Traders Hub header (route `/traders-hub` or equivalent)
+> **Feature location:** Trade page banner (AppV2 trade route `/`). The notification centre dialog (Flows 3–7) is **N/A — surface removed** (see the deprecation note below).
 > **URL:** `https://staging-dtrader.deriv.com/`
 > **Authentication:** Required — all tests start from a logged-in state
 > **Staging only:** Flows 1–2 require a funded real account to place and close contracts
@@ -11,20 +11,30 @@
 
 ## Architecture Note
 
-DTrader has **two separate notification systems**:
+DTrader has **two notification systems**, one live and one dead:
 
-| System              | Component                                          | Entry point                              | Route                                      |
-| ------------------- | -------------------------------------------------- | ---------------------------------------- | ------------------------------------------ |
-| Trade banner        | `AppV2/Containers/Notifications/notifications.tsx` | Auto-shown after purchase / sell         | `/` (trade page only)                      |
-| Notification centre | `core/App/Containers/NotificationsDialog/`         | Bell icon in `ShowNotifications` wrapper | `dt_traders_hub_show_notifications` testid |
+| System              | Component                                          | Entry point                              | Status                                        |
+| ------------------- | -------------------------------------------------- | ---------------------------------------- | --------------------------------------------- |
+| Trade banner        | `AppV2/Containers/Notifications/notifications.tsx` | Auto-shown after purchase / sell         | **Live** (Flows 1–2)                          |
+| Notification centre | `core/App/Containers/NotificationsDialog/`         | Bell icon in `ShowNotifications` wrapper | **Dead code — unreachable** (Flows 3–7 → N/A) |
 
-The bell icon (`ToggleNotifications`) is rendered by `ShowNotifications` in the Traders Hub header. It is **not present** in the DTrader trade page sidebar or mobile bottom nav. Flow 1–2 cover the trade banner; Flow 3–7 cover the notification centre.
+### ⚠️ Deprecation note — notification centre is unreachable (2026-09-11)
+
+The bell entry point to the notification centre was removed in **commit `1221b37030`** ("Nijil / TRAH-6133 / Fix Header Inconsistency (#18295)", 2025-06-19), which deleted the `default-mobile-links` host and the dtrader-v2 header experiments that rendered `ShowNotifications`. The current header (`header-legacy.tsx`) renders only the logo, `AccountActions`, and `NewVersionNotification` — the complete dead chain is:
+
+- `show-notifications.tsx` (`ShowNotifications`) — **zero importers** (only its own unit test)
+- `toggle-notifications.jsx` (`ToggleNotifications`) — imported only by `show-notifications.tsx` and the `Header/index.js` barrel (nothing consumes that export)
+- `NotificationsDialog/` (`dt_notifications_list_wrapper`) — reachable only via `ToggleNotifications`
+
+No route renders the bell, so Flows 3–7 cannot be tested. **App-team cleanup item:** delete `show-notifications.tsx` + its test, `toggle-notifications.jsx`, the `ToggleNotifications` barrel export, and `NotificationsDialog/` — they are all dead code. The `NotificationsPage` POM's bell/notification-centre locators (`tradersHubShowNotifications`, `bellIconWrapper`, `notificationsListWrapper`, `emptyStateIcon`, `clearAllButton`, `notificationItems`, `openNotificationCentre`, `gotoNotificationCentreSurface`, `clickOutsideDialog`, `clearAllIfEnabled`) become dead test code alongside them.
+
+The bell icon (`ToggleNotifications`) was rendered by `ShowNotifications` in the Traders Hub header. It is **not present** in the DTrader trade page sidebar or mobile bottom nav. Flow 1–2 cover the trade banner; Flows 3–7 covered the notification centre, which is now **unreachable** (see the deprecation note above) and marked **N/A**.
 
 ---
 
 ## Section 1 — Shared Prerequisites
 
-All flows require an authenticated session. Flows 1–2 additionally require a funded real account to place a contract. Flows 3–7 can be verified on a demo account with any account state.
+All flows require an authenticated session. Flows 1–2 additionally require a funded real account to place a contract. Flows 3–7 are **N/A** — the notification centre has no live entry point.
 
 ---
 
@@ -63,7 +73,9 @@ All flows require an authenticated session. Flows 1–2 additionally require a f
 
 ---
 
-### Flow 3 — Notification centre: bell opens dialog (desktop)
+### Flow 3 — Notification centre: bell opens dialog (desktop) — **N/A (surface removed)**
+
+> **N/A (2026-09-11):** No route renders `ShowNotifications`, so the bell and the dialog it opens are unreachable — see the deprecation note in the Architecture Note. Not automatable until/unless the app team re-adds the bell entry point.
 
 **Prerequisites:** Authenticated account; on a page that renders the `ShowNotifications` header wrapper (e.g. navigate such that `dt_traders_hub_show_notifications` is visible)
 
@@ -76,7 +88,9 @@ All flows require an authenticated session. Flows 1–2 additionally require a f
 
 ---
 
-### Flow 4 — Notification centre: bell opens dialog (mobile)
+### Flow 4 — Notification centre: bell opens dialog (mobile) — **N/A (surface removed)**
+
+> **N/A (2026-09-11):** Same as Flow 3 — the mobile `MobileDialog` variant is unreachable without the bell.
 
 **Prerequisites:** Same as Flow 3; mobile viewport
 
@@ -89,7 +103,9 @@ All flows require an authenticated session. Flows 1–2 additionally require a f
 
 ---
 
-### Flow 5 — Notification centre: empty state
+### Flow 5 — Notification centre: empty state — **N/A (surface removed)**
+
+> **N/A (2026-09-11):** Same as Flow 3 — the empty state lives inside the unreachable `NotificationsDialog`.
 
 **Prerequisites:** Authenticated account; notification centre has no items (cleared or new account)
 
@@ -102,7 +118,9 @@ All flows require an authenticated session. Flows 1–2 additionally require a f
 
 ---
 
-### Flow 6 — Notification centre: notifications list with items
+### Flow 6 — Notification centre: notifications list with items — **N/A (surface removed)**
+
+> **N/A (2026-09-11):** Same as Flow 3 — the list renders inside the unreachable `NotificationsDialog`.
 
 **Prerequisites:** Authenticated account that has at least one notification item
 
@@ -115,7 +133,9 @@ All flows require an authenticated session. Flows 1–2 additionally require a f
 
 ---
 
-### Flow 7 — Notification centre: Clear All clears notifications
+### Flow 7 — Notification centre: Clear All clears notifications — **N/A (surface removed)**
+
+> **N/A (2026-09-11):** Same as Flow 3 — Clear All is the footer button of the unreachable `NotificationsDialog`.
 
 **Prerequisites:** Same as Flow 6; at least one notification item present
 
@@ -142,7 +162,7 @@ The bell icon / `ShowNotifications` wrapper is absent from the DTrader trade pag
 | 1   | Confirm bell absent on trade page | Navigate to `/`; look for `dt_traders_hub_show_notifications` | Element is NOT present in DOM                              |
 | 2   | Confirm bell absent in sidebar    | Navigate to `/`; check DTrader sidebar (`dt_sidebar`)         | No bell or notification toggle rendered inside the sidebar |
 
-> **Implication for test design:** Flows 3–7 (notification centre) must navigate to a surface that renders `ShowNotifications` (e.g. Traders Hub / a route that uses the Traders Hub header). Do not attempt to access the notification centre from the trade page directly.
+> **Implication for test design:** Flows 3–7 (notification centre) are **N/A** — no surface renders `ShowNotifications` anymore (see the deprecation note in the Architecture Note). There is no route to the notification centre, from the trade page or anywhere else.
 
 ### G2 — Trade banner has no data-testid
 

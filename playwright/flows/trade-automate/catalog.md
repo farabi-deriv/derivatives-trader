@@ -3,7 +3,7 @@
 > Source of truth: `playwright/pages/TradeAutomatePage.ts` (extends `TradeParametersPage → TradeBasePage`)
 > Source components: `packages/trader/src/AppV2/Components/AutomationPanel/` · `packages/trader/src/AppV2/Containers/Automate/` · `packages/trader/src/AppV2/Hooks/useRunControls.ts` · `packages/trader/src/Stores/Modules/Trading/automation-store.ts` · `packages/trader/src/AppV2/Components/TradePanelTabs/trade-panel-tabs.tsx` · `packages/trader/src/AppV2/Routes/AutomateSwitch.tsx`
 > Fixture: `tradeAutomatePage` in `playwright/fixtures/fixtures.ts`
-> Last updated: 2026-09-07
+> Last updated: 2026-09-11 (G1 automated)
 
 ---
 
@@ -201,9 +201,19 @@ test.afterEach(async ({ tradeAutomatePage }) => {
 
 > **Flow 3** = `VERIFY automation run is re-adopted as Running after switching account`
 
-### Flow 4 + G1 + G2 — not yet implemented
+### G1 — verify-already-running.spec.ts (automated)
 
-See `flow.md` for step tables. Flow 4 requires a dedicated EU/DIEL account. G1 asserts snackbar from `useRunControls.ts`: **"Automation is already running for this account."** G2 asserts inline error banner (`automation-actions__error`, `role='alert'`) for unsupported trade types or invalid params.
+Single test — `VERIFY Run click from a stale tab shows the already-running snackbar and starts no duplicate`.
+
+**Reachability (why the test uses a second tab):** the Run button renders only while the store is idle (`automation-actions.tsx`), and the store auto-adopts any server-side run on mount/loginid change and on visibility/focus (`useAutomationStore.tsx`). The snackbar therefore fires only from a **stale** store — a context loaded while no run existed and never focused again (the "parked screen" scenario in the `useRunControls.ts` guard comment).
+
+The spec opens a second tab in the **same browser context** (shares the login session, independent JS runtime) _before_ tab A starts the run. Tab B's mount `recover()` finds no run → its Run button stays visible. Tab A starts the run and reaches Running. Tab B's Run click runs its own `await resync()` inside `handleRunClick` → finds tab A's run → snackbar **"Automation is already running for this account."** → early return, so no duplicate `auto_start`. The spec then asserts tab B slid into the _existing_ run's Pause/Stop state (adoption, not a new run) and that tab A's run is untouched.
+
+Snackbars auto-dismiss, so assert via the POM's `alreadyRunningSnackbar` locator (`.snackbar--container` text match) immediately after the click.
+
+### Flow 4 + G2 — not yet implemented
+
+See `flow.md` for step tables. Flow 4 requires a dedicated EU/DIEL account. G2 asserts inline error banner (`automation-actions__error`, `role='alert'`) for unsupported trade types or invalid params.
 
 ### Flows 5–14 — supported trade type lifecycle runs
 

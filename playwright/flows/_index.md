@@ -39,14 +39,16 @@ Each module section lists every documented flow with its current **status** and 
 | `trade`            | 38          | 38         | 37        |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
-| `notifications`    | 9           | 9          | 1         |
+| `notifications`    | 9           | 4          | 4         |
 | `auth`             | 5           | 5          | 5         |
-| `trade-automate`   | 28          | 28         | 25        |
+| `trade-automate`   | 28          | 28         | 26        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
-| **Total**          | **124**     | **124**    | **111**   |
+| **Total**          | **126**     | **119**    | **116**   |
 
-> Status advances: `documented` → `automated`
+> Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
+
+> ⚠️ **Notifications module status (2026-09-11):** Flows 1–2 and G1–G2 have specs on disk and are `automated`; Flows 3–7 (notification centre) are `N/A` — the bell entry point was removed in TRAH-6133 (commit `1221b37030`), leaving the centre unreachable dead code. The earlier summary line understated the module: it showed 1 automated where 4 specs exist.
 
 ---
 
@@ -140,17 +142,19 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/notifications/` · **Test folder:** `playwright/tests/notifications/`
 
-| Flow   | Priority | Description                                                  | User State                       | Status       |
-| ------ | -------- | ------------------------------------------------------------ | -------------------------------- | ------------ |
-| Flow 1 | P0       | Trade banner: purchase notification appears after buy        | authenticated, funded (mobile)   | `documented` |
-| Flow 2 | P1       | Trade banner: sell notification appears after contract close | authenticated, funded (mobile)   | `documented` |
-| Flow 3 | P0       | Bell opens notification centre dialog (desktop)              | authenticated                    | `documented` |
-| Flow 4 | P0       | Bell opens notification centre modal (mobile)                | authenticated                    | `documented` |
-| Flow 5 | P1       | Notification centre shows empty state                        | authenticated                    | `documented` |
-| Flow 6 | P2       | Notification centre lists items and Clear All enabled        | authenticated, has notifications | `documented` |
-| Flow 7 | P1       | Clear All removes all notifications                          | authenticated, has notifications | `documented` |
-| —      | P3       | Bell icon absent from DTrader trade page (G1)                | authenticated                    | `documented` |
-| —      | P3       | Trade banner CSS class locator fallback verified (G2)        | authenticated, funded (mobile)   | `automated`  |
+| Flow   | Priority | Description                                                  | User State                       | Status                  |
+| ------ | -------- | ------------------------------------------------------------ | -------------------------------- | ----------------------- |
+| Flow 1 | P0       | Trade banner: purchase notification appears after buy        | authenticated, funded (mobile)   | `automated`             |
+| Flow 2 | P1       | Trade banner: sell notification appears after contract close | authenticated, funded (mobile)   | `automated`             |
+| Flow 3 | P0       | Bell opens notification centre dialog (desktop)              | authenticated                    | `N/A — surface removed` |
+| Flow 4 | P0       | Bell opens notification centre modal (mobile)                | authenticated                    | `N/A — surface removed` |
+| Flow 5 | P1       | Notification centre shows empty state                        | authenticated                    | `N/A — surface removed` |
+| Flow 6 | P2       | Notification centre lists items and Clear All enabled        | authenticated, has notifications | `N/A — surface removed` |
+| Flow 7 | P1       | Clear All removes all notifications                          | authenticated, has notifications | `N/A — surface removed` |
+| —      | P3       | Bell icon absent from DTrader trade page (G1)                | authenticated                    | `automated`             |
+| —      | P3       | Trade banner CSS class locator fallback verified (G2)        | authenticated, funded (mobile)   | `automated`             |
+
+> **Notification centre (Flows 3–7) is N/A:** the bell entry point (`ShowNotifications`) lost its last host in commit `1221b37030` (TRAH-6133, 2025-06-19) — no route renders it, and the `NotificationsDialog` behind it is unreachable dead code. Not automatable until the app team re-adds the bell. See `flows/notifications/flow.md` Architecture Note for the full dead-code chain.
 
 ---
 
@@ -201,7 +205,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 15   | P1       | Invalid trade/automation param validation — `verify-trade-param-validation.spec.ts`  | authenticated, funded real/staging (non-EU)    | `automated`  |
-| —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `documented` |
+| —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `automated`  |
 | —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
@@ -253,15 +257,15 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Implementation Priority Order
 
-| Priority | Module             | Key Flows to Implement First                                                            |
-| -------- | ------------------ | --------------------------------------------------------------------------------------- |
-| **Now**  | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1–2 (trade banners)  |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G1 · G2 (unsupported trade type)                                   |
-| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                        |
-| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                          |
-| **Done** | `positions`        | All 11 flows/gaps automated                                                             |
-| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance        |
-| **Done** | `trade`            | All Section 1 flows automated except G1; Flow 15 skips when no CLOSED market at runtime |
+| Priority | Module             | Key Flows to Implement First                                                                                                             |
+| -------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — G1 automated on `jishi/automate-already-running-g1`                                   |
+| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                         |
+| **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133)          |
+| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                           |
+| **Done** | `positions`        | All 11 flows/gaps automated                                                                                                              |
+| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance                                                         |
+| **Done** | `trade`            | All Section 1 flows automated except G1 (server-reported insufficient balance — blocked); Flow 15 skips when no CLOSED market at runtime |
 
 ---
 

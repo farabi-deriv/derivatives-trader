@@ -34,24 +34,25 @@
 | Flow 14.1 | Even/Odd D'Alembert — Even (demo + real)                 | ✅      | ✅     |
 | Flow 14.2 | Even/Odd D'Alembert — Odd (demo + real)                  | ✅      | ✅     |
 | Flow 15   | Invalid trade/automation param validation (min/max/zero) | ✅      | ✅     |
-| G1        | "Automation already running" adoption snackbar           | ❌      | ❌     |
+| G1        | "Automation already running" adoption snackbar           | ✅      | ✅     |
 | G2        | Unsupported-contract-type error on Run                   | ❌      | ❌     |
 
 ---
 
 ## Section 2 — Gaps
 
-| Gap | Description                                                                                  | Proposed spec file                              |
-| --- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| G1  | Clicking Run while a run is already active shows an "already running" snackbar, no duplicate | `trade-automate/verify-already-running.spec.ts` |
-| G2  | Unsupported trade type surfaces an error and blocks the run (Run-click validation)           | `trade-automate/verify-validation.spec.ts`      |
+| Gap | Description                                                                                  | Spec file                                       | Status       |
+| --- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------ |
+| G1  | Clicking Run while a run is already active shows an "already running" snackbar, no duplicate | `trade-automate/verify-already-running.spec.ts` | ✅ Automated |
+| G2  | Unsupported trade type surfaces an error and blocks the run (Run-click validation)           | `trade-automate/verify-validation.spec.ts`      | ❌ Open      |
+
+> **G1 design note:** the Run button only renders while the store is idle, and the store auto-adopts any server-side run on mount/focus — so the snackbar is reachable only from a **stale tab** (a second context loaded before the run started, never focused again). The spec models this with a second tab in the same browser context: tab A starts the run, tab B (loaded pre-start, idle with Run visible) clicks Run → its in-click `resync()` finds tab A's run → snackbar, and tab B adopts the run's Pause/Stop state (no duplicate `auto_start`).
 
 ---
 
 ## Section 3 — Priority List
 
-| Priority | Flow / Gap | Reason                                                                                |
-| -------- | ---------- | ------------------------------------------------------------------------------------- |
-| P1       | G1         | Duplicate-run guard — quick to add; prevents false failures when a run is left active |
-| P1       | G2         | Unsupported trade type — important error path on Run                                  |
-| P2       | Flow 4     | EU gating — needs a dedicated EU/DIEL account                                         |
+| Priority | Flow / Gap | Reason                                               |
+| -------- | ---------- | ---------------------------------------------------- |
+| P1       | G2         | Unsupported trade type — important error path on Run |
+| P2       | Flow 4     | EU gating — needs a dedicated EU/DIEL account        |

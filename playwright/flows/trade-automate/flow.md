@@ -429,11 +429,13 @@ await tradeAutomatePage.runRiseFallAndVerify({
 
 > These are test cases for coverage gaps. The proposed spec file for each gap is in [`coverage.md`](./coverage.md).
 
-### G1 — "Automation already running" adoption snackbar
+### G1 — "Automation already running" adoption snackbar — ✅ Automated (`verify-already-running.spec.ts`)
 
 | #   | Test case           | Steps                                                                | Expected Result                                                                           |
 | --- | ------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | 1   | Already-running Run | With a run active, click **Run** again (or open in a second context) | Snackbar: **"Automation is already running for this account."**; no duplicate run started |
+
+> **Implementation note:** the Run button only renders while the store is idle, and the store auto-adopts any server-side run on mount/focus — so "click Run with a run active" is only possible from a **stale tab** (the second-context scenario). The spec uses a second tab in the same browser context, loaded before the run starts.
 
 ### G2 — Validation / unsupported-contract-type error
 
