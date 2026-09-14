@@ -1,7 +1,7 @@
 # 🗺️ Trade Journey Catalog — Technical Reference
 
 > Source of truth: `packages/trader/src/AppV2/Containers/Trade/` · `packages/trader/src/AppV2/Components/TradeParameters/` · `packages/trader/src/AppV2/Components/PurchaseButton/`
-> Last updated: 2026-09-11 (Manual Trading negative validation + dedicated gate specs)
+> Last updated: 2026-09-11
 
 ---
 
@@ -46,11 +46,12 @@
 | Flow 15    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                      |
 | Flow 16    | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade @desktop @mobile`                      |
 | Flow 17    | `trade/verify-insufficient-balance.spec.ts`                      | `@trade @desktop @mobile`                      |
-| G1         | —                                                                | Server-reported insufficient balance (blocked) |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
-> **Env vars (Flow 17):** `TEST_EMAIL_INSUFFICIENT_BALANCE` (desktop) / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` (mobile) — real accounts with low or zero Options balance.
+> **Env vars (Flow 17.1):** `TEST_EMAIL_ZERO_BALANCE` — real zero-balance account (desktop + mobile share the same inbox).
+>
+> **Env vars (Flow 17.2):** `TEST_EMAIL_INSUFFICIENT_BALANCE` (desktop) / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` (mobile) — real accounts with low Options balance.
 
 ---
 
@@ -844,7 +845,7 @@ await tradeValidationPage.verifyRiskManagementRuntimeOptions();
 
 > **Fixture:** `tradeValidationPage` from `playwright/fixtures/fixtures.ts`
 > **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Digits, Multiplier, and Deal Cancellation.
-> **Buy-state coverage:** hidden for closed markets; disabled with `-` payout for client-provable insufficient balance; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
+> **Buy-state coverage:** hidden for closed markets; Buy **enabled** with quoted payout when stake exceeds balance (insufficient-balance inform-don't-disable); insufficient-balance **popup** on Buy click for zero-balance server path; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
 
 ---
 
@@ -903,22 +904,39 @@ test.describe('Trade — Unauthenticated Purchase', { tag: ['@trade', '@desktop'
 
 ---
 
-### Flow 17 — Insufficient balance → Buy disabled, balance hint
+### Flow 17 — Insufficient balance
 
-> **POM:** `verifyInsufficientBalanceClientGate()` — commits unaffordable stake (`commitUnaffordableStakeForGate()`), asserts Buy disabled, payout `-`, balance hint in stake editor, no error sheet.
->
-> **Mobile:** seeds `tab_trade_params_v2` for the active tab key (e.g. `1HZ100V|rise_fall`) and reloads because Save is blocked on unaffordable drafts.
+Two child flows in `verify-insufficient-balance.spec.ts`. Post PR #1398: Buy stays **enabled** when stake exceeds balance; balance hints live in the stake editor (**Save** blocked); **Buy** opens the insufficient-balance popup when the server rejects the purchase.
+
+#### Flow 17.1 — Insufficient balance popup dismiss and deposit
+
+> **POM:** `verifyEmptyBalanceStakeEditorHint()` → `clickBuyWithInsufficientBalance()` → `verifyInsufficientBalancePopup()` → dismiss → Buy again → `clickInsufficientBalanceDepositButton()` → `verifyNavigatedToDepositFromDTrader()`.
 
 ```typescript
-test.describe('Trade — Insufficient Balance', { tag: ['@trade', '@desktop', '@mobile'] }, () => {
-    test.beforeEach(async ({ page, loginPage, tradeParametersPage }) => {
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(testEmail); // from TEST_EMAIL_INSUFFICIENT_BALANCE(_MOBILE)
-        await tradeParametersPage.gotoTradePage();
-        await tradeParametersPage.switchToAccountType('real');
+test.describe('Insufficient balance popup on Buy click', () => {
+    // Flow 17.1 — TEST_EMAIL_ZERO_BALANCE
+    test('VERIFY insufficient balance popup dismiss and deposit', async ({ tradeParametersPage }) => {
+        await tradeParametersPage.verifyEmptyBalanceStakeEditorHint();
+        await tradeParametersPage.clickBuyWithInsufficientBalance();
+        await tradeParametersPage.verifyInsufficientBalancePopup();
+        await tradeParametersPage.clickInsufficientBalancePopupClose();
+        await tradeParametersPage.verifyInsufficientBalancePopupDismissed();
+        await tradeParametersPage.clickBuyWithInsufficientBalance();
+        await tradeParametersPage.verifyInsufficientBalancePopup();
+        await tradeParametersPage.clickInsufficientBalanceDepositButton();
+        await tradeParametersPage.verifyNavigatedToDepositFromDTrader();
     });
+});
+```
 
-    test('VERIFY insufficient balance disables Buy and shows balance hint', async ({ tradeParametersPage }) => {
+#### Flow 17.2 — Stake editor hint + Buy enabled
+
+> **POM:** `verifyInsufficientBalanceClientGate()` — seeds `tab_trade_params_v2` + reload on **both** viewports (`commitUnaffordableStakeForGate()`), asserts Buy enabled + quoted payout, balance hint in editor, no popup before Buy.
+
+```typescript
+test.describe('Stake editor hint', () => {
+    // Flow 17.2 — TEST_EMAIL_INSUFFICIENT_BALANCE / _MOBILE
+    test('VERIFY insufficient balance keeps Buy enabled and shows balance hint', async ({ tradeParametersPage }) => {
         await tradeParametersPage.verifyInsufficientBalanceClientGate();
     });
 });
@@ -928,19 +946,27 @@ test.describe('Trade — Insufficient Balance', { tag: ['@trade', '@desktop', '@
 
 ## Section 3 — POM Method Reference
 
-| Purpose                                  | Page Object method                                             |
-| ---------------------------------------- | -------------------------------------------------------------- |
-| Parse and validate current Stake limits  | `tradeValidationPage.verifyStakeRuntimeBoundaries()`           |
-| Verify Stake input filtering             | `tradeValidationPage.verifyStakeInputSanitization()`           |
-| Validate current Duration limits/options | `tradeValidationPage.verifyDurationRuntimeBoundaries()`        |
-| Validate required/zero Barrier           | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()` |
-| Read current Digits availability         | `tradeValidationPage.verifyDigitChoiceAvailability()`          |
-| Read Multipliers TP/SL/DC options        | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`     |
-| Discover markets in an asset category    | `tradeValidationPage.readMarketsForCategory()`                 |
-| Select current closed market             | `tradeValidationPage.selectFirstClosedMarket()`                |
-| Verify insufficient balance behavior     | `tradeValidationPage.verifyInsufficientBalanceBehavior()`      |
-| Track duplicate Buy requests             | `tradeValidationPage.startBuyRequestTracking()`                |
-| Read complete Buy state                  | `tradeValidationPage.getPurchaseControlState()`                |
+| Purpose                                        | Page Object method                                              |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| Parse and validate current Stake limits        | `tradeValidationPage.verifyStakeRuntimeBoundaries()`            |
+| Verify Stake input filtering                   | `tradeValidationPage.verifyStakeInputSanitization()`            |
+| Validate current Duration limits/options       | `tradeValidationPage.verifyDurationRuntimeBoundaries()`         |
+| Validate required/zero Barrier                 | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()`  |
+| Read current Digits availability               | `tradeValidationPage.verifyDigitChoiceAvailability()`           |
+| Read Multipliers TP/SL/DC options              | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`      |
+| Discover markets in an asset category          | `tradeValidationPage.readMarketsForCategory()`                  |
+| Select current closed market                   | `tradeValidationPage.selectFirstClosedMarket()`                 |
+| Verify insufficient balance client gate        | `tradeParametersPage.verifyInsufficientBalanceClientGate()`     |
+| Verify empty-balance stake editor hint         | `tradeParametersPage.verifyEmptyBalanceStakeEditorHint()`       |
+| Click Buy with insufficient balance            | `tradeParametersPage.clickBuyWithInsufficientBalance()`         |
+| Verify insufficient-balance popup              | `tradeParametersPage.verifyInsufficientBalancePopup()`          |
+| Dismiss insufficient-balance popup             | `tradeParametersPage.clickInsufficientBalancePopupClose()`      |
+| Verify popup dismissed                         | `tradeParametersPage.verifyInsufficientBalancePopupDismissed()` |
+| Click Deposit now on popup                     | `tradeParametersPage.clickInsufficientBalanceDepositButton()`   |
+| Verify DTrader → transfer redirect             | `tradeParametersPage.verifyNavigatedToDepositFromDTrader()`     |
+| Verify insufficient balance behavior (Flow 13) | `tradeValidationPage.verifyInsufficientBalanceBehavior()`       |
+| Track duplicate Buy requests                   | `tradeValidationPage.startBuyRequestTracking()`                 |
+| Read complete Buy state                        | `tradeValidationPage.getPurchaseControlState()`                 |
 
 ---
 
@@ -1020,9 +1046,11 @@ Preset chips use `aria-label="Select value $20"` (not `"Select value 20.00 USD"`
 
 ### Insufficient balance has two purchase paths
 
-Client-provable insufficiency disables Buy and withholds payout as `-`. Server-reported insufficiency keeps Buy enabled so clicking can open `ServiceErrorSheet`. On mobile, an unaffordable Stake draft is blocked by the sheet's Save action before it reaches the trade page.
+**Stake editor (client-readable shortfall):** balance hint in the open stake editor; **Save** disabled while the hint shows; committed unaffordable stakes are seeded via `tab_trade_params_v2` + reload on both viewports because Save cannot commit through the UI.
 
-Flow 17 (`verify-insufficient-balance.spec.ts`) covers the dedicated client gate with low-balance staging accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` covers the same gate dynamically against the logged-in account balance.
+**Buy click (server-reported shortfall):** Buy stays **enabled** with a quoted payout; clicking **Buy** opens the insufficient-balance popup (`Insufficient balance` + **Deposit now** on real accounts). **Deposit now** redirects to home-app `/transfer?from=dtrader&source=options&acc=options&curr=USD`.
+
+Flow 17.1 (`verify-insufficient-balance.spec.ts`) covers the zero-balance popup + deposit redirect (`TEST_EMAIL_ZERO_BALANCE`). Flow 17.2 covers the low-balance stake hint accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` still exercises insufficient-balance behavior dynamically — its Buy-disabled assertions may be stale post PR #1398.
 
 ### Multipliers Risk Management panel — TP/SL and Deal Cancellation are mutually exclusive
 

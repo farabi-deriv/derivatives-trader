@@ -833,14 +833,6 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 
 ## Gap Flows
 
-### G1 — Server-reported insufficient balance → ServiceErrorSheet shown
-
-| #   | Test case                          | Steps                                                                                       | Expected Result                                                                        |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| 1   | Trigger backend-only insufficiency | Use a state where balance is unreadable to the client but Buy returns `InsufficientBalance` | Buy stays enabled and opens `ServiceErrorSheet` with the authoritative backend message |
-
-> Blocked: current account tooling creates funded accounts and cannot drain them; readable insufficient balances are stopped by the client gate before Buy (Flow 13 in `verify-manual-trade-negative-validation.spec.ts` and Flow 17 below).
-
 ### G2 — Unauthenticated purchase attempt → login prompt sheet
 
 > **Automated:** Flow 16 — `verify-unauthenticated-purchase.spec.ts`
@@ -884,24 +876,47 @@ The spec searches `FeedPage.MARKETS` session-gated candidates in the market-sele
 
 ---
 
-## Flow 17 — Insufficient balance → Buy disabled, balance hint
+## Flow 17 — Insufficient balance
 
-**Prerequisites:** Authenticated **real** staging account (`TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE`) whose Options balance is below the committed proposal charge (or zero). Market open.
 **Spec:** `playwright/tests/trade/verify-insufficient-balance.spec.ts`
 
-Dedicated E2E for the client-side Buy gate with low-balance staging accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` covers the same gate dynamically against the logged-in account balance.
+Two child flows in one spec — separate staging accounts. Product stance (post PR #1398): **inform, don't disable** — Buy stays enabled when the stake exceeds balance; the stake editor owns the balance hint and blocks **Save**; clicking **Buy** defers to the server insufficient-balance popup.
 
-AppV2 compares `proposal_info[trade_type].stake` (the quoted buy charge) against `client.balance`. When the client can prove the account cannot pay, Buy is disabled and no `ServiceErrorSheet` opens — the attempt is blocked client-side (`purchase-button.tsx` → `isStakeAboveBalance`).
+> Flow 13 in `verify-manual-trade-negative-validation.spec.ts` still exercises insufficient-balance behavior dynamically against the logged-in account — update separately if its Buy-disabled assertions drift.
 
-| #   | Step                       | Action                                                                                       | Expected Result                                                                                      | Platform |
-| --- | -------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page     | `loginPage.login()` → `tradeParametersPage.gotoTradePage()`                                  | Trade page loaded; account info and balance visible                                                  | Both     |
-| 2   | Commit stake above balance | Desktop: `setStake(balance + 1)`; mobile: seed `tab_trade_params_v2` for active tab + reload | Committed proposal charge exceeds header balance                                                     | Both     |
-| 3   | Verify Buy is disabled     | Observe `buyButton` / purchase area                                                          | Buy button **disabled** — click does not send a purchase                                             | Both     |
-| 4   | Verify payout withheld     | Observe purchase button payout slot                                                          | Payout shows `-`, not a priced amount (e.g. not `$19.28`)                                            | Both     |
-| 5   | Draft stake above balance  | Open stake editor → enter or select a stake above balance                                    | Stake field shows balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`)   | Both     |
-| 6   | Verify no error sheet      | Attempt to interact with Buy (button remains disabled)                                       | No `ServiceErrorSheet` / `.quill-modal__container` / `.service-error-sheet` for insufficient balance | Both     |
+---
 
-> **Account setup:** `TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` in `playwright/.env.staging`. Desktop commits via stake Save; mobile blocks Save on unaffordable drafts, so the spec seeds the active tab's `tab_trade_params_v2` amount (e.g. `1HZ100V|rise_fall`) and reloads before asserting the Buy gate.
+### Flow 17.1 — Insufficient balance popup dismiss and deposit
 
-> **Not this flow:** server-reported `InsufficientBalance` on the proposal while balance is unreadable — Buy stays enabled and opens `ServiceErrorSheet` on click (G1).
+**Prerequisites:** Authenticated **real** zero-balance account (`TEST_EMAIL_ZERO_BALANCE` — same inbox for desktop and mobile). Default committed stake above `0.00` (e.g. `$2`). Market open.
+
+| #   | Step                     | Action                                                                                      | Expected Result                                                                                                                                                                                       | Platform |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page   | `TradeBasePage.seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()` → `real` account | Balance shows `0.00`; default stake already unaffordable                                                                                                                                              | Both     |
+| 2   | Verify stake editor hint | Open **Stake** → **Custom** (desktop)                                                       | Error hint: `Balance is empty. Deposit funds to buy this contract.`; Save disabled                                                                                                                    | Both     |
+| 3   | Click Buy                | `clickBuyWithInsufficientBalance()`                                                         | Insufficient-balance popup: title **Insufficient balance**, backend body, **Deposit now** (real)                                                                                                      | Both     |
+| 4   | Dismiss popup            | Click **X** (desktop `.quill-modal__close-icon`) or overlay (mobile)                        | Popup hidden; trade page unchanged                                                                                                                                                                    | Both     |
+| 5   | Reopen popup             | Click **Buy** again                                                                         | Same popup content visible                                                                                                                                                                            | Both     |
+| 6   | Deposit now              | Click **Deposit now** → `verifyNavigatedToDepositFromDTrader()`                             | URL: `{LOGIN_URL origin}/dashboard/transfer?from=dtrader&source=options&acc=options&curr=USD`; **Transfer** heading; **From** Wallet; **To** Options `0.00 USD`; amount input + review button visible | Both     |
+
+> **POM:** `verifyEmptyBalanceStakeEditorHint()` → `clickBuyWithInsufficientBalance()` → `verifyInsufficientBalancePopup()` → `clickInsufficientBalancePopupClose()` → `verifyInsufficientBalancePopupDismissed()` → (repeat Buy + popup) → `clickInsufficientBalanceDepositButton()` → `verifyNavigatedToDepositFromDTrader()`.
+
+> **Account setup:** `TEST_EMAIL_ZERO_BALANCE` in `playwright/.env.staging`.
+
+---
+
+### Flow 17.2 — Stake editor hint + Buy enabled
+
+**Prerequisites:** Authenticated **real** account with Options balance below the committed proposal charge (`TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE`). Market open.
+
+| #   | Step                       | Action                                                                                     | Expected Result                                                                                     | Platform |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page     | Same setup as Flow 17.1 with low-balance accounts                                          | Trade page loaded; balance visible                                                                  | Both     |
+| 2   | Commit stake above balance | Seed active tab `tab_trade_params_v2` amount (`balance + 1`) + reload — **both viewports** | Committed charge exceeds header balance; Save cannot commit an unaffordable draft through the UI    | Both     |
+| 3   | Verify Buy enabled         | Observe `buyButton`                                                                        | Buy **enabled**; payout quoted (not `-`)                                                            | Both     |
+| 4   | Verify no popup yet        | Observe purchase area                                                                      | No insufficient-balance popup before Buy is clicked                                                 | Both     |
+| 5   | Draft stake above balance  | Open stake editor → **Custom** (desktop) → enter unaffordable amount                       | Balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`); **Save disabled** | Both     |
+
+> **POM:** `verifyInsufficientBalanceClientGate()` — orchestrates steps 2–5 via `prepareCommittedUnaffordableStake()`, `verifyInsufficientBalanceBuyReady()`, `verifyInsufficientBalanceStakeHint()`.
+
+> **Account setup:** `TEST_EMAIL_INSUFFICIENT_BALANCE` (desktop project) / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` (mobile project).

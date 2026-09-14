@@ -56,46 +56,45 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/trade/` · **Test folder:** `playwright/tests/trade/`
 
-| Flow      | Priority | Description                                                   | User State                        | Status       |
-| --------- | -------- | ------------------------------------------------------------- | --------------------------------- | ------------ |
-| Flow 1    | P0       | Trade form loads with default state visible                   | authenticated                     | `automated`  |
-| Flow 2.1  | P0       | Rise/Fall — buy Rise → close                                  | authenticated, funded             | `automated`  |
-| Flow 2.2  | P0       | Rise/Fall — buy Fall → close                                  | authenticated, funded             | `automated`  |
-| Flow 2.3  | P2       | Rise/Fall Allow Equals — buy Rise → close                     | authenticated, funded             | `automated`  |
-| Flow 2.4  | P2       | Rise/Fall Allow Equals — buy Fall → close                     | authenticated, funded             | `automated`  |
-| Flow 3.1  | P1       | Higher/Lower — buy Higher → close                             | authenticated, funded             | `automated`  |
-| Flow 3.2  | P1       | Higher/Lower — buy Lower → close                              | authenticated, funded             | `automated`  |
-| Flow 4.1  | P2       | Touch/No Touch — buy Touch → close                            | authenticated, funded             | `automated`  |
-| Flow 4.2  | P2       | Touch/No Touch — buy No Touch → close                         | authenticated, funded             | `automated`  |
-| Flow 5.1  | P0       | Matches/Differs — buy Matches → expiry                        | authenticated, funded             | `automated`  |
-| Flow 5.2  | P0       | Matches/Differs — buy Differs → expiry                        | authenticated, funded             | `automated`  |
-| Flow 6.1  | P2       | Over/Under — buy Over → expiry                                | authenticated, funded             | `automated`  |
-| Flow 6.2  | P2       | Over/Under — buy Under → expiry                               | authenticated, funded             | `automated`  |
-| Flow 7.1  | P2       | Even/Odd — buy Even → expiry                                  | authenticated, funded             | `automated`  |
-| Flow 7.2  | P2       | Even/Odd — buy Odd → expiry                                   | authenticated, funded             | `automated`  |
-| Flow 8.1  | P0       | Accumulators without TP — buy → close                         | authenticated, funded             | `automated`  |
-| Flow 8.2  | P0       | Accumulators with TP — buy → verify TP set → close            | authenticated, funded             | `automated`  |
-| Flow 9.1  | P0       | Multipliers no TP/SL — buy Up → close                         | authenticated, funded             | `automated`  |
-| Flow 9.2  | P0       | Multipliers no TP/SL — buy Down → close                       | authenticated, funded             | `automated`  |
-| Flow 9.3  | P0       | Multipliers with TP — buy Up → close                          | authenticated, funded             | `automated`  |
-| Flow 9.4  | P0       | Multipliers with TP — buy Down → close                        | authenticated, funded             | `automated`  |
-| Flow 9.5  | P1       | Multipliers with SL — buy Up → close                          | authenticated, funded             | `automated`  |
-| Flow 9.6  | P1       | Multipliers with SL — buy Down → close                        | authenticated, funded             | `automated`  |
-| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel          | authenticated, funded             | `automated`  |
-| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel        | authenticated, funded             | `automated`  |
-| Flow 10.1 | P1       | Turbos without TP — buy Up → verify in positions              | authenticated, funded             | `automated`  |
-| Flow 10.2 | P1       | Turbos without TP — buy Down → verify in positions            | authenticated, funded             | `automated`  |
-| Flow 10.3 | P1       | Turbos with TP — buy Up → verify TP set in positions          | authenticated, funded             | `automated`  |
-| Flow 10.4 | P1       | Turbos with TP — buy Down → verify TP set in positions        | authenticated, funded             | `automated`  |
-| Flow 11.1 | P1       | Vanillas — buy Call → close contract                          | authenticated, funded             | `automated`  |
-| Flow 11.2 | P1       | Vanillas — buy Put → close contract                           | authenticated, funded             | `automated`  |
-| Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery         | authenticated, closed market      | `automated`  |
-| Flow 13   | P1       | Insufficient balance → viewport-specific purchase gate        | authenticated, low balance        | `automated`  |
-| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix       | authenticated, funded             | `automated`  |
-| Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown        | authenticated, closed market      | `automated`  |
-| Flow 16   | P3       | Unauthenticated purchase → login prompt sheet                 | unauthenticated                   | `automated`  |
-| Flow 17   | P2       | Insufficient balance → Buy disabled, balance hint             | authenticated, low balance        | `automated`  |
-| —         | P2       | Server-reported insufficient balance → ServiceErrorSheet (G1) | authenticated, backend-only state | `documented` |
+| Flow      | Priority | Description                                                     | User State                      | Status      |
+| --------- | -------- | --------------------------------------------------------------- | ------------------------------- | ----------- |
+| Flow 1    | P0       | Trade form loads with default state visible                     | authenticated                   | `automated` |
+| Flow 2.1  | P0       | Rise/Fall — buy Rise → close                                    | authenticated, funded           | `automated` |
+| Flow 2.2  | P0       | Rise/Fall — buy Fall → close                                    | authenticated, funded           | `automated` |
+| Flow 2.3  | P2       | Rise/Fall Allow Equals — buy Rise → close                       | authenticated, funded           | `automated` |
+| Flow 2.4  | P2       | Rise/Fall Allow Equals — buy Fall → close                       | authenticated, funded           | `automated` |
+| Flow 3.1  | P1       | Higher/Lower — buy Higher → close                               | authenticated, funded           | `automated` |
+| Flow 3.2  | P1       | Higher/Lower — buy Lower → close                                | authenticated, funded           | `automated` |
+| Flow 4.1  | P2       | Touch/No Touch — buy Touch → close                              | authenticated, funded           | `automated` |
+| Flow 4.2  | P2       | Touch/No Touch — buy No Touch → close                           | authenticated, funded           | `automated` |
+| Flow 5.1  | P0       | Matches/Differs — buy Matches → expiry                          | authenticated, funded           | `automated` |
+| Flow 5.2  | P0       | Matches/Differs — buy Differs → expiry                          | authenticated, funded           | `automated` |
+| Flow 6.1  | P2       | Over/Under — buy Over → expiry                                  | authenticated, funded           | `automated` |
+| Flow 6.2  | P2       | Over/Under — buy Under → expiry                                 | authenticated, funded           | `automated` |
+| Flow 7.1  | P2       | Even/Odd — buy Even → expiry                                    | authenticated, funded           | `automated` |
+| Flow 7.2  | P2       | Even/Odd — buy Odd → expiry                                     | authenticated, funded           | `automated` |
+| Flow 8.1  | P0       | Accumulators without TP — buy → close                           | authenticated, funded           | `automated` |
+| Flow 8.2  | P0       | Accumulators with TP — buy → verify TP set → close              | authenticated, funded           | `automated` |
+| Flow 9.1  | P0       | Multipliers no TP/SL — buy Up → close                           | authenticated, funded           | `automated` |
+| Flow 9.2  | P0       | Multipliers no TP/SL — buy Down → close                         | authenticated, funded           | `automated` |
+| Flow 9.3  | P0       | Multipliers with TP — buy Up → close                            | authenticated, funded           | `automated` |
+| Flow 9.4  | P0       | Multipliers with TP — buy Down → close                          | authenticated, funded           | `automated` |
+| Flow 9.5  | P1       | Multipliers with SL — buy Up → close                            | authenticated, funded           | `automated` |
+| Flow 9.6  | P1       | Multipliers with SL — buy Down → close                          | authenticated, funded           | `automated` |
+| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel            | authenticated, funded           | `automated` |
+| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel          | authenticated, funded           | `automated` |
+| Flow 10.1 | P1       | Turbos without TP — buy Up → verify in positions                | authenticated, funded           | `automated` |
+| Flow 10.2 | P1       | Turbos without TP — buy Down → verify in positions              | authenticated, funded           | `automated` |
+| Flow 10.3 | P1       | Turbos with TP — buy Up → verify TP set in positions            | authenticated, funded           | `automated` |
+| Flow 10.4 | P1       | Turbos with TP — buy Down → verify TP set in positions          | authenticated, funded           | `automated` |
+| Flow 11.1 | P1       | Vanillas — buy Call → close contract                            | authenticated, funded           | `automated` |
+| Flow 11.2 | P1       | Vanillas — buy Put → close contract                             | authenticated, funded           | `automated` |
+| Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery           | authenticated, closed market    | `automated` |
+| Flow 13   | P1       | Insufficient balance → viewport-specific purchase gate          | authenticated, low balance      | `automated` |
+| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix         | authenticated, funded           | `automated` |
+| Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown          | authenticated, closed market    | `automated` |
+| Flow 16   | P3       | Unauthenticated purchase → login prompt sheet                   | unauthenticated                 | `automated` |
+| Flow 17   | P2       | Insufficient balance — popup/deposit (17.1) + stake hint (17.2) | authenticated, low/zero balance | `automated` |
 
 ---
 
@@ -257,15 +256,15 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Implementation Priority Order
 
-| Priority | Module             | Key Flows to Implement First                                                                                                             |
-| -------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — G1 automated on `jishi/automate-already-running-g1`                                   |
-| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                         |
-| **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133)          |
-| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                           |
-| **Done** | `positions`        | All 11 flows/gaps automated                                                                                                              |
-| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance                                                         |
-| **Done** | `trade`            | All Section 1 flows automated except G1 (server-reported insufficient balance — blocked); Flow 15 skips when no CLOSED market at runtime |
+| Priority | Module             | Key Flows to Implement First                                                                                                    |
+| -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — G1 automated (#1429)                                                         |
+| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                |
+| **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
+| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                  |
+| **Done** | `positions`        | All 11 flows/gaps automated                                                                                                     |
+| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance                                                |
+| **Done** | `trade`            | All Section 1 flows automated; Flow 15 skips when no CLOSED market at runtime                                                   |
 
 ---
 

@@ -1381,7 +1381,7 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     // ============================================
-    // LOCATORS — ServiceErrorSheet (authorization required; insufficient balance uses client Buy gate — Flow 14)
+    // LOCATORS — Buy error popups (authorization required; insufficient balance — Flow 17)
     // ============================================
 
     /** Desktop modal shell — source: quill-ui Modal in service-error-sheet.tsx */
@@ -1408,6 +1408,23 @@ export class TradeParametersPage extends TradeBasePage {
 
     get authorizationLoginButton(): Locator {
         return this.page.getByRole('button', { name: 'Login', exact: true });
+    }
+
+    get insufficientBalanceTitle(): Locator {
+        return this.page.getByText('Insufficient balance', { exact: true });
+    }
+
+    get insufficientBalanceDepositButton(): Locator {
+        return this.page.getByRole('button', { name: 'Deposit now' });
+    }
+
+    get insufficientBalanceBody(): Locator {
+        return this.page.getByText(/Your account balance is insufficient to buy this contract/);
+    }
+
+    /** Desktop insufficient-balance popup X — source: quill-ui Modal `.quill-modal__close-icon` */
+    get insufficientBalancePopupCloseButton(): Locator {
+        return this.serviceErrorDesktopModal.locator('button.quill-modal__close-icon');
     }
 
     /**
@@ -1439,6 +1456,127 @@ export class TradeParametersPage extends TradeBasePage {
 
     async clickAuthorizationCreateFreeAccountButton(): Promise<void> {
         await this.authorizationCreateFreeAccountButton.click();
+    }
+
+    /**
+     * Assert the insufficient-balance popup is open with title and real-account CTA.
+     * Desktop checks `.quill-modal__container`; mobile checks `.service-error-sheet`.
+     */
+    async verifyInsufficientBalancePopup(): Promise<void> {
+        if (this.isMobile) {
+            await expect(
+                this.serviceErrorMobileSheet,
+                'Insufficient balance sheet should be visible on mobile'
+            ).toBeVisible({ timeout: 30_000 });
+        } else {
+            await expect(
+                this.serviceErrorDesktopModal,
+                'Insufficient balance modal container should be visible on desktop'
+            ).toBeVisible({ timeout: 30_000 });
+        }
+
+        await expect(this.insufficientBalanceTitle, 'Insufficient balance popup title should be visible').toBeVisible();
+        await expect(
+            this.insufficientBalanceBody,
+            'Insufficient balance popup body should show the backend message'
+        ).toBeVisible();
+        await expect(
+            this.insufficientBalanceDepositButton,
+            'Deposit now button should be visible on real accounts'
+        ).toBeVisible();
+    }
+
+    /** Dismiss the insufficient-balance popup without navigating away. */
+    async clickInsufficientBalancePopupClose(): Promise<void> {
+        if (this.isMobile) {
+            await expect(
+                this.serviceErrorMobileSheet,
+                'Insufficient balance popup should be open on mobile'
+            ).toBeVisible();
+            await this.actionSheetOverlay.click();
+            return;
+        }
+
+        await this.insufficientBalancePopupCloseButton.click();
+    }
+
+    /** Assert the insufficient-balance popup is no longer visible. */
+    async verifyInsufficientBalancePopupDismissed(): Promise<void> {
+        await expect(
+            this.insufficientBalanceTitle,
+            'Insufficient balance popup title should be hidden after dismiss'
+        ).not.toBeVisible();
+        if (this.isMobile) {
+            await expect(
+                this.serviceErrorMobileSheet,
+                'Insufficient balance popup should be hidden on mobile after dismiss'
+            ).not.toBeVisible();
+            return;
+        }
+
+        await expect(
+            this.serviceErrorDesktopModal,
+            'Insufficient balance popup should be hidden on desktop after dismiss'
+        ).not.toBeVisible();
+    }
+
+    async clickInsufficientBalanceDepositButton(): Promise<void> {
+        await this.insufficientBalanceDepositButton.click();
+    }
+
+    /** Wait until Deposit now opens the home-app transfer page prefilled from DTrader. */
+    async verifyNavigatedToDepositFromDTrader(): Promise<void> {
+        const loginUrl = process.env.LOGIN_URL;
+        if (!loginUrl) {
+            throw new Error('LOGIN_URL not set in playwright/.env.staging');
+        }
+        const homeOrigin = new URL(loginUrl).origin;
+
+        await expect(this.page, 'Browser should navigate to the deposit transfer page').toHaveURL(
+            url =>
+                url.origin === homeOrigin &&
+                url.pathname.endsWith('/transfer') &&
+                url.searchParams.get('from') === 'dtrader' &&
+                url.searchParams.get('source') === 'options' &&
+                url.searchParams.get('acc') === 'options' &&
+                url.searchParams.get('curr') === 'USD',
+            { timeout: 30_000 }
+        );
+
+        await expect(
+            this.page.getByRole('heading', { name: 'Transfer', exact: true }),
+            'Transfer page heading should be visible'
+        ).toBeVisible();
+        await expect(
+            this.page.getByTestId('transfer-btn-close'),
+            'Transfer close button should be visible'
+        ).toBeVisible();
+        await expect(
+            this.page.getByTestId('transfer-btn-account-from'),
+            'Transfer From account selector should be visible'
+        ).toBeVisible();
+        await expect(this.page.getByTestId('transfer-btn-account-from'), 'From account should be Wallet').toContainText(
+            'Wallet'
+        );
+        await expect(
+            this.page.getByTestId('transfer-btn-account-to'),
+            'Transfer To account selector should be visible'
+        ).toBeVisible();
+        await expect(this.page.getByTestId('transfer-btn-account-to'), 'To account should be Options').toContainText(
+            'Options'
+        );
+        await expect(
+            this.page.getByTestId('transfer-btn-account-to'),
+            'Options balance should show zero on the transfer page'
+        ).toContainText('0.00 USD');
+        await expect(
+            this.page.getByTestId('transfer-input-amount'),
+            'Transfer amount input should be visible'
+        ).toBeVisible();
+        await expect(
+            this.page.getByTestId('transfer-btn-open-review'),
+            'Transfer review button should be visible'
+        ).toBeVisible();
     }
 
     /** Wait until the browser navigates to the Deriv login page after clicking Login. */
@@ -1538,17 +1676,11 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
-     * Commit a stake above balance so the client Buy gate activates.
-     * Desktop saves through the stake editor (Save stays enabled for unaffordable drafts).
-     * Mobile blocks Save when the balance hint is showing, so seed the tab's sessionStorage
-     * amount and reload — keyed to the active tab (default: 1HZ100V|rise_fall).
+     * Commit a stake above balance on the trade page.
+     * Save is disabled while the balance hint shows on both viewports, so seed the active tab's
+     * `tab_trade_params_v2` amount and reload instead of saving through the stake editor.
      */
     private async commitUnaffordableStakeForGate(unaffordableStake: string): Promise<void> {
-        if (!this.isMobile) {
-            await this.setStake(unaffordableStake);
-            return;
-        }
-
         const marketKey = await this.getActiveTabMarketKey();
         const storageKey = 'tab_trade_params_v2';
         await this.page.evaluate(
@@ -1637,9 +1769,15 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
-     * Flow 14 — client-side insufficient-balance gate: Buy disabled, payout withheld, stake hint, no error sheet.
+     * Commit a stake above the header balance so the proposal charge exceeds the account balance.
+     * Desktop saves via the stake editor; mobile seeds `tab_trade_params_v2` for the active tab and reloads.
      */
-    async verifyInsufficientBalanceClientGate(): Promise<void> {
+    async prepareCommittedUnaffordableStake(): Promise<{
+        unaffordableStake: string;
+        balance: number;
+        balanceAmount: string;
+        currency: string;
+    }> {
         const { amount: balanceAmount, currency } = await this.getBalanceHeader();
         const balance = parseFloat(balanceAmount);
         const stakeAboveBalance = (balance + 1).toFixed(2);
@@ -1647,17 +1785,38 @@ export class TradeParametersPage extends TradeBasePage {
 
         await this.commitUnaffordableStakeForGate(unaffordableStake);
 
-        await expect(this.buyButton, 'Buy should be disabled when balance is insufficient').toBeDisabled();
-        await expect(this.purchaseButtonPayout, 'Payout should be withheld as "-"').toHaveText('-');
+        return { unaffordableStake, balance, balanceAmount, currency };
+    }
+
+    /**
+     * Flow 17 — unaffordable stake: Buy stays enabled, payout quoted, no sheet until Buy is pressed.
+     */
+    async verifyInsufficientBalanceBuyReady(): Promise<void> {
+        await expect(this.buyButton, 'Buy should stay enabled when the committed stake exceeds balance').toBeEnabled({
+            timeout: 30_000,
+        });
+        await expect(this.purchaseButtonPayout, 'Payout should be quoted rather than withheld as "-"').toHaveText(
+            /^\D*[\d,]+\.\d+$/
+        );
         await expect(
             this.serviceErrorDesktopModal,
-            'Insufficient balance should not open a desktop modal'
+            'Insufficient balance should not open a desktop modal before Buy is clicked'
         ).not.toBeVisible();
         await expect(
             this.serviceErrorMobileSheet,
-            'Insufficient balance should not open a mobile sheet'
+            'Insufficient balance should not open a mobile sheet before Buy is clicked'
         ).not.toBeVisible();
+    }
 
+    /**
+     * Flow 17 — stake editor balance hint while drafting an unaffordable stake.
+     */
+    async verifyInsufficientBalanceStakeHint(
+        unaffordableStake: string,
+        balance: number,
+        balanceAmount: string,
+        currency: string
+    ): Promise<void> {
         await this.draftStakeInEditor(unaffordableStake);
         const expectedHint =
             balance <= 0
@@ -1674,6 +1833,49 @@ export class TradeParametersPage extends TradeBasePage {
             ).toBeDisabled();
         }
         await this.dismissStakeEditor();
+    }
+
+    /**
+     * Flow 17 — zero-balance account: open stake Custom editor and assert the empty-balance hint.
+     */
+    async verifyEmptyBalanceStakeEditorHint(): Promise<void> {
+        await this.stakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        } else {
+            await expect(this.stakeContainer, 'Stake action sheet should be visible').toBeVisible();
+        }
+
+        const editorRoot = this.isMobile ? this.stakeContainer : this.stakePopover;
+        await expect(
+            editorRoot.locator('.message__container__status--error'),
+            'Stake editor should show an error state for empty balance'
+        ).toBeVisible();
+        await expect(this.stakeValidationMessage, 'Stake editor should show the empty-balance hint').toHaveText(
+            'Balance is empty. Deposit funds to buy this contract.'
+        );
+        if (this.isMobile) {
+            await expect(this.stakeSaveButton, 'Stake Save should stay disabled while balance is empty').toBeDisabled();
+        }
+        await this.dismissStakeEditor();
+    }
+
+    /**
+     * Flow 17 — insufficient balance inform-don't-disable: enabled Buy, quoted payout, stake hint, no sheet yet.
+     */
+    async verifyInsufficientBalanceClientGate(): Promise<void> {
+        const { unaffordableStake, balance, balanceAmount, currency } = await this.prepareCommittedUnaffordableStake();
+        await this.verifyInsufficientBalanceBuyReady();
+        await this.verifyInsufficientBalanceStakeHint(unaffordableStake, balance, balanceAmount, currency);
+    }
+
+    /**
+     * Click Buy with a committed unaffordable stake — the server rejects with `InsufficientBalance`.
+     */
+    async clickBuyWithInsufficientBalance(): Promise<void> {
+        await this.verifyInsufficientBalanceBuyReady();
+        await this.buyButton.click();
     }
 
     /**
