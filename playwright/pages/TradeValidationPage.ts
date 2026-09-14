@@ -896,10 +896,10 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify the viewport-specific insufficient-balance behavior using the readable balance.
+     * Verify insufficient-balance behavior using the readable balance.
      *
-     * Mobile blocks the unaffordable draft at Save; desktop deliberately commits it so the trade
-     * page's Buy gate and payout placeholder are visible.
+     * Post PR #1398: Save is blocked while the balance hint shows on both viewports; an unaffordable
+     * committed stake is seeded via sessionStorage + reload; Buy stays enabled with a quoted payout.
      *
      * @param balance - Current readable account balance.
      * @returns Promise resolved after the balance gate is asserted.
@@ -924,20 +924,11 @@ export class TradeValidationPage extends TradeParametersPage {
             this.stakeBalanceWarning,
             'Stake above readable balance should show balance-aware guidance'
         ).toBeVisible();
+        await expect(this.stakeSaveButton, 'Save must stay disabled while the balance hint is showing').toBeDisabled();
+        await this.dismissStakeEditor();
 
-        if (this.isMobile) {
-            await expect(this.stakeSaveButton, 'Mobile must block saving an unaffordable stake').toBeDisabled();
-            await this.dismissStakeEditor();
-            return;
-        }
-
-        await expect(
-            this.stakeSaveButton,
-            'Desktop intentionally allows committing an unaffordable stake'
-        ).toBeEnabled();
-        await this.stakeSaveButton.click();
-        await expect(this.stakePopover, 'Desktop stake popover should close after committing').not.toBeVisible();
-        await this.verifyClientInsufficientBalanceState();
+        await this.commitUnaffordableStakeForGate(amount);
+        await this.verifyInsufficientBalanceBuyReady();
     }
 
     /**
@@ -1352,20 +1343,6 @@ export class TradeValidationPage extends TradeParametersPage {
             this.buyControl,
             'Buy should not enter a loading state for a rejected parameter draft'
         ).not.toHaveClass(/purchase-button--loading/);
-    }
-
-    /**
-     * Verify the client-provable insufficient-balance state.
-     *
-     * @returns Promise resolved after assertions.
-     */
-    async verifyClientInsufficientBalanceState(): Promise<void> {
-        await expect(
-            this.buyControl,
-            'Buy should remain visible for client-provable insufficient balance'
-        ).toBeVisible();
-        await expect(this.buyControl, 'Buy should be disabled when the proposal charge exceeds balance').toBeDisabled();
-        await expect(this.purchaseButtonPayout, 'Unaffordable proposal payout should be withheld').toHaveText('-');
     }
 
     /**

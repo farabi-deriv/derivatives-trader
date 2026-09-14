@@ -797,17 +797,18 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 2   | Verify closed state       | Observe trade parameters and reopening status              | Buy is absent; reopening status is visible; no stale payout is shown | Both     |
 | 3   | Recover on an open market | Select Volatility 100 Index / Rise/Fall                    | Buy returns without remaining in loading state                       | Both     |
 
-## Flow 13 — Insufficient balance: viewport-specific purchase gate · `verify-manual-trade-negative-validation.spec.ts`
+## Flow 13 — Insufficient balance: inline-validation gate (post-#1398) · `verify-manual-trade-negative-validation.spec.ts`
 
 **Prerequisites:** Authenticated account whose readable balance is below an in-range stake.
 
-| #   | Step                         | Action                                              | Expected Result                                                | Platform |
-| --- | ---------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | -------- |
-| 1   | Read live limits and balance | Parse the displayed Stake range and account balance | Amount is generated above balance but inside the current range | Both     |
-| 2   | Enter unaffordable stake     | Fill the generated amount                           | Balance-aware guidance uses the current account balance        | Both     |
-| 3   | Verify mobile gate           | Observe Stake Save                                  | Save is disabled and the draft cannot commit                   | Mobile   |
-| 4   | Verify desktop gate          | Save the draft and observe Buy                      | Buy is disabled and payout is `-`                              | Desktop  |
-| 5   | Verify no submission         | Inspect outbound buy count                          | No buy request is sent                                         | Both     |
+| #   | Step                         | Action                                                | Expected Result                                                               | Platform |
+| --- | ---------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------- | -------- |
+| 1   | Read live limits and balance | Parse the displayed Stake range and account balance   | Amount is generated above balance but inside the current range                | Both     |
+| 2   | Enter unaffordable stake     | Fill the generated amount in the stake editor         | Balance-aware guidance uses the current account balance                       | Both     |
+| 3   | Verify Save gate             | Observe Stake Save                                    | Save is disabled while the balance hint shows; draft cannot commit through UI | Both     |
+| 4   | Commit unaffordable stake    | Seed active tab `tab_trade_params_v2` amount + reload | Committed charge exceeds balance on the trade page                            | Both     |
+| 5   | Verify Buy ready             | Observe Buy and payout                                | Buy **enabled**; payout quoted (not `-`); no insufficient-balance popup yet   | Both     |
+| 6   | Verify no submission         | Inspect outbound buy count (Buy not clicked)          | No buy request is sent                                                        | Both     |
 
 ## Flow 14 — Manual Trading negative validation matrix · `verify-manual-trade-negative-validation.spec.ts`
 
@@ -882,7 +883,7 @@ The spec searches `FeedPage.MARKETS` session-gated candidates in the market-sele
 
 Two child flows in one spec — separate staging accounts. Product stance (post PR #1398): **inform, don't disable** — Buy stays enabled when the stake exceeds balance; the stake editor owns the balance hint and blocks **Save**; clicking **Buy** defers to the server insufficient-balance popup.
 
-> Flow 13 in `verify-manual-trade-negative-validation.spec.ts` still exercises insufficient-balance behavior dynamically against the logged-in account — update separately if its Buy-disabled assertions drift.
+> Flow 13 in `verify-manual-trade-negative-validation.spec.ts` exercises the same inform-don't-disable stance dynamically against the logged-in account balance.
 
 ---
 

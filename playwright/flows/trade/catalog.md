@@ -821,7 +821,7 @@ await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise
 const recovered = await tradeValidationPage.getPurchaseControlState();
 ```
 
-### Flow 13 — Insufficient balance: viewport-specific purchase gate
+### Flow 13 — Insufficient balance: inline-validation gate (post-#1398)
 
 ```typescript
 const balance = Number(await tradeValidationPage.getBalance());
@@ -1050,7 +1050,7 @@ Preset chips use `aria-label="Select value $20"` (not `"Select value 20.00 USD"`
 
 **Buy click (server-reported shortfall):** Buy stays **enabled** with a quoted payout; clicking **Buy** opens the insufficient-balance popup (`Insufficient balance` + **Deposit now** on real accounts). **Deposit now** redirects to home-app `/transfer?from=dtrader&source=options&acc=options&curr=USD`.
 
-Flow 17.1 (`verify-insufficient-balance.spec.ts`) covers the zero-balance popup + deposit redirect (`TEST_EMAIL_ZERO_BALANCE`). Flow 17.2 covers the low-balance stake hint accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` still exercises insufficient-balance behavior dynamically — its Buy-disabled assertions may be stale post PR #1398.
+Flow 17.1 (`verify-insufficient-balance.spec.ts`) covers the zero-balance popup + deposit redirect (`TEST_EMAIL_ZERO_BALANCE`). Flow 17.2 covers the low-balance stake hint accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` exercises the same inform-don't-disable stance dynamically against the logged-in account balance.
 
 ### Multipliers Risk Management panel — TP/SL and Deal Cancellation are mutually exclusive
 

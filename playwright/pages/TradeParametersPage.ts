@@ -1680,7 +1680,7 @@ export class TradeParametersPage extends TradeBasePage {
      * Save is disabled while the balance hint shows on both viewports, so seed the active tab's
      * `tab_trade_params_v2` amount and reload instead of saving through the stake editor.
      */
-    private async commitUnaffordableStakeForGate(unaffordableStake: string): Promise<void> {
+    protected async commitUnaffordableStakeForGate(unaffordableStake: string): Promise<void> {
         const marketKey = await this.getActiveTabMarketKey();
         const storageKey = 'tab_trade_params_v2';
         await this.page.evaluate(

@@ -4,22 +4,24 @@ description: >-
     Triage staging E2E regression automation failures from AKO Slack posts: collect
     hard-failed Playwright tests from the GitHub Actions run / TestDino, re-run them
     locally against staging in desktop-then-mobile batches (no retries; expand serial
-    specs to the whole file), and auto-reply in the Slack thread — tag QA when
-    failures still reproduce, or note that they passed locally when all clear. Use
-    when the user pastes an AKO regression thread (e.g. Staging E2E regression
-    failed), invokes this skill with no link (pick the latest AKO regression in
-    the channel and confirm the release version), asks to check regression
-    automation failures, re-run CI failures locally, or investigate flaky vs real
-    staging regression failures in #project_dtrader_charts_v2.
-version: 1.8.1
-last_updated: 2026-09-10
+    specs to the whole file), correlate remaining failures with the release milestone
+    / tag changelog, and auto-reply in the Slack thread — tag QA when failures still
+    reproduce, or note that they passed locally when all clear. Use when the user
+    pastes an AKO regression thread (e.g. Staging E2E regression failed), invokes
+    this skill with no link (pick the latest AKO regression in the channel and
+    confirm the release version), asks to check regression automation failures,
+    re-run CI failures locally, or investigate flaky vs real staging regression
+    failures in #project_dtrader_charts_v2.
+version: 1.9.0
+last_updated: 2026-09-14
 ---
 
 # Check Regression Failures (local re-run + Slack)
 
 1. Collect **hard failures** from the AKO staging regression thread / GH Actions run.
 2. Re-run each failure **once** locally against staging (`--retries=0`).
-3. Auto-post a thread reply: still-failing → tag QA; all passed locally → say they passed (likely flaky).
+3. Correlate remaining local failures with the release **milestone / tag** changelog (advisory).
+4. Auto-post a thread reply: still-failing → tag QA; all passed locally → say they passed (likely flaky).
 
 ## When to Use
 
@@ -226,7 +228,7 @@ Do **not** classify pass/fail/skip from the line reporter (`N failed`, `did not 
 CI=1 TEST_ENV=staging PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/rerun-chromium-serial.json \
   npx playwright test \
   playwright/tests/trade/touch-no-touch/verify-touch-no-touch.spec.ts \
-  --project=chromium --retries=0 --workers=3 \
+  --project=chromium --retries=0 --workers=4 \
   --reporter=line --reporter=json
 
 # 2) independent failures — title grep only
@@ -235,13 +237,13 @@ CI=1 TEST_ENV=staging PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/rerun-chromium-independen
   playwright/tests/market-selection/verify-market-search.spec.ts \
   --project=chromium \
   --grep "<escaped-title>" \
-  --retries=0 --workers=3 \
+  --retries=0 --workers=4 \
   --reporter=line --reporter=json
 ```
 
 If `PLAYWRIGHT_JSON_OUTPUT_NAME` is empty after the run, re-run that batch with `--reporter=json` only and redirect stdout to the same `/tmp/rerun-*.json` path.
 
-`--workers=3` is parallelism **across files** in that command. Serial files still run their tests **in order inside the file**.
+`--workers=4` is parallelism **across files** in that command. Serial files still run their tests **in order inside the file**.
 
 Do **not** launch 20 separate one-test processes. Skip a project if it has no hard failures.
 
@@ -260,11 +262,78 @@ Classify each local test (from JSON):
 
 - **Passed locally** → likely CI flake (omit from Slack)
 - **Failed / timedOut locally** → still failing; candidate real bug
-- **Skipped** in a serial file after an earlier failure → include on Slack (see Step 4 labels)
+- **Skipped** in a serial file after an earlier failure → include on Slack (see Step 5 labels)
 
-### Step 4: Auto-post Slack after local re-runs
+### Step 4: Correlate local failures with milestone / tag changes
 
-After desktop **and** mobile Step 3 are done (including serial whole-file runs), post **one** outcome reply in the thread. Always `slack_read_thread` first for idempotency.
+Run this **after** desktop **and** mobile Step 3 finish, and **only when** there is at least one local fail/timeout or serial skip to report. Skip entirely when every local re-run passed (Step 5B).
+
+Goal: help QA see which reproduced failures look like fallout from **this release’s cards**, vs likely pre-existing / unrelated noise. Correlation is **advisory** — never drop a local failure from the Slack list because it looks unrelated.
+
+#### Inputs (from Step 1 parent)
+
+- Release version `` `production_VYYYYMMDD_N` ``
+- Milestone URL / number (e.g. `milestone/27`)
+- Changelog issue numbers listed in the AKO parent
+
+#### Build the release change set
+
+1. **Milestone issues** (prefer AKO changelog numbers; fill gaps from the milestone):
+
+```bash
+gh issue list -R deriv-com/derivatives-trader --milestone "<milestone-number-or-title>" \
+  --state all --limit 100 --json number,title,labels,state
+```
+
+For each changelog / milestone issue, capture title + linked fix PR when available:
+
+```bash
+gh issue view <N> -R deriv-com/derivatives-trader --json number,title,body,closedByPullRequestsRequests
+# and/or
+gh pr list -R deriv-com/derivatives-trader --search "<N> in:title,body" --state merged --limit 5 --json number,title,files
+```
+
+2. **Tag / commit file diff** — files that landed for this staging deploy vs the previous production tag:
+
+```bash
+git fetch origin --tags
+# Current release tag from AKO (may not exist on remote yet — fall back to headSha).
+# Previous tag = newest `production_V*` strictly older than the current release version string,
+# or the second entry in `git tag -l 'production_V*' --sort=-v:refname` when the current tag is absent.
+PREV_TAG="<previous production_V…>"
+CUR_REF="<headSha or production_V… if the tag exists>"
+git diff --name-only "${PREV_TAG}...${CUR_REF}"
+```
+
+Keep the changed-file list focused on app code (`packages/`, shared UI) — note Playwright-only diffs separately (test drift, not product regression).
+
+#### Classify each local failure / serial skip
+
+Mark each Slack-bound title as one of:
+
+| Label                            | When                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Possibly related to #<issue>** | Spec path, test title, or error domain overlaps a milestone/changelog issue (keywords or area), **or** the tag/PR file diff touches product paths that test clearly exercises (e.g. stake / purchase / insufficient-balance specs ↔ stake validation PRs; automate specs ↔ automate trade-param cards). Prefer the strongest single issue number. |
+| **No clear milestone link**      | No issue/title/area overlap and no meaningful product-file overlap in the release diff.                                                                                                                                                                                                                                                           |
+
+Rules:
+
+- Prefer **issue-title / feature-area** matches over weak file hits (broad refactors like “core + trader deep sweep” match almost everything — only cite them when the failure domain is still specific, or say `possibly related to broad refactor #N` once in the chat summary, not on every bullet).
+- One failure may map to **at most one** primary issue for Slack brevity; mention extras only in the chat summary.
+- Serial siblings / skips inherit the same label as the failure that blocked them when the domain is shared; otherwise `No clear milestone link`.
+- If milestone / tag lookup fails (`gh` error, missing tags), note that in chat and proceed to Step 5 **without** correlation labels — do not block the QA ping.
+
+#### Report before Slack
+
+In chat (and optionally fold into Step 5 bullets), summarize:
+
+- Milestone + release version checked
+- Counts: possibly related vs no clear link
+- Short list of `#issue → failing specs` for the related set
+
+### Step 5: Auto-post Slack after local re-runs
+
+After desktop **and** mobile Step 3 are done (including serial whole-file runs), and Step 4 correlation has run when applicable, post **one** outcome reply in the thread. Always `slack_read_thread` first for idempotency.
 
 Shared send params for both outcomes:
 
@@ -288,11 +357,13 @@ Chromium
 - `<spec-path>` — <test title>
 - `<spec-path>` — <test title> (local serial sibling; not in CI fail list)
 - `<spec-path>` — <test title> (skipped after earlier serial failure)
+- `<spec-path>` — <test title> (possibly related to #1397)
 
 Chromium-mobile
 - `<spec-path>` — <test title>
 
 CI run: <https://github.com/deriv-com/derivatives-trader/actions/runs/<id>>
+Milestone: <https://github.com/deriv-com/derivatives-trader/milestone/<N>> (`production_V…`)
 ```
 
 Rules:
@@ -300,13 +371,16 @@ Rules:
 - Always include `<!subteam^S05D6NPU3V2>`.
 - Headings: `Chromium` then `Chromium-mobile` (desktop first). Omit a section if empty.
 - List tests that **failed/timedOut locally**, plus serial **skipped** tests caused by an earlier failure in the same file. Omit local passes.
-- Label vs the Step 2 CI set:
-    - CI title that failed locally → bullet is just `` `spec` — title `` (no extra note).
+- Label vs the Step 2 CI set (combine with Step 4 milestone note when both apply; put CI/serial notes first, then milestone):
+    - CI title that failed locally → bullet is just `` `spec` — title `` (no extra CI note).
     - Failed locally but **not** in the CI hard-fail set (typical whole-file serial extra, e.g. CI failed Demo and local failed Real) → append ` (local serial sibling; not in CI fail list)`.
     - JSON `skipped` after an earlier serial failure → append ` (skipped after earlier serial failure)`.
+    - Step 4 **Possibly related to #<issue>** → append ` (possibly related to #<issue>)`.
+    - Step 4 **No clear milestone link** → no milestone suffix (keep bullets short).
+- Add a one-line `Milestone:` footer with the milestone URL and release version when known (from Step 1).
 - Do **not** number the headings. Do **not** repeat the project name on each bullet — the heading is the job.
 - Keep bullets short; no secrets, traces, or huge stack dumps.
-- After posting, return the Slack permalink to the user plus a brief local pass/fail summary (CI count vs local reproduced vs local serial extras vs flakes).
+- After posting, return the Slack permalink to the user plus a brief local pass/fail summary (CI count vs local reproduced vs local serial extras vs flakes) **and** the Step 4 milestone correlation counts.
 
 #### B) Every local re-run passed
 
@@ -338,6 +412,7 @@ Also report the flake summary in chat and return the Slack permalink.
 - Checkout the Actions `headSha` before tests; restore the previous HEAD afterward.
 - Serial specs (`mode: 'serial'`) must re-run the **whole file**, not a single `--grep` title. Classify those results from JSON, including skipped siblings.
 - Slack-label serial extras and skips so QA can tell them apart from the original CI titles.
+- After local failures are known, run Step 4 milestone/tag correlation before the QA Slack ping; annotate only clear `possibly related to #N` hits.
 - Do not post Slack from a title-only `--grep` pass if serial files were supposed to run as sequences.
 - After version confirm, post the in-thread checking ping (no QA mention) so others know triage is in progress; skip if that copy is already in the thread.
 - After local runs: either the QA “still reproduce” ping **or** the “passed locally / likely flaky” note — never both for the same run.

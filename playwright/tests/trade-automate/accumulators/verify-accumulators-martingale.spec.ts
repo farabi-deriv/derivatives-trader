@@ -42,7 +42,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@martingale', '
     test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
-            market: 'Volatility 10 Index',
+            market: 'Volatility 100 (1s) Index',
             growthRate: '4%',
             stake: '1',
             automation: {
@@ -59,7 +59,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@martingale', '
     test('VERIFY automation run on Accumulators trade type (Real Account)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
-            market: 'Volatility 10 Index',
+            market: 'Volatility 100 (1s) Index',
             growthRate: '5%',
             stake: '2',
             automation: {

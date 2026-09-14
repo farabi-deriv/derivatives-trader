@@ -35,7 +35,7 @@ test.describe('Trade — Vanillas — Put', { tag: ['@desktop', '@mobile', '@tra
     test('VERIFY Buy "Put" Vanillas Contract (Demo Account)', async ({ tradeVanillasPage }) => {
         await tradeVanillasPage.buyVanillasAndVerify({
             accountType: 'demo',
-            market: 'Volatility 100 Index',
+            market: 'Volatility 50 (1s) Index',
             direction: 'Put',
             durationUnit: 'Minutes',
             durationValue: '5 min',
@@ -48,7 +48,7 @@ test.describe('Trade — Vanillas — Put', { tag: ['@desktop', '@mobile', '@tra
     test('VERIFY Buy "Put" Vanillas Contract (Real Account)', async ({ tradeVanillasPage }) => {
         await tradeVanillasPage.buyVanillasAndVerify({
             accountType: 'real',
-            market: 'Volatility 100 Index',
+            market: 'Volatility 50 (1s) Index',
             direction: 'Put',
             durationUnit: 'Minutes',
             durationValue: '5 min',

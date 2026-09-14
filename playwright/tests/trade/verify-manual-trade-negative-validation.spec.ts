@@ -303,7 +303,7 @@ test.describe(
     'Trade — Manual Trading insufficient balance',
     { tag: ['@desktop', '@mobile', '@trade', '@regression', '@staging'] },
     () => {
-        test('VERIFY insufficient balance blocks the viewport-specific purchase path', async ({
+        test('VERIFY insufficient balance keeps Buy enabled with a quoted payout on both viewports', async ({
             page,
             loginPage,
             tradeValidationPage,
@@ -326,7 +326,7 @@ test.describe(
             await tradeValidationPage.verifyInsufficientBalanceBehavior(balance);
             expect(
                 tradeValidationPage.getTrackedBuyRequestCount(),
-                'Client-side insufficient-balance validation must not send a buy request'
+                'Insufficient-balance gate must not send a buy request without clicking Buy'
             ).toBe(0);
         });
     }

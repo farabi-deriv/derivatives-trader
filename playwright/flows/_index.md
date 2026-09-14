@@ -90,7 +90,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 11.1 | P1       | Vanillas — buy Call → close contract                            | authenticated, funded           | `automated` |
 | Flow 11.2 | P1       | Vanillas — buy Put → close contract                             | authenticated, funded           | `automated` |
 | Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery           | authenticated, closed market    | `automated` |
-| Flow 13   | P1       | Insufficient balance → viewport-specific purchase gate          | authenticated, low balance      | `automated` |
+| Flow 13   | P1       | Insufficient balance → inline-validation gate (post-#1398)      | authenticated, low balance      | `automated` |
 | Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix         | authenticated, funded           | `automated` |
 | Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown          | authenticated, closed market    | `automated` |
 | Flow 16   | P3       | Unauthenticated purchase → login prompt sheet                   | unauthenticated                 | `automated` |
