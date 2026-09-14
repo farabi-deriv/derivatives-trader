@@ -22,6 +22,8 @@ import { ContractDetailsPage } from '../pages/ContractDetailsPage';
 import { FeedPage } from '../pages/FeedPage';
 import { MarketSelectionPage } from '../pages/MarketSelectionPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
+import { HomePage } from '../pages/HomePage';
+import { OptionsPage } from '../pages/OptionsPage';
 
 /**
  * Extended test fixtures with page object models for derivatives-trader.
@@ -90,6 +92,8 @@ export const test = base.extend<{
     feedPage: FeedPage;
     marketSelectionPage: MarketSelectionPage;
     notificationsPage: NotificationsPage;
+    homePage: HomePage;
+    optionsPage: OptionsPage;
     /** True when running under a mobile project (viewport width < 1024px). */
     isMobileViewport: boolean;
 }>({
@@ -256,6 +260,20 @@ export const test = base.extend<{
      */
     notificationsPage: async ({ page }, use) => {
         await use(new NotificationsPage(page));
+    },
+
+    /**
+     * Home dashboard page fixture — home.deriv.com `/dashboard/home`
+     */
+    homePage: async ({ page }, use) => {
+        await use(new HomePage(page));
+    },
+
+    /**
+     * Options dashboard page fixture — home.deriv.com `/dashboard/options`
+     */
+    optionsPage: async ({ page }, use) => {
+        await use(new OptionsPage(page));
     },
 
     /**

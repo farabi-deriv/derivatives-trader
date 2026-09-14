@@ -2,9 +2,9 @@
 
 > **Purpose:** Describes authentication flows on `staging-dtrader.deriv.com`. Defines _what_ to verify at each step.
 >
-> **Feature location:** Header (login button + account info) · Deriv login page (`LOGIN_URL`) · Sidebar (desktop logout) · Bottom nav menu (mobile logout)
-> **URL:** `https://staging-dtrader.deriv.com/` (trade page) · `https://staging-dtrader.deriv.com/menu` (mobile menu)
-> **Authentication:** Flows 1–2 drive the external Deriv login page (unauthenticated). Flow 3 starts from a logged-in state.
+> **Feature location:** Header (login button + account info) · Deriv login page (`LOGIN_URL`) · Sidebar (desktop logout) · Bottom nav menu (mobile logout) · Sidebar/bottom-nav Home button (cross-app redirect to home-app) · home-app Options page (`/dashboard/options`)
+> **URL:** `https://staging-dtrader.deriv.com/` (trade page) · `https://staging-dtrader.deriv.com/menu` (mobile menu) · `https://staging-home.deriv.com/dashboard/home` (home dashboard) · `https://staging-home.deriv.com/dashboard/options` (Options hub)
+> **Authentication:** Flows 1–2 drive the external Deriv login page (unauthenticated). Flows 3–4 start from a logged-in state.
 > **Staging only:** Tests use `TEST_EMAIL` / `TEST_PASSWORD` / `MAILISK_API_KEY` env vars set in `playwright/.env.staging`
 
 ---
@@ -69,3 +69,45 @@
 > **Mobile surface:** `packages/core/src/Modules/Menu/menu.tsx` — reached by tapping the "Menu" tab in the bottom nav. `MenuPage` redirects to `/` on desktop, so this path is mobile-only. Navigation must be via UI click — never `page.goto('/menu')`.
 
 > **Shared modal:** Both surfaces fire `client.logout()` and display `LogoutSuccessModal` — desktop renders as a Modal, mobile as an ActionSheet.
+
+---
+
+## Flow 4 — Home → Options → DTrader redirect
+
+**Prerequisites:** Authenticated on DTrader. Test account: `TEST_EMAIL` / `TEST_PASSWORD` from `playwright/.env.staging`. Account must have a **created Options account** (Real and Demo) — without one, Trade opens `/dashboard/options` instead of DTrader and the flow must fail.
+
+**Shared setup** (runs in `beforeEach` before each sub-flow):
+
+| #   | Step                  | Action                                                                             | Expected Result                                              | Platform |
+| --- | --------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------- |
+| 1   | Seed localStorage     | `TradeBasePage.seedLocalStorageOnOrigin()` + `HomePage.seedLocalStorageOnOrigin()` | Onboarding / deposit nudge suppressed on both origins        | Both     |
+| 2   | Log in on DTrader     | `loginPage.login()`                                                                | Account info + balance visible on DTrader                    | Both     |
+| 3   | Return to home        | `tradeBasePage.clickHome()`                                                        | Browser navigates to `staging-home.deriv.com/dashboard/home` | Both     |
+| 4   | Dismiss post-login UI | `homePage.dismissPostLoginPopupsIfPresent()`                                       | TNC / deposit nudge dismissed if shown                       | Both     |
+| 5   | Verify active session | `homePage.verifyOnHomeDashboard()`                                                 | URL is `/dashboard/home`; not redirected to login            | Both     |
+| 6   | Open Options          | `homePage.navigateToOptionsFromSidebar()`                                          | URL is `/dashboard/options`                                  | Both     |
+| 7   | Verify Options loaded | `optionsPage.verifyOptionsPageLoaded()`                                            | Real/Demo tabs and banner Trade button visible               | Both     |
+
+### Flow 4.1 — Demo tab Trade → DTrader demo account
+
+| #   | Step           | Action                                          | Expected Result                                                            | Platform |
+| --- | -------------- | ----------------------------------------------- | -------------------------------------------------------------------------- | -------- |
+| 8   | Switch to Demo | `optionsPage.switchToDemoTab()`                 | Demo banner controls visible (Trade + Reset balance)                       | Both     |
+| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on DTrader (`staging-dtrader.deriv.com`) | Both     |
+| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('demo')` | DTrader trade page loaded; account trigger shows **Demo account**          | Both     |
+
+### Flow 4.2 — Real tab Trade → DTrader real account
+
+| #   | Step           | Action                                          | Expected Result                                                                                     | Platform |
+| --- | -------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
+| 8   | Switch to Real | `optionsPage.switchToRealTab()`                 | Real banner controls visible (Trade + Transfer)                                                     | Both     |
+| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on DTrader (`staging-dtrader.deriv.com`)                          | Both     |
+| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('real')` | DTrader trade page loaded; account trigger shows **Real account**; Deposit visible, Try real hidden | Both     |
+
+> **Desktop Home button:** `packages/trader/src/AppV2/Components/Layout/Sidebar/sidebar.tsx` — `dt_sidebar_home` assigns `window.location.href` to `{brandUrl}/home?source=options&acc=options&curr=…`.
+
+> **Mobile Home button:** `packages/core/src/App/Containers/Layout/bottom-nav/bottom-nav.tsx` — bottom nav "Home" item uses the same `getBrandUrl()/home` redirect via `sendBridgeEvent('trading:home', …)`.
+
+> **Options Trade banner:** home-app `/dashboard/options` — `data-testid="options-btn-trade"`. Opens DTrader in the same tab for the active Real or Demo tab.
+
+> **Must not pass on Options hub:** If Trade stops on `/dashboard/options`, the test account lacks a created Options account — fix the account/env; do not treat the Options hub as a successful redirect.

@@ -1,4 +1,6 @@
 import { Locator, expect } from '@playwright/test';
+import { NavigationUtils } from '../e2e-tests-core/utils';
+import { FeedPage } from './FeedPage';
 import { TradeBasePage } from './TradeBasePage';
 import { MarketSelectionPage } from './MarketSelectionPage';
 
@@ -683,6 +685,24 @@ export class TradeParametersPage extends TradeBasePage {
         return this.purchaseButton.locator('> span').last();
     }
 
+    /** Shown when `is_market_closed` — purchase is hidden and reopen countdown renders here. */
+    get closedMarketMessage(): Locator {
+        return this.page.locator('.closed-market-message--container');
+    }
+
+    get closedMarketReopenIntro(): Locator {
+        return this.closedMarketMessage.getByText('This market will reopen at');
+    }
+
+    get closedMarketCountdown(): Locator {
+        return this.page.locator('.market-countdown-timer-text');
+    }
+
+    /** Desktop grid / mobile minimized row of trade-parameter controls. */
+    get tradeParamsOptionsWrapper(): Locator {
+        return this.page.locator('.trade-params__options-wrapper').first();
+    }
+
     // ============================================
     // ACTIONS
     // ============================================
@@ -1346,6 +1366,314 @@ export class TradeParametersPage extends TradeBasePage {
         const payoutText = (await this.purchaseButtonPayout.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '');
         await this.purchaseButton.click();
         return payoutText;
+    }
+
+    /**
+     * Click Buy while logged out — opens the authorization `ServiceErrorSheet` instead of purchasing.
+     * Does not require a priced payout (unlike {@link clickBuy}).
+     */
+    async clickBuyLoggedOut(): Promise<void> {
+        await expect(this.purchaseButton, 'Purchase button should be visible').toBeVisible();
+        await expect(this.purchaseButton, 'Purchase button should be enabled when logged out').toBeEnabled({
+            timeout: 30_000,
+        });
+        await this.purchaseButton.click();
+    }
+
+    // ============================================
+    // LOCATORS — ServiceErrorSheet (authorization required; insufficient balance uses client Buy gate — Flow 14)
+    // ============================================
+
+    /** Desktop modal shell — source: quill-ui Modal in service-error-sheet.tsx */
+    get serviceErrorDesktopModal(): Locator {
+        return this.page.locator('.quill-modal__container');
+    }
+
+    /** Mobile action sheet root — source: service-error-sheet.tsx */
+    get serviceErrorMobileSheet(): Locator {
+        return this.page.locator('.service-error-sheet');
+    }
+
+    get authorizationRequiredTitle(): Locator {
+        return this.page.getByText('Start trading with us', { exact: true });
+    }
+
+    get authorizationRequiredBody(): Locator {
+        return this.page.getByText('Log in or create a free account to place a trade.', { exact: true });
+    }
+
+    get authorizationCreateFreeAccountButton(): Locator {
+        return this.page.getByRole('button', { name: 'Create free account' });
+    }
+
+    get authorizationLoginButton(): Locator {
+        return this.page.getByRole('button', { name: 'Login', exact: true });
+    }
+
+    /**
+     * Assert the authorization-required ServiceErrorSheet is open with expected copy and CTAs.
+     * Desktop checks `.quill-modal__container`; mobile checks `.service-error-sheet`.
+     */
+    async verifyAuthorizationRequiredSheet(): Promise<void> {
+        if (this.isMobile) {
+            await expect(this.serviceErrorMobileSheet, 'Authorization sheet should be visible on mobile').toBeVisible();
+        } else {
+            await expect(
+                this.serviceErrorDesktopModal,
+                'Authorization modal container should be visible on desktop'
+            ).toBeVisible();
+        }
+
+        await expect(this.authorizationRequiredTitle, 'Authorization sheet title should be visible').toBeVisible();
+        await expect(this.authorizationRequiredBody, 'Authorization sheet body should be visible').toBeVisible();
+        await expect(
+            this.authorizationCreateFreeAccountButton,
+            'Create free account button should be visible'
+        ).toBeVisible();
+        await expect(this.authorizationLoginButton, 'Login button should be visible').toBeVisible();
+    }
+
+    async clickAuthorizationLoginButton(): Promise<void> {
+        await this.authorizationLoginButton.click();
+    }
+
+    async clickAuthorizationCreateFreeAccountButton(): Promise<void> {
+        await this.authorizationCreateFreeAccountButton.click();
+    }
+
+    /** Wait until the browser navigates to the Deriv login page after clicking Login. */
+    async verifyNavigatedToLoginPage(): Promise<void> {
+        const loginUrl = process.env.LOGIN_URL;
+        if (!loginUrl) {
+            throw new Error('LOGIN_URL not set in playwright/.env');
+        }
+
+        const loginPath = new URL(loginUrl).pathname;
+        await expect(this.page, 'Browser should navigate to the Deriv login page').toHaveURL(
+            url => url.pathname === loginPath || url.pathname.endsWith('/login')
+        );
+    }
+
+    /** Wait until the browser navigates to the Deriv signup page after clicking Create free account. */
+    async verifyNavigatedToSignupPage(): Promise<void> {
+        const signupUrl = process.env.SIGNUP_URL;
+        const signupPath = signupUrl ? new URL(signupUrl).pathname : '/signup';
+
+        await expect(this.page, 'Browser should navigate to the Deriv signup page').toHaveURL(
+            url => url.pathname === signupPath || url.pathname.endsWith('/signup')
+        );
+    }
+
+    // ============================================
+    // LOCATORS — Insufficient balance client gate (Flow 14)
+    // ============================================
+
+    /**
+     * Buy button — the Quill `Button` element (not the inner payout wrapper).
+     * Source: purchase-button.tsx — `className='purchase-button purchase-button--single'`.
+     * Use for enabled/disabled/click assertions; use {@link purchaseButton} for payout content only.
+     */
+    get buyButton(): Locator {
+        return this.page.locator('.purchase-button--single');
+    }
+
+    /** Matches `getInsufficientBalanceMessage` copy for a non-zero balance. */
+    static formatInsufficientBalanceHint(balanceAmount: string, currency: string): string {
+        const formatted = Number(balanceAmount.replace(/,/g, '')).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `You only have ${formatted} ${currency} left. Try a lower stake.`;
+    }
+
+    /** Parse `{ amount, currency }` from the header balance (e.g. `0.00 USD`). */
+    async getBalanceHeader(): Promise<{ amount: string; currency: string }> {
+        const text = (await this.balance.innerText()).replace(/,/g, '').trim();
+        const match = text.match(/^([\d.]+)\s+([A-Z]+)$/);
+        if (!match) {
+            throw new Error(`Could not parse balance header "${text}"`);
+        }
+        return { amount: match[1], currency: match[2] };
+    }
+
+    async draftStakeInEditor(amount: string): Promise<void> {
+        await this.stakeField.click();
+        if (!this.isMobile) {
+            await this.stakeManualInputToggle.click();
+            await expect(this.stakePopoverInput, 'Custom stake input should be visible').toBeVisible();
+        }
+        await this.stakePopoverInput.click();
+        await this.stakePopoverInput.clear();
+        await this.stakePopoverInput.fill(amount);
+    }
+
+    /** Resolve `${symbol}|${contract_type}` for the active tab from sessionStorage. */
+    private async getActiveTabMarketKey(): Promise<string> {
+        const marketKey = await this.page.evaluate(() => {
+            const sessionTrade = JSON.parse(sessionStorage.getItem('trade_store') ?? '{}') as {
+                symbol?: string;
+                contract_type?: string;
+            };
+            if (sessionTrade.symbol && sessionTrade.contract_type) {
+                return `${sessionTrade.symbol}|${sessionTrade.contract_type}`;
+            }
+
+            const markets = JSON.parse(sessionStorage.getItem('open_markets_v2') ?? '[]') as Array<{
+                symbol?: string;
+                contract_type?: string;
+            }>;
+            const active = markets.at(-1);
+            if (active?.symbol && active?.contract_type) {
+                return `${active.symbol}|${active.contract_type}`;
+            }
+
+            return null;
+        });
+
+        if (!marketKey) {
+            throw new Error('Could not resolve active tab market key from sessionStorage');
+        }
+
+        return marketKey;
+    }
+
+    /**
+     * Commit a stake above balance so the client Buy gate activates.
+     * Desktop saves through the stake editor (Save stays enabled for unaffordable drafts).
+     * Mobile blocks Save when the balance hint is showing, so seed the tab's sessionStorage
+     * amount and reload — keyed to the active tab (default: 1HZ100V|rise_fall).
+     */
+    private async commitUnaffordableStakeForGate(unaffordableStake: string): Promise<void> {
+        if (!this.isMobile) {
+            await this.setStake(unaffordableStake);
+            return;
+        }
+
+        const marketKey = await this.getActiveTabMarketKey();
+        const storageKey = 'tab_trade_params_v2';
+        await this.page.evaluate(
+            ({ key, marketKey, amount }) => {
+                const map = JSON.parse(sessionStorage.getItem(key) || '{}');
+                map[marketKey] = { ...(map[marketKey] ?? {}), amount };
+                sessionStorage.setItem(key, JSON.stringify(map));
+            },
+            { key: storageKey, marketKey, amount: unaffordableStake }
+        );
+        await this.page.reload();
+        await this.page.waitForLoadState('domcontentloaded');
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+        await expect(
+            this.activeMarketTab,
+            'Active market tab should be visible after reloading with seeded stake'
+        ).toBeVisible();
+
+        const expectedStake = parseFloat(unaffordableStake);
+        await expect
+            .poll(async () => parseFloat((await this.stakeField.inputValue()).replace(/[^\d.]/g, '')), {
+                message: `Committed stake should restore as ${unaffordableStake} after reload`,
+                timeout: 20_000,
+            })
+            .toBe(expectedStake);
+    }
+
+    /**
+     * Search session-gated markets in the picker and select the first row tagged **CLOSED**.
+     * Returns `null` when every candidate is open at runtime.
+     */
+    async selectClosedMarketFromPicker(): Promise<{ market: string; tradeType: string } | null> {
+        const candidates = FeedPage.MARKETS.filter(market => market.status === 'session_gated').map(market =>
+            this.isMobile && market.mobileLabel ? market.mobileLabel : market.label
+        );
+        return this.marketSelectionPage.selectFirstClosedMarket(candidates);
+    }
+
+    /**
+     * Flow 12 — closed market: Buy hidden, reopen countdown visible, CLOSED tag still in picker.
+     */
+    async verifyClosedMarketTradeState(market: string, tradeType: string): Promise<void> {
+        await expect(
+            this.purchaseButton,
+            'Purchase button should be hidden when the market is closed'
+        ).not.toBeVisible();
+        await expect(
+            this.closedMarketReopenIntro,
+            'Closed market should show the reopen intro while trading_times loads'
+        ).toBeVisible({ timeout: 45_000 });
+        await expect(this.closedMarketCountdown, 'Closed market countdown timer should render').toHaveText(
+            /^\d{2}:\d{2}:\d{2}$/
+        );
+        await this.verifyClosedMarketTradeParamsDisabled();
+
+        await this.activeMarketTab.click();
+        await expect(this.marketSelectionPage.marketSelectionPanel, 'Market picker should reopen').toBeVisible();
+        if (this.isMobile) {
+            await this.marketSelectionPage.openMarketSearch();
+        }
+        await this.marketSelectionPage.marketSearchInput.fill(market);
+        const row = await this.marketSelectionPage.waitForMarketSearchResultRow(market);
+        await expect(
+            this.marketSelectionPage.searchResultRowClosedTag(row),
+            `[${market}] should still show CLOSED in the picker after selection`
+        ).toBeVisible();
+        await expect(
+            this.marketSelectionPage.marketSearchResultRow(market, tradeType),
+            `[${market}] row should remain under '${tradeType}'`
+        ).toBeVisible();
+        await this.marketSelectionPage.closeMarketSelectionPicker();
+    }
+
+    /** Every interactive control in the visible trade-params row is disabled when `is_market_closed`. */
+    private async verifyClosedMarketTradeParamsDisabled(): Promise<void> {
+        const wrapper = this.tradeParamsOptionsWrapper;
+        await expect(wrapper, 'Trade parameter options should be visible').toBeVisible();
+        await expect(
+            wrapper.locator('button:enabled'),
+            'All trade param buttons should be disabled when the market is closed'
+        ).toHaveCount(0);
+        await expect(
+            wrapper.locator('input:enabled'),
+            'All trade param inputs should be disabled when the market is closed'
+        ).toHaveCount(0);
+    }
+
+    /**
+     * Flow 14 — client-side insufficient-balance gate: Buy disabled, payout withheld, stake hint, no error sheet.
+     */
+    async verifyInsufficientBalanceClientGate(): Promise<void> {
+        const { amount: balanceAmount, currency } = await this.getBalanceHeader();
+        const balance = parseFloat(balanceAmount);
+        const stakeAboveBalance = (balance + 1).toFixed(2);
+        const unaffordableStake = balance <= 0 ? '10.00' : stakeAboveBalance;
+
+        await this.commitUnaffordableStakeForGate(unaffordableStake);
+
+        await expect(this.buyButton, 'Buy should be disabled when balance is insufficient').toBeDisabled();
+        await expect(this.purchaseButtonPayout, 'Payout should be withheld as "-"').toHaveText('-');
+        await expect(
+            this.serviceErrorDesktopModal,
+            'Insufficient balance should not open a desktop modal'
+        ).not.toBeVisible();
+        await expect(
+            this.serviceErrorMobileSheet,
+            'Insufficient balance should not open a mobile sheet'
+        ).not.toBeVisible();
+
+        await this.draftStakeInEditor(unaffordableStake);
+        const expectedHint =
+            balance <= 0
+                ? 'Balance is empty. Deposit funds to buy this contract.'
+                : TradeParametersPage.formatInsufficientBalanceHint(balanceAmount, currency);
+        await expect(this.stakeValidationMessage, 'Stake editor should show the balance hint').toHaveText(
+            expectedHint,
+            { timeout: 20_000 }
+        );
+        if (this.isMobile) {
+            await expect(
+                this.stakeSaveButton,
+                'Stake Save should stay disabled while the draft exceeds balance'
+            ).toBeDisabled();
+        }
+        await this.dismissStakeEditor();
     }
 
     /**

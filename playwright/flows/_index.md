@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 ---
 
@@ -36,15 +36,15 @@ Each module section lists every documented flow with its current **status** and 
 
 | Module             | Total Flows | Documented | Automated |
 | ------------------ | ----------- | ---------- | --------- |
-| `trade`            | 36          | 36         | 31        |
+| `trade`            | 38          | 38         | 37        |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
 | `notifications`    | 9           | 9          | 1         |
-| `auth`             | 3           | 3          | 3         |
+| `auth`             | 5           | 5          | 5         |
 | `trade-automate`   | 28          | 28         | 25        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
-| **Total**          | **122**     | **122**    | **104**   |
+| **Total**          | **124**     | **124**    | **111**   |
 
 > Status advances: `documented` → `automated`
 
@@ -87,11 +87,13 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 10.4 | P1       | Turbos with TP — buy Down → verify TP set in positions        | authenticated, funded             | `automated`  |
 | Flow 11.1 | P1       | Vanillas — buy Call → close contract                          | authenticated, funded             | `automated`  |
 | Flow 11.2 | P1       | Vanillas — buy Put → close contract                           | authenticated, funded             | `automated`  |
-| Flow 12   | P2       | Market closed → purchase hidden, countdown visible            | authenticated, closed market      | `documented` |
-| Flow 13   | P1       | Insufficient balance → viewport-specific purchase gate        | authenticated, low balance        | `documented` |
-| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix       | authenticated, funded             | `documented` |
+| Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery         | authenticated, closed market      | `automated`  |
+| Flow 13   | P1       | Insufficient balance → viewport-specific purchase gate        | authenticated, low balance        | `automated`  |
+| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix       | authenticated, funded             | `automated`  |
+| Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown        | authenticated, closed market      | `automated`  |
+| Flow 16   | P3       | Unauthenticated purchase → login prompt sheet                 | unauthenticated                   | `automated`  |
+| Flow 17   | P2       | Insufficient balance → Buy disabled, balance hint             | authenticated, low balance        | `automated`  |
 | —         | P2       | Server-reported insufficient balance → ServiceErrorSheet (G1) | authenticated, backend-only state | `documented` |
-| —         | P3       | Unauthenticated purchase attempt → login prompt sheet (G2)    | unauthenticated                   | `documented` |
 
 ---
 
@@ -156,12 +158,14 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/auth/` · **Test folder:** `playwright/tests/auth/`
 
-| Flow   | Priority | Description                                                                            | User State      | Status       |
-| ------ | -------- | -------------------------------------------------------------------------------------- | --------------- | ------------ |
-| Flow 1 | P0       | Email + Password Login → account info + balance visible on dtrader                     | unauthenticated | `automated`  |
-| Flow 2 | P0       | OTP Login → account info + balance visible on dtrader                                  | unauthenticated | `automated`  |
-| Flow 3 | P1       | Logout → success modal → session cleared (desktop: sidebar; mobile: bottom nav menu)   | authenticated   | `automated`  |
-| —      | N/A      | Full OAuth round-trip via dtrader "Log in" button — cross-origin, not automatable (G1) | unauthenticated | `documented` |
+| Flow     | Priority | Description                                                                            | User State                     | Status       |
+| -------- | -------- | -------------------------------------------------------------------------------------- | ------------------------------ | ------------ |
+| Flow 1   | P0       | Email + Password Login → account info + balance visible on dtrader                     | unauthenticated                | `automated`  |
+| Flow 2   | P0       | OTP Login → account info + balance visible on dtrader                                  | unauthenticated                | `automated`  |
+| Flow 3   | P1       | Logout → success modal → session cleared (desktop: sidebar; mobile: bottom nav menu)   | authenticated                  | `automated`  |
+| Flow 4.1 | P0       | Home → Options Demo Trade → DTrader demo account (cross-app redirect)                  | authenticated, Options account | `automated`  |
+| Flow 4.2 | P0       | Home → Options Real Trade → DTrader real account (cross-app redirect)                  | authenticated, Options account | `automated`  |
+| —        | N/A      | Full OAuth round-trip via dtrader "Log in" button — cross-origin, not automatable (G1) | unauthenticated                | `documented` |
 
 ---
 
@@ -249,16 +253,15 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Implementation Priority Order
 
-| Priority | Module             | Key Flows to Implement First                                                           |
-| -------- | ------------------ | -------------------------------------------------------------------------------------- |
-| **Now**  | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1–2 (trade banners) |
-| **Next** | `trade`            | Flow 12 (closed market) + G1 (insufficient balance) + G2 (unauthenticated purchase)    |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G1 · G2 (unsupported trade type)                                  |
-| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                       |
-| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                         |
-| **Done** | `positions`        | All 11 flows/gaps automated                                                            |
-| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance       |
-| **Done** | `trade`            | Flows 1–11 + 9.1–9.8 automated; only Flow 12 + G1/G2 remain                            |
+| Priority | Module             | Key Flows to Implement First                                                            |
+| -------- | ------------------ | --------------------------------------------------------------------------------------- |
+| **Now**  | `notifications`    | Flow 3 (bell → dialog desktop), Flow 4 (bell → modal mobile), Flow 1–2 (trade banners)  |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G1 · G2 (unsupported trade type)                                   |
+| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                        |
+| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                          |
+| **Done** | `positions`        | All 11 flows/gaps automated                                                             |
+| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance        |
+| **Done** | `trade`            | All Section 1 flows automated except G1; Flow 15 skips when no CLOSED market at runtime |
 
 ---
 

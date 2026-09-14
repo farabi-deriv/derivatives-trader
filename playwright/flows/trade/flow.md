@@ -839,12 +839,69 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | --- | ---------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | 1   | Trigger backend-only insufficiency | Use a state where balance is unreadable to the client but Buy returns `InsufficientBalance` | Buy stays enabled and opens `ServiceErrorSheet` with the authoritative backend message |
 
-> Blocked: current account tooling creates funded accounts and cannot drain them; readable insufficient balances are stopped by the client gate before Buy.
+> Blocked: current account tooling creates funded accounts and cannot drain them; readable insufficient balances are stopped by the client gate before Buy (Flow 13 in `verify-manual-trade-negative-validation.spec.ts` and Flow 17 below).
 
 ### G2 — Unauthenticated purchase attempt → login prompt sheet
 
-| #   | Test case                      | Steps                                              | Expected Result                                                                                    |
-| --- | ------------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1   | Attempt trade while logged out | Navigate to trade page without login → click "Buy" | `ServiceErrorSheet` with title "Start trading with us" and "Login" / "Create free account" buttons |
+> **Automated:** Flow 16 — `verify-unauthenticated-purchase.spec.ts`
 
-> Requires unauthenticated session. Proposed spec: `trade/verify-unauthenticated-purchase.spec.ts`
+---
+
+## Flow 15 — Market closed → Buy hidden, params disabled, countdown
+
+**Prerequisites:** Authenticated. At least one session-gated market (forex, indices, commodities) must be **CLOSED** in the picker at runtime — typically outside exchange hours.
+**Spec:** `playwright/tests/trade/verify-closed-market.spec.ts`
+
+Dedicated E2E for closed-market UI. Flow 12 in `verify-manual-trade-negative-validation.spec.ts` also covers closed-market discovery plus open-market recovery.
+
+The spec searches `FeedPage.MARKETS` session-gated candidates in the market-selection picker (`selectClosedMarketFromPicker()` → `MarketSelectionPage.selectFirstClosedMarket()`), commits the first search row tagged **CLOSED**, then asserts via `verifyClosedMarketTradeState()`: Buy hidden, `ClosedMarketMessage` (reopen intro + `HH:MM:SS` countdown), every `button` / `input` in `.trade-params__options-wrapper` disabled, and **CLOSED** still shown when the picker is reopened. Skips when every candidate is open.
+
+| #   | Step                         | Action                                                                               | Expected Result                                                                                    | Platform |
+| --- | ---------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page       | `TradeBasePage.seedLocalStorageOnOrigin()` → `loginPage.login()` → `gotoTradePage()` | Trade page loaded; onboarding overlay suppressed                                                   | Both     |
+| 2   | Find CLOSED market in picker | `selectClosedMarketFromPicker()` — search session-gated symbols                      | First row with **CLOSED** tag is selected; active tab updates                                      | Both     |
+| 3   | Verify Buy hidden            | Observe purchase area                                                                | `dt_purchase_button_wrapper` not visible (`PurchaseButton` not rendered)                           | Both     |
+| 4   | Verify reopen countdown      | Observe `ClosedMarketMessage`                                                        | "This market will reopen at" + `HH:MM:SS` countdown visible (after `trading_times` loads)          | Both     |
+| 5   | Verify params disabled       | Observe `.trade-params__options-wrapper`                                             | Every visible `button` / `input` in the row is disabled (`:enabled` count 0) — trade-type agnostic | Both     |
+| 6   | Verify CLOSED in picker      | Reopen picker → search same market                                                   | Search row still shows **CLOSED** tag                                                              | Both     |
+
+---
+
+## Flow 16 — Unauthenticated purchase → login prompt sheet
+
+**Prerequisites:** No authentication. Market open.
+**Spec:** `playwright/tests/trade/verify-unauthenticated-purchase.spec.ts`
+
+| #   | Step                               | Action                                                                          | Expected Result                                                                                               | Platform |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page             | `tradeParametersPage.gotoTradePage()`                                           | Trade page loads at `/`; login button visible; account info absent                                            | Both     |
+| 2   | Click Buy while logged out         | `tradeParametersPage.clickBuyLoggedOut()`                                       | Authorization `ServiceErrorSheet` opens (desktop: `.quill-modal__container`; mobile: `.service-error-sheet`)  | Both     |
+| 3   | Verify sheet copy and CTAs         | `tradeParametersPage.verifyAuthorizationRequiredSheet()`                        | Title "Start trading with us"; body "Log in or create a free account to place a trade."; both buttons visible | Both     |
+| 4   | Login button navigates to login    | `clickAuthorizationLoginButton()` → `verifyNavigatedToLoginPage()`              | Browser lands on Deriv login page (`LOGIN_URL`)                                                               | Both     |
+| 5   | Create account navigates to signup | `clickAuthorizationCreateFreeAccountButton()` → `verifyNavigatedToSignupPage()` | Browser lands on Deriv signup page (`SIGNUP_URL`)                                                             | Both     |
+
+> Steps 4 and 5 are separate tests — each starts from step 1–3 via shared `beforeEach`.
+
+---
+
+## Flow 17 — Insufficient balance → Buy disabled, balance hint
+
+**Prerequisites:** Authenticated **real** staging account (`TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE`) whose Options balance is below the committed proposal charge (or zero). Market open.
+**Spec:** `playwright/tests/trade/verify-insufficient-balance.spec.ts`
+
+Dedicated E2E for the client-side Buy gate with low-balance staging accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` covers the same gate dynamically against the logged-in account balance.
+
+AppV2 compares `proposal_info[trade_type].stake` (the quoted buy charge) against `client.balance`. When the client can prove the account cannot pay, Buy is disabled and no `ServiceErrorSheet` opens — the attempt is blocked client-side (`purchase-button.tsx` → `isStakeAboveBalance`).
+
+| #   | Step                       | Action                                                                                       | Expected Result                                                                                      | Platform |
+| --- | -------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page     | `loginPage.login()` → `tradeParametersPage.gotoTradePage()`                                  | Trade page loaded; account info and balance visible                                                  | Both     |
+| 2   | Commit stake above balance | Desktop: `setStake(balance + 1)`; mobile: seed `tab_trade_params_v2` for active tab + reload | Committed proposal charge exceeds header balance                                                     | Both     |
+| 3   | Verify Buy is disabled     | Observe `buyButton` / purchase area                                                          | Buy button **disabled** — click does not send a purchase                                             | Both     |
+| 4   | Verify payout withheld     | Observe purchase button payout slot                                                          | Payout shows `-`, not a priced amount (e.g. not `$19.28`)                                            | Both     |
+| 5   | Draft stake above balance  | Open stake editor → enter or select a stake above balance                                    | Stake field shows balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`)   | Both     |
+| 6   | Verify no error sheet      | Attempt to interact with Buy (button remains disabled)                                       | No `ServiceErrorSheet` / `.quill-modal__container` / `.service-error-sheet` for insufficient balance | Both     |
+
+> **Account setup:** `TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` in `playwright/.env.staging`. Desktop commits via stake Save; mobile blocks Save on unaffordable drafts, so the spec seeds the active tab's `tab_trade_params_v2` amount (e.g. `1HZ100V|rise_fall`) and reloads before asserting the Buy gate.
+
+> **Not this flow:** server-reported `InsufficientBalance` on the proposal while balance is unreadable — Buy stays enabled and opens `ServiceErrorSheet` on click (G1).

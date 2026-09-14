@@ -99,15 +99,6 @@ export class TradeAutomatePage extends TradeParametersPage {
     /** Source: MaxTradeStake — cap below trade-form initial stake (Flow 15 baseline stake is `1`). */
     private static readonly MAX_STAKE_BELOW_INITIAL_ERROR = 'Max. stake must be equal or greater than 1';
 
-    /** Source: insufficient-balance-utils getInsufficientBalanceMessage — drafted stake above balance. */
-    private static formatInsufficientBalanceHint(balanceAmount: string, currency: string): string {
-        const formatted = Number(balanceAmount.replace(/,/g, '')).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-        return `You only have ${formatted} ${currency} left. Try a lower stake.`;
-    }
-
     private static readonly AUTOMATE_GUIDE_STRATEGIES = {
         Martingale: {
             description: () => TradeAutomatePage.AUTOMATE_GUIDE_MARTINGALE_DESCRIPTION,
@@ -2015,6 +2006,7 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.verifyThresholdAutoStopPostConditions('profit');
     }
 
+    /** Max payout / Payout rows — desktop: `.stake-input-desktop__details`; mobile: stake sheet. */
     private get stakeDetailsRoot(): Locator {
         return this.isMobile
             ? this.stakeContainer.locator('.stake-content__details')
@@ -2062,6 +2054,10 @@ export class TradeAutomatePage extends TradeParametersPage {
     /** Dismiss an open automation editor — reuses shared Manual/Automate dismiss helpers. */
     private async dismissAutomationEditor(sheet: Locator, popover: Locator, label = 'Editor'): Promise<void> {
         await this.dismissParameterEditor(sheet, popover, label);
+    }
+
+    override async dismissStakeEditor(): Promise<void> {
+        await this.dismissParameterEditor(this.stakeContainer, this.stakePopover, 'Stake');
     }
 
     private async dismissAutomationSheet(sheet: Locator, label: string): Promise<void> {
@@ -2163,7 +2159,7 @@ export class TradeAutomatePage extends TradeParametersPage {
             throw new Error(`Could not parse balance header "${balanceHeader}"`);
         }
         const [, balanceAmount, currency] = balanceMatch;
-        const expectedBalanceHint = TradeAutomatePage.formatInsufficientBalanceHint(balanceAmount, currency);
+        const expectedBalanceHint = TradeParametersPage.formatInsufficientBalanceHint(balanceAmount, currency);
         const stakeAboveBalance = (parseFloat(balanceAmount) + 0.01).toFixed(2);
         await this.openStakeCustomInput();
         await this.fillStakeCustomDraft(stakeAboveBalance);

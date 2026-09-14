@@ -73,6 +73,21 @@ export class TradeBasePage {
             : this.page.getByRole('button', { name: 'Log in' });
     }
 
+    /**
+     * "Try real" CTA — shown on demo accounts to prompt switching to real trading.
+     */
+    get tryRealButton(): Locator {
+        return this.page.getByRole('button', { name: /try real/i });
+    }
+
+    /**
+     * Market tabs strip — always rendered once DTrader's main trade UI has painted.
+     * Source: market-tabs.tsx `data-testid="dt_market_tabs"`
+     */
+    get tradeTypeTabsContainer(): Locator {
+        return this.page.getByTestId('dt_market_tabs');
+    }
+
     /** Sidebar Home button — desktop only */
     get sidebarHomeButton(): Locator {
         return this.page.getByTestId('dt_sidebar_home');
@@ -305,6 +320,18 @@ export class TradeBasePage {
     }
 
     /**
+     * Click Home (sidebar on desktop, bottom nav on mobile) to return to the
+     * home-app dashboard with the active OAuth session preserved.
+     */
+    async clickHome(): Promise<void> {
+        const homeButton = this.isMobile ? this.bottomNavHome : this.sidebarHomeButton;
+        await expect(homeButton, 'Home button should be visible before navigating to home dashboard').toBeVisible();
+        await homeButton.click();
+        await this.page.waitForURL(/\/dashboard\/home/, { timeout: 90_000 });
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /**
      * Navigate to the Positions view.
      * - Desktop: waits for the flyout if already open (automation opens it on run start);
      *   otherwise clicks sidebar Positions to open it
@@ -484,6 +511,76 @@ export class TradeBasePage {
             currentBalance,
             `Balance after close should be ${expectedBalance} (${balanceBeforeClose} + ${stake} + ${pnl})`
         ).toBe(expectedBalance);
+    }
+
+    /**
+     * Assert the browser correctly redirected to DTrader for the expected account type
+     * (e.g. after clicking Trade on the Real or Demo tab in home-app Options).
+     *
+     * Verifies:
+     * - Navigation leaves home-app and lands on the DTrader hostname (`BASE_URL`)
+     * - Does not stop on `/dashboard/options` or `/dashboard/home`
+     * - DTrader trade page chrome is loaded (market tabs, balance, logged-in header)
+     * - Active account matches the Options tab (`real` or `demo`)
+     *
+     * @param type - `'real'` or `'demo'` — must match the Options tab used before Trade was clicked.
+     */
+    async verifyLandedOnDTraderAs(type: 'real' | 'demo'): Promise<void> {
+        const baseUrl = process.env.BASE_URL;
+        const loginUrl = process.env.LOGIN_URL;
+        if (!baseUrl || !loginUrl) {
+            throw new Error('BASE_URL and LOGIN_URL must be set in playwright/.env.staging');
+        }
+
+        const dtraderHost = new URL(baseUrl).hostname;
+        const homeHost = new URL(loginUrl).hostname;
+
+        await this.page.waitForURL(
+            url => url.hostname === dtraderHost || /dtrader\.deriv\.(com|be|me)/i.test(url.hostname),
+            { timeout: 90_000 }
+        );
+
+        const currentUrl = this.page.url();
+        if (currentUrl.includes('/dashboard/options')) {
+            throw new Error(
+                'Options Trade opened /dashboard/options instead of DTrader — redirect to DTrader did not occur.'
+            );
+        }
+        if (currentUrl.includes('/dashboard/home') || new URL(currentUrl).hostname === homeHost) {
+            throw new Error('Still on home dashboard — redirect to DTrader did not occur.');
+        }
+
+        await expect(
+            this.page,
+            `Should redirect to DTrader (${dtraderHost}) after Options ${type} Trade click`
+        ).toHaveURL(new RegExp(dtraderHost.replace(/\./g, '\\.')));
+        await expect(this.page, 'Should leave home-app domain after Options Trade click').not.toHaveURL(
+            new RegExp(homeHost.replace(/\./g, '\\.'))
+        );
+
+        await expect(
+            this.tradeTypeTabsContainer,
+            'DTrader market tabs should be visible — confirms trade page loaded'
+        ).toBeVisible({ timeout: 60_000 });
+        await expect(
+            this.activeMarketTab,
+            'Active market tab should be visible — confirms DTrader trade form loaded'
+        ).toBeVisible({ timeout: 60_000 });
+        await expect(this.accountInfo, 'Account info should be visible on DTrader after redirect').toBeVisible();
+        await expect(this.balance, 'Balance should be visible on DTrader after redirect').toBeVisible();
+        await expect(this.loginButton, 'Login button should not be visible on authenticated DTrader').not.toBeVisible();
+
+        await this.verifyActiveAccountType(type);
+
+        if (type === 'real') {
+            await expect(this.depositButton, 'Deposit button should be visible on real DTrader account').toBeVisible();
+            await expect(
+                this.tryRealButton,
+                'Try real button should not be visible on real DTrader account'
+            ).not.toBeVisible();
+        }
+
+        await NavigationUtils.waitForDerivApiSettled(this.page);
     }
 
     /**

@@ -684,6 +684,79 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * Trade-type label on the search-results group that contains `row`.
+     * Source: market-search-results.tsx `.market-search-results__trade-type`
+     */
+    private async readSearchResultTradeType(row: Locator): Promise<string> {
+        const tradeType = await row
+            .locator('xpath=ancestor::div[contains(@class,"market-search-results__group")][1]')
+            .locator('.market-search-results__trade-type')
+            .innerText();
+        return tradeType.trim();
+    }
+
+    /**
+     * Open the picker in replace mode, search session-gated candidates, and commit the first row
+     * that shows a **CLOSED** tag. Returns `null` when every candidate is open at runtime
+     * (exchange hours) so the caller can `test.skip()`.
+     */
+    async selectFirstClosedMarket(candidates: string[]): Promise<{ market: string; tradeType: string } | null> {
+        await this.activeMarketTab.click();
+        await expect(this.marketSelectionPanel, 'Market-selection picker should open').toBeVisible();
+        if (this.isMobile) {
+            await this.openMarketSearch();
+        }
+
+        for (const market of candidates) {
+            await this.marketSearchInput.fill(market);
+            const row = await this.waitForMarketSearchResultRow(market);
+
+            if (!(await this.isSearchResultRowClosed(row))) {
+                if (await this.marketSearchClearButton.isVisible().catch(() => false)) {
+                    await this.clearMarketSearch();
+                } else {
+                    await this.marketSearchInput.clear();
+                }
+                continue;
+            }
+
+            await expect(
+                this.searchResultRowClosedTag(row),
+                `[${market}] search row should show CLOSED before selection`
+            ).toBeVisible();
+
+            const tradeType = await this.readSearchResultTradeType(row);
+            await this.marketSearchResultRow(market, tradeType).click();
+
+            await expect(
+                this.marketSelectionPanel,
+                'Market-selection picker should close after selecting a closed market'
+            ).not.toBeAttached();
+            await this.closeMarketSelectionPicker();
+            if (!this.isMobile) {
+                await expect(
+                    this.marketSelectionOverlay,
+                    'Market-selection overlay should be gone after selecting a closed market'
+                ).toHaveCount(0);
+            }
+
+            await expect(
+                this.activeMarketTab,
+                `Active market tab should reflect '${market}' after selecting a closed market`
+            ).toContainText(market);
+            await expect(
+                this.activeMarketTab,
+                `Active market tab should reflect trade type '${tradeType}' after selecting a closed market`
+            ).toContainText(tradeType);
+
+            return { market, tradeType };
+        }
+
+        await this.closeMarketSelectionPicker();
+        return null;
+    }
+
+    /**
      * Close the market-selection picker without selecting a market. Mobile taps the header's
      * Close (X) button — if the dedicated search page is still open, taps Cancel first because
      * Close is not rendered on the search page. Desktop clicks the InputPopover backdrop.

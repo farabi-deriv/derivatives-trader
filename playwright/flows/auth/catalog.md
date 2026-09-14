@@ -1,7 +1,7 @@
 # 🗺️ Auth Journey Catalog — Technical Reference
 
-> Source of truth: `packages/core/src/App/Components/Layout/Header/` · `packages/core/src/Modules/Menu/menu.tsx` · `packages/trader/src/AppV2/Components/Layout/Sidebar/`
-> Created: 2026-06-11 | Last updated: 2026-06-11
+> Source of truth: `packages/core/src/App/Components/Layout/Header/` · `packages/core/src/Modules/Menu/menu.tsx` · `packages/trader/src/AppV2/Components/Layout/Sidebar/` · home-app `/dashboard/options` (external — page objects in `playwright/pages/HomePage.ts`, `playwright/pages/OptionsPage.ts`)
+> Created: 2026-06-11 | Last updated: 2026-09-11
 
 ---
 
@@ -12,6 +12,8 @@
 | Flow 1     | `auth/verify-login-via-email-password.spec.ts` | `@auth @smoke @desktop @mobile @production` |
 | Flow 2     | `auth/verify-login-via-otp.spec.ts`            | `@auth @smoke @desktop @mobile @production` |
 | Flow 3     | `auth/verify-logout.spec.ts`                   | `@auth @smoke @desktop @mobile @production` |
+| Flow 4.1   | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Flow 4.2   | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
 
 ---
 
@@ -133,6 +135,49 @@ test.describe('Logout', { tag: ['@auth', '@smoke', '@desktop', '@mobile', '@prod
 
 ---
 
+### Flow 4 — Home → Options → DTrader redirect
+
+**Account setup:** Uses `TEST_EMAIL` / `TEST_PASSWORD`. Account must have a **created Options account** (both Real and Demo tabs usable). Seeds localStorage on DTrader and home-app origins before login to suppress onboarding tours and deposit nudge.
+
+**Test pattern:**
+
+```typescript
+test.describe('Home to DTrader redirect', { tag: ['@auth', '@smoke', '@desktop', '@mobile', '@production'] }, () => {
+    test.beforeEach(async ({ page, loginPage, tradeBasePage, homePage, optionsPage }) => {
+        await TradeBasePage.seedLocalStorageOnOrigin(page);
+        await HomePage.seedLocalStorageOnOrigin(page);
+
+        await loginPage.login();
+        await tradeBasePage.verifySuccessfulLogin();
+
+        await tradeBasePage.clickHome();
+        await homePage.dismissPostLoginPopupsIfPresent();
+        await homePage.verifyOnHomeDashboard();
+
+        await homePage.navigateToOptionsFromSidebar();
+        await optionsPage.verifyOptionsPageLoaded();
+    });
+
+    test('VERIFY Demo tab Trade redirects to DTrader demo account', async ({ optionsPage, tradeBasePage }) => {
+        await optionsPage.switchToDemoTab();
+        await optionsPage.clickTradeBanner();
+        await tradeBasePage.verifyLandedOnDTraderAs('demo');
+    });
+
+    test('VERIFY Real tab Trade redirects to DTrader real account', async ({ optionsPage, tradeBasePage }) => {
+        await optionsPage.switchToRealTab();
+        await optionsPage.clickTradeBanner();
+        await tradeBasePage.verifyLandedOnDTraderAs('real');
+    });
+});
+```
+
+> **`tradeBasePage.clickHome()`:** Desktop clicks `dt_sidebar_home`; mobile taps bottom nav "Home". Both assign `window.location.href` to `{getBrandUrl()}/home?source=options&acc=options&curr=…`.
+
+> **`verifyLandedOnDTraderAs(type)`:** Waits for DTrader hostname, rejects `/dashboard/home` and `/dashboard/options`, asserts market tabs + balance + account type (`Real account` / `Demo account`). On real accounts, also asserts Deposit visible and Try real hidden. Demo accounts with both Real and Demo wallets show Deposit (not Try real) — account-type label is the authoritative demo check.
+
+---
+
 ## Section 3 — Tags Reference
 
 | Tag           | When to apply                                         |
@@ -170,3 +215,11 @@ The OTP component is a Quill `<Code>` 6-digit input. `loginPage.enterOTP(otp)` w
 ### `isMobileApp` hides logout, language, and help centre
 
 When `isMobileApp` is true (native bridge), logout, language selector, and help centre are hidden. Tests run in browser where `isMobileApp` is false — these items are always visible.
+
+### Cross-app Home redirect preserves OAuth session
+
+Flow 4 navigates DTrader → home-app → DTrader in the same browser tab. Session cookies must survive the cross-origin hop. Seed `HomePage.seedLocalStorageOnOrigin()` before login to suppress home-app deposit nudge; call `homePage.dismissPostLoginPopupsIfPresent()` after landing on `/dashboard/home`.
+
+### Options Trade must open DTrader, not the Options hub
+
+`optionsPage.clickTradeBanner()` targets `data-testid="options-btn-trade"`. If the account has no created Options wallet, home-app routes to `/dashboard/options` content only — `verifyLandedOnDTraderAs()` throws explicitly rather than passing on the Options hub URL.

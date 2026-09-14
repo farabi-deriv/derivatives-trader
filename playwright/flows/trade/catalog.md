@@ -1,7 +1,7 @@
 # 🗺️ Trade Journey Catalog — Technical Reference
 
 > Source of truth: `packages/trader/src/AppV2/Containers/Trade/` · `packages/trader/src/AppV2/Components/TradeParameters/` · `packages/trader/src/AppV2/Components/PurchaseButton/`
-> Last updated: 2026-09-09 (added Manual Trading negative validation)
+> Last updated: 2026-09-11 (Manual Trading negative validation + dedicated gate specs)
 
 ---
 
@@ -43,8 +43,14 @@
 | Flow 12    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
 | Flow 13    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
 | Flow 14    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
-| G1         | `trade/verify-insufficient-balance.spec.ts`                      | `@trade`                                       |
-| G2         | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade`                                       |
+| Flow 15    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                      |
+| Flow 16    | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade @desktop @mobile`                      |
+| Flow 17    | `trade/verify-insufficient-balance.spec.ts`                      | `@trade @desktop @mobile`                      |
+| G1         | —                                                                | Server-reported insufficient balance (blocked) |
+
+> **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
+>
+> **Env vars (Flow 17):** `TEST_EMAIL_INSUFFICIENT_BALANCE` (desktop) / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` (mobile) — real accounts with low or zero Options balance.
 
 ---
 
@@ -842,6 +848,84 @@ await tradeValidationPage.verifyRiskManagementRuntimeOptions();
 
 ---
 
+### Flow 15 — Market closed: purchase hidden, params disabled, countdown visible
+
+> **Discovery:** `selectClosedMarketFromPicker()` iterates `FeedPage.MARKETS` entries with `status: 'session_gated'`, searches each in the picker, and selects the first row whose **CLOSED** tag is visible. Returns `null` → `test.skip()` when every candidate is open.
+>
+> **Assertions (`verifyClosedMarketTradeState`):** Buy not rendered · `ClosedMarketMessage` intro + `HH:MM:SS` timer · all `button` / `input` in `.trade-params__options-wrapper` disabled · **CLOSED** tag still on the row when the picker is reopened.
+
+```typescript
+test.describe('Trade — Closed Market', { tag: ['@trade', '@desktop', '@mobile'] }, () => {
+    test.beforeEach(async ({ page, loginPage, tradeParametersPage }) => {
+        await TradeBasePage.seedLocalStorageOnOrigin(page);
+        await loginPage.login();
+        await tradeParametersPage.gotoTradePage();
+    });
+
+    test('VERIFY closed market hides purchase button and shows reopening countdown', async ({
+        tradeParametersPage,
+    }) => {
+        const selection = await tradeParametersPage.selectClosedMarketFromPicker();
+        if (!selection) {
+            test.skip(true, 'No session-gated market is CLOSED right now — rerun outside exchange hours');
+            return;
+        }
+
+        await tradeParametersPage.verifyClosedMarketTradeState(selection.market, selection.tradeType);
+    });
+});
+```
+
+---
+
+### Flow 16 — Unauthenticated purchase → login prompt sheet
+
+```typescript
+test.describe('Trade — Unauthenticated Purchase', { tag: ['@trade', '@desktop', '@mobile'] }, () => {
+    test.beforeEach(async ({ tradeParametersPage }) => {
+        await tradeParametersPage.gotoTradePage();
+        await tradeParametersPage.verifyDTraderLandingPageLoggedOut();
+        await tradeParametersPage.clickBuyLoggedOut();
+        await tradeParametersPage.verifyAuthorizationRequiredSheet();
+    });
+
+    test('VERIFY Login button on authorization sheet navigates to login page', async ({ tradeParametersPage }) => {
+        await tradeParametersPage.clickAuthorizationLoginButton();
+        await tradeParametersPage.verifyNavigatedToLoginPage();
+    });
+
+    test('VERIFY Create free account button navigates to signup page', async ({ tradeParametersPage }) => {
+        await tradeParametersPage.clickAuthorizationCreateFreeAccountButton();
+        await tradeParametersPage.verifyNavigatedToSignupPage();
+    });
+});
+```
+
+---
+
+### Flow 17 — Insufficient balance → Buy disabled, balance hint
+
+> **POM:** `verifyInsufficientBalanceClientGate()` — commits unaffordable stake (`commitUnaffordableStakeForGate()`), asserts Buy disabled, payout `-`, balance hint in stake editor, no error sheet.
+>
+> **Mobile:** seeds `tab_trade_params_v2` for the active tab key (e.g. `1HZ100V|rise_fall`) and reloads because Save is blocked on unaffordable drafts.
+
+```typescript
+test.describe('Trade — Insufficient Balance', { tag: ['@trade', '@desktop', '@mobile'] }, () => {
+    test.beforeEach(async ({ page, loginPage, tradeParametersPage }) => {
+        await TradeBasePage.seedLocalStorageOnOrigin(page);
+        await loginPage.login(testEmail); // from TEST_EMAIL_INSUFFICIENT_BALANCE(_MOBILE)
+        await tradeParametersPage.gotoTradePage();
+        await tradeParametersPage.switchToAccountType('real');
+    });
+
+    test('VERIFY insufficient balance disables Buy and shows balance hint', async ({ tradeParametersPage }) => {
+        await tradeParametersPage.verifyInsufficientBalanceClientGate();
+    });
+});
+```
+
+---
+
 ## Section 3 — POM Method Reference
 
 | Purpose                                  | Page Object method                                             |
@@ -937,6 +1021,8 @@ Preset chips use `aria-label="Select value $20"` (not `"Select value 20.00 USD"`
 ### Insufficient balance has two purchase paths
 
 Client-provable insufficiency disables Buy and withholds payout as `-`. Server-reported insufficiency keeps Buy enabled so clicking can open `ServiceErrorSheet`. On mobile, an unaffordable Stake draft is blocked by the sheet's Save action before it reaches the trade page.
+
+Flow 17 (`verify-insufficient-balance.spec.ts`) covers the dedicated client gate with low-balance staging accounts. Flow 13 in `verify-manual-trade-negative-validation.spec.ts` covers the same gate dynamically against the logged-in account balance.
 
 ### Multipliers Risk Management panel — TP/SL and Deal Cancellation are mutually exclusive
 
