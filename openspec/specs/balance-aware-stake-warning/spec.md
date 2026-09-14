@@ -3,9 +3,7 @@
 ## Purpose
 
 TBD - created by archiving change default-stake-presets-allow-values-above-the-available-balance-without-a-deposit-gate. Update Purpose after archive.
-
 ## Requirements
-
 ### Requirement: The stake input warns when the drafted stake exceeds the balance
 
 Both stake inputs — the mobile sheet (`packages/trader/src/AppV2/Components/TradeParameters/Stake/stake-input.tsx`) and the desktop modal (`.../stake-input-desktop.tsx`) — SHALL show a balance-aware hint whenever the currently drafted stake exceeds the active account's balance.
@@ -83,27 +81,6 @@ The hint SHALL be ranked below real validation errors in the input's existing si
 - **WHEN** the drafted stake is above the balance but inside the contract's stake limits
 - **THEN** the balance hint replaces the `Range …` hint for as long as it applies, and the range hint returns once the amount is affordable again
 
-### Requirement: The mobile action sheet's Save is blocked while the warning shows; the desktop modal's is not
-
-The two breakpoints SHALL diverge on whether the balance hint blocks committing the drafted amount:
-
-- On the mobile action sheet (`stake-input.tsx`), the balance hint SHALL contribute to `is_save_disabled`, so the header check published via `registerHeaderActions` is disabled for as long as the hint shows. `onSave` SHALL also treat the hint as a no-op guard, so invoking the commit handler directly (bypassing the disabled header control) SHALL NOT commit the amount either.
-- On the desktop modal (`stake-input-desktop.tsx`), the balance hint SHALL NOT contribute to the footer **Save** button's `disabled` prop and SHALL NOT make `onSave` a no-op — Save stays enabled and committing an unaffordable stake succeeds, exactly as before this requirement existed.
-
-This is an intentional divergence, not an inconsistency to reconcile: the mobile action sheet's header **Save** is a single, already-gated commit action (`is_save_disabled` already blocks on a dirty-check and on real errors), so folding the balance hint into that existing gate is a small, consistent addition. **Buy**, automation **Run**, and the desktop modal's **Save** keep the codebase's established "inform, don't disable" stance (`purchase-button.tsx:319-325`) unchanged — a user drafting a stake on the desktop modal, or tapping **Buy**, may still set an unaffordable value and deposit afterwards.
-
-#### Scenario: The mobile header Save is disabled while the hint shows, and re-enables once affordable
-
-- **WHEN** the balance is `4.00 USD` and the user taps a `20 USD` preset in the mobile stake sheet
-- **THEN** the header action published via `registerHeaderActions` reports `is_save_disabled: true`, and invoking its `onSave` does not commit the amount or close the sheet
-- **WHEN** the user then taps an affordable `1 USD` preset
-- **THEN** `is_save_disabled` becomes `false` again
-
-#### Scenario: The desktop footer Save still commits an unaffordable stake
-
-- **WHEN** the balance is `4.00 USD`, the user drafts `10` in the desktop stake modal, and the proposal has returned without error
-- **THEN** the footer **Save** button is enabled, clicking it commits the value to the trade store, the modal closes, and the user meets the existing insufficient-balance gate at **Buy** unchanged (its message and actions are out of scope for this capability)
-
 ### Requirement: Preset chips remain balance-blind
 
 `getStakePresetValues` SHALL keep taking only the contract's `min_stake`/`max_stake` as inputs; the account balance SHALL NOT filter or clamp the preset chips.
@@ -114,3 +91,27 @@ The chips describe what the contract accepts, not what the user can currently af
 
 - **WHEN** the balance is `4.00 USD` and the contract's stake limits admit `1 / 5 / 10 / 20 / 50 / 100`
 - **THEN** all six chips are still offered, and tapping `10` fills the input and shows the balance hint rather than being unavailable
+
+### Requirement: [SEC-004] Both breakpoints block Save while the warning shows; only Buy is exempt
+
+Both stake editors SHALL block committing the drafted amount while the balance hint applies:
+
+- On the mobile action sheet (`stake-input.tsx`), the balance hint SHALL contribute to `is_save_disabled`, so the header check published via `registerHeaderActions` is disabled for as long as the hint shows. `onSave` SHALL also treat the hint as a no-op guard, so invoking the commit handler directly (bypassing the disabled header control) SHALL NOT commit the amount either.
+- On the desktop modal (`stake-input-desktop.tsx`), the balance hint SHALL contribute to the footer **Save** button's `disabled` prop, to `onSave` (as a no-op guard), and to the `handleKeyDown` Enter-to-save guard — so Save is disabled for as long as the hint shows and committing an unaffordable stake from the modal is not possible.
+
+**Buy** is the only control exempt from the balance gate: it keeps the codebase's established "inform, don't disable" stance (`purchase-button.tsx:319-325`) — a user may still tap **Buy** on an unaffordable stake and meet the server-reported insufficient-balance gate, then deposit afterwards.
+
+#### Scenario: The mobile header Save is disabled while the hint shows, and re-enables once affordable
+
+- **WHEN** the balance is `4.00 USD` and the user taps a `20 USD` preset in the mobile stake sheet
+- **THEN** the header action published via `registerHeaderActions` reports `is_save_disabled: true`, and invoking its `onSave` does not commit the amount or close the sheet
+- **WHEN** the user then taps an affordable `1 USD` preset
+- **THEN** `is_save_disabled` becomes `false` again
+
+#### Scenario: The desktop footer Save is disabled while the hint shows, and re-enables once affordable
+
+- **WHEN** the balance is `4.00 USD`, the user drafts `10` in the desktop stake modal, and the proposal has returned without error
+- **THEN** the footer **Save** button is disabled while the balance hint shows, and invoking `onSave` directly does not commit the amount or close the modal
+- **WHEN** the user then drafts an affordable `4`
+- **THEN** the footer **Save** button is enabled again
+
