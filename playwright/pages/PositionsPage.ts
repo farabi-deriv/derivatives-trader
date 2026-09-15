@@ -151,6 +151,28 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
+     * Deal Cancellation Cancel button on the first open-position card — desktop only.
+     * Source: contract-card.tsx — `.contract-card__cancel-btn` (issue #899).
+     * Accessible name includes the DC countdown; class is the stable selector.
+     */
+    get contractCardCancelButton(): Locator {
+        return this.firstContractCard.locator('.contract-card__cancel-btn');
+    }
+
+    /**
+     * Desktop flyout only — assert Cancel is on the open-position card while DC is active (issue #899).
+     * Covered by trade Flow 9.7/9.8 via `buyUpAndVerifyWithDC` / `buyDownAndVerifyWithDC`.
+     */
+    async verifyDesktopDealCancellationCancelOnOpenCard(): Promise<void> {
+        if (this.isMobile) return;
+
+        await expect(
+            this.contractCardCancelButton,
+            'Desktop open-position card should show Cancel while Deal Cancellation is active (issue #899)'
+        ).toBeVisible();
+    }
+
+    /**
      * Close button revealed after swiping the first contract card left — mobile only.
      * Source: .contract-card-wrapper .buttons > button (labelled "Close")
      * The card must have class "show-buttons" before this button is interactable.

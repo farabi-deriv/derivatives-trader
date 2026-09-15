@@ -1,6 +1,6 @@
 # Trade Journey Coverage
 
-**Analysis date:** 2026-09-14
+**Analysis date:** 2026-09-15
 
 ---
 
@@ -46,15 +46,18 @@
 | Flow 16   | Unauthenticated purchase → login prompt sheet              | ✅      | ✅     |                                        |
 | Flow 17.1 | Insufficient balance popup → deposit transfer              | ✅      | ✅     |                                        |
 | Flow 17.2 | Insufficient balance stake hint + Buy enabled              | ✅      | ✅     |                                        |
+| Flow 18   | Invalid URL — unsupported market and trade type modals     | ✅      | ✅     | Covers regression for #895             |
 
 ---
 
 ## Section 2 — Gaps
 
-No open gaps.
+No open gaps — all Section 1 journeys are automated.
+
+> Step-by-step test cases: [`flow.md`](./flow.md)
 
 ---
 
 ## Section 3 — Priority List
 
-All Section 1 flows are automated on desktop and mobile — nothing queued for implementation.
+No pending gaps.

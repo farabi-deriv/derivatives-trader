@@ -309,7 +309,7 @@ Identical chain to Flow 5.1 with `clickMatchesDiffersOption('Differs')` (purchas
 
 ## Over/Under
 
-> **Structural exception — Ticks-only + no manual close:** Same digit-contract structure as Matches/Differs (see that section). Over/Under uses the same Ticks-only duration, tab selector → single colored purchase button, last-digit selector, and the **settle-in-place** verification chain. The audit **Target** row reads "Over N" / "Under N". **Invalid digits:** Over cannot predict 9, Under cannot predict 0 — use a middle digit (e.g. 5), valid for both.
+> **Structural exception — Ticks-only + no manual close:** Same digit-contract structure as Matches/Differs (see that section). Over/Under uses the same Ticks-only duration, tab selector → single colored purchase button, last-digit selector, and the **settle-in-place** verification chain. The audit **Target** row reads "Over N" / "Under N". **Invalid digits:** Over cannot predict 9, Under cannot predict 0 — use a middle digit (e.g. 5), valid for both. **#1011 (mobile ticks + Duration sheet):** covered by Flows 6.1/6.2 — `selectTicksDuration()` on mobile opens the action sheet and commits ticks; a successful buy implies current-spot ticks are streaming. Visual whitespace/swipe bleed remains manual.
 
 ### Flow 6.1 — Over/Under: buy Over → settle → verify closed
 
@@ -615,25 +615,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` — `VERIFY Buy "Up" Multipliers Contract With Deal Cancellation and Cancel (Demo Account)` / `(Real Account)`
 **Unique params:** Market (`Volatility 75 Index`), Multiplier (`x300`), DC (`5 min`); DC timer badge (`dt_deal_cancellation_badge`)
 
-> **Structural exception:** Deal Cancellation contracts use a "Cancel [mm:ss]" button in the contract details footer — not "Close [amount] [currency]". Reports/Statement are skipped. After cancel, the Closed tab and closed contract details are verified the same way as Flow 9.1.
+> **Structural exception:** Deal Cancellation contracts use a "Cancel [mm:ss]" button in the contract details footer — not "Close [amount] [currency]". **Desktop (#899):** the same Cancel also appears on the open-position card in the flyout (`.contract-card__cancel-btn`); Flow 9.7/9.8 assert it before opening details. Cancel in the spec still runs from contract details. Reports/Statement are skipped.
 >
 > **Buy button:** with DC active the button reads **"Total cost $N.NN"** (symbol-prefixed, no Money `dt_span`). Capture that amount before buying — it is stake + DC fee + commission, and it is what the Positions card Stake row and the balance deduction use.
 
-| #   | Step                              | Action                                                                                                 | Expected Result                                                                       | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                       | Trade page loaded                                                                     | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Multipliers')`                                       | Chip selected                                                                         | Both     |
-| 3   | Set stake                         | `setStake('20.00')`                                                                                    | Stake field shows `20.00`                                                             | Both     |
-| 4   | Set multiplier value              | Select `x300` in multiplier selector                                                                   | Multiplier shows `x300`                                                               | Both     |
-| 5   | Open Risk management              | Click "Risk management" param                                                                          | Panel opens                                                                           | Both     |
-| 6   | Enable Deal cancellation          | Select "Deal cancellation" tab                                                                         | DC selected; saving DC turns TP/SL off (mutually exclusive)                           | Both     |
-| 7   | Save                              | Click "Save"                                                                                           | DC applied; risk field shows `DC: 5 minutes`                                          | Both     |
-| 8   | Capture Total cost and buy        | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`   | Total cost `$N.NN` captured as numeric; contract purchased                            | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()`                              | Card visible; balance reduced by Total cost (stake + DC fee + commission)             | Both     |
-| 10  | Open contract details             | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()` | Open details: contract cost = stake, Stake = Total cost, DC fee set, Cancel countdown | Both     |
-| 11  | Cancel contract                   | Click "Cancel [mm:ss]" button                                                                          | Contract cancelled                                                                    | Both     |
-| 12  | Verify closed position            | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                            | Card and details show executed DC; P/L equals the kept fee                            | Both     |
-| 13  | Verify balance after cancel       | `verifyBalanceAfterContractClose()`                                                                    | Balance = after-buy + Total cost + P/L                                                | Both     |
+| #   | Step                              | Action                                                                                                                                  | Expected Result                                                                                       | Platform |
+| --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                                                        | Trade page loaded                                                                                     | Both     |
+| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Multipliers')`                                                                        | Chip selected                                                                                         | Both     |
+| 3   | Set stake                         | `setStake('20.00')`                                                                                                                     | Stake field shows `20.00`                                                                             | Both     |
+| 4   | Set multiplier value              | Select `x300` in multiplier selector                                                                                                    | Multiplier shows `x300`                                                                               | Both     |
+| 5   | Open Risk management              | Click "Risk management" param                                                                                                           | Panel opens                                                                                           | Both     |
+| 6   | Enable Deal cancellation          | Select "Deal cancellation" tab                                                                                                          | DC selected; saving DC turns TP/SL off (mutually exclusive)                                           | Both     |
+| 7   | Save                              | Click "Save"                                                                                                                            | DC applied; risk field shows `DC: 5 minutes`                                                          | Both     |
+| 8   | Capture Total cost and buy        | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`                                    | Total cost `$N.NN` captured as numeric; contract purchased                                            | Both     |
+| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both     |
+| 10  | Open contract details             | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()`                                  | Open details: contract cost = stake, Stake = Total cost, DC fee set, Cancel countdown                 | Both     |
+| 11  | Cancel contract                   | Click "Cancel [mm:ss]" button                                                                                                           | Contract cancelled                                                                                    | Both     |
+| 12  | Verify closed position            | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                                                             | Card and details show executed DC; P/L equals the kept fee                                            | Both     |
+| 13  | Verify balance after cancel       | `verifyBalanceAfterContractClose()`                                                                                                     | Balance = after-buy + Total cost + P/L                                                                | Both     |
 
 ### Flow 9.8 — Multipliers with Deal Cancellation: buy Down → cancel contract
 
@@ -643,15 +643,15 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 
 > **Structural exception:** Same as Flow 9.7 — cancel from details, then Closed tab + closed details; no Reports/Statement.
 
-| #   | Step                               | Action                                                                                                 | Expected Result                                            | Platform |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | -------- |
-| 1–7 | Setup (same as Flow 9.7 steps 1–7) | Same setup steps                                                                                       | DC applied                                                 | Both     |
-| 8   | Capture Total cost and buy         | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`   | Total cost `$N.NN` captured as numeric; contract purchased | Both     |
-| 9   | Verify open position in Positions  | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()`                              | Card visible; balance reduced by Total cost                | Both     |
-| 10  | Open contract details              | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()` | Open details + DC timer/Cancel                             | Both     |
-| 11  | Cancel contract                    | Click "Cancel [mm:ss]" button                                                                          | Contract cancelled                                         | Both     |
-| 12  | Verify closed position             | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                            | Executed DC on closed details                              | Both     |
-| 13  | Verify balance after cancel        | `verifyBalanceAfterContractClose()`                                                                    | Balance = after-buy + Total cost + P/L                     | Both     |
+| #   | Step                               | Action                                                                                                                                  | Expected Result                                                                                       | Platform |
+| --- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
+| 1–7 | Setup (same as Flow 9.7 steps 1–7) | Same setup steps                                                                                                                        | DC applied                                                                                            | Both     |
+| 8   | Capture Total cost and buy         | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`                                    | Total cost `$N.NN` captured as numeric; contract purchased                                            | Both     |
+| 9   | Verify open position in Positions  | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both     |
+| 10  | Open contract details              | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()`                                  | Open details + DC timer/Cancel                                                                        | Both     |
+| 11  | Cancel contract                    | Click "Cancel [mm:ss]" button                                                                                                           | Contract cancelled                                                                                    | Both     |
+| 12  | Verify closed position             | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                                                             | Executed DC on closed details                                                                         | Both     |
+| 13  | Verify balance after cancel        | `verifyBalanceAfterContractClose()`                                                                                                     | Balance = after-buy + Total cost + P/L                                                                | Both     |
 
 ---
 
@@ -834,6 +834,8 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 
 ## Gap Flows
 
+> **Convention:** `G{n}` labels are triage placeholders only. Once a spec lands, promote the journey to the next **`Flow N`** in Section 1 — do not leave automated rows labelled `G{n}` (see Flow 16 ← former G2, Flow 17.1 ← former G1).
+
 ### G2 — Unauthenticated purchase attempt → login prompt sheet
 
 > **Automated:** Flow 16 — `verify-unauthenticated-purchase.spec.ts`
@@ -921,3 +923,21 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 > **POM:** `verifyInsufficientBalanceClientGate()` — orchestrates steps 2–5 via `prepareCommittedUnaffordableStake()`, `verifyInsufficientBalanceBuyReady()`, `verifyInsufficientBalanceStakeHint()`.
 
 > **Account setup:** `TEST_EMAIL_INSUFFICIENT_BALANCE` (desktop project) / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE` (mobile project).
+
+---
+
+## Flow 18 — Invalid URL — unsupported market and trade type modals
+
+> Covers regression for #895.
+
+**Prerequisites:** No authentication required. Invalid `symbol` or `trade_type` in URL query.
+**Spec:** `playwright/tests/trade/verify-invalid-url-modal.spec.ts`
+
+| #   | Step                         | Action                                                 | Expected Result                                                  | Platform |
+| --- | ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- | -------- |
+| 1   | Open invalid market link     | `gotoTradePageWithQuery('symbol=NOT_A_REAL_MARKET&…')` | UrlUnavailableModal opens                                        | Both     |
+| 2   | Verify market V2 copy        | Observe title + body                                   | "Unsupported market" + V2 guidance text (not legacy V1 copy)     | Both     |
+| 3   | Dismiss modal                | Click **Got it**                                       | Modal closes; default market tab still visible                   | Both     |
+| 4   | Open invalid trade_type link | `gotoTradePageWithQuery('trade_type=high_lowsd&…')`    | UrlUnavailableModal opens                                        | Both     |
+| 5   | Verify trade_type V2 copy    | Observe title + body                                   | "Unsupported trade type" + V2 guidance text (not legacy V1 copy) | Both     |
+| 6   | Dismiss modal                | Click **Got it**                                       | Modal closes; default market tab still visible                   | Both     |

@@ -1,7 +1,7 @@
 # Agent Skills Catalog
 
-**Last Updated**: September 10, 2026
-**Total Skills**: 8
+**Last Updated**: September 15, 2026
+**Total Skills**: 9
 
 This directory contains agent skills vendored for **derivatives-trader** Playwright / QA workflows. Edit files here directly — this repo does not use a live `e2e-tests-core` git submodule (see `playwright/e2e-tests-core/README.md`).
 
@@ -19,8 +19,9 @@ This directory contains agent skills vendored for **derivatives-trader** Playwri
 | [qa-check-regression-failures](./qa-check-regression-failures/SKILL.md)   | Triage AKO staging regression failures; re-run locally; reply in Slack thread              | Staging E2E regression failed, flaky vs real                     |
 | [qa-pr-review](./qa-pr-review/SKILL.md)                                   | Sends a formatted PR review request to the QA Slack channel                                | Requesting PR reviews from the team                              |
 | [qa-test-plan](./qa-test-plan/SKILL.md)                                   | Post a manual QA test-plan checklist on a GitHub issue                                     | Test plan / checklist for a QA-tracked issue                     |
+| [qa-milestone-to-playwright](./qa-milestone-to-playwright/SKILL.md)       | Triage all milestone issues for Playwright gaps; automate feasible ones in one pass        | Release milestone URL/number                                     |
 
-**Not vendored here:** standalone API skills (`qa-script-runner-api`, `qa-mailisk-api`), `gap-to-playwright`, and home-app-only flow skills (`src-to-flow`, `flow-to-playwright`, etc.). Account creation and Mailisk/OTP outside tests are covered inside the **playwright** skill (resources 07 and 08). GitHub issues from test failures: `playwright/flows/_github-issues.md`.
+**Not vendored here:** standalone API skills (`qa-script-runner-api`, `qa-mailisk-api`), and home-app-only flow skills (`src-to-flow`, `flow-to-playwright`, etc.). The former `gap-to-playwright` skill is superseded by **`qa-milestone-to-playwright`** (milestone scope) plus **`flow-to-playwright-dtrader`** (single gap). Account creation and Mailisk/OTP outside tests are covered inside the **playwright** skill (resources 07 and 08). GitHub issues from test failures: `playwright/flows/_github-issues.md`.
 
 ---
 
@@ -74,6 +75,7 @@ Other skills in this folder are **workflow skills** (QA Slack/GitHub, flow docs,
 | Announce Ready for Staging cards / request milestone    | [qa-announce-ready-for-staging](./qa-announce-ready-for-staging/SKILL.md) |
 | Triage AKO staging regression / re-run failures locally | [qa-check-regression-failures](./qa-check-regression-failures/SKILL.md)   |
 | Request a PR review on Slack                            | [qa-pr-review](./qa-pr-review/SKILL.md)                                   |
+| Scan a release milestone for Playwright gaps + automate | [qa-milestone-to-playwright](./qa-milestone-to-playwright/SKILL.md)       |
 
 ---
 
@@ -89,8 +91,9 @@ Other skills in this folder are **workflow skills** (QA Slack/GitHub, flow docs,
 | 2026-04-21 | New Skill          | Added src-to-flow skill                                                                                                                                                                        |
 | 2026-05-04 | New Skill          | Added qa-pr-review skill                                                                                                                                                                       |
 | 2026-09-10 | derivatives-trader | Vendored qa-bug-report, qa-announce-ready-for-staging, qa-check-regression-failures; removed qa-mailisk-api and gap-to-playwright; README aligned to DTrader skill names and vendored set only |
+| 2026-09-15 | derivatives-trader | Added qa-milestone-to-playwright — triage all release milestone issues and automate Playwright gaps                                                                                            |
 
-**Last Audit**: September 10, 2026
+**Last Audit**: September 15, 2026
 
 ---
 

@@ -40,11 +40,12 @@ Each module section lists every documented flow with its current **status** and 
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
 | `notifications`    | 9           | 4          | 4         |
+| `pageerrors`       | 1           | 1          | 1         |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
-| `trade`            | 38          | 38         | 38        |
+| `trade`            | 39          | 39         | 39        |
 | `trade-automate`   | 44          | 44         | 42        |
-| **Total**          | **142**     | **137**    | **133**   |
+| **Total**          | **144**     | **139**    | **136**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -91,11 +92,12 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 11.2 | P1       | Vanillas — buy Put → close contract                        | authenticated, funded        | `automated` |
 | Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery      | authenticated, closed market | `automated` |
 | Flow 13   | P1       | Insufficient balance → inline-validation gate (post-#1398) | authenticated, low balance   | `automated` |
-| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix    | authenticated, funded        | `automated` |
+| Flow 14   | P1       | Manual Trading negative validation matrix                  | authenticated, funded        | `automated` |
 | Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown     | authenticated, closed market | `automated` |
 | Flow 16   | P3       | Unauthenticated purchase → login prompt sheet              | unauthenticated              | `automated` |
 | Flow 17.1 | P2       | Insufficient balance popup → deposit transfer              | authenticated, zero balance  | `automated` |
 | Flow 17.2 | P2       | Insufficient balance stake hint + Buy enabled              | authenticated, low balance   | `automated` |
+| Flow 18   | P1       | Invalid URL — unsupported market and trade type modals     | unauthenticated              | `automated` |
 
 ---
 
@@ -226,6 +228,16 @@ Each module section lists every documented flow with its current **status** and 
 
 ---
 
+## Module: `pageerrors` — Uncaught JS Exception Guards
+
+**Flow docs:** `playwright/flows/pageerrors/` · **Test folder:** `playwright/tests/pageerrors/`
+
+| Flow   | Priority | Description                                        | User State    | Status      |
+| ------ | -------- | -------------------------------------------------- | ------------- | ----------- |
+| Flow 1 | P1       | Trade form load — no delay_amount pageerror (#901) | authenticated | `automated` |
+
+---
+
 ## Module: `feed` — Live Price Feed
 
 **Flow docs:** `playwright/flows/feed/` · **Test folder:** `playwright/tests/feed/`
@@ -280,8 +292,9 @@ Each module section lists every documented flow with its current **status** and 
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
 | **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                  |
 | **Done** | `positions`        | All 11 flows/gaps automated                                                                                                     |
-| **Done** | `reports`          | Flows 1–8 automated; G1/G2 covered by existing specs but not in Section 1 glance                                                |
+| **Done** | `reports`          | Flows 1–8 automated; G1/G2 have specs (Section 2) but remain `documented` in Section 1 glance                                   |
 | **Done** | `trade`            | All Section 1 flows automated; Flow 15 skips when no CLOSED market at runtime                                                   |
+| **Done** | `pageerrors`       | Flow 1 automated (#901 delay_amount guard)                                                                                      |
 
 ---
 
@@ -307,5 +320,6 @@ AI will read all `coverage.md` files and `playwright/tests/` spec files, compute
 | notifications    | [flow](notifications/flow.md)    | [catalog](notifications/catalog.md)    | [coverage](notifications/coverage.md)    |
 | auth             | [flow](auth/flow.md)             | [catalog](auth/catalog.md)             | [coverage](auth/coverage.md)             |
 | trade-automate   | [flow](trade-automate/flow.md)   | [catalog](trade-automate/catalog.md)   | [coverage](trade-automate/coverage.md)   |
+| pageerrors       | [flow](pageerrors/flow.md)       | [catalog](pageerrors/catalog.md)       | [coverage](pageerrors/coverage.md)       |
 | feed             | [flow](feed/flow.md)             | [catalog](feed/catalog.md)             | [coverage](feed/coverage.md)             |
 | market-selection | [flow](market-selection/flow.md) | [catalog](market-selection/catalog.md) | [coverage](market-selection/coverage.md) |

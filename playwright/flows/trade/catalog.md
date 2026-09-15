@@ -46,6 +46,7 @@
 | Flow 15    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                      |
 | Flow 16    | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade @desktop @mobile`                      |
 | Flow 17    | `trade/verify-insufficient-balance.spec.ts`                      | `@trade @desktop @mobile`                      |
+| Flow 18    | `trade/verify-invalid-url-modal.spec.ts`                         | `@trade @desktop @mobile`                      |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >

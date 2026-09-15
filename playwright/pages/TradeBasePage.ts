@@ -302,6 +302,15 @@ export class TradeBasePage {
     }
 
     /**
+     * Navigate to the trade page with URL query parameters (e.g. invalid deep-link repro for #895).
+     */
+    async gotoTradePageWithQuery(query: string): Promise<void> {
+        const path = query.startsWith('?') ? `/${query}` : `/?${query}`;
+        await this.page.goto(path, { waitUntil: 'domcontentloaded' });
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /**
      * Navigate to the Reports page.
      * - Desktop: clicks the sidebar Reports button → opens the Reports flyout
      * - Mobile: taps bottom nav Menu → taps "Open positions" in the menu

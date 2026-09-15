@@ -728,6 +728,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         await this.positionsPage.verifyMultipliersContractCardDetails(market, 'Multipliers Up', currency, totalCost, {
             dealCancellation,
         });
+        await this.positionsPage.verifyDesktopDealCancellationCancelOnOpenCard();
 
         // 3. Capture balance before cancel
         const balanceBeforeClose = await this.getBalance();
@@ -840,6 +841,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         await this.positionsPage.verifyMultipliersContractCardDetails(market, 'Multipliers Down', currency, totalCost, {
             dealCancellation,
         });
+        await this.positionsPage.verifyDesktopDealCancellationCancelOnOpenCard();
 
         // 3. Capture balance before cancel
         const balanceBeforeClose = await this.getBalance();

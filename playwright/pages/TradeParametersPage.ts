@@ -1402,6 +1402,71 @@ export class TradeParametersPage extends TradeBasePage {
         return this.page.getByText('Log in or create a free account to place a trade.', { exact: true });
     }
 
+    /** V2 copy when `trade_type` in the URL is invalid — issue #895, UrlUnavailableModal. */
+    get urlUnavailableTradeTypeTitle(): Locator {
+        return this.page.getByText('Unsupported trade type', { exact: true });
+    }
+
+    get urlUnavailableTradeTypeMessage(): Locator {
+        return this.page.getByText(
+            'The trade type in this link is unavailable. You can continue with the default trade type instead.',
+            { exact: true }
+        );
+    }
+
+    /** V2 copy when `symbol` in the URL is invalid — issue #895, UrlUnavailableModal. */
+    get urlUnavailableMarketTitle(): Locator {
+        return this.page.getByText('Unsupported market', { exact: true });
+    }
+
+    get urlUnavailableMarketMessage(): Locator {
+        return this.page.getByText(
+            'The market in this link is unavailable. You can continue with the default market instead.',
+            { exact: true }
+        );
+    }
+
+    get urlUnavailableGotItButton(): Locator {
+        return this.page.getByRole('button', { name: 'Got it', exact: true });
+    }
+
+    get urlUnavailableModal(): Locator {
+        return this.page.locator('.url-unavailable-modal');
+    }
+
+    /**
+     * Assert and dismiss the UrlUnavailableModal for an invalid `trade_type` deep link.
+     */
+    async verifyAndDismissInvalidTradeTypeModal(): Promise<void> {
+        await expect(
+            this.urlUnavailableTradeTypeTitle,
+            'Invalid trade type modal title should show V2 copy'
+        ).toBeVisible();
+        await expect(
+            this.urlUnavailableTradeTypeMessage,
+            'Invalid trade type modal body should show V2 guidance'
+        ).toBeVisible();
+        await this.dismissUrlUnavailableModal(this.urlUnavailableTradeTypeTitle);
+    }
+
+    /**
+     * Assert and dismiss the UrlUnavailableModal for an invalid `symbol` deep link.
+     */
+    async verifyAndDismissInvalidMarketModal(): Promise<void> {
+        await expect(this.urlUnavailableMarketTitle, 'Invalid market modal title should show V2 copy').toBeVisible();
+        await expect(
+            this.urlUnavailableMarketMessage,
+            'Invalid market modal body should show V2 guidance'
+        ).toBeVisible();
+        await this.dismissUrlUnavailableModal(this.urlUnavailableMarketTitle);
+    }
+
+    private async dismissUrlUnavailableModal(title: Locator): Promise<void> {
+        await this.urlUnavailableGotItButton.click();
+        await expect(title, 'UrlUnavailableModal should close after Got it').not.toBeVisible();
+        await expect(this.urlUnavailableModal, 'Modal container should be removed from the DOM').toBeHidden();
+    }
+
     get authorizationCreateFreeAccountButton(): Locator {
         return this.page.getByRole('button', { name: 'Create free account' });
     }
