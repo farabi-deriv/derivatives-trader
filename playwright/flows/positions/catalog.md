@@ -1,363 +1,198 @@
 # 🗺️ Positions Journey Catalog — Technical Reference
 
-> Source of truth: `playwright/pages/PositionsPage.ts` (to be created)
-> Created: 2026-06-11 | Last updated: 2026-06-11
+> Source of truth: `playwright/pages/PositionsPage.ts`
+> Last updated: 2026-09-15
 
 ---
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                            | Tags                             |
-| ---------- | ---------------------------------------------------- | -------------------------------- |
-| Flow 1     | `positions/open-positions-mobile.spec.ts`            | `@positions @smoke @mobile`      |
-| Flow 2     | `positions/open-positions-desktop.spec.ts`           | `@positions @smoke @desktop`     |
-| Flow 3     | `positions/empty-open-positions.spec.ts`             | `@positions @regression @mobile` |
-| Flow 4     | `positions/closed-positions-mobile.spec.ts`          | `@positions @smoke @mobile`      |
-| Flow 5     | `positions/filter-open-by-trade-type.spec.ts`        | `@positions @regression @mobile` |
-| Flow 6     | `positions/filter-closed-by-time.spec.ts`            | `@positions @regression @mobile` |
-| Flow 7     | `positions/contract-details-from-positions.spec.ts`  | `@positions @smoke @mobile`      |
-| G1         | `positions/close-contract-from-positions.spec.ts`    | `@positions @regression @mobile` |
-| G2         | `positions/cancel-multiplier-from-positions.spec.ts` | `@positions @regression @mobile` |
-| G3         | `positions/empty-closed-positions.spec.ts`           | `@positions @regression @mobile` |
-| G4         | `positions/filter-no-matches.spec.ts`                | `@positions @regression @mobile` |
+| Journey ID      | Spec File                                         | Tags                             |
+| --------------- | ------------------------------------------------- | -------------------------------- |
+| Flow 1, 2, 4, 7 | `positions/verify-positions-load.spec.ts`         | `@positions @desktop @mobile`    |
+| Flow 3, G3      | `positions/verify-positions-empty-states.spec.ts` | `@positions @regression @mobile` |
+| Flow 5, 6, G4   | `positions/verify-positions-filters.spec.ts`      | `@positions @regression @mobile` |
+| G1, G2          | `positions/verify-positions-actions.spec.ts`      | `@positions @regression @mobile` |
 
 ---
 
 ## Section 2 — Flow Details
 
-### Flow 1 — Open positions list loads on mobile
+> Four consolidated spec files implement all Positions flows. **Desktop-only** flows (2) and **mobile-only** flows (1, 3–7, G1–G4) use `test.skip()` when the wrong viewport runs. Load/actions specs **seed contracts in-test** via `tradeRiseFallPage` / `tradeMultipliersPage`; empty-state G3 uses a **fresh account** on staging.
 
-**Account setup:** Real account with at least one open contract (use a live staging account with `TEST_EMAIL` / `TEST_PASSWORD` env vars — cannot create a contract via `createAccountV2` alone; a pre-existing funded account with an open contract is required).
+### `verify-positions-load.spec.ts` — Flows 1, 2, 4, 7
 
-**Test pattern:**
+**Account:** `TEST_EMAIL` / `TEST_EMAIL_MOBILE` + `TEST_PASSWORD`.
+
+**Cleanup:** `afterEach` → redirect mobile to `/positions`, then `closeAllOpenContracts()`.
+
+| Flow | Platform | Test name                                                                 |
+| ---- | -------- | ------------------------------------------------------------------------- |
+| 1    | Mobile   | `VERIFY open positions list loads with contract cards on mobile`          |
+| 2    | Desktop  | `VERIFY positions flyout opens from sidebar on desktop`                   |
+| 4    | Mobile   | `VERIFY closed positions tab shows contracts grouped by date on mobile`   |
+| 7    | Mobile   | `VERIFY clicking a contract card navigates to contract details on mobile` |
+
+**Describe block:**
 
 ```typescript
-test.describe('Positions — Open tab (mobile)', { tag: ['@positions', '@smoke', '@mobile'] }, () => {
-    let BASE_URL: string = undefined!;
-
-    test.beforeAll(() => {
-        const url = process.env.BASE_URL;
-        if (!url) throw new Error('BASE_URL not set in playwright/.env.staging');
-        BASE_URL = url;
-    });
-
-    test.beforeEach(async ({ loginPage }) => {
-        await loginPage.login();
-    });
-
-    test('VERIFY open positions list loads with contract cards', async ({ page, positionsPage }) => {
-        await redirectionHelpers.redirectTo(page, '/positions');
-        await expect(positionsPage.openTab, 'Open tab should be active by default').toBeVisible();
-        await expect(positionsPage.contractCards.first(), 'At least one contract card should be visible').toBeVisible();
-        await expect(positionsPage.totalProfitLoss, 'Total P/L summary should be visible').toBeVisible();
-    });
+test.describe('Positions — Page Load & Navigation', { tag: ['@positions', '@desktop', '@mobile'] }, () => {
+    test.describe.configure({ mode: 'serial' });
+    // beforeAll: TEST_EMAIL / TEST_EMAIL_MOBILE
+    // beforeEach: seedLocalStorage + login
+    // afterEach: mobile redirect + closeAllOpenContracts
 });
 ```
 
-**Page Object locator pattern:**
+**Flow 1 — mobile open list (buys Rise first):**
 
 ```typescript
-// positionsPage.openTab — no testid; use role
-get openTab(): Locator {
-    return this.page.getByRole('tab', { name: 'Open' });
-}
+if (!isMobileViewport) test.skip(true, 'Flow 1 is mobile-only');
+// buy Rise via tradeRiseFallPage (5 min, stake 1.00)
+await redirectionHelpers.redirectTo(page, '/positions');
+await expect(positionsPage.positionsOpenTab).toBeVisible();
+await expect(positionsPage.firstContractCard).toBeVisible();
+await expect(positionsPage.mobileTotalProfitLoss).toBeVisible();
+```
 
-// positionsPage.contractCards
-get contractCards(): Locator {
-    return this.page.getByTestId('dt_contract_card');
-}
+**Flow 2 — desktop sidebar flyout:**
 
-// positionsPage.totalProfitLoss
-get totalProfitLoss(): Locator {
-    return this.page.getByTestId('dt_total_profit_loss');
-}
+```typescript
+if (isMobileViewport) test.skip(true, 'Flow 2 is desktop-only');
+await tradeRiseFallPage.clickBuy();
+await positionsPage.sidebarPositionsButton.click();
+await expect(positionsPage.positionsFlyout).toBeVisible();
+await expect(positionsPage.positionsTitle).toHaveText('Positions');
+await expect(positionsPage.footerTotalPL).toBeVisible();
+```
+
+**Flow 4 — mobile closed tab (uses account history; no buy required):**
+
+```typescript
+await positionsPage.clickClosedTab();
+await expect(positionsPage.closedPositionsDateHeader.first()).toBeVisible();
+await expect(positionsPage.firstMobileClosedCard).toBeVisible();
+```
+
+**Flow 7 — mobile card → details → back:**
+
+```typescript
+await positionsPage.firstContractCard.click();
+await expect(page.getByText('Contract details')).toBeVisible();
+await page.goBack();
+await expect(positionsPage.firstContractCard).toBeVisible();
 ```
 
 ---
 
-### Flow 2 — Open positions list loads on desktop (sidebar flyout)
+### `verify-positions-empty-states.spec.ts` — Flow 3, G3
 
-**Account setup:** Same as Flow 1 — real account with open contracts.
+**Tags:** `@positions @regression @mobile` — mobile-only (desktop skips).
 
-**Test pattern:**
+| Flow | Test name                                                            |
+| ---- | -------------------------------------------------------------------- |
+| 3    | `VERIFY empty state shown when no open positions exist on mobile`    |
+| G3   | `VERIFY empty state shown on Closed tab when account has no history` |
+
+**Flow 3 — empty open tab:**
 
 ```typescript
-test.describe('Positions — Sidebar flyout (desktop)', { tag: ['@positions', '@smoke', '@desktop'] }, () => {
-    test.beforeEach(async ({ loginPage }) => {
-        await loginPage.login();
-    });
-
-    test('VERIFY positions flyout opens from sidebar with contract cards', async ({ page, positionsPage }) => {
-        await positionsPage.openSidebarPositions();
-        await expect(positionsPage.flyoutTitle, 'Flyout title "Open positions" should be visible').toBeVisible();
-        await expect(positionsPage.contractCards.first(), 'At least one contract card should be visible').toBeVisible();
-        await expect(positionsPage.flyoutFooter, 'Flyout footer with Total P/L should be visible').toBeVisible();
-    });
-});
+await redirectionHelpers.redirectTo(page, '/positions');
+if (await positionsPage.firstContractCard.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await positionsPage.closeAllOpenContracts();
+}
+await expect(positionsPage.emptyStateIcon).toBeVisible();
+await expect(page.getByText('No open positions')).toBeVisible();
+await expect(page.getByRole('button', { name: 'Start trading' })).toBeVisible();
 ```
 
-**Page Object locator pattern:**
+**G3 — empty closed tab (fresh account via `createAccountV2viaJS` on staging):**
 
 ```typescript
-// positionsPage.sidebarPositionsButton
-get sidebarPositionsButton(): Locator {
-    return this.page.getByTestId('dt_sidebar_positions');
-}
-
-// positionsPage.flyoutTitle — no testid; use text
-get flyoutTitle(): Locator {
-    return this.page.getByText('Open positions');
-}
-
-// positionsPage.flyoutFooter — no testid; use text
-get flyoutFooter(): Locator {
-    return this.page.getByText('Total P/L:');
-}
-
-// openSidebarPositions action
-async openSidebarPositions(): Promise<void> {
-    await this.sidebarPositionsButton.click();
-    await NavigationUtils.waitForDerivApiSettled(this.page);
-}
+await redirectionHelpers.redirectTo(page, '/positions');
+await positionsPage.clickClosedTab();
+await expect(page.getByText('No closed positions')).toBeVisible();
 ```
 
 ---
 
-### Flow 3 — Empty open positions state
+### `verify-positions-filters.spec.ts` — Flows 5, 6, G4
 
-**Account setup:** Real account with NO open contracts at test execution time.
+**Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only; `beforeEach`/`afterEach` no-op on desktop.
 
-**Test pattern:**
+| Flow | Test name                                                                       |
+| ---- | ------------------------------------------------------------------------------- |
+| 5    | `VERIFY filter by trade type narrows open positions list and can be cleared`    |
+| G4   | `VERIFY no-matches state when trade type filter has no matching open positions` |
+| 6    | `VERIFY time filter narrows closed positions list and can be reset`             |
+
+**Flow 5 — trade-type filter:**
 
 ```typescript
-test.describe('Positions — Empty open state', { tag: ['@positions', '@regression', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage }) => {
-        await loginPage.login();
-    });
-
-    test('VERIFY empty state shown when no open positions', async ({ page, positionsPage }) => {
-        await redirectionHelpers.redirectTo(page, '/positions');
-        await expect(positionsPage.emptyStateIcon, 'Empty state icon should be visible').toBeVisible();
-        await expect(
-            page.getByText('No open positions'),
-            'Empty heading should show "No open positions"'
-        ).toBeVisible();
-        await expect(
-            page.getByText('Your active trades will appear here.'),
-            'Empty description should be visible'
-        ).toBeVisible();
-    });
-});
+await positionsPage.openTradeTypeFilter();
+await positionsPage.selectFirstTradeTypeFilter();
+await positionsPage.applyFilter();
+await expect(positionsPage.tradeTypeFilterChip).toContainText('(1)');
+await positionsPage.openTradeTypeFilter();
+await positionsPage.clearFilter();
 ```
 
-**Page Object locator pattern:**
+**G4 — no matches (filter Accumulators with only Rise open):**
 
 ```typescript
-// positionsPage.emptyStateIcon
-get emptyStateIcon(): Locator {
-    return this.page.getByTestId('dt_empty_state_icon');
-}
+await page.getByRole('checkbox', { name: 'Accumulators' }).check();
+await positionsPage.applyFilter();
+await expect(page.getByText('No matches found')).toBeVisible();
 ```
 
----
-
-### Flow 4 — Closed positions tab loads with date sections
-
-**Account setup:** Real account with closed contract history.
-
-**Test pattern:**
+**Flow 6 — closed-tab time filter:**
 
 ```typescript
-test.describe('Positions — Closed tab', { tag: ['@positions', '@smoke', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage }) => {
-        await loginPage.login();
-    });
-
-    test('VERIFY closed positions tab shows contracts grouped by date', async ({ page, positionsPage }) => {
-        await redirectionHelpers.redirectTo(page, '/positions');
-        await positionsPage.switchToClosedTab();
-        await expect(positionsPage.contractCards.first(), 'Closed contract card should be visible').toBeVisible();
-        await expect(positionsPage.totalProfitLoss, 'Total P/L summary should be visible at bottom').toBeVisible();
-    });
-});
-```
-
-**Page Object locator pattern:**
-
-```typescript
-// positionsPage.closedTab
-get closedTab(): Locator {
-    return this.page.getByRole('tab', { name: 'Closed' });
-}
-
-// positionsPage.switchToClosedTab action
-async switchToClosedTab(): Promise<void> {
-    await this.closedTab.click();
-    await NavigationUtils.waitForDerivApiSettled(this.page);
-}
+await positionsPage.clickClosedTab();
+await positionsPage.openTimeFilter();
+await positionsPage.selectTimeFilterOption('Today');
+await expect(positionsPage.timeFilterChip).toContainText('Today');
+await positionsPage.resetTimeFilter();
 ```
 
 ---
 
-### Flow 5 — Filter open positions by trade type
+### `verify-positions-actions.spec.ts` — G1, G2
 
-**Account setup:** Real account with multiple open contracts of different trade types.
+**Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only swipe/force-click actions.
 
-**Test pattern:**
+| Gap | Test name                                                                          |
+| --- | ---------------------------------------------------------------------------------- |
+| G1  | `VERIFY swiping left on a contract card allows closing the position on mobile`     |
+| G2  | `VERIFY swiping left on a multiplier contract with DC allows cancelling on mobile` |
+
+**G1 — close via swipe action:**
 
 ```typescript
-test.describe('Positions — Trade type filter', { tag: ['@positions', '@regression', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage, page }) => {
-        await loginPage.login();
-        await redirectionHelpers.redirectTo(page, '/positions');
-    });
-
-    test('VERIFY filter by trade type narrows open positions list', async ({ page, positionsPage }) => {
-        const initialCount = await positionsPage.contractCards.count();
-        await positionsPage.openTradeTypeFilter();
-        await positionsPage.selectFirstTradeTypeFilter();
-        await positionsPage.applyFilter();
-        const filteredCount = await positionsPage.contractCards.count();
-        expect(filteredCount, 'Filtered count should be less than or equal to initial count').toBeLessThanOrEqual(
-            initialCount
-        );
-        await expect(positionsPage.tradeTypeFilterChip, 'Filter chip should show count').toContainText('(');
-    });
-});
+await positionsPage.closeFirstContract();
 ```
 
-**Page Object locator pattern:**
+**G2 — Multiplier with Deal Cancellation:**
 
 ```typescript
-// positionsPage.tradeTypeFilterChip — no testid; use text
-get tradeTypeFilterChip(): Locator {
-    return this.page.getByText('Trade types');
-}
-
-// positionsPage.filterActionSheetApplyButton — no testid; use role
-get filterActionSheetApplyButton(): Locator {
-    return this.page.getByRole('button', { name: 'Apply' });
-}
-
-// positionsPage.filterActionSheetClearAllButton — no testid; use role
-get filterActionSheetClearAllButton(): Locator {
-    return this.page.getByRole('button', { name: 'Clear All' });
-}
-
-// positionsPage.openTradeTypeFilter action
-async openTradeTypeFilter(): Promise<void> {
-    await this.tradeTypeFilterChip.click();
-    await expect(this.page.getByText('Filter by trade types'), 'Filter sheet should open').toBeVisible();
-}
-
-// positionsPage.selectFirstTradeTypeFilter action — selects first available checkbox
-async selectFirstTradeTypeFilter(): Promise<void> {
-    await this.page.getByRole('checkbox').first().check();
-}
-
-// positionsPage.applyFilter action
-async applyFilter(): Promise<void> {
-    await this.filterActionSheetApplyButton.click();
-}
-```
-
----
-
-### Flow 6 — Filter closed positions by time
-
-**Account setup:** Real account with closed contracts spanning multiple days.
-
-**Test pattern:**
-
-```typescript
-test.describe('Positions — Time filter (closed)', { tag: ['@positions', '@regression', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage, page }) => {
-        await loginPage.login();
-        await redirectionHelpers.redirectTo(page, '/positions');
-    });
-
-    test('VERIFY time filter narrows closed positions list', async ({ page, positionsPage }) => {
-        await positionsPage.switchToClosedTab();
-        await positionsPage.openTimeFilter();
-        await positionsPage.selectTimeFilterOption('Today');
-        await expect(positionsPage.timeFilterChip, 'Time chip should show "Today"').toContainText('Today');
-        await positionsPage.resetTimeFilter();
-        await expect(positionsPage.timeFilterChip, 'Time chip should reset to default').not.toContainText('Today');
-    });
-});
-```
-
-**Page Object locator pattern:**
-
-```typescript
-// positionsPage.timeFilterChip — no testid; fallback to All time chip (text varies by selection)
-get timeFilterChip(): Locator {
-    return this.page.getByRole('button', { name: /All time|Today|Yesterday|Last/ }).first()
-        .or(this.page.locator('.filter__chip').first());
-}
-
-// positionsPage.timeFilterResetButton — no testid
-get timeFilterResetButton(): Locator {
-    return this.page.getByRole('button', { name: 'Reset' });
-}
-
-// positionsPage.openTimeFilter action
-async openTimeFilter(): Promise<void> {
-    await this.timeFilterChip.click();
-    await expect(this.page.getByText('Filter by time'), 'Time filter sheet should open').toBeVisible();
-}
-
-// positionsPage.selectTimeFilterOption action
-async selectTimeFilterOption(option: string): Promise<void> {
-    await this.page.getByRole('radio', { name: option }).click();
-}
-
-// positionsPage.resetTimeFilter action
-async resetTimeFilter(): Promise<void> {
-    await this.timeFilterChip.click();
-    await this.timeFilterResetButton.click();
-}
-```
-
----
-
-### Flow 7 — Navigate from open position card to contract details
-
-**Account setup:** Real account with at least one open contract.
-
-**Test pattern:**
-
-```typescript
-test.describe('Positions — Navigate to contract details', { tag: ['@positions', '@smoke', '@mobile'] }, () => {
-    test.beforeEach(async ({ loginPage }) => {
-        await loginPage.login();
-    });
-
-    test('VERIFY clicking a contract card navigates to contract details', async ({ page, positionsPage }) => {
-        await redirectionHelpers.redirectTo(page, '/positions');
-        await positionsPage.contractCards.first().click();
-        await NavigationUtils.waitForDerivApiSettled(page);
-        await expect(page.getByText('Contract details'), 'Contract details header should be visible').toBeVisible();
-        await expect(positionsPage.contractCards.first(), 'Contract card should be visible in details').toBeVisible();
-        await page.goBack();
-        await NavigationUtils.waitForDerivApiSettled(page);
-        await expect(positionsPage.contractCards.first(), 'Should return to positions list').toBeVisible();
-    });
-});
+await tradeMultipliersPage.setRiskManagement({ dealCancellation: '5 min' });
+await tradeMultipliersPage.clickMultipliersBuy();
+await positionsPage.mobileContractCardCancelButton.click({ force: true });
+await expect(positionsPage.emptyStateIcon).toBeVisible();
 ```
 
 ---
 
 ## Section 3 — Tags Reference
 
-| Tag           | When to apply                                                                         |
-| ------------- | ------------------------------------------------------------------------------------- |
-| `@positions`  | All tests in the positions feature area                                               |
-| `@smoke`      | Critical path — open positions list visible, tab switching, card → details navigation |
-| `@regression` | Full coverage including filters, edge states, close/cancel actions                    |
-| `@production` | Tests safe to run on production (read-only, no contract mutations)                    |
-| `@desktop`    | Desktop viewport — sidebar flyout flow only                                           |
-| `@mobile`     | Mobile viewport — full-page `/positions` route with tabs                              |
+| Tag           | When to apply                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `@positions`  | All tests in the positions feature area                                                                                               |
+| `@smoke`      | Not used on any automated spec today                                                                                                  |
+| `@regression` | Filters, empty states, close/cancel actions (`verify-positions-filters`, `verify-positions-empty-states`, `verify-positions-actions`) |
+| `@production` | Not used — Positions tests require login and contract mutations                                                                       |
+| `@desktop`    | Desktop viewport — sidebar flyout flow only (Flow 2 in load spec)                                                                     |
+| `@mobile`     | Mobile viewport — full-page `/positions` route with tabs                                                                              |
 
 ---
 
@@ -367,7 +202,7 @@ test.describe('Positions — Navigate to contract details', { tag: ['@positions'
 
 `PositionsSwitch` redirects to `/` on desktop — the positions page only renders on mobile. Desktop positions live in the sidebar `Flyout` component opened by clicking `dt_sidebar_positions`. All desktop position tests must navigate to `/` first and interact via the sidebar. Never navigate to `/positions` on desktop — it redirects.
 
-**Impact on generated code:** Desktop tests must click `dt_sidebar_positions` and assert on flyout content. Mobile tests use `redirectionHelpers.redirectTo(page, '/positions')`.
+**Impact on generated code:** Desktop tests must click `sidebarPositionsButton` and assert on `positionsFlyout` content. Mobile tests use `redirectionHelpers.redirectTo(page, '/positions')`.
 
 ### No testids on filter chips or action sheet elements
 
@@ -385,16 +220,18 @@ The `ContractTypeFilter` and `TimeFilter` components use Quill UI `Chip.Standard
 
 `ContractCardsSections` shows a `dt_load_more_spinner` when `isLoadingMore` is true. For accounts with many closed contracts, scroll to bottom to trigger fetch of next batch. Tests asserting a specific number of closed contracts should avoid exact counts — use `toBeVisible()` on the first card instead.
 
-**Impact on generated code:** Avoid `contractCards.count()` assertions on the closed tab; prefer `.first().toBeVisible()`.
+**Impact on generated code:** Avoid exact `contractCards.count()` assertions on the closed tab; prefer `firstMobileClosedCard.toBeVisible()`.
 
-### Open positions require a pre-existing funded account
+### Contract seeding vs fresh accounts
 
-`createAccountV2` provisions a new account — it will have no open positions. Flows 1, 2, 4, 5, 6, 7 require a staging account that already has open/closed contracts. Use the shared `TEST_EMAIL`/`TEST_PASSWORD` staging account credentials, not a freshly created account.
+- **Load, filters, actions specs:** Buy Rise/Multiplier contracts in-test via `tradeRiseFallPage` / `tradeMultipliersPage`; login with `TEST_EMAIL` / `_MOBILE`.
+- **Flow 3 (empty open):** Uses shared account; closes any open contracts before asserting empty state.
+- **G3 (empty closed):** Uses `createAccountV2viaJS` on staging (or production env credentials) so the Closed tab has no history.
 
-**Impact on generated code:** No `createAccountV2` call in `beforeAll` for these flows — rely on env var credentials directly via `loginPage.login()`.
+**Impact on generated code:** Do not assume a pre-existing portfolio on the shared staging account — follow the seed-or-clear patterns in each spec.
 
 ### `waitForDerivApiSettled` required after tab switch and filter apply
 
 Switching from Open to Closed tab triggers a WebSocket call (`onClosedTabMount`) to fetch profit table data. Filter apply on the closed tab also triggers a refetch. Always call `NavigationUtils.waitForDerivApiSettled(page)` after these interactions before asserting card visibility.
 
-**Impact on generated code:** Add `await NavigationUtils.waitForDerivApiSettled(page)` after `switchToClosedTab()` and after `applyFilter()` on the closed tab.
+**Impact on generated code:** Add `await NavigationUtils.waitForDerivApiSettled(page)` after `clickClosedTab()` and after `applyFilter()` on the closed tab.

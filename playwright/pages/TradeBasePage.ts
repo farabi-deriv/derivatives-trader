@@ -518,7 +518,8 @@ export class TradeBasePage {
      * (e.g. after clicking Trade on the Real or Demo tab in home-app Options).
      *
      * Verifies:
-     * - Navigation leaves home-app and lands on the DTrader hostname (`BASE_URL`)
+     * - Navigation leaves home-app and lands on a Deriv DTrader host (home-app always opens
+     *   `staging-dtrader.deriv.com`, even when the test started on a PR preview `BASE_URL`)
      * - Does not stop on `/dashboard/options` or `/dashboard/home`
      * - DTrader trade page chrome is loaded (market tabs, balance, logged-in header)
      * - Active account matches the Options tab (`real` or `demo`)
@@ -550,10 +551,9 @@ export class TradeBasePage {
             throw new Error('Still on home dashboard — redirect to DTrader did not occur.');
         }
 
-        await expect(
-            this.page,
-            `Should redirect to DTrader (${dtraderHost}) after Options ${type} Trade click`
-        ).toHaveURL(new RegExp(dtraderHost.replace(/\./g, '\\.')));
+        await expect(this.page, `Should redirect to staging DTrader after Options ${type} Trade click`).toHaveURL(
+            /dtrader\.deriv\.(com|be|me)/i
+        );
         await expect(this.page, 'Should leave home-app domain after Options Trade click').not.toHaveURL(
             new RegExp(homeHost.replace(/\./g, '\\.'))
         );
@@ -588,6 +588,15 @@ export class TradeBasePage {
      * Sidebar nav assertions are desktop-only (sidebar is not rendered on mobile).
      */
     async verifySuccessfulLogin(): Promise<void> {
+        const baseUrl = process.env.BASE_URL;
+        if (!baseUrl) {
+            throw new Error('BASE_URL must be set in playwright/.env.staging');
+        }
+        const expectedHost = new URL(baseUrl).hostname;
+        await expect(this.page, `Should land on DTrader (${expectedHost}) after login`).toHaveURL(
+            new RegExp(expectedHost.replace(/\./g, '\\.'))
+        );
+
         await expect(this.accountInfo, 'Account info should be visible after login').toBeVisible();
         await expect(this.balance, 'Balance should be visible after login').toBeVisible();
         await expect(this.depositButton, 'Deposit button should be visible after login').toBeVisible();

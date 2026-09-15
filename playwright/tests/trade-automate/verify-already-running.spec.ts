@@ -1,10 +1,10 @@
 /**
- * @name     Automate — "Automation is already running" adoption snackbar (G1)
- * @id       trade-automate-g1
- * @flow     playwright/flows/trade-automate/flow.md#gap-flows
- * @coverage playwright/flows/trade-automate/coverage.md (Section 2 — G1)
+ * @name     Automate — "Automation is already running" adoption snackbar
+ * @id       flow-14
+ * @flow     playwright/flows/trade-automate/flow.md#flow-14--automation-already-running-adoption-snackbar
+ * @coverage playwright/flows/trade-automate/coverage.md
  *
- * Flow G1: "With a run active, click Run again (or open in a second context)"
+ * Flow 14: With a run active, click Run from a stale second tab
  * → Snackbar: "Automation is already running for this account."; no duplicate run started.
  *
  * Reachability (from source): the Run button only renders while the store thinks it is
@@ -58,6 +58,7 @@ test.describe('Automate — Already-running guard', { tag: ['@automate', '@deskt
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
+    /** Flow 14 — stale-tab Run click shows already-running snackbar and starts no duplicate */
     test('VERIFY Run click from a stale tab shows the already-running snackbar and starts no duplicate', async ({
         tradeAutomatePage,
         page,

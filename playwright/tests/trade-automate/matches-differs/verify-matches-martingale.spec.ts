@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Matches/Differs trade type run (Martingale — Matches)
- * @id       flow-7.1
+ * @id       flow-7.1, flow-7.2
  * @flow     playwright/flows/trade-automate/flow.md#flow-7--matchesdiffers
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -60,7 +60,7 @@ test.describe(
             });
         });
 
-        /** Flow 7.1 — Matches/Differs Martingale: Matches (real) */
+        /** Flow 7.2 — Matches/Differs Martingale: Matches (real) */
         test('VERIFY automation run on Matches/Differs — Matches (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runMatchesDiffersAndVerify({
                 accountType: 'real',

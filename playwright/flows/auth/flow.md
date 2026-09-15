@@ -78,31 +78,31 @@
 
 **Shared setup** (runs in `beforeEach` before each sub-flow):
 
-| #   | Step                  | Action                                                                             | Expected Result                                              | Platform |
-| --- | --------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------- |
-| 1   | Seed localStorage     | `TradeBasePage.seedLocalStorageOnOrigin()` + `HomePage.seedLocalStorageOnOrigin()` | Onboarding / deposit nudge suppressed on both origins        | Both     |
-| 2   | Log in on DTrader     | `loginPage.login()`                                                                | Account info + balance visible on DTrader                    | Both     |
-| 3   | Return to home        | `tradeBasePage.clickHome()`                                                        | Browser navigates to `staging-home.deriv.com/dashboard/home` | Both     |
-| 4   | Dismiss post-login UI | `homePage.dismissPostLoginPopupsIfPresent()`                                       | TNC / deposit nudge dismissed if shown                       | Both     |
-| 5   | Verify active session | `homePage.verifyOnHomeDashboard()`                                                 | URL is `/dashboard/home`; not redirected to login            | Both     |
-| 6   | Open Options          | `homePage.navigateToOptionsFromSidebar()`                                          | URL is `/dashboard/options`                                  | Both     |
-| 7   | Verify Options loaded | `optionsPage.verifyOptionsPageLoaded()`                                            | Real/Demo tabs and banner Trade button visible               | Both     |
+| #   | Step                  | Action                                                                             | Expected Result                                                                       | Platform |
+| --- | --------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------- |
+| 1   | Seed localStorage     | `TradeBasePage.seedLocalStorageOnOrigin()` + `HomePage.seedLocalStorageOnOrigin()` | Onboarding / deposit nudge suppressed on both origins                                 | Both     |
+| 2   | Log in on DTrader     | `loginPage.login()` → `verifySuccessfulLogin()`                                    | Lands on `BASE_URL` host (PR preview when overridden); account info + balance visible | Both     |
+| 3   | Return to home        | `tradeBasePage.clickHome()`                                                        | Browser navigates to `staging-home.deriv.com/dashboard/home`                          | Both     |
+| 4   | Dismiss post-login UI | `homePage.dismissPostLoginPopupsIfPresent()`                                       | TNC / deposit nudge dismissed if shown                                                | Both     |
+| 5   | Verify active session | `homePage.verifyOnHomeDashboard()`                                                 | URL is `/dashboard/home`; not redirected to login                                     | Both     |
+| 6   | Open Options          | `homePage.navigateToOptionsFromSidebar()`                                          | URL is `/dashboard/options`                                                           | Both     |
+| 7   | Verify Options loaded | `optionsPage.verifyOptionsPageLoaded()`                                            | Real/Demo tabs and banner Trade button visible                                        | Both     |
 
 ### Flow 4.1 — Demo tab Trade → DTrader demo account
 
-| #   | Step           | Action                                          | Expected Result                                                            | Platform |
-| --- | -------------- | ----------------------------------------------- | -------------------------------------------------------------------------- | -------- |
-| 8   | Switch to Demo | `optionsPage.switchToDemoTab()`                 | Demo banner controls visible (Trade + Reset balance)                       | Both     |
-| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on DTrader (`staging-dtrader.deriv.com`) | Both     |
-| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('demo')` | DTrader trade page loaded; account trigger shows **Demo account**          | Both     |
+| #   | Step           | Action                                          | Expected Result                                                                                                                                                | Platform |
+| --- | -------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 8   | Switch to Demo | `optionsPage.switchToDemoTab()`                 | Demo banner controls visible (Trade + Reset balance)                                                                                                           | Both     |
+| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on a `dtrader.deriv.*` host (typically `staging-dtrader.deriv.com` — home-app Trade does not open the PR preview `BASE_URL`) | Both     |
+| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('demo')` | DTrader trade page on `dtrader.deriv.*`; market tabs + balance; account trigger shows **Demo account**                                                         | Both     |
 
 ### Flow 4.2 — Real tab Trade → DTrader real account
 
-| #   | Step           | Action                                          | Expected Result                                                                                     | Platform |
-| --- | -------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
-| 8   | Switch to Real | `optionsPage.switchToRealTab()`                 | Real banner controls visible (Trade + Transfer)                                                     | Both     |
-| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on DTrader (`staging-dtrader.deriv.com`)                          | Both     |
-| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('real')` | DTrader trade page loaded; account trigger shows **Real account**; Deposit visible, Try real hidden | Both     |
+| #   | Step           | Action                                          | Expected Result                                                                                                                                                | Platform |
+| --- | -------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 8   | Switch to Real | `optionsPage.switchToRealTab()`                 | Real banner controls visible (Trade + Transfer)                                                                                                                | Both     |
+| 9   | Click Trade    | `optionsPage.clickTradeBanner()`                | Browser leaves home-app and lands on a `dtrader.deriv.*` host (typically `staging-dtrader.deriv.com` — home-app Trade does not open the PR preview `BASE_URL`) | Both     |
+| 10  | Verify DTrader | `tradeBasePage.verifyLandedOnDTraderAs('real')` | DTrader trade page on `dtrader.deriv.*`; account trigger shows **Real account**; Deposit visible, Try real hidden                                              | Both     |
 
 > **Desktop Home button:** `packages/trader/src/AppV2/Components/Layout/Sidebar/sidebar.tsx` — `dt_sidebar_home` assigns `window.location.href` to `{brandUrl}/home?source=options&acc=options&curr=…`.
 
@@ -111,3 +111,5 @@
 > **Options Trade banner:** home-app `/dashboard/options` — `data-testid="options-btn-trade"`. Opens DTrader in the same tab for the active Real or Demo tab.
 
 > **Must not pass on Options hub:** If Trade stops on `/dashboard/options`, the test account lacks a created Options account — fix the account/env; do not treat the Options hub as a successful redirect.
+
+> **Preview vs redirect host:** Step 2 (`verifySuccessfulLogin()`) asserts the post-login hostname matches `BASE_URL` (PR preview when overridden). Steps 9–10 (`verifyLandedOnDTraderAs()`) assert a `dtrader.deriv.*` host — home-app Options Trade always opens staging DTrader, even when login started on a preview URL. The two assertions are intentionally split.

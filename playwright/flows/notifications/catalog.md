@@ -1,7 +1,7 @@
 # 🗺️ Notifications Journey Catalog — Technical Reference
 
 > Source of truth: `playwright/pages/NotificationsPage.ts`
-> Created: 2026-06-11 | Last updated: 2026-09-11 (Flows 3–7 N/A — notification-centre surface removed)
+> Last updated: 2026-09-11
 
 ---
 
@@ -254,7 +254,7 @@ test.describe('Notifications — Centre clear all', { tag: ['@notifications', '@
 | Tag              | When to apply                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------- |
 | `@notifications` | All tests in the notifications module                                                   |
-| `@smoke`         | Critical path — bell opens dialog, trade banner visible                                 |
+| `@smoke`         | Not used on any automated spec today (cancelled centre flows 3–7 would have carried it) |
 | `@desktop`       | Desktop viewport only (notification centre inline dropdown)                             |
 | `@mobile`        | Mobile viewport (trade banner is AppV2-only; notification centre opens as MobileDialog) |
 

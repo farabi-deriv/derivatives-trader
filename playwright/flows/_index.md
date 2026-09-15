@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-11
+Last updated: 2026-09-15
 
 ---
 
@@ -36,15 +36,15 @@ Each module section lists every documented flow with its current **status** and 
 
 | Module             | Total Flows | Documented | Automated |
 | ------------------ | ----------- | ---------- | --------- |
-| `trade`            | 38          | 38         | 37        |
-| `positions`        | 11          | 11         | 11        |
-| `reports`          | 8           | 8          | 8         |
-| `notifications`    | 9           | 4          | 4         |
 | `auth`             | 5           | 5          | 5         |
-| `trade-automate`   | 28          | 28         | 26        |
 | `feed`             | 1           | 1          | 1         |
 | `market-selection` | 26          | 26         | 24        |
-| **Total**          | **126**     | **119**    | **116**   |
+| `notifications`    | 9           | 4          | 4         |
+| `positions`        | 11          | 11         | 11        |
+| `reports`          | 8           | 8          | 8         |
+| `trade`            | 38          | 38         | 38        |
+| `trade-automate`   | 44          | 44         | 42        |
+| **Total**          | **142**     | **137**    | **133**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -56,45 +56,46 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/trade/` · **Test folder:** `playwright/tests/trade/`
 
-| Flow      | Priority | Description                                                     | User State                      | Status      |
-| --------- | -------- | --------------------------------------------------------------- | ------------------------------- | ----------- |
-| Flow 1    | P0       | Trade form loads with default state visible                     | authenticated                   | `automated` |
-| Flow 2.1  | P0       | Rise/Fall — buy Rise → close                                    | authenticated, funded           | `automated` |
-| Flow 2.2  | P0       | Rise/Fall — buy Fall → close                                    | authenticated, funded           | `automated` |
-| Flow 2.3  | P2       | Rise/Fall Allow Equals — buy Rise → close                       | authenticated, funded           | `automated` |
-| Flow 2.4  | P2       | Rise/Fall Allow Equals — buy Fall → close                       | authenticated, funded           | `automated` |
-| Flow 3.1  | P1       | Higher/Lower — buy Higher → close                               | authenticated, funded           | `automated` |
-| Flow 3.2  | P1       | Higher/Lower — buy Lower → close                                | authenticated, funded           | `automated` |
-| Flow 4.1  | P2       | Touch/No Touch — buy Touch → close                              | authenticated, funded           | `automated` |
-| Flow 4.2  | P2       | Touch/No Touch — buy No Touch → close                           | authenticated, funded           | `automated` |
-| Flow 5.1  | P0       | Matches/Differs — buy Matches → expiry                          | authenticated, funded           | `automated` |
-| Flow 5.2  | P0       | Matches/Differs — buy Differs → expiry                          | authenticated, funded           | `automated` |
-| Flow 6.1  | P2       | Over/Under — buy Over → expiry                                  | authenticated, funded           | `automated` |
-| Flow 6.2  | P2       | Over/Under — buy Under → expiry                                 | authenticated, funded           | `automated` |
-| Flow 7.1  | P2       | Even/Odd — buy Even → expiry                                    | authenticated, funded           | `automated` |
-| Flow 7.2  | P2       | Even/Odd — buy Odd → expiry                                     | authenticated, funded           | `automated` |
-| Flow 8.1  | P0       | Accumulators without TP — buy → close                           | authenticated, funded           | `automated` |
-| Flow 8.2  | P0       | Accumulators with TP — buy → verify TP set → close              | authenticated, funded           | `automated` |
-| Flow 9.1  | P0       | Multipliers no TP/SL — buy Up → close                           | authenticated, funded           | `automated` |
-| Flow 9.2  | P0       | Multipliers no TP/SL — buy Down → close                         | authenticated, funded           | `automated` |
-| Flow 9.3  | P0       | Multipliers with TP — buy Up → close                            | authenticated, funded           | `automated` |
-| Flow 9.4  | P0       | Multipliers with TP — buy Down → close                          | authenticated, funded           | `automated` |
-| Flow 9.5  | P1       | Multipliers with SL — buy Up → close                            | authenticated, funded           | `automated` |
-| Flow 9.6  | P1       | Multipliers with SL — buy Down → close                          | authenticated, funded           | `automated` |
-| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel            | authenticated, funded           | `automated` |
-| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel          | authenticated, funded           | `automated` |
-| Flow 10.1 | P1       | Turbos without TP — buy Up → verify in positions                | authenticated, funded           | `automated` |
-| Flow 10.2 | P1       | Turbos without TP — buy Down → verify in positions              | authenticated, funded           | `automated` |
-| Flow 10.3 | P1       | Turbos with TP — buy Up → verify TP set in positions            | authenticated, funded           | `automated` |
-| Flow 10.4 | P1       | Turbos with TP — buy Down → verify TP set in positions          | authenticated, funded           | `automated` |
-| Flow 11.1 | P1       | Vanillas — buy Call → close contract                            | authenticated, funded           | `automated` |
-| Flow 11.2 | P1       | Vanillas — buy Put → close contract                             | authenticated, funded           | `automated` |
-| Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery           | authenticated, closed market    | `automated` |
-| Flow 13   | P1       | Insufficient balance → inline-validation gate (post-#1398)      | authenticated, low balance      | `automated` |
-| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix         | authenticated, funded           | `automated` |
-| Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown          | authenticated, closed market    | `automated` |
-| Flow 16   | P3       | Unauthenticated purchase → login prompt sheet                   | unauthenticated                 | `automated` |
-| Flow 17   | P2       | Insufficient balance — popup/deposit (17.1) + stake hint (17.2) | authenticated, low/zero balance | `automated` |
+| Flow      | Priority | Description                                                | User State                   | Status      |
+| --------- | -------- | ---------------------------------------------------------- | ---------------------------- | ----------- |
+| Flow 1    | P0       | Trade form loads with default state visible                | authenticated                | `automated` |
+| Flow 2.1  | P0       | Rise/Fall — buy Rise → close                               | authenticated, funded        | `automated` |
+| Flow 2.2  | P0       | Rise/Fall — buy Fall → close                               | authenticated, funded        | `automated` |
+| Flow 2.3  | P2       | Rise/Fall Allow Equals — buy Rise → close                  | authenticated, funded        | `automated` |
+| Flow 2.4  | P2       | Rise/Fall Allow Equals — buy Fall → close                  | authenticated, funded        | `automated` |
+| Flow 3.1  | P1       | Higher/Lower — buy Higher → close                          | authenticated, funded        | `automated` |
+| Flow 3.2  | P1       | Higher/Lower — buy Lower → close                           | authenticated, funded        | `automated` |
+| Flow 4.1  | P2       | Touch/No Touch — buy Touch → close                         | authenticated, funded        | `automated` |
+| Flow 4.2  | P2       | Touch/No Touch — buy No Touch → close                      | authenticated, funded        | `automated` |
+| Flow 5.1  | P0       | Matches/Differs — buy Matches → expiry                     | authenticated, funded        | `automated` |
+| Flow 5.2  | P0       | Matches/Differs — buy Differs → expiry                     | authenticated, funded        | `automated` |
+| Flow 6.1  | P2       | Over/Under — buy Over → expiry                             | authenticated, funded        | `automated` |
+| Flow 6.2  | P2       | Over/Under — buy Under → expiry                            | authenticated, funded        | `automated` |
+| Flow 7.1  | P2       | Even/Odd — buy Even → expiry                               | authenticated, funded        | `automated` |
+| Flow 7.2  | P2       | Even/Odd — buy Odd → expiry                                | authenticated, funded        | `automated` |
+| Flow 8.1  | P0       | Accumulators without TP — buy → close                      | authenticated, funded        | `automated` |
+| Flow 8.2  | P0       | Accumulators with TP — buy → verify TP set → close         | authenticated, funded        | `automated` |
+| Flow 9.1  | P0       | Multipliers no TP/SL — buy Up → close                      | authenticated, funded        | `automated` |
+| Flow 9.2  | P0       | Multipliers no TP/SL — buy Down → close                    | authenticated, funded        | `automated` |
+| Flow 9.3  | P0       | Multipliers with TP — buy Up → close                       | authenticated, funded        | `automated` |
+| Flow 9.4  | P0       | Multipliers with TP — buy Down → close                     | authenticated, funded        | `automated` |
+| Flow 9.5  | P1       | Multipliers with SL — buy Up → close                       | authenticated, funded        | `automated` |
+| Flow 9.6  | P1       | Multipliers with SL — buy Down → close                     | authenticated, funded        | `automated` |
+| Flow 9.7  | P2       | Multipliers with Deal Cancellation — buy Up → cancel       | authenticated, funded        | `automated` |
+| Flow 9.8  | P2       | Multipliers with Deal Cancellation — buy Down → cancel     | authenticated, funded        | `automated` |
+| Flow 10.1 | P1       | Turbos without TP — buy Up → verify in positions           | authenticated, funded        | `automated` |
+| Flow 10.2 | P1       | Turbos without TP — buy Down → verify in positions         | authenticated, funded        | `automated` |
+| Flow 10.3 | P1       | Turbos with TP — buy Up → verify TP set in positions       | authenticated, funded        | `automated` |
+| Flow 10.4 | P1       | Turbos with TP — buy Down → verify TP set in positions     | authenticated, funded        | `automated` |
+| Flow 11.1 | P1       | Vanillas — buy Call → close contract                       | authenticated, funded        | `automated` |
+| Flow 11.2 | P1       | Vanillas — buy Put → close contract                        | authenticated, funded        | `automated` |
+| Flow 12   | P2       | Market closed → purchase hidden, countdown + recovery      | authenticated, closed market | `automated` |
+| Flow 13   | P1       | Insufficient balance → inline-validation gate (post-#1398) | authenticated, low balance   | `automated` |
+| Flow 14   | P1       | Manual Trading negative validation and lifecycle matrix    | authenticated, funded        | `automated` |
+| Flow 15   | P2       | Market closed → Buy hidden, params disabled, countdown     | authenticated, closed market | `automated` |
+| Flow 16   | P3       | Unauthenticated purchase → login prompt sheet              | unauthenticated              | `automated` |
+| Flow 17.1 | P2       | Insufficient balance popup → deposit transfer              | authenticated, zero balance  | `automated` |
+| Flow 17.2 | P2       | Insufficient balance stake hint + Buy enabled              | authenticated, low balance   | `automated` |
 
 ---
 
@@ -174,37 +175,53 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flow 15 param validation)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flows 14–15 panel specs)
 
 | Flow      | Priority | Description                                                                          | User State                                     | Status       |
 | --------- | -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
-| Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–14)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 1    | P1       | Pause and Resume a running automation (embedded in Flows 5–13)                       | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 2.1  | P1       | Loss threshold auto-stop — `verify-threshold-auto-stop.spec.ts`                      | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 2.2  | P1       | Profit threshold auto-stop — `verify-threshold-auto-stop.spec.ts`                    | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 3    | P2       | Resync after account switch (stays Running) — `verify-account-switch-resync.spec.ts` | authenticated, funded real/staging, 2 accounts | `automated`  |
 | Flow 4    | P3       | Automation unavailable for EU account (gating)                                       | authenticated, EU/DIEL account                 | `documented` |
-| Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 5.2  | P0       | Rise/Fall — Martingale Fall (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.1  | P0       | Rise/Fall — Martingale Rise (demo)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.2  | P0       | Rise/Fall — Martingale Rise (real)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.3  | P0       | Rise/Fall — Martingale Fall (demo)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 5.4  | P0       | Rise/Fall — Martingale Fall (real)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 6.1  | P1       | Accumulators — Martingale demo                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 6.2  | P1       | Accumulators — Martingale real                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 7.1  | P1       | Matches/Differs — Martingale Matches (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 7.2  | P1       | Matches/Differs — Martingale Differs (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 8.1  | P1       | Over/Under — Martingale Over (demo + real)                                           | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 8.2  | P1       | Over/Under — Martingale Under (demo + real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 9.1  | P1       | Even/Odd — Martingale Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 9.2  | P1       | Even/Odd — Martingale Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 10.1 | P1       | Rise/Fall — D'Alembert Rise (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 10.2 | P1       | Rise/Fall — D'Alembert Fall (demo + real)                                            | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 11.1 | P1       | Accumulators — D'Alembert demo                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 11.2 | P1       | Accumulators — D'Alembert real                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 12.1 | P1       | Matches/Differs — D'Alembert Matches (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 12.2 | P1       | Matches/Differs — D'Alembert Differs (demo + real)                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 13.1 | P1       | Over/Under — D'Alembert Over (demo + real)                                           | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 13.2 | P1       | Over/Under — D'Alembert Under (demo + real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 14.1 | P1       | Even/Odd — D'Alembert Even (demo + real)                                             | authenticated, funded real/staging (non-EU)    | `automated`  |
-| Flow 14.2 | P1       | Even/Odd — D'Alembert Odd (demo + real)                                              | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.3  | P1       | Accumulators — D'Alembert demo                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 6.4  | P1       | Accumulators — D'Alembert real                                                       | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.1  | P1       | Matches/Differs — Martingale Matches (demo)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.2  | P1       | Matches/Differs — Martingale Matches (real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.3  | P1       | Matches/Differs — Martingale Differs (demo)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 7.4  | P1       | Matches/Differs — Martingale Differs (real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.1  | P1       | Over/Under — Martingale Over (demo)                                                  | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.2  | P1       | Over/Under — Martingale Over (real)                                                  | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.3  | P1       | Over/Under — Martingale Under (demo)                                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 8.4  | P1       | Over/Under — Martingale Under (real)                                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.1  | P1       | Even/Odd — Martingale Even (demo)                                                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.2  | P1       | Even/Odd — Martingale Even (real)                                                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.3  | P1       | Even/Odd — Martingale Odd (demo)                                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 9.4  | P1       | Even/Odd — Martingale Odd (real)                                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.1 | P1       | Rise/Fall — D'Alembert Rise (demo)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.2 | P1       | Rise/Fall — D'Alembert Rise (real)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.3 | P1       | Rise/Fall — D'Alembert Fall (demo)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 10.4 | P1       | Rise/Fall — D'Alembert Fall (real)                                                   | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.1 | P1       | Matches/Differs — D'Alembert Matches (demo)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.2 | P1       | Matches/Differs — D'Alembert Matches (real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.3 | P1       | Matches/Differs — D'Alembert Differs (demo)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 11.4 | P1       | Matches/Differs — D'Alembert Differs (real)                                          | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.1 | P1       | Over/Under — D'Alembert Over (demo)                                                  | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.2 | P1       | Over/Under — D'Alembert Over (real; production smoke)                                | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.3 | P1       | Over/Under — D'Alembert Under (demo)                                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 12.4 | P1       | Over/Under — D'Alembert Under (real)                                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.1 | P1       | Even/Odd — D'Alembert Even (demo)                                                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.2 | P1       | Even/Odd — D'Alembert Even (real)                                                    | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.3 | P1       | Even/Odd — D'Alembert Odd (demo)                                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 13.4 | P1       | Even/Odd — D'Alembert Odd (real)                                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 14   | P1       | "Automation already running" adoption snackbar — `verify-already-running.spec.ts`    | authenticated, run active                      | `automated`  |
 | Flow 15   | P1       | Invalid trade/automation param validation — `verify-trade-param-validation.spec.ts`  | authenticated, funded real/staging (non-EU)    | `automated`  |
-| —         | P2       | "Automation already running" adoption snackbar (G1)                                  | authenticated, run active                      | `automated`  |
 | —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
@@ -258,7 +275,7 @@ Each module section lists every documented flow with its current **status** and 
 
 | Priority | Module             | Key Flows to Implement First                                                                                                    |
 | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — G1 automated (#1429)                                                         |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type)                                                                                |
 | **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                |
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
 | **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                  |

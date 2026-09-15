@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Rise/Fall trade type run (D'Alembert — Fall)
- * @id       flow-10.2
+ * @id       flow-10.3, flow-10.4
  * @flow     playwright/flows/trade-automate/flow.md#flow-10--risefall-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -39,7 +39,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 10.2 — Rise/Fall D'Alembert: Fall (demo) */
+        /** Flow 10.3 — Rise/Fall D'Alembert: Fall (demo) */
         test("VERIFY D'Alembert automation run on Rise/Fall — Fall (Demo Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runRiseFallAndVerify({
                 accountType: 'demo',
@@ -58,7 +58,7 @@ test.describe(
             });
         });
 
-        /** Flow 10.2 — Rise/Fall D'Alembert: Fall (real) */
+        /** Flow 10.4 — Rise/Fall D'Alembert: Fall (real) */
         test("VERIFY D'Alembert automation run on Rise/Fall — Fall (Real Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runRiseFallAndVerify({
                 accountType: 'real',

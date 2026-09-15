@@ -1,8 +1,8 @@
 ---
 name: src-to-flow-dtrader
 description: Analyses packages/ monorepo source code for a given feature and generates flow.md, catalog.md, and coverage.md in playwright/flows/<module>/. DTrader (derivatives-trader) variant of src-to-flow — reads TSX files from packages/trader/, packages/core/, packages/reports/ instead of src/app/ or src/features/. Also runs the _orchestrator.md sync to update _index.md automatically.
-version: 1.1.0
-last_updated: 2026-06-11
+version: 1.2.0
+last_updated: 2026-09-15
 ---
 
 # Src-to-Flow Skill — derivatives-trader (DTrader)
@@ -98,15 +98,20 @@ Before reading any source file or generating any output, load the canonical temp
 
 Each module has **two source paths** — one for desktop, one for mobile (AppV2). Both must be scanned together and merged into a single set of flow docs. The split is handled at the locator level in the Page Object using `isMobile`, not at the documentation level.
 
-| Module          | Desktop source                                                                                                                                                     | Mobile (AppV2) source                                                                                                                                                                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `trade`         | `packages/trader/src/AppV2/Containers/Trade/trade-desktop.tsx` + `packages/trader/src/Modules/Contract/` + `packages/trader/src/AppV2/Containers/ContractDetails/` | `packages/trader/src/AppV2/Containers/Trade/trade-mobile.tsx` + `packages/trader/src/AppV2/Components/TradeParameters/` + `packages/trader/src/AppV2/Components/ContractCard/` + `packages/trader/src/AppV2/Containers/ContractDetails/` |
-| `positions`     | `packages/trader/src/AppV2/Containers/Positions/`                                                                                                                  | `packages/trader/src/AppV2/Containers/Positions/` (shared)                                                                                                                                                                               |
-| `reports`       | `packages/reports/src/`                                                                                                                                            | `packages/reports/src/` (shared)                                                                                                                                                                                                         |
-| `notifications` | `packages/trader/src/AppV2/Containers/Notifications/`                                                                                                              | `packages/trader/src/AppV2/Containers/Notifications/` (shared)                                                                                                                                                                           |
-| `auth`          | `packages/core/src/App/Components/Layout/Header/` + `packages/trader/src/AppV2/Components/Layout/Sidebar/`                                                         | `packages/core/src/Modules/Menu/menu.tsx`                                                                                                                                                                                                |
+| Module             | Desktop source                                                                                                                                                     | Mobile (AppV2) source                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `trade`            | `packages/trader/src/AppV2/Containers/Trade/trade-desktop.tsx` + `packages/trader/src/Modules/Contract/` + `packages/trader/src/AppV2/Containers/ContractDetails/` | `packages/trader/src/AppV2/Containers/Trade/trade-mobile.tsx` + `packages/trader/src/AppV2/Components/TradeParameters/` + `packages/trader/src/AppV2/Components/ContractCard/` + `packages/trader/src/AppV2/Containers/ContractDetails/` |
+| `positions`        | `packages/trader/src/AppV2/Containers/Positions/`                                                                                                                  | `packages/trader/src/AppV2/Containers/Positions/` (shared)                                                                                                                                                                               |
+| `reports`          | `packages/reports/src/`                                                                                                                                            | `packages/reports/src/` (shared)                                                                                                                                                                                                         |
+| `notifications`    | `packages/trader/src/AppV2/Containers/Notifications/`                                                                                                              | `packages/trader/src/AppV2/Containers/Notifications/` (shared)                                                                                                                                                                           |
+| `auth`             | `packages/core/src/App/Components/Layout/Header/` + `packages/trader/src/AppV2/Components/Layout/Sidebar/`                                                         | `packages/core/src/Modules/Menu/menu.tsx`                                                                                                                                                                                                |
+| `trade-automate`   | `packages/trader/src/AppV2/Components/AutomationPanel/` + `packages/trader/src/AppV2/Components/TradePanelTabs/trade-panel-tabs.tsx` (desktop tab)                 | `packages/trader/src/AppV2/Containers/Automate/automate-mobile.tsx` + `packages/trader/src/AppV2/Routes/AutomateSwitch.tsx` (mobile `/automate` route)                                                                                   |
+| `feed`             | `packages/trader/src/AppV2/Containers/MarketInfo/` (Market Info price ticks)                                                                                       | same (shared)                                                                                                                                                                                                                            |
+| `market-selection` | `packages/trader/src/AppV2/Components/MarketSelector/` + trade tabs in `packages/trader/src/AppV2/Components/TradeTabs/`                                           | same AppV2 components (viewport split via `isMobile`)                                                                                                                                                                                    |
 
 > **Rule:** Contract details is part of the `trade` journey — buying a contract lands on the contract details page, so it is covered implicitly by the trade flow. `positions`, `reports`, and `notifications` share one implementation — no desktop/mobile split needed. `auth` has a genuine desktop/mobile split for logout: desktop uses the sidebar (`AppV2/Components/Layout/Sidebar/account-selector.tsx`), mobile uses the menu page (`core/src/Modules/Menu/menu.tsx`). For `trade`, both desktop and mobile render from `AppV2/Containers/Trade/` — `trade-desktop.tsx` for ≥1024px, `trade-mobile.tsx` for <1024px.
+
+> **`trade-automate`:** read the [**Module annex: `trade-automate`**](#-module-annex-trade-automate) below **before Step 5**. The generic dual-outcome rule (`N.1` / `N.2` = two buttons) is **wrong** for this module — automate lifecycles use **four child IDs per dual-outcome parent** (outcome × demo/real) and a **strategy × trade-type matrix**. Golden reference: `playwright/flows/trade-automate/flow.md`.
 
 If the module is not in the table above, discover it:
 
@@ -328,6 +333,32 @@ grep -rn "history\.push\|useHistory\|routes\." packages/trader/src --include="*.
 grep -rn "routes\." packages/trader/src/AppV2/Components/<Feature> --include="*.tsx" | head -10
 ```
 
+### 3i. `trade-automate` — mandatory source reads (when module = `trade-automate`)
+
+Run these **in addition to** Step 3a–3h. Do not infer the flow matrix from UI screenshots alone.
+
+```bash
+# Supported UI trade types + guide copy (FE allowlist — intersected at runtime with BE strategy.supported_contract_types)
+cat packages/trader/src/AppV2/Components/AutomationPanel/automation-guide-config.ts
+
+# Strategy list, params, supported_contract_types, validation on Run
+grep -n "supported_contract_types\|available_strategies\|validate\|strategy" \
+  packages/trader/src/Stores/Modules/Trading/automation-store.ts | head -40
+
+# Runtime trade-type filter (Martingale / D'Alembert × contract type)
+cat packages/trader/src/AppV2/Hooks/useAutomationSupportedTradeTypes.ts
+
+# Run / Pause / Stop / resync / already-running guard
+cat packages/trader/src/AppV2/Hooks/useRunControls.ts
+
+# Existing POM orchestration methods + param shapes (do not re-invent lifecycle order)
+grep -n "async run\|AndVerify\|verifyAutomate" playwright/pages/TradeAutomatePage.ts | head -40
+
+# Existing spec layout + @id headers (canonical child-flow mapping)
+find playwright/tests/trade-automate -name '*.spec.ts' | sort
+grep -rh '@id\|/\*\* Flow' playwright/tests/trade-automate --include='*.spec.ts' | head -60
+```
+
 ### 3g. Read every component file — THIS IS MANDATORY
 
 **Grep results alone are not sufficient.** You MUST open and read the full source of every non-trivial component found in 3a. Look for:
@@ -401,6 +432,84 @@ Will write:
 
 ---
 
+## 📦 Module annex: `trade-automate`
+
+**When:** `module: trade-automate` (or refreshing stale automate flow docs).
+
+**Why this annex exists:** An earlier pass produced ~10 parent flows (one per trade type × strategy) with no demo/real split, no dual-outcome `.3`/`.4` IDs, and Accumulators D'Alembert as a separate parent flow. The implemented suite has **44 Section-1 rows** — mostly **one child flow ID per test case**.
+
+### Flow inventory — two layers
+
+| Layer                     | Parent flows                 | What they cover                                                                                                                     |
+| ------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Panel / control**       | 1, 2.1–2.2, 3, 4, 14, 15, G2 | Pause/resume (embedded), thresholds, account resync, EU gating, already-running snackbar, param validation, unsupported type on Run |
+| **Trade-type lifecycles** | 5–13                         | Martingale (5–9) and D'Alembert (10–13) × five UI trade types                                                                       |
+
+**Do not stop after panel flows.** The bulk of coverage is the **strategy × trade-type matrix** below.
+
+### Child flow ID convention — one ID per test
+
+| Shape                                               | Child IDs                                                                             | Example                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Dual-outcome trade type**                         | `.1` outcome A demo · `.2` outcome A real · `.3` outcome B demo · `.4` outcome B real | Rise/Fall Martingale parent **5** → **5.1** Rise demo … **5.4** Fall real |
+| **Accumulators (both strategies under one parent)** | Martingale **6.1** demo · **6.2** real · D'Alembert **6.3** demo · **6.4** real       | Do **not** give D'Alembert Accumulators a separate parent Flow 11         |
+| **Panel spec with two tests**                       | **2.1** / **2.2**, **15.1** / **15.2**                                                | Threshold loss vs profit; validation Martingale vs D'Alembert increment   |
+| **Embedded (no dedicated spec)**                    | **Flow 1** only                                                                       | `verifyPauseAndResumeWhileRunning()` inside every trade-type lifecycle    |
+
+> **Override:** Step 5’s generic rule “dual-outcome = `N.1` / `N.2` for two buttons” applies to **`trade`** manual buys only. For **`trade-automate`**, dual-outcome parents always emit **four** child IDs (outcome × demo/real).
+
+### Parent flow × strategy matrix (coverage Section 1 order)
+
+| Parent | UI trade type   | Martingale IDs | D'Alembert IDs | Spec folder        |
+| ------ | --------------- | -------------- | -------------- | ------------------ |
+| 5      | Rise/Fall       | 5.1–5.4        | 10.1–10.4      | `rise-fall/`       |
+| 6      | Accumulators    | 6.1–6.2        | 6.3–6.4        | `accumulators/`    |
+| 7      | Matches/Differs | 7.1–7.4        | 11.1–11.4      | `matches-differs/` |
+| 8      | Over/Under      | 8.1–8.4        | 12.1–12.4      | `over-under/`      |
+| 9      | Even/Odd        | 9.1–9.4        | 13.1–13.4      | `even-odd/`        |
+
+Each **dual-outcome** trade type → **four spec files** per strategy (`verify-{outcome}-{strategy}.spec.ts`), each file **two serial tests** (demo + real). Each **Accumulators** strategy → **one spec file**, **two tests** (demo + real).
+
+### Account model (differs from manual `trade`)
+
+- `beforeAll`: always `createAccountV2viaJS('real', { backupAccount: TEST_EMAIL_AUTOMATE_<TRADE_TYPE> })` — one funded real staging account per spec file group.
+- Each test: `run*AndVerify({ accountType: 'demo' | 'real', ... })` switches in-app via `switchToAccountType()` — **demo and real are separate child flow IDs**, not separate parent flows.
+- **Distinct inline params** per test (stake, thresholds, digit, duration) so closed-position lookup does not collide on the same backup account.
+
+### Lifecycle steps (every trade-type `run*AndVerify`)
+
+Document this shared sequence once in `flow.md` (see existing `playwright/flows/trade-automate/flow.md`):
+
+1. `goToAutomatedTrading()` → `switchToAccountType(accountType)`
+2. `selectMarketAndTradeType(market, '<Category>', { mode: 'automate' })`
+3. `selectTradeTypeOption(...)` — dual-outcome only
+4. `openAndVerifyAutomateGuide(...)` → `verifyAutomationPanelFieldsVisible()`
+5. Trade-form params + automation panel (`selectStrategy`, multiplier **or** increment, thresholds)
+6. `startAutomateRun()` → running checks → (tick types) `verifyAutomateSequentialContractPurchase()` → open-position details → **`verifyPauseAndResumeWhileRunning()` (Flow 1)** → `stopAutomateRun()` → closed contract
+
+**Accumulators:** omit sequential purchase; pause/resume after first running contract.
+
+**D'Alembert:** `strategy: "D'Alembert"`, `stakeIncrement` (not `stakeMultiplier`); use different thresholds than Martingale on the same backup account.
+
+### `coverage.md` rules for this module
+
+- Section 1 row count ≈ **44** (43 named child/parent rows + G2) — sorted **numerically** (e.g. **6.1–6.4** before **7.1**, not Accumulators D'Alembert after Flow 10).
+- Child-flow note at top: document Accumulators **6.1/6.2/6.3/6.4** and dual-outcome **.1–.4** pattern.
+- Promoted panel journeys (e.g. already-running snackbar) are **named flows** (Flow 14), not permanent G1 gaps.
+
+### Common generation mistakes — reject before writing
+
+| Mistake                                              | Correct                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| One parent flow per trade type only (10 flows)       | **10 parent flows per strategy** (5–9 Martingale, 10–13 D'Alembert) + panel flows                |
+| Demo + real merged into one coverage row             | **Two rows** (`.1` demo, `.2` real) or four for dual-outcome                                     |
+| Rise + Fall in one spec / one flow ID                | **Separate files** `verify-rise-*.spec.ts` / `verify-fall-*.spec.ts`; IDs `.1–.2` vs `.3–.4`     |
+| Accumulators D'Alembert as Flow 11                   | **6.3 / 6.4** under parent **Flow 6**                                                            |
+| Missing `@martingale` / `@dalembert` tags in catalog | Tag per strategy; `@production` only on agreed smoke path (e.g. Flow 12.2 Over D'Alembert real)  |
+| Skipping Flow 1                                      | Document as embedded; every lifecycle step table references `verifyPauseAndResumeWhileRunning()` |
+
+---
+
 ## 🧠 Step 5 — Identify User Journeys
 
 From the source analysis, enumerate distinct user journeys. DTrader-specific rules:
@@ -409,9 +518,9 @@ From the source analysis, enumerate distinct user journeys. DTrader-specific rul
 - **When to use `Platform` column:** when the same step has a different interaction on desktop vs mobile (e.g. mobile opens an action sheet, desktop edits inline), add a `Platform` column with values `Desktop`, `Mobile`, or `Both`.
 - **When to split into separate flows:** only when the feature literally does not exist on one platform at all (e.g. a mobile-exclusive screen with zero desktop equivalent). This is rare — when in doubt, merge into one flow with a Platform column.
 - **MobX store states = separate flows** — a UI that differs based on `is_market_closed`, `is_virtual`, `trading_disabled`, or any MobX observable each generates its own flow or sub-flow.
-- **Account type branches** — real vs demo account rendering differences are separate flows.
+- **Account type branches** — real vs demo account rendering differences are separate flows. In **`trade-automate`**, demo/real are **child flow IDs** (`.1`/`.2` or `.1–.4`), not separate parent flows — see the module annex.
 - **Happy path first** — number these Flow 1, Flow 2, etc.
-- **Sub-flow numbering for dual-outcome trade types** — when a trade type has two distinct purchase buttons (e.g. Rise/Fall, Higher/Lower, Up/Down), each button outcome is its own sub-flow: `Flow N.1` for the first button, `Flow N.2` for the second. Never merge both directions into a single flow — they produce different contracts and need independent verification. This applies to ALL trade types with two purchase buttons.
+- **Sub-flow numbering for dual-outcome trade types (`trade` module only)** — when a trade type has two distinct purchase buttons (e.g. Rise/Fall, Higher/Lower, Up/Down), each button outcome is its own sub-flow: `Flow N.1` for the first button, `Flow N.2` for the second. Never merge both directions into a single flow — they produce different contracts and need independent verification. **`trade-automate` overrides this** — see [Module annex: `trade-automate`](#-module-annex-trade-automate) (four child IDs: outcome × demo/real).
 - **Optional parameters → separate sub-flow pairs** — when a trade type supports an optional parameter that creates a meaningfully different contract (Take Profit, Stop Loss, Deal Cancellation), each optional-param variant gets its own sub-flow pair (Up + Down). Example: Multipliers without TP/SL = Flows 10.1/10.2; Multipliers with TP = Flows 11.1/11.2; Multipliers with SL = Flows 12.1/12.2. This ensures each risk control path is independently covered.
 - **Negative/validation paths** — Flow N.1, Flow N.2, etc. (outside the dual-outcome convention above, which uses N.1/N.2 for buttons).
 - **Merge postconditions into their parent flow** — if a flow's final steps already assert the state a subsequent flow would verify, do not create that subsequent flow. Example: "logged-in state: account info visible" is the final assertion of every login flow — it must not be a separate flow. Ask: "is this flow's entire content already verified as the tail of another flow?" If yes, drop it.
@@ -777,6 +886,8 @@ Follow _orchestrator.md and sync _index.md.
 - [ ] `coverage.md` has today's date in `**Analysis date:**`
 - [ ] Every gap has a matching `### G{n}` section in `flow.md` and a row in `coverage.md` Section 2
 - [ ] N/A flows marked in both files with explanation
+- [ ] **`trade-automate`:** module annex applied — strategy × trade-type matrix, demo/real child IDs, Accumulators **6.1–6.4**, dual-outcome **N.1–N.4**, panel flows **1–4 / 14–15**, embedded Flow 1 noted
+- [ ] **`trade-automate`:** `coverage.md` Section 1 sorted numerically; row count matches matrix (~44 incl. G2)
 - [ ] `_orchestrator.md` run to sync `_index.md`
 
 ---
@@ -790,6 +901,7 @@ Follow src-to-flow-dtrader skill and generate flow docs for module: positions
 Follow src-to-flow-dtrader skill and generate flow docs for module: reports
 Follow src-to-flow-dtrader skill and generate flow docs for module: notifications
 Follow src-to-flow-dtrader skill and generate flow docs for module: auth
+Follow src-to-flow-dtrader skill and generate flow docs for module: trade-automate
 ```
 
 After this skill completes, the next step is:

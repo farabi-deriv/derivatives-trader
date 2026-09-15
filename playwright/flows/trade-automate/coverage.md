@@ -1,6 +1,8 @@
 # Automate Journey Coverage
 
-**Analysis date:** 2026-09-07
+**Analysis date:** 2026-09-15
+
+> **Child flow IDs:** one ID per test case. **Accumulators (Flow 6):** `.1`/`.2` = Martingale demo/real · `.3`/`.4` = D'Alembert demo/real. **Dual-outcome types** (Rise/Fall, Matches/Differs, Over/Under, Even/Odd): `.1`/`.2` = first outcome demo/real · `.3`/`.4` = second outcome demo/real.
 
 ---
 
@@ -13,40 +15,53 @@
 | Flow 2.2  | Profit threshold auto-stop                               | ✅      | ✅     |
 | Flow 3    | Resync after account switch (stays Running)              | ✅      | ✅     |
 | Flow 4    | Automation unavailable for EU account (gating)           | ❌      | ❌     |
-| Flow 5.1  | Rise/Fall Martingale — Rise (demo + real)                | ✅      | ✅     |
-| Flow 5.2  | Rise/Fall Martingale — Fall (demo + real)                | ✅      | ✅     |
-| Flow 6.1  | Accumulators Martingale — demo lifecycle                 | ✅      | ✅     |
-| Flow 6.2  | Accumulators Martingale — real lifecycle                 | ✅      | ✅     |
-| Flow 7.1  | Matches/Differs Martingale — Matches (demo + real)       | ✅      | ✅     |
-| Flow 7.2  | Matches/Differs Martingale — Differs (demo + real)       | ✅      | ✅     |
-| Flow 8.1  | Over/Under Martingale — Over (demo + real)               | ✅      | ✅     |
-| Flow 8.2  | Over/Under Martingale — Under (demo + real)              | ✅      | ✅     |
-| Flow 9.1  | Even/Odd Martingale — Even (demo + real)                 | ✅      | ✅     |
-| Flow 9.2  | Even/Odd Martingale — Odd (demo + real)                  | ✅      | ✅     |
-| Flow 10.1 | Rise/Fall D'Alembert — Rise (demo + real)                | ✅      | ✅     |
-| Flow 10.2 | Rise/Fall D'Alembert — Fall (demo + real)                | ✅      | ✅     |
-| Flow 11.1 | Accumulators D'Alembert — demo lifecycle                 | ✅      | ✅     |
-| Flow 11.2 | Accumulators D'Alembert — real lifecycle                 | ✅      | ✅     |
-| Flow 12.1 | Matches/Differs D'Alembert — Matches (demo + real)       | ✅      | ✅     |
-| Flow 12.2 | Matches/Differs D'Alembert — Differs (demo + real)       | ✅      | ✅     |
-| Flow 13.1 | Over/Under D'Alembert — Over (demo + real)               | ✅      | ✅     |
-| Flow 13.2 | Over/Under D'Alembert — Under (demo + real)              | ✅      | ✅     |
-| Flow 14.1 | Even/Odd D'Alembert — Even (demo + real)                 | ✅      | ✅     |
-| Flow 14.2 | Even/Odd D'Alembert — Odd (demo + real)                  | ✅      | ✅     |
+| Flow 5.1  | Rise/Fall Martingale — Rise (demo)                       | ✅      | ✅     |
+| Flow 5.2  | Rise/Fall Martingale — Rise (real)                       | ✅      | ✅     |
+| Flow 5.3  | Rise/Fall Martingale — Fall (demo)                       | ✅      | ✅     |
+| Flow 5.4  | Rise/Fall Martingale — Fall (real)                       | ✅      | ✅     |
+| Flow 6.1  | Accumulators Martingale — demo                           | ✅      | ✅     |
+| Flow 6.2  | Accumulators Martingale — real                           | ✅      | ✅     |
+| Flow 6.3  | Accumulators D'Alembert — demo                           | ✅      | ✅     |
+| Flow 6.4  | Accumulators D'Alembert — real                           | ✅      | ✅     |
+| Flow 7.1  | Matches/Differs Martingale — Matches (demo)              | ✅      | ✅     |
+| Flow 7.2  | Matches/Differs Martingale — Matches (real)              | ✅      | ✅     |
+| Flow 7.3  | Matches/Differs Martingale — Differs (demo)              | ✅      | ✅     |
+| Flow 7.4  | Matches/Differs Martingale — Differs (real)              | ✅      | ✅     |
+| Flow 8.1  | Over/Under Martingale — Over (demo)                      | ✅      | ✅     |
+| Flow 8.2  | Over/Under Martingale — Over (real)                      | ✅      | ✅     |
+| Flow 8.3  | Over/Under Martingale — Under (demo)                     | ✅      | ✅     |
+| Flow 8.4  | Over/Under Martingale — Under (real)                     | ✅      | ✅     |
+| Flow 9.1  | Even/Odd Martingale — Even (demo)                        | ✅      | ✅     |
+| Flow 9.2  | Even/Odd Martingale — Even (real)                        | ✅      | ✅     |
+| Flow 9.3  | Even/Odd Martingale — Odd (demo)                         | ✅      | ✅     |
+| Flow 9.4  | Even/Odd Martingale — Odd (real)                         | ✅      | ✅     |
+| Flow 10.1 | Rise/Fall D'Alembert — Rise (demo)                       | ✅      | ✅     |
+| Flow 10.2 | Rise/Fall D'Alembert — Rise (real)                       | ✅      | ✅     |
+| Flow 10.3 | Rise/Fall D'Alembert — Fall (demo)                       | ✅      | ✅     |
+| Flow 10.4 | Rise/Fall D'Alembert — Fall (real)                       | ✅      | ✅     |
+| Flow 11.1 | Matches/Differs D'Alembert — Matches (demo)              | ✅      | ✅     |
+| Flow 11.2 | Matches/Differs D'Alembert — Matches (real)              | ✅      | ✅     |
+| Flow 11.3 | Matches/Differs D'Alembert — Differs (demo)              | ✅      | ✅     |
+| Flow 11.4 | Matches/Differs D'Alembert — Differs (real)              | ✅      | ✅     |
+| Flow 12.1 | Over/Under D'Alembert — Over (demo)                      | ✅      | ✅     |
+| Flow 12.2 | Over/Under D'Alembert — Over (real; production smoke)    | ✅      | ✅     |
+| Flow 12.3 | Over/Under D'Alembert — Under (demo)                     | ✅      | ✅     |
+| Flow 12.4 | Over/Under D'Alembert — Under (real)                     | ✅      | ✅     |
+| Flow 13.1 | Even/Odd D'Alembert — Even (demo)                        | ✅      | ✅     |
+| Flow 13.2 | Even/Odd D'Alembert — Even (real)                        | ✅      | ✅     |
+| Flow 13.3 | Even/Odd D'Alembert — Odd (demo)                         | ✅      | ✅     |
+| Flow 13.4 | Even/Odd D'Alembert — Odd (real)                         | ✅      | ✅     |
+| Flow 14   | "Automation already running" adoption snackbar           | ✅      | ✅     |
 | Flow 15   | Invalid trade/automation param validation (min/max/zero) | ✅      | ✅     |
-| G1        | "Automation already running" adoption snackbar           | ✅      | ✅     |
 | G2        | Unsupported-contract-type error on Run                   | ❌      | ❌     |
 
 ---
 
 ## Section 2 — Gaps
 
-| Gap | Description                                                                                  | Spec file                                       | Status       |
-| --- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------ |
-| G1  | Clicking Run while a run is already active shows an "already running" snackbar, no duplicate | `trade-automate/verify-already-running.spec.ts` | ✅ Automated |
-| G2  | Unsupported trade type surfaces an error and blocks the run (Run-click validation)           | `trade-automate/verify-validation.spec.ts`      | ❌ Open      |
-
-> **G1 design note:** the Run button only renders while the store is idle, and the store auto-adopts any server-side run on mount/focus — so the snackbar is reachable only from a **stale tab** (a second context loaded before the run started, never focused again). The spec models this with a second tab in the same browser context: tab A starts the run, tab B (loaded pre-start, idle with Run visible) clicks Run → its in-click `resync()` finds tab A's run → snackbar, and tab B adopts the run's Pause/Stop state (no duplicate `auto_start`).
+| Gap | Description                                                                        | Spec file                                  | Status  |
+| --- | ---------------------------------------------------------------------------------- | ------------------------------------------ | ------- |
+| G2  | Unsupported trade type surfaces an error and blocks the run (Run-click validation) | `trade-automate/verify-validation.spec.ts` | ❌ Open |
 
 ---
 

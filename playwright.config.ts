@@ -39,7 +39,7 @@ const chromiumLaunchArgs = [
     '--no-sandbox',
     '--disable-dev-shm-usage',
     '--disable-web-security',
-    '--disable-features=VizDisplayCompositor,ThirdPartyCookiesPhaseout,TestThirdPartyCookiePhaseout',
+    '--disable-features=VizDisplayCompositor,ThirdPartyCookiesPhaseout,TestThirdPartyCookiePhaseout,TrackingProtection3pcd',
     '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream',
 ];

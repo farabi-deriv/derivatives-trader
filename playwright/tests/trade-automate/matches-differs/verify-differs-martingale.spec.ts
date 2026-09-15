@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Matches/Differs trade type run (Martingale — Differs)
- * @id       flow-7.2
+ * @id       flow-7.3, flow-7.4
  * @flow     playwright/flows/trade-automate/flow.md#flow-7--matchesdiffers
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -41,7 +41,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 7.2 — Matches/Differs Martingale: Differs (demo) */
+        /** Flow 7.3 — Matches/Differs Martingale: Differs (demo) */
         test('VERIFY automation run on Matches/Differs — Differs (Demo Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runMatchesDiffersAndVerify({
                 accountType: 'demo',
@@ -60,7 +60,7 @@ test.describe(
             });
         });
 
-        /** Flow 7.2 — Matches/Differs Martingale: Differs (real) */
+        /** Flow 7.4 — Matches/Differs Martingale: Differs (real) */
         test('VERIFY automation run on Matches/Differs — Differs (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runMatchesDiffersAndVerify({
                 accountType: 'real',

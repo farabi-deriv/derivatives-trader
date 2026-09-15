@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Rise/Fall trade type run (Martingale — Fall)
- * @id       flow-5.2
+ * @id       flow-5.3, flow-5.4
  * @flow     playwright/flows/trade-automate/flow.md#flow-5--risefall
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -39,7 +39,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 5.2 — Rise/Fall Martingale: Fall (demo) */
+        /** Flow 5.3 — Rise/Fall Martingale: Fall (demo) */
         test('VERIFY automation run on Rise/Fall — Fall (Demo Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runRiseFallAndVerify({
                 accountType: 'demo',
@@ -58,7 +58,7 @@ test.describe(
             });
         });
 
-        /** Flow 5.2 — Rise/Fall Martingale: Fall (real) */
+        /** Flow 5.4 — Rise/Fall Martingale: Fall (real) */
         test('VERIFY automation run on Rise/Fall — Fall (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runRiseFallAndVerify({
                 accountType: 'real',

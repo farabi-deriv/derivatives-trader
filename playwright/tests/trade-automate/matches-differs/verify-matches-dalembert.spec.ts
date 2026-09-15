@@ -1,7 +1,7 @@
 /**
  * @name     Automate — Matches/Differs trade type run (D'Alembert — Matches)
- * @id       flow-12.1
- * @flow     playwright/flows/trade-automate/flow.md#flow-12--matchesdiffers-dalembert
+ * @id       flow-11.1, flow-11.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-11--matchesdiffers-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -41,7 +41,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 12.1 — Matches/Differs D'Alembert: Matches (demo) */
+        /** Flow 11.1 — Matches/Differs D'Alembert: Matches (demo) */
         test("VERIFY D'Alembert automation run on Matches/Differs — Matches (Demo Account)", async ({
             tradeAutomatePage,
         }) => {
@@ -62,7 +62,7 @@ test.describe(
             });
         });
 
-        /** Flow 12.1 — Matches/Differs D'Alembert: Matches (real) */
+        /** Flow 11.2 — Matches/Differs D'Alembert: Matches (real) */
         test("VERIFY D'Alembert automation run on Matches/Differs — Matches (Real Account)", async ({
             tradeAutomatePage,
         }) => {

@@ -1,7 +1,7 @@
 /**
  * @name     Automate — Even/Odd trade type run (D'Alembert — Even)
- * @id       flow-14.1
- * @flow     playwright/flows/trade-automate/flow.md#flow-14--evenodd-dalembert
+ * @id       flow-13.1, flow-13.2
+ * @flow     playwright/flows/trade-automate/flow.md#flow-13--evenodd-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -39,7 +39,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 14.1 — Even/Odd D'Alembert: Even (demo) */
+        /** Flow 13.1 — Even/Odd D'Alembert: Even (demo) */
         test("VERIFY D'Alembert automation run on Even/Odd — Even (Demo Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'demo',
@@ -57,7 +57,7 @@ test.describe(
             });
         });
 
-        /** Flow 14.1 — Even/Odd D'Alembert: Even (real) */
+        /** Flow 13.2 — Even/Odd D'Alembert: Even (real) */
         test("VERIFY D'Alembert automation run on Even/Odd — Even (Real Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'real',

@@ -24,12 +24,12 @@
 | Flow 6.2   | `trade/over-under/verify-under.spec.ts`                          | `@trade @desktop @mobile`                      |
 | Flow 7.1   | `trade/even-odd/verify-even.spec.ts`                             | `@trade @desktop @mobile`                      |
 | Flow 7.2   | `trade/even-odd/verify-odd.spec.ts`                              | `@trade @desktop @mobile`                      |
-| Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @desktop @mobile`                      |
 | Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @desktop @mobile`                      |
-| Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`               |
-| Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @smoke @desktop @mobile`               |
-| Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
-| Flow 9.4   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @smoke @desktop @mobile`               |
+| Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @desktop @mobile`                      |
+| Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @desktop @mobile`                      |
+| Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @desktop @mobile`                      |
+| Flow 9.4   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @desktop @mobile`                      |
 | Flow 9.5   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
 | Flow 9.6   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
 | Flow 9.7   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                      |
@@ -392,30 +392,26 @@ asserted on the **form** before buying (deterministic).
 import { test } from '../../../fixtures/fixtures';
 import { TradeBasePage } from '../../../pages/TradeBasePage';
 
-test.describe(
-    'Trade — Accumulators (without Take Profit)',
-    { tag: ['@desktop', '@mobile', '@trade', '@smoke'] },
-    () => {
-        test.describe.configure({ mode: 'serial' });
+test.describe('Trade — Accumulators (without Take Profit)', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+    test.describe.configure({ mode: 'serial' });
 
-        test.beforeEach(async ({ page, loginPage }) => {
-            await TradeBasePage.seedLocalStorageOnOrigin(page);
-            await loginPage.login(accountEmail, accountPassword);
-        });
+    test.beforeEach(async ({ page, loginPage }) => {
+        await TradeBasePage.seedLocalStorageOnOrigin(page);
+        await loginPage.login(accountEmail, accountPassword);
+    });
 
-        test('VERIFY Buy Accumulators Contract Without Take Profit and Close (Demo Account)', async ({
-            tradeAccumulatorsPage,
-        }) => {
-            await tradeAccumulatorsPage.buyAccumulatorAndVerify({
-                accountType: 'demo',
-                market: 'Volatility 100 Index',
-                growthRate: '5%',
-                stake: '10.00',
-                currency: 'USD',
-            });
+    test('VERIFY Buy Accumulators Contract Without Take Profit and Close (Demo Account)', async ({
+        tradeAccumulatorsPage,
+    }) => {
+        await tradeAccumulatorsPage.buyAccumulatorAndVerify({
+            accountType: 'demo',
+            market: 'Volatility 100 Index',
+            growthRate: '5%',
+            stake: '10.00',
+            currency: 'USD',
         });
-    }
-);
+    });
+});
 
 // verify-accumulators-with-tp.spec.ts (Flow 8.2) — separate describe block, same shape, plus `takeProfit: '4.00'`.
 ```

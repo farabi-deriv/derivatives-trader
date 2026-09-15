@@ -1,7 +1,7 @@
 /**
  * @name     Automate — Accumulators trade type run (D'Alembert)
- * @id       flow-11.1, flow-11.2
- * @flow     playwright/flows/trade-automate/flow.md#flow-11--accumulators-dalembert
+ * @id       flow-6.3, flow-6.4
+ * @flow     playwright/flows/trade-automate/flow.md#flow-6--accumulators
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -38,7 +38,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
         await tradeAutomatePage.stopAutomateRunIfActive();
     });
 
-    /** Flow 11.1 — Accumulators D'Alembert: demo lifecycle */
+    /** Flow 6.3 — Accumulators D'Alembert: demo lifecycle */
     test("VERIFY D'Alembert automation run on Accumulators trade type (Demo Account)", async ({
         tradeAutomatePage,
     }) => {
@@ -57,7 +57,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
         });
     });
 
-    /** Flow 11.2 — Accumulators D'Alembert: real lifecycle */
+    /** Flow 6.4 — Accumulators D'Alembert: real lifecycle */
     test("VERIFY D'Alembert automation run on Accumulators trade type (Real Account)", async ({
         tradeAutomatePage,
     }) => {

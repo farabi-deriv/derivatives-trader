@@ -1,7 +1,7 @@
 # 🗺️ Auth Journey Catalog — Technical Reference
 
 > Source of truth: `packages/core/src/App/Components/Layout/Header/` · `packages/core/src/Modules/Menu/menu.tsx` · `packages/trader/src/AppV2/Components/Layout/Sidebar/` · home-app `/dashboard/options` (external — page objects in `playwright/pages/HomePage.ts`, `playwright/pages/OptionsPage.ts`)
-> Created: 2026-06-11 | Last updated: 2026-09-11
+> Last updated: 2026-09-11
 
 ---
 
@@ -174,7 +174,9 @@ test.describe('Home to DTrader redirect', { tag: ['@auth', '@smoke', '@desktop',
 
 > **`tradeBasePage.clickHome()`:** Desktop clicks `dt_sidebar_home`; mobile taps bottom nav "Home". Both assign `window.location.href` to `{getBrandUrl()}/home?source=options&acc=options&curr=…`.
 
-> **`verifyLandedOnDTraderAs(type)`:** Waits for DTrader hostname, rejects `/dashboard/home` and `/dashboard/options`, asserts market tabs + balance + account type (`Real account` / `Demo account`). On real accounts, also asserts Deposit visible and Try real hidden. Demo accounts with both Real and Demo wallets show Deposit (not Try real) — account-type label is the authoritative demo check.
+> **`verifySuccessfulLogin()`:** Asserts the browser is on the `BASE_URL` hostname after OAuth (PR preview when `BASE_URL` is overridden), then account chrome.
+>
+> **`verifyLandedOnDTraderAs(type)`:** Waits for a `dtrader.deriv.*` host (home-app Trade always opens staging DTrader, even from a preview login), rejects `/dashboard/home` and `/dashboard/options`, asserts market tabs + balance + account type (`Real account` / `Demo account`). On real accounts, also asserts Deposit visible and Try real hidden. Demo accounts with both Real and Demo wallets show Deposit (not Try real) — account-type label is the authoritative demo check.
 
 ---
 

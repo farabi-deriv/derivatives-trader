@@ -1,7 +1,7 @@
 /**
  * @name     Automate — Over/Under trade type run (D'Alembert — Under)
- * @id       flow-13.2
- * @flow     playwright/flows/trade-automate/flow.md#flow-13--overunder-dalembert
+ * @id       flow-12.3, flow-12.4
+ * @flow     playwright/flows/trade-automate/flow.md#flow-12--overunder-dalembert
  * @coverage playwright/flows/trade-automate/coverage.md
  */
 import { test } from '../../../fixtures/fixtures';
@@ -41,7 +41,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 13.2 — Over/Under D'Alembert: Under (demo) */
+        /** Flow 12.3 — Over/Under D'Alembert: Under (demo) */
         test("VERIFY D'Alembert automation run on Over/Under — Under (Demo Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'demo',
@@ -60,7 +60,7 @@ test.describe(
             });
         });
 
-        /** Flow 13.2 — Over/Under D'Alembert: Under (real) */
+        /** Flow 12.4 — Over/Under D'Alembert: Under (real) */
         test("VERIFY D'Alembert automation run on Over/Under — Under (Real Account)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'real',

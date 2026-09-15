@@ -11,13 +11,13 @@
 
 | Journey ID       | Spec File                                                     | Tags                                                    |
 | ---------------- | ------------------------------------------------------------- | ------------------------------------------------------- |
-| Flow 1–6, 12, 13 | `market-selection/verify-market-browse-and-discovery.spec.ts` | `@market-selection @regression @desktop @mobile`        |
-| Flow 7           | `market-selection/verify-market-info-screen.spec.ts`          | `@market-selection @regression @desktop @mobile`        |
+| Flow 1–6, 12, 13 | `market-selection/verify-market-browse-and-discovery.spec.ts` | `@market-selection @desktop @mobile`                    |
+| Flow 7           | `market-selection/verify-market-info-screen.spec.ts`          | `@market-selection @desktop @mobile`                    |
 | Flow 8, 9        | `market-selection/verify-market-search.spec.ts`               | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 10          | `market-selection/verify-market-favourites.spec.ts`           | `@market-selection @regression @desktop @mobile`        |
-| Flow 11          | `market-selection/verify-market-favourites.spec.ts`           | `@market-selection @regression @desktop @mobile`        |
-| Flow 14–20, 23   | `market-selection/verify-trade-tabs.spec.ts`                  | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 21          | `market-selection/verify-trade-tabs-persistence.spec.ts`      | `@market-selection @regression @desktop @mobile`        |
+| Flow 10          | `market-selection/verify-market-favourites.spec.ts`           | `@market-selection @desktop @mobile`                    |
+| Flow 11          | `market-selection/verify-market-favourites.spec.ts`           | `@market-selection @desktop @mobile`                    |
+| Flow 14–20, 23   | `market-selection/verify-trade-tabs.spec.ts`                  | `@market-selection @smoke @desktop @mobile`             |
+| Flow 21          | `market-selection/verify-trade-tabs-persistence.spec.ts`      | `@market-selection @desktop @mobile`                    |
 | Flow 22          | `market-selection/verify-trade-tabs-buy.spec.ts`              | `@market-selection @trade @regression @desktop @mobile` |
 | Flow 24          | `market-selection/verify-trade-tabs-max-limit.spec.ts`        | `@market-selection @smoke @production @desktop @mobile` |
 | G1               | Not automated — see [`coverage.md`](./coverage.md)            | —                                                       |
@@ -280,17 +280,17 @@ if (!isMobileViewport) {
 
 ## Section 3 — Tags Reference
 
-| Tag                 | When to apply                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `@market-selection` | All tests in this feature area (picker + tab strip)                                       |
-| `@trade`            | Additionally applied when a flow also exercises Buy (Flow 22)                             |
-| `@smoke`            | Critical path — search, core tab mechanics, and max-tab limit (Flows 8–9, 14–20, 23, 24)  |
-| `@production`       | Safe on production — no login, no balance mutation (Flows 8–9, 14–20, 23, 24)             |
-| `@regression`       | Full-coverage flows not required on every run (discovery, favourites, persistence, limit) |
-| `@desktop`          | Desktop viewport (chromium project)                                                       |
-| `@mobile`           | Mobile viewport (chromium-mobile project)                                                 |
+| Tag                 | When to apply                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| `@market-selection` | All tests in this feature area (picker + tab strip)                                      |
+| `@trade`            | Additionally applied when a flow also exercises Buy (Flow 22)                            |
+| `@smoke`            | Critical path — search, core tab mechanics, and max-tab limit (Flows 8–9, 14–20, 23, 24) |
+| `@production`       | Safe on production — no login, no balance mutation (Flows 8–9, 24 only)                  |
+| `@regression`       | Flow 22 only (`verify-trade-tabs-buy.spec.ts` — mutates balance/positions)               |
+| `@desktop`          | Desktop viewport (chromium project)                                                      |
+| `@mobile`           | Mobile viewport (chromium-mobile project)                                                |
 
-> Only search, core tab mechanics, and max-tab limit carry `@production`. Flow 22 mutates a real account's balance/positions, and the remaining flows depend on live discovery/favourites data that isn't safe to assert deterministically on production.
+> Only search (Flows 8–9) and max-tab limit (Flow 24) carry `@production`. Core tab mechanics (Flows 14–20, 23) are staging smoke only — no `@production` on `verify-trade-tabs.spec.ts`. Flow 22 mutates a real account's balance/positions; discovery/favourites/persistence flows depend on live data that isn't safe to assert deterministically on production.
 
 ---
 

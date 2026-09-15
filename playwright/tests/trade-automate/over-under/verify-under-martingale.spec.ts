@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Over/Under trade type run (Martingale — Under)
- * @id       flow-8.2
+ * @id       flow-8.3, flow-8.4
  * @flow     playwright/flows/trade-automate/flow.md#flow-8--overunder
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -41,7 +41,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 8.2 — Over/Under Martingale: Under (demo) */
+        /** Flow 8.3 — Over/Under Martingale: Under (demo) */
         test('VERIFY automation run on Over/Under — Under (Demo Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'demo',
@@ -60,7 +60,7 @@ test.describe(
             });
         });
 
-        /** Flow 8.2 — Over/Under Martingale: Under (real) */
+        /** Flow 8.4 — Over/Under Martingale: Under (real) */
         test('VERIFY automation run on Over/Under — Under (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'real',

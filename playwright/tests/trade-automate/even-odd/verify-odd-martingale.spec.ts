@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Even/Odd trade type run (Martingale — Odd)
- * @id       flow-9.2
+ * @id       flow-9.3, flow-9.4
  * @flow     playwright/flows/trade-automate/flow.md#flow-9--evenodd
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -39,7 +39,7 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 9.2 — Even/Odd Martingale: Odd (demo) */
+        /** Flow 9.3 — Even/Odd Martingale: Odd (demo) */
         test('VERIFY automation run on Even/Odd — Odd (Demo Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'demo',
@@ -57,7 +57,7 @@ test.describe(
             });
         });
 
-        /** Flow 9.2 — Even/Odd Martingale: Odd (real) */
+        /** Flow 9.4 — Even/Odd Martingale: Odd (real) */
         test('VERIFY automation run on Even/Odd — Odd (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'real',

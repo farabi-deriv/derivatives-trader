@@ -2,7 +2,7 @@
 
 > Source of truth: `packages/trader/src/AppV2/Components/MarketSelection/` · `market-info-screen.tsx`
 > · `market-search-results.tsx`
-> Created: 2026-07-20 | Last updated: 2026-09-10
+> Last updated: 2026-09-10
 
 ---
 

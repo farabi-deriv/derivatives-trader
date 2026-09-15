@@ -1,6 +1,6 @@
 /**
  * @name     Automate — Even/Odd trade type run (Martingale — Even)
- * @id       flow-9.1
+ * @id       flow-9.1, flow-9.2
  * @flow     playwright/flows/trade-automate/flow.md#flow-9--evenodd
  * @coverage playwright/flows/trade-automate/coverage.md
  */
@@ -13,7 +13,7 @@ let accountPassword: string;
 
 test.describe(
     'Automate — Even/Odd — Even (Martingale)',
-    { tag: ['@automate', '@martingale', '@smoke', '@desktop', '@mobile', '@production'] },
+    { tag: ['@automate', '@martingale', '@desktop', '@mobile'] },
     () => {
         test.describe.configure({ mode: 'serial' });
 
@@ -21,22 +21,13 @@ test.describe(
             const isMobile = testInfo.project.name.includes('mobile');
             const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_EVEN_ODD_MOBILE' : 'TEST_EMAIL_AUTOMATE_EVEN_ODD';
 
-            if (process.env.TEST_ENV === 'production') {
-                const email = process.env[backupEmailVar];
-                const password = process.env.TEST_PASSWORD;
-                if (!email || !password)
-                    throw new Error(`${backupEmailVar} and TEST_PASSWORD must be set in playwright/.env.production`);
-                accountEmail = email;
-                accountPassword = password;
-            } else {
-                const account = await createAccountV2viaJS('real', {
-                    currency: 'USD',
-                    trading: true,
-                    backupAccount: process.env[backupEmailVar],
-                });
-                accountEmail = account.email;
-                accountPassword = account.password;
-            }
+            const account = await createAccountV2viaJS('real', {
+                currency: 'USD',
+                trading: true,
+                backupAccount: process.env[backupEmailVar],
+            });
+            accountEmail = account.email;
+            accountPassword = account.password;
         });
 
         test.beforeEach(async ({ page, loginPage }) => {
@@ -48,14 +39,14 @@ test.describe(
             await tradeAutomatePage.stopAutomateRunIfActive();
         });
 
-        /** Flow 9.1 — Even/Odd Martingale: Even (real). Real uses minimal stake on production. */
+        /** Flow 9.2 — Even/Odd Martingale: Even (real) */
         test('VERIFY automation run on Even/Odd — Even (Real Account)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'real',
                 market: 'Volatility 10 Index',
                 tradeType: 'Even',
                 durationTicks: '9 ticks',
-                stake: process.env.TEST_ENV === 'production' ? '0.35' : '1',
+                stake: '1',
                 automation: {
                     strategy: 'Martingale',
                     stakeMultiplier: 5,

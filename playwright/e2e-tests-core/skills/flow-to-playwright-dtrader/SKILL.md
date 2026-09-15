@@ -1,8 +1,8 @@
 ---
 name: flow-to-playwright-dtrader
-description: Converts the existing flow documents in playwright/flows/ (flow.md + catalog.md + coverage.md) into Playwright test files for the derivatives-trader (DTrader) project. ONLY use for implementing gaps from coverage.md or generating tests from flows already documented in playwright/flows/. Do NOT use for general test writing or fixing failing tests.
-version: 1.0.0
-last_updated: 2026-06-16
+description: Converts flow documents in playwright/flows/ into Playwright specs for derivatives-trader (DTrader). Includes trade-automate matrix rules (demo/real child IDs, strategy × trade-type spec layout, run*AndVerify). Use only for gaps in coverage.md or flows in flow.md — not for fixing failing tests.
+version: 1.1.0
+last_updated: 2026-09-15
 ---
 
 # Flow-to-Playwright — DTrader Variant
@@ -352,6 +352,183 @@ When implementing a new trade type (e.g. Higher/Lower, Touch/No Touch, In/Out), 
 
 > **Why this matters:** the Higher/Lower flow was initially generated as `buyHigherAndClose` with only 3 steps because an earlier version of `flow.md` described only those steps. `flow.md` now contains the authoritative step count and structural exception callouts for every trade type — it is the single source of truth.
 
+### Rule 8 — `trade-automate` uses `run*AndVerify`, not `buy*AndVerify`
+
+When `module: trade-automate`, **Rule 7's manual-trade chain does not apply**. Automate lifecycles orchestrate panel setup → **Run** → bot contracts → Pause/Resume → **Stop** via `TradeAutomatePage` methods (`runRiseFallAndVerify`, `runAccumulatorsAndVerify`, etc.).
+
+**Before writing any automate spec**, read [Module annex: `trade-automate`](#-module-annex-trade-automate) and mirror an existing spec under `playwright/tests/trade-automate/`. Golden references:
+
+- Trade-type lifecycle: `rise-fall/verify-rise-martingale.spec.ts` (Flows **5.1** / **5.2**)
+- Dual-outcome second outcome: `rise-fall/verify-fall-martingale.spec.ts` (Flows **5.3** / **5.4**)
+- Accumulators both strategies: `accumulators/verify-accumulators-martingale.spec.ts` (**6.1** / **6.2**) + `verify-accumulators-dalembert.spec.ts` (**6.3** / **6.4**)
+- Panel control: `verify-threshold-auto-stop.spec.ts` (**2.1** / **2.2**), `verify-already-running.spec.ts` (**Flow 14**)
+
+> **Prerequisite:** run `src-to-flow-dtrader` for `trade-automate` first — child flow IDs (demo/real × outcome × strategy) must already exist in `flow.md` / `coverage.md`.
+
+---
+
+## 📦 Module annex: `trade-automate`
+
+**When:** implementing any spec under `playwright/tests/trade-automate/`.
+
+### Spec layout — do not collapse the matrix
+
+| Spec location                                                        | Pattern                  | Child flows per file                                                           |
+| -------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `trade-automate/*.spec.ts`                                           | Panel / control flows    | **2.1/2.2**, **Flow 14**, **15.1/15.2**, etc.                                  |
+| `trade-automate/<trade-type>/verify-{outcome}-{strategy}.spec.ts`    | Dual-outcome lifecycle   | **Two tests** — demo + real for **one outcome** (e.g. Rise → **5.1**, **5.2**) |
+| `trade-automate/accumulators/verify-accumulators-{strategy}.spec.ts` | Single-outcome lifecycle | **Two tests** — demo + real (**6.1/6.2** or **6.3/6.4**)                       |
+
+**Never:**
+
+- One spec covering Rise + Fall + demo + real (four journeys in one file)
+- One spec covering Martingale + D'Alembert
+- One `@id` for multiple unrelated child flows unless they are the **only** tests in that file (e.g. `flow-5.1, flow-5.2`)
+
+### Child flow ID → test mapping
+
+| Parent shape                               | Demo test ID         | Real test ID          |
+| ------------------------------------------ | -------------------- | --------------------- |
+| Dual-outcome outcome A                     | `.1`                 | `.2`                  |
+| Dual-outcome outcome B                     | `.3`                 | `.4`                  |
+| Accumulators / panel (single journey axis) | `.1` or first sub-id | `.2` or second sub-id |
+
+Each test gets a block comment: `/** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */`
+
+Header `@id` lists **all** child flow IDs implemented in that file (comma-separated).
+
+### Account provisioning — Pattern D (automate lifecycles)
+
+**Not** Pattern C (`loginPage.login()` with default `TEST_EMAIL`). Automate trade-type specs use dedicated backup inboxes:
+
+```typescript
+import { test } from '../../../fixtures/fixtures';
+import { TradeBasePage } from '../../../pages/TradeBasePage';
+import { createAccountV2viaJS } from '../../../utils';
+
+let accountEmail: string;
+let accountPassword: string;
+
+test.describe(
+    'Automate — Rise/Fall — Rise (Martingale)',
+    {
+        tag: ['@automate', '@martingale', '@desktop', '@mobile'],
+    },
+    () => {
+        test.describe.configure({ mode: 'serial' });
+
+        test.beforeAll(async ({}, testInfo) => {
+            const isMobile = testInfo.project.name.includes('mobile');
+            const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_RISE_FALL_MOBILE' : 'TEST_EMAIL_AUTOMATE_RISE_FALL';
+
+            const account = await createAccountV2viaJS('real', {
+                currency: 'USD',
+                trading: true,
+                backupAccount: process.env[backupEmailVar],
+            });
+            accountEmail = account.email;
+            accountPassword = account.password;
+        });
+
+        test.beforeEach(async ({ page, loginPage }) => {
+            await TradeBasePage.seedLocalStorageOnOrigin(page);
+            await loginPage.login(accountEmail, accountPassword);
+        });
+
+        test.afterEach(async ({ tradeAutomatePage }) => {
+            await tradeAutomatePage.stopAutomateRunIfActive();
+        });
+
+        /** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */
+        test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ tradeAutomatePage }) => {
+            await tradeAutomatePage.runRiseFallAndVerify({
+                accountType: 'demo',
+                market: 'Volatility 100 Index',
+                tradeType: 'Rise',
+                durationUnit: 'Ticks',
+                durationValue: '10 ticks',
+                stake: '1',
+                automation: {
+                    strategy: 'Martingale',
+                    stakeMultiplier: 2,
+                    maxStake: '150',
+                    profitThreshold: '150',
+                    lossThreshold: '150',
+                },
+            });
+        });
+    }
+);
+```
+
+**Rules:**
+
+- `beforeAll` always creates/restores a **`real`** staging account via `createAccountV2viaJS` + per-trade-type `TEST_EMAIL_AUTOMATE_*` backup (see `catalog.md` backup table).
+- Demo vs real is selected **inside** `run*AndVerify({ accountType: 'demo' | 'real', ... })` — two separate tests, two child flow IDs.
+- **`TradeBasePage.seedLocalStorageOnOrigin(page)`** before every login (automate panel persistence).
+- **`afterEach` → `stopAutomateRunIfActive()`** on every spec that can start a run — mandatory cleanup.
+- **`test.describe.configure({ mode: 'serial' })`** on lifecycle specs sharing one backup account.
+- **Distinct params per test** (stake, thresholds, digit, duration) — copy values from `flow.md` inline blocks; do not reuse identical params across demo/real or across specs on the same backup account.
+
+### Production smoke exception (Flow 12.2)
+
+`verify-over-dalembert.spec.ts` uses pre-created accounts when `TEST_ENV === 'production'` and gates real params with `isProduction` (min stake, conservative thresholds). Copy that pattern exactly when `@production` is on the describe — do not call `createAccountV2viaJS` on production.
+
+### POM methods — use existing orchestrators
+
+| Trade type      | Method                         | Strategy param                                      |
+| --------------- | ------------------------------ | --------------------------------------------------- |
+| Rise/Fall       | `runRiseFallAndVerify()`       | `automation.strategy: 'Martingale' \| "D'Alembert"` |
+| Accumulators    | `runAccumulatorsAndVerify()`   | + `growthRate`; omit sequential purchase inside POM |
+| Matches/Differs | `runMatchesDiffersAndVerify()` | + `digit`, `durationTicks`                          |
+| Over/Under      | `runOverUnderAndVerify()`      | + `digit`, `durationTicks`                          |
+| Even/Odd        | `runEvenOddAndVerify()`        | + `durationTicks`                                   |
+
+D'Alembert uses `stakeIncrement`; Martingale uses `stakeMultiplier`. Never mix them.
+
+Panel-only specs call granular methods from `flow.md` (`goToAutomatedTrading`, `setLossThreshold`, `verifyLossThresholdAutoStop`, etc.) — still via `tradeAutomatePage` fixture only.
+
+### Tags
+
+| Tag                          | When                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@automate`                  | Every automate spec                                                                                                                          |
+| `@martingale` / `@dalembert` | Strategy lifecycle specs                                                                                                                     |
+| `@smoke` / `@production`     | Only where `catalog.md` / `coverage.md` explicitly assign (e.g. `@production` on Flow **12.2**; `@smoke` only on Odd Martingale **9.3/9.4**) |
+| `@desktop` `@mobile`         | Always both on lifecycle specs                                                                                                               |
+
+Feature tag is **`@automate`**, not `@trade`.
+
+### Import path depth
+
+```
+playwright/tests/trade-automate/verify-threshold-auto-stop.spec.ts     → ../../fixtures/fixtures
+playwright/tests/trade-automate/rise-fall/verify-rise-martingale.spec.ts → ../../../fixtures/fixtures
+```
+
+Pages/utils follow the same depth (`../../../pages/TradeBasePage`, `../../../utils`).
+
+### Implementing from coverage — walk the matrix
+
+When asked to implement `all` or multiple flows for `trade-automate`:
+
+1. Read `coverage.md` Section 1 — expect ~**44** rows (panel + strategy × trade-type matrix + G2).
+2. For each ❌ row, locate or create the **correct spec file** from the matrix above — do not invent a single mega-spec.
+3. After implementation, promote gaps to numbered flows in docs (e.g. G1 → Flow 14) and run `_orchestrator.md`.
+
+### Common automate mistakes
+
+| Mistake                                          | Fix                                                                                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `loginPage.login()` without backup account setup | Pattern D with `createAccountV2viaJS` + `TEST_EMAIL_AUTOMATE_*`                                                                        |
+| One test for demo + real                         | Two tests; `@id flow-N.1, flow-N.2` (or `.1–.4` split across two outcome files)                                                        |
+| `buyRiseAndVerify` / manual trade POM            | `tradeAutomatePage.runRiseFallAndVerify({ accountType, automation: { strategy, ... } })`                                               |
+| Missing `stopAutomateRunIfActive`                | Required `afterEach` on any spec that starts a run                                                                                     |
+| Rise + Fall in one file                          | Split: `verify-rise-*.spec.ts` + `verify-fall-*.spec.ts`                                                                               |
+| Accumulators D'Alembert as separate parent flow  | IDs **6.3/6.4** in `verify-accumulators-dalembert.spec.ts`                                                                             |
+| `@trade` tag                                     | Use `@automate`                                                                                                                        |
+| Skipping Flow 1 assertions                       | `run*AndVerify` already calls `verifyPauseAndResumeWhileRunning()` — do not duplicate in the test body unless `flow.md` says otherwise |
+
 ---
 
 ## 📋 12-Step Protocol (Steps 0–11)
@@ -364,7 +541,7 @@ Before doing anything else, check whether the user's invocation includes a modul
 - **If not provided**, ask:
 
     > **Which module would you like to implement tests for?**
-    > (e.g. `auth`, `trade`, `positions`, `reports`, `notifications`)
+    > (e.g. `auth`, `trade`, `trade-automate`, `positions`, `reports`, `notifications`)
 
     Then:
 
@@ -399,8 +576,11 @@ Run this before reading flow docs or writing any code.
 
 ```bash
 find "playwright/tests/<module>" -name "verify-*.spec.ts" 2>/dev/null | sort
+grep -rh '@id\|/\*\* Flow' "playwright/tests/<module>" --include='*.spec.ts' | sort
 grep -En "test\('VERIFY|test\(\"VERIFY" playwright/tests/<module>/<spec-file>.spec.ts
 ```
+
+For **`trade-automate`**, also map existing `@id` headers to `coverage.md` Section 1 — one child flow ID per test. See the [module annex](#-module-annex-trade-automate).
 
 Build a per-flow status table:
 
@@ -415,6 +595,7 @@ Only generate test cases for flows marked `❌`.
 
 ```bash
 cat "playwright/pages/<Module>Page.ts" 2>/dev/null || echo "No POM yet"
+# trade-automate → TradeAutomatePage.ts (extends TradeParametersPage)
 ```
 
 Record which methods already exist (reuse) and which are missing (add before writing the test).
@@ -481,9 +662,13 @@ playwright/
     fixtures.ts              ← target
   tests/
     auth/
-      verify-login.spec.ts  → '../../fixtures/fixtures'   (2 levels up)
+      verify-login.spec.ts           → '../../fixtures/fixtures'   (2 levels)
     trade/
-      verify-trade.spec.ts  → '../../fixtures/fixtures'   (2 levels up)
+      verify-trade.spec.ts           → '../../fixtures/fixtures'   (2 levels)
+    trade-automate/
+      verify-threshold-auto-stop.spec.ts → '../../fixtures/fixtures'   (2 levels)
+      rise-fall/
+        verify-rise-martingale.spec.ts   → '../../../fixtures/fixtures' (3 levels)
 ```
 
 ```bash
@@ -512,7 +697,7 @@ Copy TypeScript code blocks from `catalog.md` and:
 
     > **Reference:** the Rise/Fall pattern (`buyRiseAndVerify`) always begins with `selectMarket(market)` before `selectTradeType()`. Apply the same pattern for all trade type flows.
 
-6. **Match the exact step chain documented in `flow.md` for the trade type being implemented** — before writing any `buy*` method, read the target trade type's section in `flow.md` and implement exactly the steps shown. Name the method `buy*AndVerify`, not `buy*AndClose` — "Close" signals a minimal flow; "Verify" signals the full chain. Structural exceptions are documented with `> **Structural exception:**` callouts in `flow.md` — follow them exactly.
+6. **Match the exact step chain documented in `flow.md` for the trade type being implemented** — before writing any `buy*` method, read the target trade type's section in `flow.md` and implement exactly the steps shown. Name the method `buy*AndVerify`, not `buy*AndClose` — "Close" signals a minimal flow; "Verify" signals the full chain. Structural exceptions are documented with `> **Structural exception:**` callouts in `flow.md` — follow them exactly. **`trade-automate`:** use `run*AndVerify` orchestrators instead — see Rule 8.
 
     > **Why this matters:** Higher/Lower was initially generated as `buyHigherAndClose` with 3 steps because an earlier version of `flow.md` described only those steps. `flow.md` now carries the authoritative step count for every trade type. See Rule 7.
 
@@ -551,13 +736,17 @@ const email = process.env.SOME_EMAIL;
 if (!email) throw new Error('SOME_EMAIL is not set in playwright/.env.staging');
 ```
 
-**Pattern C — Standard shared test account (most common):**
+**Pattern C — Standard shared test account (most common for `auth`, `trade`, etc.):**
 
 ```typescript
 test.beforeEach(async ({ loginPage }) => {
     await loginPage.login(); // reads TEST_EMAIL + TEST_PASSWORD from env
 });
 ```
+
+**Pattern D — Automate backup account (`trade-automate` lifecycles only):**
+
+See [Module annex: `trade-automate`](#-module-annex-trade-automate) — `createAccountV2viaJS` in `beforeAll`, `seedLocalStorageOnOrigin` + `login(email, password)` in `beforeEach`, per-trade-type `TEST_EMAIL_AUTOMATE_*` env vars, `stopAutomateRunIfActive` in `afterEach`.
 
 ---
 
@@ -635,7 +824,7 @@ await expect(element, 'Trade container should be visible after login').toBeVisib
 
 Every `test.describe()` must have:
 
-1. At least one **feature tag**: `@auth`, `@trade`, `@positions`, `@reports`, `@notifications`
+1. At least one **feature tag**: `@auth`, `@trade`, `@automate`, `@positions`, `@reports`, `@notifications`
 2. At least one **screen-size tag**: `@desktop` and/or `@mobile`
 3. **Execution tag** where applicable: `@smoke` (critical path), `@staging` (requires credentials/Mailisk — not safe on prod), `@production` (read-only, safe on prod)
 
@@ -694,6 +883,8 @@ Before presenting the generated test:
 - [ ] **No duplication between flow docs** — each piece of info lives in exactly one file
 - [ ] **`coverage.md` analysis date updated to today** (`YYYY-MM-DD`)
 - [ ] **Gap rows promoted to proper flows** after implementation — no `G-*` identifiers remain in any doc file
+- [ ] **`trade-automate`:** module annex followed — Pattern D account, `run*AndVerify`, two tests per outcome/strategy file, `@automate` tag, `afterEach` cleanup, correct import depth
+- [ ] **`trade-automate`:** `@id` header + `/** Flow N.M */` comment on every test; child IDs match `coverage.md`
 
 ---
 
@@ -743,6 +934,12 @@ grep -En '^export' playwright/fixtures/fixtures.ts
 | Tags on `test()` instead of `test.describe()`                                                         | Tags always on `test.describe({ tag: [...] })` only                                                                                                                                       |
 | `timeout` in `test.describe.configure()`                                                              | Only `mode` is allowed — never set `timeout` there                                                                                                                                        |
 | Leaving `G-*` rows after implementation                                                               | Promote to numbered flow in Section 1 and remove from Sections 2 and 3 of `coverage.md`                                                                                                   |
+| Using `buy*AndVerify` for automate lifecycles                                                         | Use `tradeAutomatePage.run*AndVerify` — see Rule 8 and the `trade-automate` annex                                                                                                         |
+| One automate spec for demo + real or Rise + Fall                                                      | Split tests/files per child flow ID — demo/real are separate tests; Rise/Fall are separate spec files                                                                                     |
+| Automate spec without `stopAutomateRunIfActive` in `afterEach`                                        | Mandatory — leftover runs break the next test with the already-running snackbar                                                                                                           |
+| `loginPage.login()` only for automate trade-type specs                                                | Use Pattern D — `createAccountV2viaJS` + dedicated `TEST_EMAIL_AUTOMATE_*` backup inboxes                                                                                                 |
+| Wrong `@id` (single flow for two tests)                                                               | `@id flow-5.1, flow-5.2` when the file implements both; comment each test with its Flow ID                                                                                                |
+| `@trade` tag on automate specs                                                                        | Use `@automate` plus `@martingale` or `@dalembert`                                                                                                                                        |
 
 ---
 
@@ -752,6 +949,8 @@ grep -En '^export' playwright/fixtures/fixtures.ts
 /flow-to-playwright-dtrader
 Follow flow-to-playwright-dtrader skill and implement flows for module: auth
 Follow flow-to-playwright-dtrader skill and implement flows for module: trade
+Follow flow-to-playwright-dtrader skill and implement flows for module: trade-automate
+Follow flow-to-playwright-dtrader skill and implement gap G2 for module: trade-automate
 Follow flow-to-playwright-dtrader skill and implement gap G1 for module: positions
 Follow flow-to-playwright-dtrader skill and implement all P0 gaps for module: trade
 ```
