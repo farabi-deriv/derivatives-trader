@@ -3,7 +3,7 @@
 > Source of truth: `playwright/pages/MarketSelectionPage.ts` (picker + tab strip; composed into
 > `playwright/pages/TradeParametersPage.ts` via `tradeParametersPage.marketSelectionPage` — see Section 4)
 > Source components: `packages/trader/src/AppV2/Components/MarketSelection/`, `packages/trader/src/AppV2/Components/MarketTabs/`
-> Last updated: 2026-08-11
+> Last updated: 2026-09-15
 
 ---
 
@@ -113,19 +113,44 @@ await expect(
 ).not.toBeVisible();
 ```
 
-### Flow 7 — Market Info screen
+### `verify-market-info-screen.spec.ts` — Flow 7
+
+**Tags:** `@market-selection @desktop @mobile` — unauthenticated (public trade page).
+
+| Test                                                                              | Flow steps                              |
+| --------------------------------------------------------------------------------- | --------------------------------------- |
+| `VERIFY Info screen shows market details and a Trade-on CTA commits the market`   | 3–5 (description matrix + Trade-on CTA) |
+| `VERIFY the Favourite toggle on the Info screen updates independently of the row` | 6                                       |
+| `VERIFY the Back button returns to the previous browse view without committing`   | 7                                       |
+
+**Description matrix** — spec loops `MARKET_INFO_DESCRIPTION_CASES` (75 rows mirroring `market-descriptions.ts`) with one `test.step` per symbol. `MarketSelectionPage.verifyMarketInfoDescription(market, description)` opens Info via `openMarketInfoFromSearch` (first matching row; trade-type group is irrelevant) and retries once after `recoverFromRateLimitIfNeeded()` on lookup failure. Paced at 800ms via `paceMarketInfoLookup()` between symbols.
 
 ```typescript
-await tradeParametersPage.marketInfoButton('Volatility 100 Index').click();
-await expect(tradeParametersPage.marketInfoScreen, 'Info screen should replace the browse panel').toBeVisible();
-await expect(tradeParametersPage.marketInfoTradeOnSection, '"Trade on" section should list trade types').toBeVisible();
-await tradeParametersPage.marketInfoFavouriteButton.click();
-await expect(tradeParametersPage.marketInfoFavouriteButton, 'Favourite toggles to Unfavourite').toHaveAttribute(
-    'aria-pressed',
-    'true'
-);
-await tradeParametersPage.marketInfoTradeOnCard('Multipliers').click();
-await expect(tradeParametersPage.marketSelectionPanel, 'Picker should close after Trade-on CTA').not.toBeAttached();
+// Step 3 — all authored descriptions
+await marketSelectionPage.verifyMarketInfoDescription(market, description);
+
+// Steps 4–5 — Trade-on CTA commits market + trade type
+await marketSelectionPage.openMarketInfoFromSearch('Volatility 100 Index');
+await expect(marketSelectionPage.marketInfoTradeOnCard('Multipliers')).toBeVisible();
+await marketSelectionPage.marketInfoTradeOnCard('Multipliers').click();
+await expect(tradeParametersPage.activeMarketTab).toContainText('Volatility 100 Index');
+await expect(tradeParametersPage.activeMarketTab).toContainText('Multipliers');
+```
+
+```typescript
+// Step 6 — Favourite toggle on Info screen (cleans up after)
+await marketSelectionPage.openMarketInfo('Volatility 100 Index');
+await marketSelectionPage.marketInfoFavouriteButton.click();
+await expect(marketSelectionPage.marketInfoFavouriteButton).toContainText('Unfavourite');
+await marketSelectionPage.marketInfoFavouriteButton.click(); // cleanup
+```
+
+```typescript
+// Step 7 — Back does not commit
+await marketSelectionPage.openMarketInfo('Volatility 100 Index');
+await marketSelectionPage.marketInfoBackButton.click();
+await expect(marketSelectionPage.marketSelectionPanel).toBeVisible();
+await expect(tradeParametersPage.activeMarketTab).toHaveText(activeTabTextBefore);
 ```
 
 ### Flows 8–9 — Search and empty results
@@ -384,3 +409,13 @@ scratch.
 Tabs persist via `localStorage` keys `open_markets_v2` (manual trading) and
 `open_markets_automation_v2` (Automate) — confirmed in `open-markets-utils.ts`. No test should read
 these keys directly; assert via the rendered tab strip after reload, not via localStorage inspection.
+
+### Flow 7 — Market Info description matrix (75 symbols)
+
+Copy lives in `packages/trader/src/AppV2/Utils/market-descriptions.ts`; the Playwright matrix is
+`playwright/pages/market-info-description-cases.ts` (display names from `getMarketNamesMap()`).
+Open Info via `openMarketInfoFromSearch(market)` — always the **first** search row for that market
+(description is symbol-scoped; e.g. BTC/USD appears under Multipliers, not Rise/Fall). The matrix
+paces at 800ms between lookups and calls `recoverFromRateLimitIfNeeded()` when staging rate-limits
+the session. Regenerating the cases file after adding symbols to `market-descriptions.ts` is
+mechanical — keep display-name mapping in sync with `contract.ts`.

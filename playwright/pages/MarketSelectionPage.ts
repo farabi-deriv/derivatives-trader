@@ -1,4 +1,6 @@
 import { Locator, expect } from '@playwright/test';
+import { NavigationUtils } from '../e2e-tests-core/utils';
+import { MARKET_INFO_DESCRIPTION_CASES } from './market-info-description-cases';
 import { TradeBasePage } from './TradeBasePage';
 
 /**
@@ -19,6 +21,15 @@ import { TradeBasePage } from './TradeBasePage';
  * ```
  */
 export class MarketSelectionPage extends TradeBasePage {
+    /** Mirrors `market-descriptions.ts` — one row per symbol with authored Info-screen copy. */
+    static readonly MARKET_INFO_DESCRIPTION_CASES = MARKET_INFO_DESCRIPTION_CASES;
+
+    /**
+     * Pause between Info-screen lookups — the matrix walks ~75 symbols and each open triggers
+     * several WebSocket calls; staging rate-limits bursty traffic.
+     */
+    private static readonly MARKET_INFO_LOOKUP_PACE_MS = 800;
+
     /**
      * Max number of tabs that can be open simultaneously — 4 on mobile, 7 on desktop, both
      * intentional and final (confirmed via `getMaxOpenMarkets()`,
@@ -397,6 +408,14 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * Market description paragraph on the Info screen when the symbol has copy defined.
+     * Source: market-info-screen.tsx `.market-info__description`
+     */
+    get marketInfoDescription(): Locator {
+        return this.marketInfoScreen.locator('.market-info__description');
+    }
+
+    /**
      * Guide trigger — opens the "how to trade" description modal for the currently-selected
      * trade type. Rendered in the mobile header and the desktop sidebar header alike.
      * Source: guide.tsx `aria-label="Guide"`
@@ -624,16 +643,28 @@ export class MarketSelectionPage extends TradeBasePage {
      * returning so the caller can fill immediately with no extra hidden wait.
      */
     async openMarketSearch(): Promise<void> {
-        if (this.isMobile) {
-            await expect(
-                this.marketSelectionSearchButton,
-                'Search icon should be visible on the market-selection header'
-            ).toBeVisible();
-            await this.marketSelectionSearchButton.click();
-            await expect(this.marketSearchPage, 'Mobile search page should open').toBeVisible();
-            await expect(this.marketSearchInput, 'Mobile search input should be ready to type').toBeVisible();
-            await expect(this.marketSearchInput, 'Mobile search input should be editable').toBeEditable();
+        if (!this.isMobile) {
+            return;
         }
+
+        await this.recoverFromRateLimitIfNeeded();
+        await this.ensureMarketSelectionPickerOpen();
+
+        // Mobile dedicated search page may already be open (e.g. after Back from Market Info in the
+        // description matrix) — the header Search icon is hidden until Cancel is tapped.
+        if (await this.marketSearchInput.isVisible().catch(() => false)) {
+            await expect(this.marketSearchInput, 'Mobile search input should be editable').toBeEditable();
+            return;
+        }
+
+        await expect(
+            this.marketSelectionSearchButton,
+            'Search icon should be visible on the market-selection header'
+        ).toBeVisible();
+        await this.marketSelectionSearchButton.click();
+        await expect(this.marketSearchPage, 'Mobile search page should open').toBeVisible();
+        await expect(this.marketSearchInput, 'Mobile search input should be ready to type').toBeVisible();
+        await expect(this.marketSearchInput, 'Mobile search input should be editable').toBeEditable();
     }
 
     /**
@@ -828,6 +859,74 @@ export class MarketSelectionPage extends TradeBasePage {
             this.tradeTypeNavItem(tradeType),
             `${tradeType} should become the selected trade-type tab/sidebar item`
         ).toHaveAttribute(this.isMobile ? 'aria-selected' : 'aria-pressed', 'true');
+    }
+
+    /**
+     * Search for a market, open its Info screen from the first matching search row, and wait for the screen.
+     * Description copy is symbol-scoped — the trade-type group does not matter (e.g. BTC/USD appears under Multipliers).
+     */
+    async openMarketInfoFromSearch(market: string): Promise<void> {
+        await this.recoverFromRateLimitIfNeeded();
+        await this.ensureMarketSelectionPickerOpen();
+        await this.openMarketSearch();
+        await this.marketSearchInput.fill(market);
+        const row = await this.waitForMarketSearchResultRow(market);
+        await this.openMarketInfoOnSearchRow(row);
+        await expect(this.marketInfoScreen, `${market} Info screen should open`).toBeVisible();
+    }
+
+    /**
+     * Re-open the picker after a full-page refresh (rate-limit recovery) or any path that dismissed it.
+     */
+    private async ensureMarketSelectionPickerOpen(): Promise<void> {
+        if (await this.marketSelectionPanel.isVisible().catch(() => false)) {
+            return;
+        }
+
+        await this.addMarketButton.click();
+        await expect(this.marketSelectionPanel, 'Market-selection picker should open').toBeVisible();
+    }
+
+    /**
+     * Staging surfaces a full-page error when Deriv API rate-limits the session. Wait and refresh
+     * so the matrix can continue instead of failing on a missing `.market-info__description`.
+     */
+    private async recoverFromRateLimitIfNeeded(): Promise<void> {
+        const rateLimit = this.page.getByText(/rate limit of requests per second/i);
+        if (!(await rateLimit.isVisible({ timeout: 500 }).catch(() => false))) {
+            return;
+        }
+
+        await this.page.waitForTimeout(5_000);
+        const refresh = this.page.getByRole('button', { name: 'Refresh' });
+        if (await refresh.isVisible().catch(() => false)) {
+            await refresh.click();
+        }
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /** Pace between sequential market-info lookups to avoid staging API rate limits. */
+    async paceMarketInfoLookup(): Promise<void> {
+        await this.page.waitForTimeout(MarketSelectionPage.MARKET_INFO_LOOKUP_PACE_MS);
+    }
+
+    /**
+     * Search for `market`, open its Info screen, and assert the authored description.
+     * Retries once after rate-limit recovery when the lookup throws (e.g. mid-poll timeout).
+     */
+    async verifyMarketInfoDescription(market: string, description: string): Promise<void> {
+        try {
+            await this.openMarketInfoFromSearch(market);
+        } catch {
+            await this.recoverFromRateLimitIfNeeded();
+            await this.openMarketInfoFromSearch(market);
+        }
+
+        await expect(this.marketInfoDescription, `${market} should show its authored market description`).toHaveText(
+            description
+        );
+        await this.marketInfoBackButton.click();
+        await expect(this.marketInfoScreen, 'Info screen should close after Back').not.toBeVisible();
     }
 
     /**

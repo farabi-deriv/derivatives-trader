@@ -39,7 +39,7 @@
 
 **Demo and real accounts (Flows 5–13):** Each **test case** maps to one child flow ID. **Accumulators (Flow 6):** **6.1**/**6.2** = Martingale demo/real · **6.3**/**6.4** = D'Alembert demo/real. **Dual-outcome trade types** (Flows 5, 7–9, 10–13): `.1`/`.2` = first outcome demo/real · `.3`/`.4` = second outcome demo/real (e.g. Flow **5.1** Rise demo · **5.2** Rise real · **5.3** Fall demo · **5.4** Fall real). The `beforeAll` account is always `'real'`; demo/real switching happens in-app. Each test uses **distinct inline params** so strategy-adjusted stakes do not collide on closed-position lookup.
 
-**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts`. Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/`. Dual-outcome types use **one file per outcome and strategy** — each file holds **two tests** (demo + real), e.g. `verify-rise-martingale.spec.ts` → Flows **5.1** and **5.2**. Accumulators keep **one file per strategy** with two tests — Flows **6.1** demo · **6.2** real.
+**Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts` (Flows **14–17**). Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/`. Dual-outcome types use **one file per outcome and strategy** — each file holds **two tests** (demo + real), e.g. `verify-rise-martingale.spec.ts` → Flows **5.1** and **5.2**. Accumulators keep **one file per strategy** with two tests — Flows **6.1** demo · **6.2** real.
 
 > **No manual close of individual contracts** — stop the run via **Stop**; the bot manages its own contracts.
 
@@ -500,6 +500,44 @@ await tradeAutomatePage.runOverUnderAndVerify({
 | 4   | Panel stays idle      | `verifyAutomatePanelIdleAfterParamValidation()`                                         | **Run** visible and enabled; no active run                                              | Both     |
 
 > Numeric automation editors strip non-digit input (`regex={/[^0-9.,]/g}`), so minus signs cannot be typed. Run-click validation for unsupported trade types remains **G2**.
+
+### Flow 16 — Manual-to-Automate market compatibility
+
+> Covers regressions for #916 (Range Break infinite trade-type load) and #917 (Crash/Boom + Accumulators symbol revert).
+
+**Spec:** `playwright/tests/trade-automate/verify-automate-market-compatibility.spec.ts`
+
+| #   | Step                          | Action                                                              | Expected Result                                                                               | Platform |
+| --- | ----------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------- |
+| 1   | Open Automate                 | `goToAutomatedTrading()`                                            | Strategy parameters panel renders                                                             | Both     |
+| 2   | Select market in Automate     | `selectMarketAndTradeType(market, tradeType, { mode: 'automate' })` | Active tab reflects the chosen market + trade type — no infinite trade-type spinner (#916)    | Both     |
+| 3a  | Non-automatable (Range Break) | Range Break 100 Index · Multipliers                                 | Snackbar explains market unavailable for automation; **Run** disabled                         | Both     |
+| 3b  | Automatable (Crash/Boom)      | Crash 500 Index · Accumulators                                      | Tab stays on Crash 500 + Accumulators; Automate guide trigger visible; **Run** enabled (#917) | Both     |
+
+---
+
+### Flow 17 — Automate param info icons reveal descriptions
+
+> Covers regression for #995 on the automation panel and Accumulators trade-form params. Manual-trade counterpart: `playwright/flows/trade/flow.md` Flow 19.
+
+**Prerequisites:** Funded real (staging test) account with Automation enabled (`TEST_EMAIL_AUTOMATE` / `TEST_EMAIL_AUTOMATE_MOBILE`).
+**Spec:** `playwright/tests/trade-automate/verify-automate-param-info-icon-hover.spec.ts`
+**Matrix:** `TradeAutomatePage.AUTOMATE_PARAM_INFO_ICON_CASES` — Rise/Fall (strategy panel only); Accumulators (strategy panel + Growth rate / Take profit trade-form rows).
+
+| #   | Step                              | Action                                                                                          | Expected Result                                                        | Platform |
+| --- | --------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------- |
+| 1   | Open Automate                     | `goToAutomatedTrading()`                                                                        | Strategy parameters panel renders                                      | Both     |
+| 2   | Select market + trade type        | `selectMarketAndTradeType(market, tradeType, { mode: 'automate', verifyParams: false })`        | Automate panel shows the target trade type                             | Both     |
+| 3   | Desktop — strategy params         | Hover each automation-panel row (Strategy, Stake multiplier, Max. stake, Profit/Loss threshold) | Info icon opacity `0` → `1`; tooltip shows `automation-config.ts` copy | Desktop  |
+| 4   | Desktop — Accumulators trade form | Hover Growth rate / Take profit collapsed rows                                                  | Same hover-reveal tooltip copy as manual Flow 19                       | Desktop  |
+| 5   | Mobile — open parameter editor    | Tap each read-only parameter field                                                              | Action sheet opens                                                     | Mobile   |
+| 6   | Mobile — verify info icon + copy  | Tap `button.action-sheet-header-tooltip[aria-label="…"]`                                        | Portaled tooltip shows the authored description                        | Mobile   |
+
+> **POM:** `verifyAutomateParamInfoIconOnDesktop()` · inherited `verifyTradeParamInfoIconOnDesktop()` / `verifyTradeParamInfoIconsInMobileEditor()` for trade-form rows · matrix constants `AUTOMATE_PARAM_INFO_DESCRIPTIONS` + `TRADE_PARAM_INFO_DESCRIPTIONS`.
+>
+> **Strategy-panel params (both matrix rows):** Strategy, Stake multiplier, Max. stake, Profit threshold, Loss threshold — collapsed-row hover reveal via shared `TradeParameterPopover` (`.trade-params__field-with-info`).
+>
+> **Accumulators-only trade-form params:** Growth rate, Take profit — same components as manual Flow 19; automate threshold copy differs from manual Risk management TP/SL.
 
 ---
 

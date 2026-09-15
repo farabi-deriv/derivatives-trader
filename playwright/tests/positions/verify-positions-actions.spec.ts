@@ -1,7 +1,7 @@
 /**
  * @name     Positions — In-Position Card Actions (Close & Cancel)
- * @id       gap-g1, gap-g2
- * @flow     playwright/flows/positions/flow.md#g1--close-open-contract-from-positions-card-swipe-action
+ * @id       flow-8, flow-9
+ * @flow     playwright/flows/positions/flow.md#flow-8--close-open-contract-from-positions-card-swipe-action
  * @coverage playwright/flows/positions/coverage.md
  */
 import { test, expect, redirectionHelpers } from '../../fixtures/fixtures';
@@ -41,7 +41,7 @@ test.describe('Positions — Card Actions', { tag: ['@positions', '@regression',
         isMobileViewport,
     }) => {
         if (!isMobileViewport) {
-            test.skip(true, 'Gap G1 is mobile-only; desktop contracts use inline Close button');
+            test.skip(true, 'Flow 8 is mobile-only; desktop contracts use inline Close button');
         }
 
         // Buy 5m Rise/Fall contract
@@ -66,7 +66,7 @@ test.describe('Positions — Card Actions', { tag: ['@positions', '@regression',
         isMobileViewport,
     }) => {
         if (!isMobileViewport) {
-            test.skip(true, 'Gap G2 is mobile-only; desktop multiplier contracts use inline Cancel button');
+            test.skip(true, 'Flow 9 is mobile-only; desktop multiplier contracts use inline Cancel button');
         }
 
         // Buy Multiplier with Deal Cancellation

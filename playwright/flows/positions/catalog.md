@@ -10,15 +10,15 @@
 | Journey ID      | Spec File                                         | Tags                             |
 | --------------- | ------------------------------------------------- | -------------------------------- |
 | Flow 1, 2, 4, 7 | `positions/verify-positions-load.spec.ts`         | `@positions @desktop @mobile`    |
-| Flow 3, G3      | `positions/verify-positions-empty-states.spec.ts` | `@positions @regression @mobile` |
-| Flow 5, 6, G4   | `positions/verify-positions-filters.spec.ts`      | `@positions @regression @mobile` |
-| G1, G2          | `positions/verify-positions-actions.spec.ts`      | `@positions @regression @mobile` |
+| Flow 3, 10      | `positions/verify-positions-empty-states.spec.ts` | `@positions @regression @mobile` |
+| Flow 5, 6, 11   | `positions/verify-positions-filters.spec.ts`      | `@positions @regression @mobile` |
+| Flow 8, 9       | `positions/verify-positions-actions.spec.ts`      | `@positions @regression @mobile` |
 
 ---
 
 ## Section 2 — Flow Details
 
-> Four consolidated spec files implement all Positions flows. **Desktop-only** flows (2) and **mobile-only** flows (1, 3–7, G1–G4) use `test.skip()` when the wrong viewport runs. Load/actions specs **seed contracts in-test** via `tradeRiseFallPage` / `tradeMultipliersPage`; empty-state G3 uses a **fresh account** on staging.
+> Four consolidated spec files implement all Positions flows. **Desktop-only** flows (2) and **mobile-only** flows (1, 3–11) use `test.skip()` when the wrong viewport runs. Load/actions specs **seed contracts in-test** via `tradeRiseFallPage` / `tradeMultipliersPage`; Flow 10 uses a **fresh account** on staging.
 
 ### `verify-positions-load.spec.ts` — Flows 1, 2, 4, 7
 
@@ -85,45 +85,42 @@ await expect(positionsPage.firstContractCard).toBeVisible();
 
 ---
 
-### `verify-positions-empty-states.spec.ts` — Flow 3, G3
+### `verify-positions-empty-states.spec.ts` — Flow 3, Flow 10
 
 **Tags:** `@positions @regression @mobile` — mobile-only (desktop skips).
 
-| Flow | Test name                                                            |
-| ---- | -------------------------------------------------------------------- |
-| 3    | `VERIFY empty state shown when no open positions exist on mobile`    |
-| G3   | `VERIFY empty state shown on Closed tab when account has no history` |
+| Flow | Test name                                                          |
+| ---- | ------------------------------------------------------------------ |
+| 3    | `VERIFY empty open positions state on mobile` (light + dark theme) |
+| 10   | `VERIFY empty closed positions state on mobile`                    |
 
-**Flow 3 — empty open tab:**
+**Flow 3 — empty open tab (light theme, then dark-theme icon contrast #1036):**
 
 ```typescript
-await redirectionHelpers.redirectTo(page, '/positions');
-if (await positionsPage.firstContractCard.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await positionsPage.closeAllOpenContracts();
-}
-await expect(positionsPage.emptyStateIcon).toBeVisible();
-await expect(page.getByText('No open positions')).toBeVisible();
-await expect(page.getByRole('button', { name: 'Start trading' })).toBeVisible();
+await positionsPage.ensureEmptyOpenPositionsTab();
+await positionsPage.verifyEmptyOpenPositionsState();
+// Dark theme step: seedDarkThemePreference → reload → re-ensure empty → assert body.theme--dark + icon visible
 ```
 
-**G3 — empty closed tab (fresh account via `createAccountV2viaJS` on staging):**
+**Flow 10 — empty closed tab (fresh account via `createAccountV2viaJS` on staging):**
 
 ```typescript
 await redirectionHelpers.redirectTo(page, '/positions');
 await positionsPage.clickClosedTab();
-await expect(page.getByText('No closed positions')).toBeVisible();
+await NavigationUtils.waitForDerivApiSettled(page);
+await positionsPage.verifyEmptyClosedPositionsState();
 ```
 
 ---
 
-### `verify-positions-filters.spec.ts` — Flows 5, 6, G4
+### `verify-positions-filters.spec.ts` — Flows 5, 6, 11
 
 **Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only; `beforeEach`/`afterEach` no-op on desktop.
 
 | Flow | Test name                                                                       |
 | ---- | ------------------------------------------------------------------------------- |
 | 5    | `VERIFY filter by trade type narrows open positions list and can be cleared`    |
-| G4   | `VERIFY no-matches state when trade type filter has no matching open positions` |
+| 11   | `VERIFY no-matches state when trade type filter has no matching open positions` |
 | 6    | `VERIFY time filter narrows closed positions list and can be reset`             |
 
 **Flow 5 — trade-type filter:**
@@ -137,7 +134,7 @@ await positionsPage.openTradeTypeFilter();
 await positionsPage.clearFilter();
 ```
 
-**G4 — no matches (filter Accumulators with only Rise open):**
+**Flow 11 — no matches (filter Accumulators with only Rise open):**
 
 ```typescript
 await page.getByRole('checkbox', { name: 'Accumulators' }).check();
@@ -157,22 +154,22 @@ await positionsPage.resetTimeFilter();
 
 ---
 
-### `verify-positions-actions.spec.ts` — G1, G2
+### `verify-positions-actions.spec.ts` — Flow 8, Flow 9
 
 **Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only swipe/force-click actions.
 
-| Gap | Test name                                                                          |
-| --- | ---------------------------------------------------------------------------------- |
-| G1  | `VERIFY swiping left on a contract card allows closing the position on mobile`     |
-| G2  | `VERIFY swiping left on a multiplier contract with DC allows cancelling on mobile` |
+| Flow | Test name                                                                          |
+| ---- | ---------------------------------------------------------------------------------- |
+| 8    | `VERIFY swiping left on a contract card allows closing the position on mobile`     |
+| 9    | `VERIFY swiping left on a multiplier contract with DC allows cancelling on mobile` |
 
-**G1 — close via swipe action:**
+**Flow 8 — close via swipe action:**
 
 ```typescript
 await positionsPage.closeFirstContract();
 ```
 
-**G2 — Multiplier with Deal Cancellation:**
+**Flow 9 — Multiplier with Deal Cancellation:**
 
 ```typescript
 await tradeMultipliersPage.setRiskManagement({ dealCancellation: '5 min' });
@@ -226,7 +223,7 @@ The `ContractTypeFilter` and `TimeFilter` components use Quill UI `Chip.Standard
 
 - **Load, filters, actions specs:** Buy Rise/Multiplier contracts in-test via `tradeRiseFallPage` / `tradeMultipliersPage`; login with `TEST_EMAIL` / `_MOBILE`.
 - **Flow 3 (empty open):** Uses shared account; closes any open contracts before asserting empty state.
-- **G3 (empty closed):** Uses `createAccountV2viaJS` on staging (or production env credentials) so the Closed tab has no history.
+- **Flow 10 (empty closed):** Uses `createAccountV2viaJS` on staging (or production env credentials) so the Closed tab has no history.
 
 **Impact on generated code:** Do not assume a pre-existing portfolio on the shared staging account — follow the seed-or-clear patterns in each spec.
 

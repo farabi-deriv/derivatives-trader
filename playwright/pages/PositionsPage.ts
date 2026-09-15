@@ -413,6 +413,55 @@ export class PositionsPage extends TradeBasePage {
         await this.positionsClosedTab.click();
     }
 
+    /** Empty-state copy on the mobile Open tab (Flow 3). */
+    get emptyOpenPositionsDescription(): Locator {
+        return this.page.getByText('Your active trades will appear here.');
+    }
+
+    /** CTA on the mobile Open tab empty state (Flow 3). */
+    get startTradingButton(): Locator {
+        return this.page.getByRole('button', { name: 'Start trading' });
+    }
+
+    /** Empty-state heading on the mobile Closed tab (G3). */
+    get noClosedPositionsText(): Locator {
+        return this.page.getByText('No closed positions');
+    }
+
+    /** Empty-state copy on the mobile Closed tab (G3). */
+    get emptyClosedPositionsDescription(): Locator {
+        return this.page.getByText('Your closed positions will be shown here.');
+    }
+
+    /**
+     * Close any open contracts so the mobile Open tab can show the empty state.
+     * Caller must already be on `/positions`.
+     */
+    async ensureEmptyOpenPositionsTab(): Promise<void> {
+        const hasOpen = await this.firstContractCard.isVisible({ timeout: 5000 }).catch(() => false);
+        if (hasOpen) {
+            await this.closeAllOpenContracts();
+        }
+    }
+
+    /** Flow 3 — mobile Open tab empty state (icon, heading, description, CTA). */
+    async verifyEmptyOpenPositionsState(): Promise<void> {
+        await expect(this.emptyStateIcon, 'Empty state icon should be visible').toBeVisible();
+        await expect(this.noOpenPositionsText, 'Empty heading should show "No open positions"').toBeVisible();
+        await expect(this.emptyOpenPositionsDescription, 'Empty description should be visible').toBeVisible();
+        await expect(
+            this.startTradingButton,
+            'Start trading button should be visible in empty open positions state'
+        ).toBeVisible();
+    }
+
+    /** G3 — mobile Closed tab empty state when the account has no contract history. */
+    async verifyEmptyClosedPositionsState(): Promise<void> {
+        await expect(this.emptyStateIcon, 'Empty state icon should be visible on Closed tab').toBeVisible();
+        await expect(this.noClosedPositionsText, 'Empty heading should show "No closed positions"').toBeVisible();
+        await expect(this.emptyClosedPositionsDescription, 'Empty description should be visible').toBeVisible();
+    }
+
     /**
      * Open the first contract in the Positions list by clicking its card.
      * Waits for the contract card to be visible before clicking.

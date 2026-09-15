@@ -4,6 +4,15 @@ import { FeedPage } from './FeedPage';
 import { TradeBasePage } from './TradeBasePage';
 import { MarketSelectionPage } from './MarketSelectionPage';
 
+type TradeParamInfoIconLabel =
+    | 'Multiplier'
+    | 'Risk management'
+    | 'Growth rate'
+    | 'Take profit'
+    | 'Barrier'
+    | 'Payout per point'
+    | 'Strike price';
+
 /**
  * Page Object for trade parameters shared across all contract types on the trade page (/).
  *
@@ -205,6 +214,11 @@ export class TradeParametersPage extends TradeBasePage {
      */
     get payoutPerPointParam(): Locator {
         return this.page.getByText('Payout per point').first();
+    }
+
+    /** Payout per point label — Turbos only (TradeParameterPopover with info icon on desktop). */
+    get payoutPerPointLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Payout per point' }).first();
     }
 
     /**
@@ -476,6 +490,21 @@ export class TradeParametersPage extends TradeBasePage {
      */
     get stakeField(): Locator {
         return this.page.getByLabel('Stake').first();
+    }
+
+    /**
+     * Trade-parameter row that hosts the hover-revealed info icon (manual + automate).
+     * Source: TradeParameterPopover — `.trade-params__field-with-info` (issue #995).
+     *
+     * @param labelLocator - The parameter's visible label (e.g. Multiplier on Multipliers).
+     */
+    tradeParamFieldWithInfo(labelLocator: Locator): Locator {
+        return this.page.locator('.trade-params__field-with-info').filter({ has: labelLocator });
+    }
+
+    /** Info ("i") icon wrapper for a labelled trade parameter. */
+    tradeParamInfoIconWrapper(labelLocator: Locator): Locator {
+        return this.tradeParamFieldWithInfo(labelLocator).locator('.trade-params__info-icon-wrapper');
     }
 
     /**
@@ -2323,5 +2352,318 @@ export class TradeParametersPage extends TradeBasePage {
                 'Fullscreen toggle should be visible on the desktop trade form'
             ).toBeVisible();
         }
+    }
+
+    /** Authored tooltip copy for manual trade-parameter info icons (issue #995). */
+    static readonly TRADE_PARAM_INFO_DESCRIPTIONS = {
+        multiplier:
+            'Multipliers amplify your potential profit if the market moves in your favour, with losses limited to your initial capital.',
+        growthRate: 'The growth rate determines the rate at which your stake will grow with each successful tick.',
+        takeProfit: 'When your profit reaches or exceeds this amount, your trade will be closed automatically.',
+        stopLoss: 'When your loss reaches or exceeds this amount, your trade will be closed automatically.',
+        payoutPerPoint:
+            'The amount you choose to receive at expiry for every point of change between the final price and the barrier.',
+        strikePrice: /you receive a payout at expiry if the final price is/,
+        barrierRelative: /Barrier set above spot price\./,
+    } as const;
+
+    /**
+     * Manual-trade parameter info-icon coverage per market/trade type (issue #995).
+     * Desktop: hover-reveal on collapsed `TradeParameterPopover` rows.
+     * Mobile: `button.action-sheet-header-tooltip` inside the parameter editor sheet.
+     */
+    static readonly TRADE_PARAM_INFO_ICON_CASES: ReadonlyArray<{
+        market: string;
+        tradeType: string;
+        desktopParams?: ReadonlyArray<{
+            label: TradeParamInfoIconLabel;
+            descriptions: ReadonlyArray<string | RegExp>;
+        }>;
+        mobileChecks?: ReadonlyArray<{
+            openField: string;
+            icons: ReadonlyArray<{
+                ariaLabel: string;
+                descriptions: ReadonlyArray<string | RegExp>;
+            }>;
+        }>;
+    }> = [
+        {
+            market: 'Volatility 100 Index',
+            tradeType: 'Multipliers',
+            desktopParams: [
+                {
+                    label: 'Multiplier',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.multiplier],
+                },
+                {
+                    label: 'Risk management',
+                    descriptions: [
+                        TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit,
+                        TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.stopLoss,
+                    ],
+                },
+            ],
+            mobileChecks: [
+                {
+                    openField: 'Multiplier',
+                    icons: [
+                        {
+                            ariaLabel: 'Multiplier',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.multiplier],
+                        },
+                    ],
+                },
+                {
+                    openField: 'Risk management',
+                    icons: [
+                        {
+                            ariaLabel: 'Take profit',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                        },
+                        {
+                            ariaLabel: 'Stop loss',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.stopLoss],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            market: 'Volatility 100 Index',
+            tradeType: 'Accumulators',
+            desktopParams: [
+                {
+                    label: 'Growth rate',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.growthRate],
+                },
+                {
+                    label: 'Take profit',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                },
+            ],
+            mobileChecks: [
+                {
+                    openField: 'Growth rate',
+                    icons: [
+                        {
+                            ariaLabel: 'Growth rate',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.growthRate],
+                        },
+                    ],
+                },
+                {
+                    openField: 'Take profit',
+                    icons: [
+                        {
+                            ariaLabel: 'Take profit',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            market: 'Volatility 100 (1s) Index',
+            tradeType: 'Higher/Lower',
+            mobileChecks: [
+                {
+                    openField: 'Barrier',
+                    icons: [
+                        {
+                            ariaLabel: 'Barrier',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.barrierRelative],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            market: 'Volatility 10 (1s) Index',
+            tradeType: 'Touch/No Touch',
+            mobileChecks: [
+                {
+                    openField: 'Barrier',
+                    icons: [
+                        {
+                            ariaLabel: 'Barrier',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.barrierRelative],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            market: 'Volatility 100 (1s) Index',
+            tradeType: 'Turbos',
+            desktopParams: [
+                {
+                    label: 'Payout per point',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.payoutPerPoint],
+                },
+                {
+                    label: 'Take profit',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                },
+            ],
+            mobileChecks: [
+                {
+                    openField: 'Payout per point',
+                    icons: [
+                        {
+                            ariaLabel: 'Payout per point',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.payoutPerPoint],
+                        },
+                    ],
+                },
+                {
+                    openField: 'Take profit',
+                    icons: [
+                        {
+                            ariaLabel: 'Take profit',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            market: 'Volatility 100 Index',
+            tradeType: 'Vanillas',
+            desktopParams: [
+                {
+                    label: 'Strike price',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.strikePrice],
+                },
+            ],
+            mobileChecks: [
+                {
+                    openField: 'Strike price',
+                    icons: [
+                        {
+                            ariaLabel: 'Strike price',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.strikePrice],
+                        },
+                    ],
+                },
+            ],
+        },
+    ];
+
+    /** Topmost visible mobile parameter editor sheet. */
+    get visibleActionSheet(): Locator {
+        return this.page.locator('.quill-action-sheet--root:visible').last();
+    }
+
+    /** Portaled trade-parameter tooltip. Source: TradeParameterPopover + TooltipPortal. */
+    get tradeParamInfoTooltip(): Locator {
+        return this.page.locator('.trade-params__parameter-tooltip[role="tooltip"]');
+    }
+
+    /** Info-icon button inside an open mobile parameter editor. Source: ActionSheetHeaderTooltip. */
+    tradeParamInfoIconInSheet(sheet: Locator, ariaLabel: string): Locator {
+        return sheet.locator(`button.action-sheet-header-tooltip[aria-label="${ariaLabel}"]`);
+    }
+
+    private async expectTradeParamInfoTooltipDescriptions(
+        descriptions: ReadonlyArray<string | RegExp>,
+        context: string
+    ): Promise<void> {
+        if (this.isMobile) {
+            // Quill `Tooltip` portals copy to the document body — not `role="tooltip"`, and not inside the sheet.
+            for (const description of descriptions) {
+                await expect(
+                    this.page.getByText(description),
+                    `${context} info tooltip should include the authored description`
+                ).toBeVisible();
+            }
+            return;
+        }
+
+        const tooltip = this.tradeParamInfoTooltip;
+        await expect(tooltip, `${context} info tooltip should be visible`).toBeVisible();
+
+        for (const description of descriptions) {
+            await expect(tooltip, `${context} info tooltip should include the authored description`).toContainText(
+                description
+            );
+        }
+    }
+
+    tradeParamLabelByName(name: TradeParamInfoIconLabel): Locator {
+        switch (name) {
+            case 'Multiplier':
+                return this.multiplierLabel;
+            case 'Risk management':
+                return this.riskManagementLabel;
+            case 'Growth rate':
+                return this.growthRateLabel;
+            case 'Take profit':
+                return this.takeProfitLabel;
+            case 'Barrier':
+                return this.barrierLabel;
+            case 'Payout per point':
+                return this.payoutPerPointLabel;
+            case 'Strike price':
+                return this.strikePriceLabel;
+            default:
+                throw new Error(`Unknown trade param label: ${name}`);
+        }
+    }
+
+    /**
+     * Desktop manual-trade info icons stay hidden until the field is hovered, then reveal authored copy
+     * in a TooltipPortal (issue #995).
+     */
+    async verifyTradeParamInfoIconOnDesktop(
+        labelName: TradeParamInfoIconLabel,
+        descriptions: ReadonlyArray<string | RegExp>
+    ): Promise<void> {
+        const labelLocator = this.tradeParamLabelByName(labelName);
+        const field = this.tradeParamFieldWithInfo(labelLocator);
+        const iconWrapper = this.tradeParamInfoIconWrapper(labelLocator);
+        const icon = iconWrapper.locator('.trade-params__info-icon');
+
+        await expect(iconWrapper, `${labelName} info icon should be hidden before the field is hovered`).toHaveCSS(
+            'opacity',
+            '0'
+        );
+        await field.hover();
+        await expect(iconWrapper, `${labelName} info icon should become visible when the field is hovered`).toHaveCSS(
+            'opacity',
+            '1'
+        );
+
+        await icon.hover();
+        await this.expectTradeParamInfoTooltipDescriptions(descriptions, labelName);
+    }
+
+    /** Read-only trade-parameter field that opens the mobile editor sheet. */
+    tradeParamFieldTrigger(label: string): Locator {
+        return this.page.getByRole('textbox', { name: label });
+    }
+
+    async verifyTradeParamInfoIconsInMobileEditor(
+        openFieldLabel: string,
+        icons: ReadonlyArray<{
+            ariaLabel: string;
+            descriptions: ReadonlyArray<string | RegExp>;
+        }>
+    ): Promise<void> {
+        await this.marketSelectionPage.closeMarketSelectionPicker();
+        await this.tradeParamFieldTrigger(openFieldLabel).click();
+        const sheet = this.visibleActionSheet;
+        await expect(sheet, `${openFieldLabel} editor sheet should open on mobile`).toBeVisible();
+
+        for (const { ariaLabel, descriptions } of icons) {
+            const infoIcon = this.tradeParamInfoIconInSheet(sheet, ariaLabel);
+            await expect(
+                infoIcon,
+                `${ariaLabel} info icon should be visible in the ${openFieldLabel} editor`
+            ).toBeVisible();
+            await infoIcon.click();
+            await this.expectTradeParamInfoTooltipDescriptions(descriptions, ariaLabel);
+        }
+
+        await this.dismissParameterEditor(sheet, sheet, openFieldLabel);
     }
 }

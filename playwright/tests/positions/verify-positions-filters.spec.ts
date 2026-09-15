@@ -1,6 +1,6 @@
 /**
  * @name     Positions — Filter Options & No-Matches State
- * @id       flow-5, flow-6, gap-g4
+ * @id       flow-5, flow-6, flow-11
  * @flow     playwright/flows/positions/flow.md#flow-5--filter-open-positions-by-trade-type
  * @coverage playwright/flows/positions/coverage.md
  */
@@ -84,7 +84,7 @@ test.describe('Positions — Filters', { tag: ['@positions', '@regression', '@mo
         isMobileViewport,
     }) => {
         if (!isMobileViewport) {
-            test.skip(true, 'Gap G4 is mobile-only; desktop positions use sidebar flyout');
+            test.skip(true, 'Flow 11 is mobile-only; desktop positions use sidebar flyout');
         }
 
         // Buy open Rise/Fall contract

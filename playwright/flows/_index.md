@@ -43,9 +43,9 @@ Each module section lists every documented flow with its current **status** and 
 | `pageerrors`       | 1           | 1          | 1         |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
-| `trade`            | 39          | 39         | 39        |
-| `trade-automate`   | 44          | 44         | 42        |
-| **Total**          | **144**     | **139**    | **136**   |
+| `trade`            | 40          | 40         | 40        |
+| `trade-automate`   | 46          | 46         | 44        |
+| **Total**          | **147**     | **142**    | **138**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -98,6 +98,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 17.1 | P2       | Insufficient balance popup → deposit transfer              | authenticated, zero balance  | `automated` |
 | Flow 17.2 | P2       | Insufficient balance stake hint + Buy enabled              | authenticated, low balance   | `automated` |
 | Flow 18   | P1       | Invalid URL — unsupported market and trade type modals     | unauthenticated              | `automated` |
+| Flow 19   | P2       | Manual trade param info icons reveal descriptions          | authenticated                | `automated` |
 
 ---
 
@@ -105,19 +106,19 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/positions/` · **Test folder:** `playwright/tests/positions/`
 
-| Flow   | Priority | Description                                                                | User State                                                 | Status      |
-| ------ | -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
-| Flow 1 | P0       | Open positions list loads (mobile full-page route)                         | authenticated, has open contracts (mobile)                 | `automated` |
-| Flow 2 | P0       | Open positions list loads (desktop sidebar flyout)                         | authenticated, has open contracts (desktop)                | `automated` |
-| Flow 3 | P2       | Empty state when no open contracts                                         | authenticated, no open contracts (mobile)                  | `automated` |
-| Flow 4 | P1       | Closed positions tab shows contracts grouped by date                       | authenticated, has closed contracts (mobile)               | `automated` |
-| Flow 5 | P2       | Filter open positions by trade type                                        | authenticated, multiple open contracts (mobile)            | `automated` |
-| Flow 6 | P2       | Filter closed positions by time range                                      | authenticated, closed contracts on multiple dates (mobile) | `automated` |
-| Flow 7 | P1       | Navigate from positions card to contract details                           | authenticated, has open contracts (mobile)                 | `automated` |
-| —      | P1       | Close open contract from positions list (swipe + Close button) (G1)        | authenticated, has open contracts (mobile)                 | `automated` |
-| —      | P2       | Cancel open multiplier with Deal Cancellation (swipe + Cancel button) (G2) | authenticated, funded multiplier open (mobile)             | `automated` |
-| —      | P3       | Empty state on Closed tab (no contract history) (G3)                       | authenticated, no contract history (mobile)                | `automated` |
-| —      | P3       | Filter yields no matches on open positions (G4)                            | authenticated, open contracts (mobile)                     | `automated` |
+| Flow    | Priority | Description                                                           | User State                                                 | Status      |
+| ------- | -------- | --------------------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
+| Flow 1  | P0       | Open positions list loads (mobile full-page route)                    | authenticated, has open contracts (mobile)                 | `automated` |
+| Flow 2  | P0       | Open positions list loads (desktop sidebar flyout)                    | authenticated, has open contracts (desktop)                | `automated` |
+| Flow 3  | P2       | Empty state when no open contracts (light + dark theme icon, #1036)   | authenticated, no open contracts (mobile)                  | `automated` |
+| Flow 4  | P1       | Closed positions tab shows contracts grouped by date                  | authenticated, has closed contracts (mobile)               | `automated` |
+| Flow 5  | P2       | Filter open positions by trade type                                   | authenticated, multiple open contracts (mobile)            | `automated` |
+| Flow 6  | P2       | Filter closed positions by time range                                 | authenticated, closed contracts on multiple dates (mobile) | `automated` |
+| Flow 7  | P1       | Navigate from positions card to contract details                      | authenticated, has open contracts (mobile)                 | `automated` |
+| Flow 8  | P1       | Close open contract from positions list (swipe + Close button)        | authenticated, has open contracts (mobile)                 | `automated` |
+| Flow 9  | P2       | Cancel open multiplier with Deal Cancellation (swipe + Cancel button) | authenticated, funded multiplier open (mobile)             | `automated` |
+| Flow 10 | P3       | Empty state on Closed tab (no contract history)                       | authenticated, no contract history (mobile)                | `automated` |
+| Flow 11 | P3       | Filter yields no matches on open positions                            | authenticated, open contracts (mobile)                     | `automated` |
 
 ---
 
@@ -177,7 +178,7 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flows 14–15 panel specs)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flows 14–17 panel specs)
 
 | Flow      | Priority | Description                                                                          | User State                                     | Status       |
 | --------- | -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------ |
@@ -224,6 +225,8 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 13.4 | P1       | Even/Odd — D'Alembert Odd (real)                                                     | authenticated, funded real/staging (non-EU)    | `automated`  |
 | Flow 14   | P1       | "Automation already running" adoption snackbar — `verify-already-running.spec.ts`    | authenticated, run active                      | `automated`  |
 | Flow 15   | P1       | Invalid trade/automation param validation — `verify-trade-param-validation.spec.ts`  | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 16   | P1       | Manual-to-Automate market compatibility (#916, #917)                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
+| Flow 17   | P2       | Automate param info icons reveal descriptions (#995)                                 | authenticated, funded real/staging (non-EU)    | `automated`  |
 | —         | P2       | Validation / unsupported-contract-type error (G2)                                    | authenticated, funded real/staging (non-EU)    | `documented` |
 
 ---
@@ -252,34 +255,34 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/market-selection/` · **Test folder:** `playwright/tests/market-selection/`
 
-| Flow    | Priority | Description                                                          | User State            | Status       |
-| ------- | -------- | -------------------------------------------------------------------- | --------------------- | ------------ |
-| Flow 1  | P1       | Add market opens the picker as a new-tab flow                        | unauthenticated       | `automated`  |
-| Flow 2  | P1       | Clicking the active tab replaces it instead of adding a new one      | unauthenticated       | `automated`  |
-| Flow 3  | P1       | Trade-type navigation lists the same set on both platforms           | unauthenticated       | `automated`  |
-| Flow 4  | P1       | Switching trade type reloads the list to only tradeable symbols      | unauthenticated       | `automated`  |
-| Flow 5  | P1       | Asset-class category filter chips scope the list                     | unauthenticated       | `automated`  |
-| Flow 6  | P1       | Time-window dropdown is always present in the category list          | unauthenticated       | `automated`  |
-| Flow 7  | P2       | Market Info screen                                                   | unauthenticated       | `automated`  |
-| Flow 8  | P0       | Search by market name                                                | unauthenticated       | `automated`  |
-| Flow 9  | P0       | Search with no matches                                               | unauthenticated       | `automated`  |
-| Flow 10 | P2       | Favourite toggle from the browse list                                | unauthenticated       | `automated`  |
-| Flow 11 | P2       | Favourites persist across a page reload                              | unauthenticated       | `automated`  |
-| Flow 12 | P3       | Guide affordance opens the trade-type description modal              | unauthenticated       | `automated`  |
-| Flow 13 | P1       | Close without selecting                                              | unauthenticated       | `automated`  |
-| Flow 14 | P0       | Switch between existing tabs                                         | unauthenticated       | `automated`  |
-| Flow 15 | P0       | Re-selecting an already-open pair focuses the existing tab           | unauthenticated       | `automated`  |
-| Flow 16 | P0       | Same market, different trade type are independent tabs               | unauthenticated       | `automated`  |
-| Flow 17 | P0       | Remove a non-active tab                                              | unauthenticated       | `automated`  |
-| Flow 18 | P0       | Remove the active tab falls back to an adjacent tab                  | unauthenticated       | `automated`  |
-| Flow 19 | P0       | Remove the last remaining tab is blocked                             | unauthenticated       | `automated`  |
-| Flow 20 | P0       | Tab strip scroll and active/inactive tab sizing                      | unauthenticated       | `automated`  |
-| Flow 21 | P2       | Tabs persist across page reload                                      | unauthenticated       | `automated`  |
-| Flow 22 | P1       | Buy always targets the active tab's pair                             | authenticated, funded | `automated`  |
-| Flow 23 | P0       | Tab icon reflects its own market                                     | unauthenticated       | `automated`  |
-| Flow 24 | P0       | Max tab limit enforced (4 mobile / 7 desktop)                        | unauthenticated       | `automated`  |
-| —       | —        | No trade parameter is tab-scoped except (symbol, contract_type) (G1) | unauthenticated       | `documented` |
-| —       | P2       | Active tab's chevron cue marks it as the picker trigger (G2)         | unauthenticated       | `documented` |
+| Flow    | Priority | Description                                                                  | User State            | Status       |
+| ------- | -------- | ---------------------------------------------------------------------------- | --------------------- | ------------ |
+| Flow 1  | P1       | Add market opens the picker as a new-tab flow                                | unauthenticated       | `automated`  |
+| Flow 2  | P1       | Clicking the active tab replaces it instead of adding a new one              | unauthenticated       | `automated`  |
+| Flow 3  | P1       | Trade-type navigation lists the same set on both platforms                   | unauthenticated       | `automated`  |
+| Flow 4  | P1       | Switching trade type reloads the list to only tradeable symbols              | unauthenticated       | `automated`  |
+| Flow 5  | P1       | Asset-class category filter chips scope the list                             | unauthenticated       | `automated`  |
+| Flow 6  | P1       | Time-window dropdown is always present in the category list                  | unauthenticated       | `automated`  |
+| Flow 7  | P2       | Market Info screen (75-symbol description matrix, Trade-on, Favourite, Back) | unauthenticated       | `automated`  |
+| Flow 8  | P0       | Search by market name                                                        | unauthenticated       | `automated`  |
+| Flow 9  | P0       | Search with no matches                                                       | unauthenticated       | `automated`  |
+| Flow 10 | P2       | Favourite toggle from the browse list                                        | unauthenticated       | `automated`  |
+| Flow 11 | P2       | Favourites persist across a page reload                                      | unauthenticated       | `automated`  |
+| Flow 12 | P3       | Guide affordance opens the trade-type description modal                      | unauthenticated       | `automated`  |
+| Flow 13 | P1       | Close without selecting                                                      | unauthenticated       | `automated`  |
+| Flow 14 | P0       | Switch between existing tabs                                                 | unauthenticated       | `automated`  |
+| Flow 15 | P0       | Re-selecting an already-open pair focuses the existing tab                   | unauthenticated       | `automated`  |
+| Flow 16 | P0       | Same market, different trade type are independent tabs                       | unauthenticated       | `automated`  |
+| Flow 17 | P0       | Remove a non-active tab                                                      | unauthenticated       | `automated`  |
+| Flow 18 | P0       | Remove the active tab falls back to an adjacent tab                          | unauthenticated       | `automated`  |
+| Flow 19 | P0       | Remove the last remaining tab is blocked                                     | unauthenticated       | `automated`  |
+| Flow 20 | P0       | Tab strip scroll and active/inactive tab sizing                              | unauthenticated       | `automated`  |
+| Flow 21 | P2       | Tabs persist across page reload                                              | unauthenticated       | `automated`  |
+| Flow 22 | P1       | Buy always targets the active tab's pair                                     | authenticated, funded | `automated`  |
+| Flow 23 | P0       | Tab icon reflects its own market                                             | unauthenticated       | `automated`  |
+| Flow 24 | P0       | Max tab limit enforced (4 mobile / 7 desktop)                                | unauthenticated       | `automated`  |
+| —       | —        | No trade parameter is tab-scoped except (symbol, contract_type) (G1)         | unauthenticated       | `documented` |
+| —       | P2       | Active tab's chevron cue marks it as the picker trigger (G2)                 | unauthenticated       | `documented` |
 
 ---
 
@@ -287,11 +290,11 @@ Each module section lists every documented flow with its current **status** and 
 
 | Priority | Module             | Key Flows to Implement First                                                                                                    |
 | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type)                                                                                |
+| **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — Flows 16–17 automated (#916, #917, #995)                                     |
 | **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                |
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
 | **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                  |
-| **Done** | `positions`        | All 11 flows/gaps automated                                                                                                     |
+| **Done** | `positions`        | All 11 flows automated (former G1–G4 promoted to Flows 8–11)                                                                    |
 | **Done** | `reports`          | Flows 1–8 automated; G1/G2 have specs (Section 2) but remain `documented` in Section 1 glance                                   |
 | **Done** | `trade`            | All Section 1 flows automated; Flow 15 skips when no CLOSED market at runtime                                                   |
 | **Done** | `pageerrors`       | Flow 1 automated (#901 delay_amount guard)                                                                                      |

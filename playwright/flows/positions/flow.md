@@ -21,7 +21,7 @@
 
 ### Login and Navigate to Positions Steps
 
-> Referenced by Flows 1–7. Provides common setup.
+> Referenced by Flows 1–11. Provides common setup.
 
 **Prerequisites:** Logged-in account with at least one open position (or none for empty-state flows)
 
@@ -63,13 +63,18 @@
 
 ### Flow 3 — Empty open positions state
 
-**Prerequisites:** Logged-in account with no open contracts
+**Prerequisites:** Logged-in account with no open contracts (close any open contracts first if the shared inbox has positions)
 
-| #   | Step                  | Action                    | Expected Result                                                                                                                                      | Platform |
-| --- | --------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Login & settle        | Follow shared login steps | Trade page visible                                                                                                                                   | Mobile   |
-| 2   | Navigate to positions | Navigate to `/positions`  | Positions page loads                                                                                                                                 | Mobile   |
-| 3   | Confirm empty state   | View page body            | `dt_empty_state_icon` visible; text "No open positions" visible; text "Your active trades will appear here." visible; "Start trading" button visible | Mobile   |
+**Spec:** `verify-positions-empty-states.spec.ts` — also covers issue **#1036** (dark-theme empty-state icon contrast) in the same test via a second step.
+
+| #   | Step                        | Action                                                                                              | Expected Result                                                                                                            | Platform |
+| --- | --------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Login & settle              | Follow shared login steps                                                                           | Trade page visible                                                                                                         | Mobile   |
+| 2   | Navigate to positions       | Navigate to `/positions`                                                                            | Positions page loads on Open tab                                                                                           | Mobile   |
+| 3   | Ensure empty Open tab       | `positionsPage.ensureEmptyOpenPositionsTab()` — close any open contracts if present                 | No `dt_contract_card` on Open tab                                                                                          | Mobile   |
+| 4   | Confirm empty state (light) | `positionsPage.verifyEmptyOpenPositionsState()`                                                     | `dt_empty_state_icon` visible; "No open positions"; "Your active trades will appear here."; "Start trading" button visible | Mobile   |
+| 5   | Switch to dark theme        | `TradeBasePage.seedDarkThemePreference(page)` → reload → navigate to `/positions` → re-ensure empty | `body.theme--dark` applied                                                                                                 | Mobile   |
+| 6   | Confirm icon in dark mode   | View empty state                                                                                    | `dt_empty_state_icon` remains visible with sufficient contrast (#1036)                                                     | Mobile   |
 
 ---
 
@@ -129,38 +134,53 @@
 
 ---
 
-## Gap Flows
+### Flow 8 — Close open contract from positions card (swipe action)
 
-> These are test cases for coverage gaps. The proposed spec file for each gap is in [`coverage.md`](./coverage.md).
+**Prerequisites:** Logged-in account with at least one open contract
 
-### G1 — Close open contract from positions card (swipe action)
+| #   | Step                         | Action                        | Expected Result                                                                  | Platform |
+| --- | ---------------------------- | ----------------------------- | -------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to Open tab         | Follow Flow 1 steps 1–4       | Contract card visible                                                            | Mobile   |
+| 2   | Swipe to reveal Close button | Swipe left on a contract card | Close button appears on the right side of the card                               | Mobile   |
+| 3   | Click Close                  | Click the Close button        | Loading spinner (`dt_button_loader`) appears; contract card animates out of list | Mobile   |
+| 4   | Confirm removal              | Observe positions list        | Contract removed from Open positions list                                        | Mobile   |
 
-| #   | Test case                    | Steps                         | Expected Result                                                                  |
-| --- | ---------------------------- | ----------------------------- | -------------------------------------------------------------------------------- |
-| 1   | Swipe to reveal Close button | Swipe left on a contract card | Close button appears on the right side of the card                               |
-| 2   | Click Close                  | Click the Close button        | Loading spinner (`dt_button_loader`) appears; contract card animates out of list |
-| 3   | Confirm removal              | Observe positions list        | Contract removed from Open positions list                                        |
+---
 
-### G2 — Cancel open multiplier contract from positions card (swipe action)
+### Flow 9 — Cancel open multiplier contract from positions card (swipe action)
 
-| #   | Test case                     | Steps                                                               | Expected Result                                                     |
-| --- | ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1   | Open a multiplier position    | Ensure a multiplier contract is open with Deal Cancellation enabled | Contract card shows "DC" risk label                                 |
-| 2   | Swipe to reveal Cancel button | Swipe left on the multiplier contract card                          | Both "Cancel" (with remaining time) and "Close" buttons appear      |
-| 3   | Click Cancel                  | Click the "Cancel" button while profit is negative                  | Loading spinner (`dt_button_loader`) appears; cancellation executed |
-| 4   | Confirm cancellation          | Observe positions list                                              | Contract removed from Open positions list                           |
+**Prerequisites:** Logged-in account with an open multiplier contract that has Deal Cancellation enabled
 
-### G3 — Empty closed positions state
+| #   | Step                          | Action                                                   | Expected Result                                                     | Platform |
+| --- | ----------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- | -------- |
+| 1   | Open a multiplier position    | Buy a multiplier contract with Deal Cancellation enabled | Contract card shows "DC" risk label                                 | Mobile   |
+| 2   | Navigate to Open tab          | Navigate to `/positions`                                 | Multiplier contract card visible                                    | Mobile   |
+| 3   | Swipe to reveal Cancel button | Swipe left on the multiplier contract card               | Both "Cancel" (with remaining time) and "Close" buttons appear      | Mobile   |
+| 4   | Click Cancel                  | Click the "Cancel" button while profit is negative       | Loading spinner (`dt_button_loader`) appears; cancellation executed | Mobile   |
+| 5   | Confirm cancellation          | Observe positions list                                   | Contract removed from Open positions list                           | Mobile   |
 
-| #   | Test case              | Steps                                      | Expected Result                                                                                                             |
-| --- | ---------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Navigate to Closed tab | Open positions page; switch to Closed tab  | Closed tab active                                                                                                           |
-| 2   | Confirm empty state    | Account has no closed positions in history | `dt_empty_state_icon` visible; text "No closed positions" visible; text "Your closed positions will be shown here." visible |
+---
 
-### G4 — Filter yields no matches (open positions)
+### Flow 10 — Empty closed positions state
 
-| #   | Test case                               | Steps                                                                   | Expected Result                                                                                                                              |
-| --- | --------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Open positions with only one trade type | Navigate to Open positions                                              | Contracts visible                                                                                                                            |
-| 2   | Apply mismatching filter                | Open Trade types filter; select a trade type that has no open positions | Action sheet closes                                                                                                                          |
-| 3   | Confirm no-matches state                | Observe page                                                            | `dt_empty_state_icon` visible; text "No matches found" visible; text "Try changing or removing filters to view available positions." visible |
+**Prerequisites:** Account with no closed positions in history — **fresh account** via `createAccountV2viaJS` on staging (cannot share the Open-tab inbox used by Flow 3)
+
+**Spec:** `verify-positions-empty-states.spec.ts`
+
+| #   | Step                   | Action                                                                | Expected Result                                                                                           | Platform |
+| --- | ---------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Create / login         | Fresh account on staging (`createAccountV2viaJS`) or production creds | Logged in with empty closed history                                                                       | Mobile   |
+| 2   | Navigate to Closed tab | Navigate to `/positions`; click Closed tab; wait for API settled      | Closed tab active                                                                                         | Mobile   |
+| 3   | Confirm empty state    | `positionsPage.verifyEmptyClosedPositionsState()`                     | `dt_empty_state_icon` visible; "No closed positions"; "Your closed positions will be shown here." visible | Mobile   |
+
+---
+
+### Flow 11 — Filter yields no matches (open positions)
+
+**Prerequisites:** Logged-in account with open contracts of only one trade type
+
+| #   | Step                     | Action                                                                  | Expected Result                                                                                                                              | Platform |
+| --- | ------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to Open tab     | Follow Flow 1 steps 1–4                                                 | Contracts visible                                                                                                                            | Mobile   |
+| 2   | Apply mismatching filter | Open Trade types filter; select a trade type with no matching positions | Action sheet closes                                                                                                                          | Mobile   |
+| 3   | Confirm no-matches state | Observe page                                                            | `dt_empty_state_icon` visible; text "No matches found" visible; text "Try changing or removing filters to view available positions." visible | Mobile   |

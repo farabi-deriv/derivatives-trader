@@ -3,7 +3,7 @@
 > Source of truth: `playwright/pages/TradeAutomatePage.ts` (extends `TradeParametersPage → TradeBasePage`)
 > Source components: `packages/trader/src/AppV2/Components/AutomationPanel/` · `packages/trader/src/AppV2/Containers/Automate/` · `packages/trader/src/AppV2/Hooks/useRunControls.ts` · `packages/trader/src/Stores/Modules/Trading/automation-store.ts` · `packages/trader/src/AppV2/Components/TradePanelTabs/trade-panel-tabs.tsx` · `packages/trader/src/AppV2/Routes/AutomateSwitch.tsx`
 > Fixture: `tradeAutomatePage` in `playwright/fixtures/fixtures.ts`
-> Last updated: 2026-09-11
+> Last updated: 2026-09-15
 
 ---
 
@@ -54,7 +54,11 @@
 | Flow 13.4  | `trade-automate/even-odd/verify-odd-dalembert.spec.ts`                                        | `@automate @dalembert @desktop @mobile`                    |
 | Flow 14    | `trade-automate/verify-already-running.spec.ts`                                               | `@automate @desktop @mobile`                               |
 | Flow 15    | `trade-automate/verify-trade-param-validation.spec.ts`                                        | `@automate @desktop @mobile`                               |
+| Flow 16    | `trade-automate/verify-automate-market-compatibility.spec.ts`                                 | `@automate @desktop @mobile`                               |
+| Flow 17    | `trade-automate/verify-automate-param-info-icon-hover.spec.ts`                                | `@automate @desktop @mobile`                               |
 | G2         | `trade-automate/verify-validation.spec.ts`                                                    | `@automate @desktop @mobile`                               |
+
+> **Env vars (Flows 16–17):** `TEST_EMAIL_AUTOMATE` (desktop) / `TEST_EMAIL_AUTOMATE_MOBILE` (mobile) — funded real staging account with Automation enabled (non-EU).
 
 ---
 
@@ -62,7 +66,7 @@
 
 ### Shared account setup
 
-**Panel / control specs (Flows 2.1–2.2, 3–4, 14–15, G2)** — shared backup account:
+**Panel / control specs (Flows 2.1–2.2, 3–4, 14–17, G2)** — shared backup account:
 
 ```typescript
 const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_MOBILE' : 'TEST_EMAIL_AUTOMATE';
@@ -450,6 +454,75 @@ test("VERIFY automate trade params reject invalid drafts — D'Alembert", async 
 
 > **Flow 15** = negative in-editor validation before Run — Martingale full matrix + D'Alembert increment
 
+### Flow 16 — verify-automate-market-compatibility.spec.ts
+
+Two tests — manual-to-Automate market switching regressions (#916, #917).
+
+```typescript
+test('VERIFY Range Break Index loads Automate without an infinite trade-type spinner', async ({
+    tradeAutomatePage,
+}) => {
+    await tradeAutomatePage.selectMarketAndTradeType('Range Break 100 Index', 'Multipliers', { mode: 'manual' });
+    await tradeAutomatePage.goToAutomatedTrading();
+    await expect(tradeAutomatePage.strategyParametersHeader).toBeVisible();
+});
+
+test('VERIFY Crash/Boom with Accumulators remains on the selected market in Automate', async ({
+    tradeAutomatePage,
+}) => {
+    await tradeAutomatePage.verifyAutomateMarketCompatibility({
+        market: 'Crash 500 Index',
+        tradeType: 'Accumulators',
+        expectAutomatable: true,
+    });
+});
+```
+
+### Flow 17 — verify-automate-param-info-icon-hover.spec.ts
+
+Single matrix-driven test — automation-panel info icons (#995) plus Accumulators trade-form Growth rate / Take profit (shared with manual Flow 19).
+
+```typescript
+test.describe('Automate — parameter info icon', { tag: ['@automate', '@desktop', '@mobile'] }, () => {
+    test('VERIFY automate param info icons reveal authored descriptions', async ({ tradeAutomatePage }, testInfo) => {
+        const isMobile = testInfo.project.name.includes('mobile');
+
+        for (const {
+            market,
+            tradeType,
+            strategyDesktopParams,
+            strategyMobileChecks,
+            tradeFormDesktopParams,
+            tradeFormMobileChecks,
+        } of TradeAutomatePage.AUTOMATE_PARAM_INFO_ICON_CASES) {
+            await tradeAutomatePage.selectMarketAndTradeType(market, tradeType, {
+                mode: 'automate',
+                verifyParams: false,
+            });
+
+            if (isMobile) {
+                for (const { openField, icons } of strategyMobileChecks) {
+                    await tradeAutomatePage.verifyTradeParamInfoIconsInMobileEditor(openField, icons);
+                }
+                for (const { openField, icons } of tradeFormMobileChecks ?? []) {
+                    await tradeAutomatePage.verifyTradeParamInfoIconsInMobileEditor(openField, icons);
+                }
+                continue;
+            }
+
+            for (const { label, descriptions } of strategyDesktopParams) {
+                await tradeAutomatePage.verifyAutomateParamInfoIconOnDesktop(label, descriptions);
+            }
+            for (const { label, descriptions } of tradeFormDesktopParams ?? []) {
+                await tradeAutomatePage.verifyTradeParamInfoIconOnDesktop(label, descriptions);
+            }
+        }
+    });
+});
+```
+
+> **Matrix rows:** Volatility 100 Index · Rise/Fall (strategy panel only) · Volatility 100 Index · Accumulators (+ Growth rate / Take profit on the shared trade form). Copy source: `automation-config.ts` (`getStrategyDescription`, `getParamDescription`) for strategy-panel params; `TRADE_PARAM_INFO_DESCRIPTIONS` for Accumulators trade-form params.
+
 **Run control API:**
 
 | Method                                            | Purpose                                                                                                                                                                                       |
@@ -470,6 +543,10 @@ test("VERIFY automate trade params reject invalid drafts — D'Alembert", async 
 | `verifyStakeIncrementRejectsInvalidAmount()`      | Flow 15 — D'Alembert increment Custom tab blocks empty · zero                                                                                                                                 |
 | `verifyMaxStakeRejectsInvalidAmount()`            | Flow 15 — Max. stake toggle on blocks empty · zero · cap below initial stake `1`                                                                                                              |
 | `verifyAutomatePanelIdleAfterParamValidation()`   | Flow 15 — Run visible/enabled; no active run after rejected drafts                                                                                                                            |
+| `verifyAutomateMarketCompatibility()`             | Flow 16 — manual → Automate symbol/trade-type compatibility (#916, #917)                                                                                                                      |
+| `verifyAutomateParamInfoIconOnDesktop()`          | Flow 17 — desktop hover-reveal + tooltip for automation-panel params                                                                                                                          |
+| `verifyTradeParamInfoIconOnDesktop()`             | Flow 17 — inherited from `TradeParametersPage` — Accumulators trade-form params                                                                                                               |
+| `verifyTradeParamInfoIconsInMobileEditor()`       | Flow 17 — inherited from `TradeParametersPage` — mobile editor header info icons                                                                                                              |
 
 **Panel verification helpers:**
 

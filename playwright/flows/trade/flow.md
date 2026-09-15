@@ -941,3 +941,30 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 | 4   | Open invalid trade_type link | `gotoTradePageWithQuery('trade_type=high_lowsd&…')`    | UrlUnavailableModal opens                                        | Both     |
 | 5   | Verify trade_type V2 copy    | Observe title + body                                   | "Unsupported trade type" + V2 guidance text (not legacy V1 copy) | Both     |
 | 6   | Dismiss modal                | Click **Got it**                                       | Modal closes; default market tab still visible                   | Both     |
+
+---
+
+## Flow 19 — Manual trade param info icons reveal descriptions
+
+> Covers regression for #995.
+
+**Prerequisites:** Authenticated account (`TEST_EMAIL`). Desktop and mobile use the same inbox.
+**Spec:** `playwright/tests/trade/verify-trade-param-info-icon-hover.spec.ts`
+**Matrix:** `TradeParametersPage.TRADE_PARAM_INFO_ICON_CASES` — Multipliers, Accumulators, Turbos, Vanillas (both viewports); Higher/Lower and Touch/No Touch Barrier (mobile only).
+
+| #   | Step                             | Action                                                                                | Expected Result                                                                                                                       | Platform |
+| --- | -------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page           | `seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()`                          | Trade page loaded                                                                                                                     | Both     |
+| 2   | Select market + trade type       | `selectMarketAndTradeType(market, tradeType, { verifyParams: false })` per matrix row | Trade form shows the target trade type                                                                                                | Both     |
+| 3   | Desktop — reveal info icon       | Hover the parameter row (`.trade-params__field-with-info`)                            | Info icon wrapper opacity `0` → `1`                                                                                                   | Desktop  |
+| 4   | Desktop — verify description     | Hover the info icon → read `.trade-params__parameter-tooltip[role="tooltip"]`         | Tooltip shows the authored description for that parameter (e.g. Multiplier, Growth rate, Take profit, Risk management TP/SL copy)     | Desktop  |
+| 5   | Mobile — open parameter editor   | Tap the read-only parameter field (`getByRole('textbox', { name })`)                  | Action sheet opens                                                                                                                    | Mobile   |
+| 6   | Mobile — verify info icon + copy | Tap `button.action-sheet-header-tooltip[aria-label="…"]`                              | Portaled Quill tooltip paragraph shows the authored description (Risk management sheet: separate icons for Take profit and Stop loss) | Mobile   |
+
+> **POM:** `verifyTradeParamInfoIconOnDesktop(label, descriptions)` · `verifyTradeParamInfoIconsInMobileEditor(openField, icons)` · matrix constant `TRADE_PARAM_INFO_DESCRIPTIONS`.
+>
+> **Automate counterpart:** `playwright/flows/trade-automate/flow.md` Flow 17 — strategy-panel params + Accumulators trade-form rows via `TradeAutomatePage.AUTOMATE_PARAM_INFO_ICON_CASES`.
+>
+> **Desktop-only params:** Multiplier, Risk management, Growth rate, Take profit, Payout per point, Strike price — collapsed-row hover reveal via `TradeParameterPopover`.
+>
+> **Mobile-only extra:** Barrier on Higher/Lower / Touch/No Touch — description lives in the barrier editor sheet header, not the collapsed row.

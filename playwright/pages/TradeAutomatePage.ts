@@ -228,6 +228,31 @@ export class TradeAutomatePage extends TradeParametersPage {
         return this.page.getByLabel('Max. stake', { exact: true }).first();
     }
 
+    /** Strategy selector label — `TradeParameterPopover` on desktop, TextField on mobile. */
+    get strategyLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Strategy' }).first();
+    }
+
+    /** Martingale stake-multiplier label inside the automation panel. */
+    get stakeMultiplierLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Stake multiplier' }).first();
+    }
+
+    /** Max. stake label in the strategy-parameters section. */
+    get maxStakeLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Max. stake' }).first();
+    }
+
+    /** Profit-threshold label in the risk-management section. */
+    get profitThresholdLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Profit threshold' }).first();
+    }
+
+    /** Loss-threshold label in the risk-management section. */
+    get lossThresholdLabel(): Locator {
+        return this.page.locator('label', { hasText: 'Loss threshold' }).first();
+    }
+
     /**
      * Last digit prediction field — mobile only (TextField with label).
      * Desktop uses {@link lastDigitPredictionButtons} inline grid instead.
@@ -419,6 +444,19 @@ export class TradeAutomatePage extends TradeParametersPage {
             .getByText(TradeAutomatePage.PROFIT_THRESHOLD_AUTO_STOP_SNACKBAR_MESSAGE, { exact: true });
     }
 
+    /**
+     * Snackbar shown when a multiplier-only market is active in Automate (Range Break, Crypto).
+     * Source: useNonAutomatableSymbolSnackbar.ts — issues #916 / #922.
+     *
+     * @param market - Display name embedded in the snackbar copy.
+     */
+    nonAutomatableSymbolSnackbar(market: string): Locator {
+        const escapedMarket = market.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return this.page
+            .locator('.snackbar--container')
+            .getByText(new RegExp(`${escapedMarket} isn.t available for automated trading`, 'i'));
+    }
+
     /** Dismiss control on automation threshold stop snackbars (quill `data-testid="close-button"`). */
     get automationStopSnackbarCloseButton(): Locator {
         return this.page
@@ -552,7 +590,12 @@ export class TradeAutomatePage extends TradeParametersPage {
     async selectMarketAndTradeType(
         market: string,
         tradeType: string,
-        options: { openInNewTab?: boolean; mode?: 'manual' | 'automate' } = {}
+        options: {
+            openInNewTab?: boolean;
+            mode?: 'manual' | 'automate';
+            verifyAllowEquals?: boolean;
+            verifyParams?: boolean;
+        } = {}
     ): Promise<void> {
         await super.selectMarketAndTradeType(market, tradeType, options);
         this.selectedTradeType = tradeType;
@@ -2436,4 +2479,268 @@ export class TradeAutomatePage extends TradeParametersPage {
         await expect(this.runButton, 'Run button should stay enabled after param validation').toBeEnabled();
         await expect(this.statusRunning, 'Automation should not be running after param validation').not.toBeVisible();
     }
+
+    /**
+     * Select a market in Automate and assert multiplier-only vs automatable handling.
+     * Flow 16 — issues #916 (Range Break / multiplier-only snackbar) and #917 (Crash/Boom + Accumulators).
+     */
+    async verifyAutomateMarketCompatibility(options: {
+        market: string;
+        tradeType: string;
+        expectAutomatable: boolean;
+    }): Promise<void> {
+        const { market, tradeType, expectAutomatable } = options;
+
+        await this.goToAutomatedTrading();
+        await this.selectMarketAndTradeType(market, tradeType, { mode: 'automate' });
+
+        await expect(this.activeMarketTab, `Active tab should show market '${market}' in Automate`).toContainText(
+            market
+        );
+        await expect(
+            this.activeMarketTab,
+            `Active tab should keep trade type '${tradeType}' after switching to Automate`
+        ).toContainText(tradeType);
+        await expect(
+            this.strategyParametersHeader,
+            'Automation panel should finish loading instead of hanging on trade-type spinner'
+        ).toBeVisible();
+
+        if (expectAutomatable) {
+            await expect(
+                this.automateGuideTrigger(tradeType),
+                `Automate guide trigger for '${tradeType}' should be visible when the market is supported`
+            ).toBeVisible();
+            await expect(this.runButton, 'Run should stay enabled for automatable markets').toBeEnabled();
+        } else {
+            await expect(
+                this.nonAutomatableSymbolSnackbar(market),
+                `A snackbar should explain that '${market}' is unavailable for automated trading`
+            ).toBeVisible();
+            await expect(this.runButton, 'Run should be disabled for non-automatable markets').toBeDisabled();
+        }
+    }
+
+    /** Authored tooltip copy for automation-panel parameter info icons (automation-config.ts). */
+    static readonly AUTOMATE_PARAM_INFO_DESCRIPTIONS = {
+        strategyMartingale:
+            'Multiplies the stake by a configurable factor after each loss and resets to the initial stake after a win.',
+        stakeMultiplier: [/Factor applied to the stake after each loss/],
+        maxStakeMartingale:
+            'Upper limit for stake multiplying. Must be at least your stake amount. If empty, there is no upper limit.',
+        profitThreshold: 'Stop when total payout minus total stake reaches or exceeds this value. Must be > 0.',
+        lossThreshold: 'Stop when total stake minus total payout reaches or exceeds this value. Must be > 0.',
+    } as const;
+
+    private static readonly MARTINGALE_STRATEGY_INFO_DESKTOP_PARAMS: ReadonlyArray<{
+        label: AutomateParamInfoIconLabel;
+        descriptions: ReadonlyArray<string | RegExp>;
+    }> = [
+        {
+            label: 'Strategy',
+            descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.strategyMartingale],
+        },
+        {
+            label: 'Stake multiplier',
+            descriptions: TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.stakeMultiplier,
+        },
+        {
+            label: 'Max. stake',
+            descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.maxStakeMartingale],
+        },
+        {
+            label: 'Profit threshold',
+            descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.profitThreshold],
+        },
+        {
+            label: 'Loss threshold',
+            descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.lossThreshold],
+        },
+    ];
+
+    private static readonly MARTINGALE_STRATEGY_INFO_MOBILE_CHECKS: ReadonlyArray<{
+        openField: string;
+        icons: ReadonlyArray<{
+            ariaLabel: string;
+            descriptions: ReadonlyArray<string | RegExp>;
+        }>;
+    }> = [
+        {
+            openField: 'Strategy',
+            icons: [
+                {
+                    ariaLabel: 'Strategy',
+                    descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.strategyMartingale],
+                },
+            ],
+        },
+        {
+            openField: 'Stake multiplier',
+            icons: [
+                {
+                    ariaLabel: 'Stake multiplier',
+                    descriptions: TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.stakeMultiplier,
+                },
+            ],
+        },
+        {
+            openField: 'Max. stake',
+            icons: [
+                {
+                    ariaLabel: 'Max. stake',
+                    descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.maxStakeMartingale],
+                },
+            ],
+        },
+        {
+            openField: 'Profit threshold',
+            icons: [
+                {
+                    ariaLabel: 'Profit threshold',
+                    descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.profitThreshold],
+                },
+            ],
+        },
+        {
+            openField: 'Loss threshold',
+            icons: [
+                {
+                    ariaLabel: 'Loss threshold',
+                    descriptions: [TradeAutomatePage.AUTOMATE_PARAM_INFO_DESCRIPTIONS.lossThreshold],
+                },
+            ],
+        },
+    ];
+
+    /**
+     * Automate parameter info-icon coverage per market/trade type.
+     * Strategy-panel params use automation-config copy; Accumulators also checks the shared
+     * trade-form Growth rate / Take profit rows (same components as manual Flow 19).
+     */
+    static readonly AUTOMATE_PARAM_INFO_ICON_CASES: ReadonlyArray<{
+        market: string;
+        tradeType: string;
+        strategyDesktopParams: ReadonlyArray<{
+            label: AutomateParamInfoIconLabel;
+            descriptions: ReadonlyArray<string | RegExp>;
+        }>;
+        strategyMobileChecks: ReadonlyArray<{
+            openField: string;
+            icons: ReadonlyArray<{
+                ariaLabel: string;
+                descriptions: ReadonlyArray<string | RegExp>;
+            }>;
+        }>;
+        tradeFormDesktopParams?: ReadonlyArray<{
+            label: 'Growth rate' | 'Take profit';
+            descriptions: ReadonlyArray<string | RegExp>;
+        }>;
+        tradeFormMobileChecks?: ReadonlyArray<{
+            openField: string;
+            icons: ReadonlyArray<{
+                ariaLabel: string;
+                descriptions: ReadonlyArray<string | RegExp>;
+            }>;
+        }>;
+    }> = [
+        {
+            market: 'Volatility 100 Index',
+            tradeType: 'Rise/Fall',
+            strategyDesktopParams: TradeAutomatePage.MARTINGALE_STRATEGY_INFO_DESKTOP_PARAMS,
+            strategyMobileChecks: TradeAutomatePage.MARTINGALE_STRATEGY_INFO_MOBILE_CHECKS,
+        },
+        {
+            market: 'Volatility 100 Index',
+            tradeType: 'Accumulators',
+            strategyDesktopParams: TradeAutomatePage.MARTINGALE_STRATEGY_INFO_DESKTOP_PARAMS,
+            strategyMobileChecks: TradeAutomatePage.MARTINGALE_STRATEGY_INFO_MOBILE_CHECKS,
+            tradeFormDesktopParams: [
+                {
+                    label: 'Growth rate',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.growthRate],
+                },
+                {
+                    label: 'Take profit',
+                    descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                },
+            ],
+            tradeFormMobileChecks: [
+                {
+                    openField: 'Growth rate',
+                    icons: [
+                        {
+                            ariaLabel: 'Growth rate',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.growthRate],
+                        },
+                    ],
+                },
+                {
+                    openField: 'Take profit',
+                    icons: [
+                        {
+                            ariaLabel: 'Take profit',
+                            descriptions: [TradeParametersPage.TRADE_PARAM_INFO_DESCRIPTIONS.takeProfit],
+                        },
+                    ],
+                },
+            ],
+        },
+    ];
+
+    private automateParamLabelByName(name: AutomateParamInfoIconLabel): Locator {
+        switch (name) {
+            case 'Strategy':
+                return this.strategyLabel;
+            case 'Stake multiplier':
+                return this.stakeMultiplierLabel;
+            case 'Max. stake':
+                return this.maxStakeLabel;
+            case 'Profit threshold':
+                return this.profitThresholdLabel;
+            case 'Loss threshold':
+                return this.lossThresholdLabel;
+            default:
+                throw new Error(`Unknown automate param label: ${name}`);
+        }
+    }
+
+    /**
+     * Desktop automation-panel info icons stay hidden until the field is hovered, then reveal
+     * authored copy in a TooltipPortal (shared TradeParameterPopover — issue #995).
+     */
+    async verifyAutomateParamInfoIconOnDesktop(
+        labelName: AutomateParamInfoIconLabel,
+        descriptions: ReadonlyArray<string | RegExp>
+    ): Promise<void> {
+        const labelLocator = this.automateParamLabelByName(labelName);
+        const field = this.tradeParamFieldWithInfo(labelLocator);
+        const iconWrapper = this.tradeParamInfoIconWrapper(labelLocator);
+        const icon = iconWrapper.locator('.trade-params__info-icon');
+
+        await expect(iconWrapper, `${labelName} info icon should be hidden before the field is hovered`).toHaveCSS(
+            'opacity',
+            '0'
+        );
+        await field.hover();
+        await expect(iconWrapper, `${labelName} info icon should become visible when the field is hovered`).toHaveCSS(
+            'opacity',
+            '1'
+        );
+
+        for (const description of descriptions) {
+            await icon.hover();
+            await expect(this.tradeParamInfoTooltip, `${labelName} info tooltip should be visible`).toBeVisible();
+            await expect(
+                this.tradeParamInfoTooltip,
+                `${labelName} info tooltip should include the authored description`
+            ).toContainText(description);
+        }
+    }
 }
+
+type AutomateParamInfoIconLabel =
+    | 'Strategy'
+    | 'Stake multiplier'
+    | 'Max. stake'
+    | 'Profit threshold'
+    | 'Loss threshold';

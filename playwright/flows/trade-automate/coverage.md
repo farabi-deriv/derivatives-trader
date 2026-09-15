@@ -53,6 +53,8 @@
 | Flow 13.4 | Even/Odd D'Alembert — Odd (real)                         | ✅      | ✅     |
 | Flow 14   | "Automation already running" adoption snackbar           | ✅      | ✅     |
 | Flow 15   | Invalid trade/automation param validation (min/max/zero) | ✅      | ✅     |
+| Flow 16   | Manual-to-Automate market compatibility                  | ✅      | ✅     |
+| Flow 17   | Automate param info icons reveal descriptions            | ✅      | ✅     |
 | G2        | Unsupported-contract-type error on Run                   | ❌      | ❌     |
 
 ---

@@ -289,6 +289,18 @@ export class TradeBasePage {
     }
 
     /**
+     * Persist an explicit dark-theme preference before app init (issue #1036 empty-state icon contrast).
+     */
+    static async seedDarkThemePreference(page: Page): Promise<void> {
+        await page.evaluate(() => {
+            const stored = localStorage.getItem('ui_store');
+            const ui = stored ? JSON.parse(stored) : {};
+            ui.theme_preference = 'dark';
+            localStorage.setItem('ui_store', JSON.stringify(ui));
+        });
+    }
+
+    /**
      * Navigate to the dtrader root. Use only as the initial entry point.
      */
     async gotoTradePage(): Promise<void> {

@@ -5,6 +5,7 @@
  * @coverage playwright/flows/market-selection/coverage.md
  */
 import { test, expect } from '../../fixtures/fixtures';
+import { MARKET_INFO_DESCRIPTION_CASES } from '../../pages/market-info-description-cases';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
 test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-selection'] }, () => {
@@ -30,33 +31,41 @@ test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-select
         tradeParametersPage,
         marketSelectionPage,
     }) => {
-        await marketSelectionPage.openMarketInfo('Volatility 100 Index');
-        await expect(
-            marketSelectionPage.marketInfoScreen,
-            'Info screen should replace the browse panel in place'
-        ).toBeVisible();
-        await expect(
-            marketSelectionPage.marketInfoTradeOnSection,
-            '"Trade on" section should list available trade types'
-        ).toBeVisible();
-        await expect(
-            marketSelectionPage.marketInfoTradeOnCard('Multipliers'),
-            'Multipliers should be one of the Trade-on CTAs for a synthetic index'
-        ).toBeVisible();
+        for (let index = 0; index < MARKET_INFO_DESCRIPTION_CASES.length; index++) {
+            const { market, description } = MARKET_INFO_DESCRIPTION_CASES[index];
+            await test.step(market, async () => {
+                if (index > 0) {
+                    await marketSelectionPage.paceMarketInfoLookup();
+                }
+                await marketSelectionPage.verifyMarketInfoDescription(market, description);
+            });
+        }
 
-        await marketSelectionPage.marketInfoTradeOnCard('Multipliers').click();
-        await expect(
-            marketSelectionPage.marketSelectionPanel,
-            'Picker should close after selecting a Trade-on CTA'
-        ).not.toBeVisible();
-        await expect(
-            tradeParametersPage.activeMarketTab,
-            'Active tab should reflect the market committed from the Trade-on CTA'
-        ).toContainText('Volatility 100 Index');
-        await expect(
-            tradeParametersPage.activeMarketTab,
-            'Active tab should reflect the Multipliers trade type'
-        ).toContainText('Multipliers');
+        await test.step('Trade-on CTA commits market', async () => {
+            await marketSelectionPage.openMarketInfoFromSearch('Volatility 100 Index');
+            await expect(
+                marketSelectionPage.marketInfoTradeOnSection,
+                '"Trade on" section should list available trade types'
+            ).toBeVisible();
+            await expect(
+                marketSelectionPage.marketInfoTradeOnCard('Multipliers'),
+                'Multipliers should be one of the Trade-on CTAs for a synthetic index'
+            ).toBeVisible();
+
+            await marketSelectionPage.marketInfoTradeOnCard('Multipliers').click();
+            await expect(
+                marketSelectionPage.marketSelectionPanel,
+                'Picker should close after selecting a Trade-on CTA'
+            ).not.toBeVisible();
+            await expect(
+                tradeParametersPage.activeMarketTab,
+                'Active tab should reflect the market committed from the Trade-on CTA'
+            ).toContainText('Volatility 100 Index');
+            await expect(
+                tradeParametersPage.activeMarketTab,
+                'Active tab should reflect the Multipliers trade type'
+            ).toContainText('Multipliers');
+        });
     });
 
     test('VERIFY the Favourite toggle on the Info screen updates independently of the row', async ({

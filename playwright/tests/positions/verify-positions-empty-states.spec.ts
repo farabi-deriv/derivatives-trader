@@ -1,6 +1,6 @@
 /**
  * @name     Positions — Empty States (Open & Closed)
- * @id       flow-3, gap-g3
+ * @id       flow-3, flow-10
  * @flow     playwright/flows/positions/flow.md#flow-3--empty-open-positions-state
  * @coverage playwright/flows/positions/coverage.md
  */
@@ -22,48 +22,54 @@ test.describe('Positions — Empty States', { tag: ['@positions', '@regression',
         testEmail = email;
     });
 
-    test('VERIFY empty state shown when no open positions exist on mobile', async ({
-        page,
-        loginPage,
-        positionsPage,
-        isMobileViewport,
-    }) => {
-        if (!isMobileViewport) {
-            test.skip(true, 'Flow 3 is mobile-only; desktop positions use sidebar flyout');
-        }
+    test.describe('Open tab', () => {
+        test.beforeEach(async ({ page, loginPage, isMobileViewport }) => {
+            if (!isMobileViewport) return;
 
-        await TradeBasePage.seedLocalStorageOnOrigin(page);
-        await loginPage.login(testEmail);
+            await TradeBasePage.seedLocalStorageOnOrigin(page);
+            await loginPage.login(testEmail);
+            await redirectionHelpers.redirectTo(page, '/positions');
+        });
 
-        await redirectionHelpers.redirectTo(page, '/positions');
-        const hasOpen = await positionsPage.firstContractCard.isVisible({ timeout: 5000 }).catch(() => false);
-        if (hasOpen) {
-            await positionsPage.closeAllOpenContracts();
-        }
+        /** Flow 3 + issue #1036 — empty Open tab in light theme, then dark-theme icon contrast */
+        test('VERIFY empty open positions state on mobile', async ({ page, positionsPage, isMobileViewport }) => {
+            if (!isMobileViewport) {
+                test.skip(true, 'Flow 3 is mobile-only; desktop positions use sidebar flyout');
+            }
 
-        await expect(positionsPage.emptyStateIcon, 'Empty state icon should be visible').toBeVisible();
-        await expect(
-            page.getByText('No open positions'),
-            'Empty heading should show "No open positions"'
-        ).toBeVisible();
-        await expect(
-            page.getByText('Your active trades will appear here.'),
-            'Empty description should be visible'
-        ).toBeVisible();
-        await expect(
-            page.getByRole('button', { name: 'Start trading' }),
-            'Start trading button should be visible in empty open positions state'
-        ).toBeVisible();
+            await test.step('Light theme — full empty state', async () => {
+                await positionsPage.ensureEmptyOpenPositionsTab();
+                await positionsPage.verifyEmptyOpenPositionsState();
+            });
+
+            await test.step('Dark theme — empty-state icon stays visible (#1036)', async () => {
+                await TradeBasePage.seedDarkThemePreference(page);
+                await page.reload();
+                await NavigationUtils.waitForDerivApiSettled(page);
+                await redirectionHelpers.redirectTo(page, '/positions');
+                await positionsPage.ensureEmptyOpenPositionsTab();
+
+                await expect(
+                    page.locator('body.theme--dark'),
+                    'Dark theme class should be applied after seeding theme_preference'
+                ).toHaveClass(/theme--dark/);
+                await expect(
+                    positionsPage.emptyStateIcon,
+                    'Empty-state icon should stay visible with sufficient contrast in dark mode'
+                ).toBeVisible();
+            });
+        });
     });
 
-    test('VERIFY empty state shown on Closed tab when account has no history', async ({
+    /** Flow 10 — needs a fresh account with no closed-contract history (cannot share the Open-tab inbox). */
+    test('VERIFY empty closed positions state on mobile', async ({
         page,
         loginPage,
         positionsPage,
         isMobileViewport,
     }, testInfo) => {
         if (!isMobileViewport) {
-            test.skip(true, 'Gap G3 is mobile-only; desktop positions use sidebar flyout');
+            test.skip(true, 'Flow 10 is mobile-only; desktop positions use sidebar flyout');
         }
 
         const emailVar = testInfo.project.name.includes('mobile') ? 'TEST_EMAIL_MOBILE' : 'TEST_EMAIL';
@@ -90,19 +96,9 @@ test.describe('Positions — Empty States', { tag: ['@positions', '@regression',
 
         await TradeBasePage.seedLocalStorageOnOrigin(page);
         await loginPage.login(accountEmail, accountPassword);
-
         await redirectionHelpers.redirectTo(page, '/positions');
         await positionsPage.clickClosedTab();
         await NavigationUtils.waitForDerivApiSettled(page);
-
-        await expect(positionsPage.emptyStateIcon, 'Empty state icon should be visible on Closed tab').toBeVisible();
-        await expect(
-            page.getByText('No closed positions'),
-            'Empty heading should show "No closed positions"'
-        ).toBeVisible();
-        await expect(
-            page.getByText('Your closed positions will be shown here.'),
-            'Empty description should be visible'
-        ).toBeVisible();
+        await positionsPage.verifyEmptyClosedPositionsState();
     });
 });

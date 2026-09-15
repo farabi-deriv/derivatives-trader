@@ -47,6 +47,7 @@
 | Flow 16    | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade @desktop @mobile`                      |
 | Flow 17    | `trade/verify-insufficient-balance.spec.ts`                      | `@trade @desktop @mobile`                      |
 | Flow 18    | `trade/verify-invalid-url-modal.spec.ts`                         | `@trade @desktop @mobile`                      |
+| Flow 19    | `trade/verify-trade-param-info-icon-hover.spec.ts`               | `@trade @desktop @mobile`                      |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
@@ -941,29 +942,67 @@ test.describe('Stake editor hint', () => {
 
 ---
 
+### Flow 19 — Manual trade param info icons reveal descriptions
+
+> Covers regression for #995. Matrix-driven across trade types — desktop hover-reveal + TooltipPortal; mobile editor `action-sheet-header-tooltip` tap. Automate panel + Accumulators trade-form counterpart: `playwright/flows/trade-automate/flow.md` Flow 17.
+
+```typescript
+test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+    test('VERIFY manual trade param info icons reveal authored descriptions', async ({
+        tradeParametersPage,
+    }, testInfo) => {
+        const isMobile = testInfo.project.name.includes('mobile');
+
+        for (const {
+            market,
+            tradeType,
+            desktopParams,
+            mobileChecks,
+        } of TradeParametersPage.TRADE_PARAM_INFO_ICON_CASES) {
+            await tradeParametersPage.selectMarketAndTradeType(market, tradeType, { verifyParams: false });
+
+            if (isMobile) {
+                for (const { openField, icons } of mobileChecks ?? []) {
+                    await tradeParametersPage.verifyTradeParamInfoIconsInMobileEditor(openField, icons);
+                }
+                continue;
+            }
+
+            for (const { label, descriptions } of desktopParams ?? []) {
+                await tradeParametersPage.verifyTradeParamInfoIconOnDesktop(label, descriptions);
+            }
+        }
+    });
+});
+```
+
+---
+
 ## Section 3 — POM Method Reference
 
-| Purpose                                        | Page Object method                                              |
-| ---------------------------------------------- | --------------------------------------------------------------- |
-| Parse and validate current Stake limits        | `tradeValidationPage.verifyStakeRuntimeBoundaries()`            |
-| Verify Stake input filtering                   | `tradeValidationPage.verifyStakeInputSanitization()`            |
-| Validate current Duration limits/options       | `tradeValidationPage.verifyDurationRuntimeBoundaries()`         |
-| Validate required/zero Barrier                 | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()`  |
-| Read current Digits availability               | `tradeValidationPage.verifyDigitChoiceAvailability()`           |
-| Read Multipliers TP/SL/DC options              | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`      |
-| Discover markets in an asset category          | `tradeValidationPage.readMarketsForCategory()`                  |
-| Select current closed market                   | `tradeValidationPage.selectFirstClosedMarket()`                 |
-| Verify insufficient balance client gate        | `tradeParametersPage.verifyInsufficientBalanceClientGate()`     |
-| Verify empty-balance stake editor hint         | `tradeParametersPage.verifyEmptyBalanceStakeEditorHint()`       |
-| Click Buy with insufficient balance            | `tradeParametersPage.clickBuyWithInsufficientBalance()`         |
-| Verify insufficient-balance popup              | `tradeParametersPage.verifyInsufficientBalancePopup()`          |
-| Dismiss insufficient-balance popup             | `tradeParametersPage.clickInsufficientBalancePopupClose()`      |
-| Verify popup dismissed                         | `tradeParametersPage.verifyInsufficientBalancePopupDismissed()` |
-| Click Deposit now on popup                     | `tradeParametersPage.clickInsufficientBalanceDepositButton()`   |
-| Verify DTrader → transfer redirect             | `tradeParametersPage.verifyNavigatedToDepositFromDTrader()`     |
-| Verify insufficient balance behavior (Flow 13) | `tradeValidationPage.verifyInsufficientBalanceBehavior()`       |
-| Track duplicate Buy requests                   | `tradeValidationPage.startBuyRequestTracking()`                 |
-| Read complete Buy state                        | `tradeValidationPage.getPurchaseControlState()`                 |
+| Purpose                                            | Page Object method                                              |
+| -------------------------------------------------- | --------------------------------------------------------------- |
+| Parse and validate current Stake limits            | `tradeValidationPage.verifyStakeRuntimeBoundaries()`            |
+| Verify Stake input filtering                       | `tradeValidationPage.verifyStakeInputSanitization()`            |
+| Validate current Duration limits/options           | `tradeValidationPage.verifyDurationRuntimeBoundaries()`         |
+| Validate required/zero Barrier                     | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()`  |
+| Read current Digits availability                   | `tradeValidationPage.verifyDigitChoiceAvailability()`           |
+| Read Multipliers TP/SL/DC options                  | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`      |
+| Discover markets in an asset category              | `tradeValidationPage.readMarketsForCategory()`                  |
+| Select current closed market                       | `tradeValidationPage.selectFirstClosedMarket()`                 |
+| Verify insufficient balance client gate            | `tradeParametersPage.verifyInsufficientBalanceClientGate()`     |
+| Verify empty-balance stake editor hint             | `tradeParametersPage.verifyEmptyBalanceStakeEditorHint()`       |
+| Click Buy with insufficient balance                | `tradeParametersPage.clickBuyWithInsufficientBalance()`         |
+| Verify insufficient-balance popup                  | `tradeParametersPage.verifyInsufficientBalancePopup()`          |
+| Dismiss insufficient-balance popup                 | `tradeParametersPage.clickInsufficientBalancePopupClose()`      |
+| Verify popup dismissed                             | `tradeParametersPage.verifyInsufficientBalancePopupDismissed()` |
+| Click Deposit now on popup                         | `tradeParametersPage.clickInsufficientBalanceDepositButton()`   |
+| Verify DTrader → transfer redirect                 | `tradeParametersPage.verifyNavigatedToDepositFromDTrader()`     |
+| Verify insufficient balance behavior (Flow 13)     | `tradeValidationPage.verifyInsufficientBalanceBehavior()`       |
+| Verify desktop param info icon + tooltip (Flow 19) | `tradeParametersPage.verifyTradeParamInfoIconOnDesktop()`       |
+| Verify mobile param info icon + tooltip (Flow 19)  | `tradeParametersPage.verifyTradeParamInfoIconsInMobileEditor()` |
+| Track duplicate Buy requests                       | `tradeValidationPage.startBuyRequestTracking()`                 |
+| Read complete Buy state                            | `tradeValidationPage.getPurchaseControlState()`                 |
 
 ---
 
