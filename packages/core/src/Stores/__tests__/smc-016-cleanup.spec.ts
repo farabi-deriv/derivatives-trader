@@ -54,12 +54,11 @@ describe('[SMC-016] remaining core-store dead members removed', () => {
         expect(typeof contract.populateConfig).toBe('function');
     });
 
-    it('ClientStore drops setPreferredLanguage, keeps cookie/analytics/WS-idle-recovery members', () => {
+    it('ClientStore drops setPreferredLanguage, keeps analytics/WS-idle-recovery members', () => {
         const client = new ClientStore(mockStore());
 
         expect('setPreferredLanguage' in client).toBe(false);
 
-        expect(typeof client.setCookieAccount).toBe('function');
         expect(typeof client.getAnalyticsConfig).toBe('function');
         expect(typeof client.setupVisibilityListener).toBe('function');
         expect(typeof client.removeVisibilityListener).toBe('function');

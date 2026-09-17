@@ -21,6 +21,7 @@ export default class PositionsStore extends BaseStore<TRootStore> {
         makeObservable(this, {
             openContractTypeFilter: observable,
             closedContractTypeFilter: observable,
+            filteredContractTypes: observable,
             timeFilter: observable,
             customTimeRangeFilter: observable,
             tradeModeFilter: observable,

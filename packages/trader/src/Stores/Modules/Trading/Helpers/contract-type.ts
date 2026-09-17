@@ -221,7 +221,6 @@ export const ContractType = (() => {
             long_barriers,
             strike_price_choices,
             v2_params_initial_values,
-            root_store,
         } = store;
 
         if (!contract_type) return {};
@@ -241,13 +240,12 @@ export const ContractType = (() => {
                 break;
             case 'Call':
             case 'Put':
-                stored_barriers_data =
-                    v2_params_initial_values?.strike && root_store?.ui.is_mobile // V2 for mobile only
-                        ? ({
-                              ...strike_price_choices,
-                              barrier: v2_params_initial_values.strike,
-                          } as TTradeStore['strike_price_choices'])
-                        : strike_price_choices;
+                stored_barriers_data = v2_params_initial_values?.strike
+                    ? ({
+                          ...strike_price_choices,
+                          barrier: v2_params_initial_values.strike,
+                      } as TTradeStore['strike_price_choices'])
+                    : strike_price_choices;
                 break;
             default:
                 stored_barriers_data = {};

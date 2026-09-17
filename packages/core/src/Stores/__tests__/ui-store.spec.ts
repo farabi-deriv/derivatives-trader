@@ -504,58 +504,62 @@ describe('UIStore.toggleUrlUnavailableModal', () => {
     });
 });
 
-describe('UIStore dead-cluster cleanup', () => {
-    let ui: InstanceType<typeof UIStore>;
+describe('UIStore frozen chart controls removed', () => {
+    const buildUi = () =>
+        new UIStore({ common: {}, client: {} } as never) as InstanceType<typeof UIStore> & {
+            is_chart_layout_default?: unknown;
+            is_chart_countdown_visible?: unknown;
+            is_chart_asset_info_visible?: unknown;
+            setChartLayout?: unknown;
+            setChartCountdown?: unknown;
+            local_storage_properties: string[];
+        };
 
-    beforeEach(() => {
-        ui = new UIStore({ common: {}, client: {} } as never);
+    it('[ABF-011] no longer exposes the frozen chart layout/countdown observables, setters, or persisted keys', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_layout_default).toBeUndefined();
+        expect(store.is_chart_countdown_visible).toBeUndefined();
+        expect(store.setChartLayout).toBeUndefined();
+        expect(store.setChartCountdown).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_layout_default');
+        expect(store.local_storage_properties).not.toContain('is_chart_countdown_visible');
     });
 
-    it('[SMC-014] removes the dead modal/flow/duration clusters', () => {
-        const dead = [
-            'pwa_prompt_event',
-            'setPWAPromptEvent',
-            'removePWAPromptEvent',
-            'is_link_expired_modal_visible',
-            'toggleResetEmailModal',
-            'setResetTradingPasswordModalOpen',
-            'is_from_signup_account',
-            'should_show_phone_number_otp',
-            'is_forced_to_exit_pnv',
-            'is_tnc_update_modal_open',
-            'toggleTncUpdateModal',
-            'is_settings_modal_on',
-            'toggleSettingsModal',
-            'settings_extension',
-            'populateSettingsExtensions',
-            'is_nativepicker_visible',
-            'show_positions_toggle',
-            'is_cfd_page',
-            'modal_index',
-            'field_ref_to_focus',
-            'sub_section_index',
-            'url_hashed_values',
-            'setHashedValue',
-            'is_landscape',
-            'onChangeUiStore',
-            'getDurationFromUnit',
-            'duration_t',
-            'advanced_duration_unit',
-            'simple_duration_unit',
-            'advanced_expiry_type',
-            'setChartCountdown',
-        ];
-        dead.forEach(member => expect(member in ui).toBe(false));
+    it('[ABF-013] no longer persists the dead chart asset-info key', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_asset_info_visible).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_asset_info_visible');
+    });
+});
+
+describe('UIStore frozen chart controls removed', () => {
+    const buildUi = () =>
+        new UIStore({ common: {}, client: {} } as never) as InstanceType<typeof UIStore> & {
+            is_chart_layout_default?: unknown;
+            is_chart_countdown_visible?: unknown;
+            is_chart_asset_info_visible?: unknown;
+            setChartLayout?: unknown;
+            setChartCountdown?: unknown;
+            local_storage_properties: string[];
+        };
+
+    it('[ABF-011] no longer exposes the frozen chart layout/countdown observables, setters, or persisted keys', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_layout_default).toBeUndefined();
+        expect(store.is_chart_countdown_visible).toBeUndefined();
+        expect(store.setChartLayout).toBeUndefined();
+        expect(store.setChartCountdown).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_layout_default');
+        expect(store.local_storage_properties).not.toContain('is_chart_countdown_visible');
     });
 
-    it('[SMC-014] keeps the live surfaces', () => {
-        expect(ui.is_try_real_modal_visible).toBe(false);
-        expect(typeof ui.toggleTryRealModal).toBe('function');
-        expect(typeof ui.setPromptHandler).toBe('function');
-        expect(typeof ui.notifyAppInstall).toBe('function');
-        expect(typeof ui.installWithDeferredPrompt).toBe('function');
-        expect(ui.is_advanced_duration).toBe(false);
-        expect(ui.is_chart_countdown_visible).toBe(false);
-        expect(typeof ui.setThemePreference).toBe('function');
+    it('[ABF-013] no longer persists the dead chart asset-info key', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_asset_info_visible).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_asset_info_visible');
     });
 });

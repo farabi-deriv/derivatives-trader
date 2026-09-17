@@ -39,7 +39,6 @@ export default class ProfitTableStore extends BaseStore {
             is_loading: observable,
             client_loginid: observable,
             is_empty: computed,
-            has_selected_date: computed,
             fetchNextBatch: action.bound,
             profitTableResponseHandler: action.bound,
             handleScroll: action.bound,
@@ -55,10 +54,6 @@ export default class ProfitTableStore extends BaseStore {
 
     get is_empty() {
         return !this.is_loading && this.data.length === 0;
-    }
-
-    get has_selected_date() {
-        return !!(this.date_from || this.date_to);
     }
 
     shouldFetchNextBatch(is_mounting) {
@@ -90,9 +85,11 @@ export default class ProfitTableStore extends BaseStore {
     profitTableResponseHandler(response) {
         if ('error' in response) {
             this.error = mapErrorMessage(response.error);
+            this.is_loading = false;
             return;
         }
 
+        this.error = '';
         const formatted_transactions = response.profit_table.transactions.map(transaction =>
             formatProfitTableTransactions(transaction, this.root_store.client.currency)
         );
@@ -157,6 +154,7 @@ export default class ProfitTableStore extends BaseStore {
     /* DO NOT call clearDateFilter() upon unmounting the component, date filters should stay
     as we change tab or click on any contract for later references as discussed with UI/UX and QA */
     onUnmount() {
+        super.onUnmount();
         // Don't WS.forgetAll('proposal') here: this store never opens a 'proposal' subscription,
         // so it would only kill the trade store's live price proposals (Closed tab coexists with
         // the trade form in AppV2), causing an "Unknown contract proposal" error on next purchase.

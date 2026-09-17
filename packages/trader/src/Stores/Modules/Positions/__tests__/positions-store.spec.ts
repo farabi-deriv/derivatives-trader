@@ -1,4 +1,4 @@
-import { configure } from 'mobx';
+import { configure, isObservableProp, reaction } from 'mobx';
 
 import { mockStore } from '@deriv/stores';
 
@@ -25,6 +25,22 @@ describe('PositionsStore', () => {
             mockedPositionsStore.setClosedContractTypeFilter([]);
             expect(mockedPositionsStore.closedContractTypeFilter).toEqual([]);
             expect(mockedPositionsStore.filteredContractTypes).toEqual([]);
+        });
+    });
+    describe('filteredContractTypes observability', () => {
+        it('[ABF-005] registers filteredContractTypes as a MobX observable', () => {
+            expect(isObservableProp(mockedPositionsStore, 'filteredContractTypes')).toBe(true);
+        });
+        it('[ABF-005] notifies reactions when filteredContractTypes changes via setClosedContractTypeFilter', () => {
+            mockedPositionsStore.setClosedContractTypeFilter([]);
+            const spy = jest.fn();
+            const dispose = reaction(() => mockedPositionsStore.filteredContractTypes, spy);
+
+            mockedPositionsStore.setClosedContractTypeFilter(['Accumulators']);
+
+            expect(spy).toHaveBeenCalled();
+            dispose();
+            mockedPositionsStore.setClosedContractTypeFilter([]);
         });
     });
     describe('setOpenContractTypeFilter', () => {

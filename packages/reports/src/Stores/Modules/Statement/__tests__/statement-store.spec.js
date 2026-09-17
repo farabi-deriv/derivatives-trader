@@ -44,7 +44,6 @@ describe('StatementStore', () => {
         expect(statement_store.error).toBe('');
         expect(statement_store.action_type).toBe('all');
         expect(statement_store.client_loginid).toBe('');
-        expect(statement_store.has_selected_date).toBe(true);
         expect(statement_store.is_empty).toBe(false);
     });
 
@@ -175,6 +174,23 @@ describe('StatementStore', () => {
         expect(statement_store.error).toBe('error message');
     });
 
+    it('[ABF-003] clears a prior error on a successful response', () => {
+        statement_store.error = 'previous error';
+
+        statement_store.statementHandler(response);
+
+        expect(statement_store.error).toBe('');
+    });
+
+    it('[ABF-003] resets loading on the error branch so the tab is not stuck', () => {
+        statement_store.is_loading = true;
+
+        statement_store.statementHandler({ error: { message: 'boom' } });
+
+        expect(statement_store.is_loading).toBe(false);
+        expect(statement_store.error).toBe('boom');
+    });
+
     it('should handle scroll when handleScroll is called', () => {
         const event = {
             target: {
@@ -213,6 +229,16 @@ describe('StatementStore', () => {
         statement_store.onUnmount();
 
         expect(WS.forgetAll).not.toHaveBeenCalledWith('proposal');
+    });
+
+    it('[ABF-002] disposes the base network-status reaction on unmount (calls super.onUnmount)', () => {
+        statement_store.onMount();
+        const network_disposer = jest.fn();
+        statement_store.networkStatusChangeDisposer = network_disposer;
+
+        statement_store.onUnmount();
+
+        expect(network_disposer).toHaveBeenCalled();
     });
 
     // Characterization guard: never went red; pins that the dead members are gone while the live

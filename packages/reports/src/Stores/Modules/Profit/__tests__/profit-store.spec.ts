@@ -155,21 +155,6 @@ describe('ProfitTableStore', () => {
             expect(mocked_profit_table_store.is_empty).toBe(true);
         });
     });
-    describe('has_selected_date', () => {
-        it('should return true if date_from or date_to is truthy', () => {
-            expect(mocked_profit_table_store.date_from).toBeNull();
-            expect(mocked_profit_table_store.date_to).toBe(default_date_to);
-
-            expect(mocked_profit_table_store.has_selected_date).toBe(true);
-        });
-        it('should return false if date_from and date_to are both falsy', () => {
-            expect(mocked_profit_table_store.date_from).toBeNull();
-            // @ts-expect-error TODO: remove the comment after profit-store is migrated to TS
-            mocked_profit_table_store.date_to = null;
-
-            expect(mocked_profit_table_store.has_selected_date).toBe(false);
-        });
-    });
     describe('shouldFetchNextBatch', () => {
         it('should return true if has_loaded_all={false} and is_loading={false}', () => {
             expect(mocked_profit_table_store.has_loaded_all).toBe(false);
@@ -231,6 +216,21 @@ describe('ProfitTableStore', () => {
 
             expect(mocked_profit_table_store.data).toHaveLength(2);
             expect(mocked_profit_table_store.error).toBe('');
+        });
+        it('[ABF-003] clears a prior error on a successful response', () => {
+            mocked_profit_table_store.error = mocked_error;
+
+            mocked_profit_table_store.profitTableResponseHandler({ profit_table: { transactions: [{}, {}] } });
+
+            expect(mocked_profit_table_store.error).toBe('');
+        });
+        it('[ABF-003] resets loading on the error branch so the tab is not stuck', () => {
+            mocked_profit_table_store.is_loading = true;
+
+            mocked_profit_table_store.profitTableResponseHandler({ error: { message: mocked_error } });
+
+            expect(mocked_profit_table_store.is_loading).toBe(false);
+            expect(mocked_profit_table_store.error).toBe(mocked_error);
         });
     });
     describe('fetchOnScroll', () => {
@@ -321,6 +321,15 @@ describe('ProfitTableStore', () => {
             mocked_profit_table_store.onUnmount();
 
             expect(spyWSForgetAll).not.toHaveBeenCalledWith('proposal');
+        });
+        it('[ABF-002] disposes the base network-status reaction on unmount (calls super.onUnmount)', () => {
+            mocked_profit_table_store.onMount();
+            const network_disposer = jest.fn();
+            mocked_profit_table_store.networkStatusChangeDisposer = network_disposer;
+
+            mocked_profit_table_store.onUnmount();
+
+            expect(network_disposer).toHaveBeenCalled();
         });
     });
     describe('totals', () => {

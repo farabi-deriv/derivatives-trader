@@ -23,7 +23,7 @@ const mocked_props: React.ComponentProps<typeof ContractDrawer> = {
     onClickCancel: jest.fn(),
     onClickSell: jest.fn(),
     toggleHistoryTab: jest.fn(),
-    contract_update: undefined,
+    contract_update: {},
     contract_update_history: [],
 };
 

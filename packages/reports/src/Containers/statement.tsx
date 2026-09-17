@@ -142,7 +142,7 @@ const Statement = observer(({ component_icon }: TStatement) => {
     const { current_language } = common;
     const { statement } = useReportsStore();
     const { currency, has_archived_statement, is_virtual } = client;
-    const { data, error, handleScroll, has_selected_date, is_empty, is_loading, onMount, onUnmount } = statement;
+    const { data, error, handleScroll, is_empty, is_loading, onMount, onUnmount } = statement;
     const { isMobile } = useDevice();
 
     React.useEffect(() => {
@@ -237,11 +237,9 @@ const Statement = observer(({ component_icon }: TStatement) => {
                 {data?.length === 0 || is_empty ? (
                     <PlaceholderComponent
                         is_loading={is_loading}
-                        has_selected_date={has_selected_date}
                         is_empty={is_empty}
                         empty_message_component={EmptyTradeHistoryMessage}
                         component_icon={component_icon}
-                        localized_message={localize('You have no transactions yet.')}
                         localized_period_message={localize(
                             "You've made no transactions of this type during this period."
                         )}

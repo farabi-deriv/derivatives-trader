@@ -66,7 +66,6 @@ const ProfitTable = observer(({ component_icon }: TProfitTable) => {
         is_loading,
         handleDateChange,
         handleScroll,
-        has_selected_date,
         onMount,
         onUnmount,
         totals,
@@ -167,11 +166,9 @@ const ProfitTable = observer(({ component_icon }: TProfitTable) => {
                 {data.length === 0 || is_empty ? (
                     <PlaceholderComponent
                         is_loading={is_loading}
-                        has_selected_date={has_selected_date}
                         is_empty={is_empty}
                         empty_message_component={EmptyTradeHistoryMessage}
                         component_icon={component_icon}
-                        localized_message={localize('You have no trading activity yet.')}
                         localized_period_message={localize(
                             "You've made no transactions of this type during this period."
                         )}

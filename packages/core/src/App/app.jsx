@@ -72,10 +72,8 @@ const App = ({ root_store }) => {
     setWebsocket(WS);
 
     React.useEffect(() => {
-        if (!root_store.client.email) {
-            Analytics.reset();
-        }
-    }, [root_store.client.email]);
+        Analytics.reset();
+    }, []);
 
     return (
         <Router basename={has_base ? `/${base}` : null}>

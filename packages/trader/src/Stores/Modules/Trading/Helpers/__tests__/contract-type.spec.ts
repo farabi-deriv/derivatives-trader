@@ -421,10 +421,19 @@ describe('ContractType Helper Functions', () => {
             expect(result.barrier_1).toBe('+1.80');
         });
 
-        it('should not use strike value for non-mobile or non-vanilla contracts', () => {
-            trade_store.contract_type = 'rise_fall';
+        it('[ABF-007] restores the persisted vanilla strike on desktop (not gated on is_mobile)', () => {
+            trade_store.contract_type = 'vanillalongcall';
             trade_store.v2_params_initial_values = { strike: '+1.80' };
             trade_store.root_store = { ui: { is_mobile: false } };
+
+            const result = ContractType.getContractValues(trade_store);
+
+            expect(result.barrier_1).toBe('+1.80');
+        });
+
+        it('[ABF-007] does not use the persisted strike for non-vanilla contracts', () => {
+            trade_store.contract_type = 'rise_fall';
+            trade_store.v2_params_initial_values = { strike: '+1.80' };
 
             const result = ContractType.getContractValues(trade_store);
 

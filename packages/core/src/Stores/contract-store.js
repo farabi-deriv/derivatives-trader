@@ -310,7 +310,7 @@ export default class ContractStore extends BaseStore {
         }
     }
 
-    createBarriersArray = contract_info => {
+    createBarriersArray = (contract_info, is_dark_mode) => {
         let barriers = [];
         if (contract_info) {
             const {
@@ -323,12 +323,12 @@ export default class ContractStore extends BaseStore {
                 reset_barrier,
             } = contract_info;
             const high_barrier = this.accu_high_barrier || barrier || high;
-            const updated_color = contract_info.profit >= 0 ? BARRIER_COLORS.GREEN : BARRIER_COLORS.RED;
+            const barrier_color = is_dark_mode ? BARRIER_COLORS.GRAY : BARRIER_COLORS.BLACK;
             const common_props = {
                 not_draggable: true,
                 shade: DEFAULT_SHADES['2'],
-                color: isSmartTraderContract(contract_type) ? BARRIER_COLORS.BLUE : updated_color,
-                foregroundColor: isSmartTraderContract(contract_type) ? BARRIER_COLORS.BLUE : updated_color,
+                color: isSmartTraderContract(contract_type) ? BARRIER_COLORS.BLUE : barrier_color,
+                foregroundColor: isSmartTraderContract(contract_type) ? BARRIER_COLORS.BLUE : barrier_color,
             };
             if (
                 isBarrierSupported(contract_type) &&

@@ -42,7 +42,6 @@ export default class StatementStore extends BaseStore {
             action_type: observable,
             client_loginid: observable,
             is_empty: computed,
-            has_selected_date: computed,
             clearTable: action.bound,
             clearDateFilter: action.bound,
             fetchNextBatch: action.bound,
@@ -58,10 +57,6 @@ export default class StatementStore extends BaseStore {
 
     get is_empty() {
         return !this.is_loading && this.data.length === 0;
-    }
-
-    get has_selected_date() {
-        return !!(this.date_from || this.date_to);
     }
 
     clearTable() {
@@ -109,9 +104,11 @@ export default class StatementStore extends BaseStore {
     statementHandler(response, should_load_partially) {
         if ('error' in response) {
             this.error = mapErrorMessage(response.error);
+            this.is_loading = false;
             return;
         }
 
+        this.error = '';
         const formatted_transactions = response.statement.transactions.map(transaction =>
             formatStatementTransaction(transaction, this.root_store.client.currency)
         );
@@ -204,6 +201,7 @@ export default class StatementStore extends BaseStore {
     /* DO NOT call clearDateFilter() upon unmounting the component, date filters should stay
     as we change tab or click on any contract for later references as discussed with UI/UX and QA */
     onUnmount() {
+        super.onUnmount();
         // Don't WS.forgetAll('proposal') here: this store never opens a 'proposal' subscription,
         // so it would only kill the trade store's live price proposals, causing an
         // "Unknown contract proposal" error on next purchase.

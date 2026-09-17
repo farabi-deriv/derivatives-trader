@@ -4289,4 +4289,56 @@ describe('TradeStore', () => {
             expect(tradeStore.proposal_info.CALL).toBeDefined();
         });
     });
+
+    describe('pushPurchaseDataToGtm chart settings', () => {
+        it('[ABF-011] reports the constant bottom toolbar position to GTM', () => {
+            tradeStore.pushPurchaseDataToGtm({} as never);
+
+            expect(mockRootStore.gtm.pushDataLayer).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    settings: expect.objectContaining({
+                        chart: expect.objectContaining({ toolbar_position: 'bottom' }),
+                    }),
+                })
+            );
+        });
+
+        it('[ABF-013] reports chart_asset_info as the constant "hidden" to GTM', () => {
+            tradeStore.pushPurchaseDataToGtm({} as never);
+
+            expect(mockRootStore.gtm.pushDataLayer).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    settings: expect.objectContaining({
+                        chart: expect.objectContaining({ chart_asset_info: 'hidden' }),
+                    }),
+                })
+            );
+        });
+    });
+
+    describe('clearLimitOrderBarriers', () => {
+        const makeBarrier = (key: string) => ({ key, onChange: jest.fn() }) as never;
+
+        it('[ABF-006] removes limit-order barriers from the populated portfolio.barriers source', () => {
+            mockRootStore.portfolio.barriers = [
+                makeBarrier('take_profit'),
+                makeBarrier('stop_loss'),
+                makeBarrier('stop_out'),
+            ];
+
+            tradeStore.clearLimitOrderBarriers();
+
+            expect(mockRootStore.portfolio.barriers).toHaveLength(0);
+        });
+
+        it('[ABF-006] clears from portfolio.barriers, not the never-populated store-own barriers', () => {
+            tradeStore.barriers = [makeBarrier('take_profit')];
+            mockRootStore.portfolio.barriers = [makeBarrier('take_profit'), makeBarrier('stop_loss')];
+
+            tradeStore.clearLimitOrderBarriers();
+
+            expect(tradeStore.barriers).toHaveLength(1);
+            expect(mockRootStore.portfolio.barriers).toHaveLength(0);
+        });
+    });
 });

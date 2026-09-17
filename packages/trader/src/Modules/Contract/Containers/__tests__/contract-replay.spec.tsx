@@ -30,6 +30,17 @@ jest.mock('@deriv/components', () => ({
 
 jest.mock('../replay-chart', () => jest.fn(() => <div>ReplayChart</div>));
 
+const mockContractDrawer = jest.fn((_props: Record<string, unknown>) => <div>ContractDrawer</div>);
+jest.mock('../../Components/ContractDrawer', () => ({
+    __esModule: true,
+    default: (props: Record<string, unknown>) => mockContractDrawer(props),
+}));
+
+jest.mock('@deriv/api', () => ({
+    ...jest.requireActual('@deriv/api'),
+    useFeatureFlags: jest.fn(() => ({})),
+}));
+
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
 }));
@@ -93,5 +104,32 @@ describe('<ContractReplay>', () => {
         render(<MockContractReplay store={mocked_store} />);
 
         expect(screen.getByText('ReplayChart')).toBeInTheDocument();
+    });
+
+    it('[ABF-009] passes the populated contract_update from the replay store to the contract drawer', () => {
+        mockContractDrawer.mockClear();
+        const limit_order = { take_profit: { order_amount: 50, display_name: 'Take profit' } };
+        const store = mockStore({
+            contract_replay: {
+                contract_store: {
+                    contract_info: { underlying_symbol: '1HZ100V', contract_type: 'MULTUP' },
+                    // contract_store never declares contract_update — the bug read it from here (undefined)
+                    contract_update: undefined,
+                },
+                contract_update: limit_order,
+                is_market_closed: false,
+                is_sell_requested: false,
+                onClickCancel: jest.fn(),
+                onClickSell: jest.fn(),
+                onMount: jest.fn(),
+                onUnmount: jest.fn(),
+                is_chart_loading: false,
+            },
+            ui: { notification_messages_ui: 'div' },
+        });
+
+        render(<MockContractReplay store={store} />);
+
+        expect(mockContractDrawer).toHaveBeenCalledWith(expect.objectContaining({ contract_update: limit_order }));
     });
 });

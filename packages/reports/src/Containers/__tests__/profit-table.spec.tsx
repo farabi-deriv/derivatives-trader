@@ -207,7 +207,7 @@ describe('Profit Table', () => {
         expect(screen.getByText(longCodeMessage)).toBeInTheDocument();
     });
 
-    test('renders the ProfitTable component correctly and shows short message if no data is present and has_selected_date is false', () => {
+    test('[ABF-004] shows the period empty-state message for an empty table with no dead no-filter branch', () => {
         (useReportsStore as jest.Mock).mockReturnValueOnce({
             profit_table: {
                 ...useReportsStore().profit_table,
@@ -218,7 +218,8 @@ describe('Profit Table', () => {
             },
         });
         renderProfitTable();
-        expect(screen.getByText(shortCodeMessage)).toBeInTheDocument();
+        expect(screen.getByText(longCodeMessage)).toBeInTheDocument();
+        expect(screen.queryByText(shortCodeMessage)).not.toBeInTheDocument();
     });
 
     test('renders filter but no list if the data is empty on desktop', () => {

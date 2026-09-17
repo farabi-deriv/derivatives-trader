@@ -62,7 +62,7 @@ const TradeChart = observer(() => {
     } = contract_trade;
     const ref = React.useRef<{ hasPredictionIndicators(): void; triggerPopup(arg: () => void): void }>(null);
     const { all_positions, removePositionById: onClickRemove } = portfolio;
-    const { is_chart_countdown_visible, is_chart_layout_default, is_dark_mode_on, active_sidebar_flyout } = ui;
+    const { is_dark_mode_on, active_sidebar_flyout } = ui;
     const { current_language, is_socket_opened } = common;
     const { activeSymbols: raw_active_symbols } = useActiveSymbols();
     const active_symbols = React.useMemo(
@@ -142,10 +142,10 @@ const TradeChart = observer(() => {
     // Memoize settings object to prevent chart re-initialization
     const settings = React.useMemo(
         () => ({
-            countdown: is_chart_countdown_visible,
+            countdown: false,
             isHighestLowestMarkerEnabled: false, // TODO: Pending UI,
             language: current_language.toLowerCase(),
-            position: is_chart_layout_default ? 'bottom' : 'left',
+            position: 'bottom',
             theme: is_dark_mode_on ? 'dark' : 'light',
             ...(is_accumulator
                 ? {
@@ -155,15 +155,7 @@ const TradeChart = observer(() => {
                 : {}),
             ...(has_barrier ? { whitespace: CHART_CONSTANTS.BARRIER_WHITESPACE } : {}),
         }),
-        [
-            is_chart_countdown_visible,
-            current_language,
-            is_chart_layout_default,
-            is_dark_mode_on,
-            is_accumulator,
-            isMobile,
-            has_barrier,
-        ]
+        [current_language, is_dark_mode_on, is_accumulator, isMobile, has_barrier]
     );
 
     const { current_spot, current_spot_time } = accumulator_barriers_data || {};

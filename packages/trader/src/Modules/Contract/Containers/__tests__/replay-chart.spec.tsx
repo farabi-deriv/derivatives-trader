@@ -87,8 +87,6 @@ describe('<ReplayChart>', () => {
                 is_socket_opened,
             },
             ui: {
-                is_chart_layout_default: true,
-                is_chart_countdown_visible: true,
                 is_dark_mode_on: false,
             },
         });

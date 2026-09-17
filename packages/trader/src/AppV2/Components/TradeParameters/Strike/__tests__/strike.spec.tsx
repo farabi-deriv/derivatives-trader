@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { CONTRACT_TYPES, TRADE_TYPES } from '@deriv/shared';
+import { CONTRACT_TYPES, isMobile, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -181,5 +181,46 @@ describe('Strike', () => {
         mockStrike();
 
         expect(screen.getByRole('textbox')).toBeDisabled();
+    });
+});
+
+// Characterization: StrikeDesktop already reads barrier_1 from the store, so the desktop restore
+// (contract-type.ts no longer gates the v2_params_initial_values.strike restore on is_mobile)
+// surfaces here without a component change.
+describe('Strike on desktop', () => {
+    let desktop_mock_store: ReturnType<typeof mockStore>;
+
+    beforeEach(() => {
+        (isMobile as jest.Mock).mockReturnValue(false);
+        desktop_mock_store = mockStore({
+            modules: {
+                trade: {
+                    ...mockStore({}),
+                    barrier_1: '+1.80',
+                    barrier_choices: ['+1.80', '+1.00', '+0.00', '-1.00', '-1.80'],
+                    contract_type: TRADE_TYPES.VANILLA.CALL,
+                    currency: 'USD',
+                    proposal_info: {},
+                },
+            },
+        });
+    });
+
+    afterEach(() => {
+        (isMobile as jest.Mock).mockReturnValue(true);
+        jest.clearAllMocks();
+    });
+
+    it('[ABF-007] surfaces the restored strike (barrier_1) on desktop via StrikeDesktop', () => {
+        render(
+            <TraderProviders store={desktop_mock_store}>
+                <ModulesProvider store={desktop_mock_store}>
+                    <Strike is_minimized />
+                </ModulesProvider>
+            </TraderProviders>
+        );
+
+        expect(screen.getByText('Strike price')).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toHaveValue('+1.80');
     });
 });

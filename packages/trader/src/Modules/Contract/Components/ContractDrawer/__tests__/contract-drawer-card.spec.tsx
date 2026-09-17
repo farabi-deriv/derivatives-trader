@@ -11,7 +11,7 @@ import ContractDrawerCard from '../contract-drawer-card';
 type ActiveSymbols = NonNullable<TActiveSymbolsResponse['active_symbols']>;
 
 const mocked_props: React.ComponentProps<typeof ContractDrawerCard> = {
-    contract_update: undefined,
+    contract_update: {},
     contract_info: {
         date_expiry: 1699709000,
         profit: '8.78',

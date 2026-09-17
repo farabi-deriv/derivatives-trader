@@ -1,12 +1,11 @@
 import Cookies from 'js-cookie';
-import { action, computed, makeObservable, observable, reaction, runInAction, when } from 'mobx';
+import { action, computed, makeObservable, observable, runInAction, when } from 'mobx';
 
 import {
     clearAccountId,
     dayjs,
     filterUrlQuery,
     getAccountId,
-    getTrustedDomainName,
     isCryptocurrency,
     isDemoAccountId,
     isMobile,
@@ -25,7 +24,6 @@ import { checkWhoAmI, requestRestLogout, WS } from 'Services';
 import { buildCurrenciesList } from './Modules/Trading/Helpers/currency';
 
 import BinarySocket from '_common/base/socket_base';
-import { getRegion } from '_common/utility';
 
 const LANGUAGE_KEY = 'i18n_language';
 const storage_key = 'current_account';
@@ -34,7 +32,6 @@ const store_name = 'client_store';
 export default class ClientStore extends BaseStore {
     loginid;
     preferred_language;
-    email;
     user_id;
     external_id;
 
@@ -49,7 +46,6 @@ export default class ClientStore extends BaseStore {
     currencies_list = {};
     selected_currency = '';
 
-    has_cookie_account = false;
     tab_visibility_handler = null;
     has_archived_statement = false;
 
@@ -60,7 +56,6 @@ export default class ClientStore extends BaseStore {
         makeObservable(this, {
             loginid: observable,
             preferred_language: observable,
-            email: observable,
             user_id: observable,
             current_account: observable,
             initialized_broadcast: observable,
@@ -71,7 +66,6 @@ export default class ClientStore extends BaseStore {
             is_client_store_initialized: observable,
             has_logged_out: observable,
             should_redirect_user_to_login: observable,
-            has_cookie_account: observable,
             has_archived_statement: observable,
 
             balance: computed,
@@ -84,8 +78,6 @@ export default class ClientStore extends BaseStore {
             residence: computed,
             email_address: computed,
             landing_company_shortcode: computed,
-
-            setCookieAccount: action.bound,
             responsePayoutCurrencies: action.bound,
             responseAuthorize: action.bound,
             setLoginId: action.bound,
@@ -93,7 +85,6 @@ export default class ClientStore extends BaseStore {
             setIsLoggingIn: action.bound,
             setBalanceActiveAccount: action.bound,
             selectCurrency: action.bound,
-            setEmail: action.bound,
             setInitialized: action.bound,
             setIsClientStoreInitialized: action.bound,
             cleanUp: action.bound,
@@ -106,13 +97,6 @@ export default class ClientStore extends BaseStore {
             is_crypto: action.bound,
             switchAccount: action.bound,
         });
-
-        reaction(
-            () => [this.is_logged_in, this.loginid, this.email, this.currency, this.preferred_language],
-            () => {
-                this.setCookieAccount();
-            }
-        );
     }
 
     get balance() {
@@ -179,33 +163,6 @@ export default class ClientStore extends BaseStore {
 
     setIsAuthorize(value) {
         this.is_authorize = value;
-    }
-
-    setCookieAccount() {
-        const domain = getTrustedDomainName();
-
-        const { loginid, landing_company_shortcode, currency, preferred_language, user_id } = this;
-        const email = this.email;
-        const residence = this.residence;
-
-        if (loginid && email) {
-            const client_information = {
-                loginid,
-                email,
-                landing_company_shortcode,
-                currency,
-                residence,
-                preferred_language,
-                user_id,
-            };
-            Cookies.set('region', getRegion(landing_company_shortcode, residence), { domain });
-            // js-cookie v3 no longer auto-serializes objects (v2 did); stringify explicitly so readers (e.g. analytics) can JSON.parse it
-            Cookies.set('client_information', JSON.stringify(client_information), { domain });
-            this.has_cookie_account = true;
-        } else {
-            removeCookies('region', 'client_information');
-            this.has_cookie_account = false;
-        }
     }
 
     responsePayoutCurrencies(response) {
@@ -494,13 +451,6 @@ export default class ClientStore extends BaseStore {
 
     selectCurrency(value) {
         this.selected_currency = value;
-    }
-
-    setEmail(email) {
-        if (this.current_account) {
-            this.current_account.email = email;
-            this.email = email;
-        }
     }
 
     setIsClientStoreInitialized() {

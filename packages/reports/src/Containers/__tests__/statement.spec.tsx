@@ -209,19 +209,7 @@ describe('Statement', () => {
         expect(screen.queryByTestId(dataTableTestId)).not.toBeInTheDocument();
         expect(screen.getByText(mockedErrorMessage)).toBeInTheDocument();
     });
-    it('should render a long No transactions message when data is empty & is_empty === true & has_selected_date === true', () => {
-        (useReportsStore as jest.Mock).mockReturnValueOnce({
-            statement: {
-                ...useReportsStore().statement,
-                data: [],
-                is_empty: true,
-            },
-        });
-        render(mockedStatement());
-        expect(screen.queryByTestId(dataTableTestId)).not.toBeInTheDocument();
-        expect(screen.getByText(noTransationsLongText)).toBeInTheDocument();
-    });
-    it('should render a short No transactions message when data is empty & is_empty === true & has_selected_date === false', () => {
+    it('[ABF-004] shows the period empty-state message for an empty statement with no dead no-filter branch', () => {
         (useReportsStore as jest.Mock).mockReturnValueOnce({
             statement: {
                 ...useReportsStore().statement,
@@ -232,7 +220,8 @@ describe('Statement', () => {
         });
         render(mockedStatement());
         expect(screen.queryByTestId(dataTableTestId)).not.toBeInTheDocument();
-        expect(screen.getByText(noTransationsShortText)).toBeInTheDocument();
+        expect(screen.getByText(noTransationsLongText)).toBeInTheDocument();
+        expect(screen.queryByText(noTransationsShortText)).not.toBeInTheDocument();
     });
     it('should render Loading when data is empty & is_loading === true', () => {
         (useReportsStore as jest.Mock).mockReturnValueOnce({

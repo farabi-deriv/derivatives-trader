@@ -29,4 +29,16 @@ describe('EmptyTradeHistoryMessage component', () => {
 
         expect(text).toBeInTheDocument();
     });
+
+    it('[ABF-004] falls back to the period message when no no-filter message is provided', () => {
+        render(
+            <EmptyTradeHistoryMessage
+                component_icon={<MockIcon />}
+                has_selected_date={false}
+                localized_period_message={mockProps.localized_period_message}
+            />
+        );
+
+        expect(screen.getByText(mockProps.localized_period_message)).toBeInTheDocument();
+    });
 });

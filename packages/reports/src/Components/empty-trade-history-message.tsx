@@ -3,8 +3,8 @@ import { Text } from '@deriv/components';
 
 type TEmptyTradeHistoryMessage = {
     component_icon?: React.ReactElement;
-    has_selected_date: boolean;
-    localized_message: React.ReactNode;
+    has_selected_date?: boolean;
+    localized_message?: React.ReactNode;
     localized_period_message: React.ReactNode;
 };
 
@@ -26,7 +26,7 @@ const EmptyTradeHistoryMessage = ({
                     </div>
                 )}
                 <Text size='xs' align='center' color='disabled' className='empty-trade-history__text'>
-                    {!has_selected_date ? localized_message : localized_period_message}
+                    {!has_selected_date && localized_message ? localized_message : localized_period_message}
                 </Text>
             </div>
         </React.Fragment>

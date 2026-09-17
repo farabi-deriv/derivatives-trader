@@ -26,9 +26,17 @@ const ContractReplay = observer(({ contract_id }: { contract_id: number }) => {
     const { state } = useLocation<TLocationState>();
     const { common, contract_replay, ui } = useStore();
     const { contract_store } = contract_replay;
-    const { is_market_closed, is_sell_requested, onClickCancel, onClickSell, onMount, onUnmount, is_chart_loading } =
-        contract_replay;
-    const { contract_info, contract_update, contract_update_history } = contract_store;
+    const {
+        contract_update,
+        is_market_closed,
+        is_sell_requested,
+        onClickCancel,
+        onClickSell,
+        onMount,
+        onUnmount,
+        is_chart_loading,
+    } = contract_replay;
+    const { contract_info, contract_update_history } = contract_store;
     const { routeBackInApp } = common;
     const {
         is_dark_mode_on: is_dark_theme,

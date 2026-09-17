@@ -43,15 +43,7 @@ const eu_countries = [
 // check if client is from EU
 const isEuCountry = country => eu_countries.includes(country);
 
-const getRegion = (landing_company_shortcode, residence) => {
-    if (landing_company_shortcode === 'virtual') {
-        return isEuCountry(residence) ? 'eu' : 'row';
-    }
-    return landing_company_shortcode === 'svg' ? 'row' : 'eu';
-};
-
 module.exports = {
     getStaticHash,
     isEuCountry,
-    getRegion,
 };

@@ -152,9 +152,9 @@ describe('C8b @deriv/core sweep', () => {
             expectGone(['_common/lib', '_common/base/client_base.js', '_common/base/currency_base.js']);
         });
 
-        it('[DCR-037] should leave utility.js exporting exactly getStaticHash, isEuCountry and getRegion', () => {
+        it('[DCR-037] should leave utility.js exporting exactly getStaticHash and isEuCountry', () => {
             const utility = readCoreFile('_common/utility.js');
-            ['getStaticHash', 'isEuCountry', 'getRegion'].forEach(name => expect(utility).toContain(name));
+            ['getStaticHash', 'isEuCountry'].forEach(name => expect(utility).toContain(name));
             expect(utility).toContain('const isEuCountry');
             ['createElement', 'isSyntheticsUnavailable', 'countries_without_synthetics'].forEach(name =>
                 expect(utility).not.toMatch(new RegExp(`\\b${name}\\b`))

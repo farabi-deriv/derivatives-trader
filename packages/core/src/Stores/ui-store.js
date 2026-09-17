@@ -94,11 +94,6 @@ export default class UIStore extends BaseStore {
     // @observable is_purchase_confirm_on    = false;
     is_services_error_visible = false;
     // @observable is_purchase_lock_on       = false;
-    // SmartCharts Controls
-    // TODO: enable asset information
-    // @observable is_chart_asset_info_visible = true;
-    is_chart_countdown_visible = false;
-    is_chart_layout_default = true;
 
     // Mobile (AppV2) chart maximize mode: hides the header/market strip/bottom-nav so the
     // chart grows while trade params stay visible. Session-only (not persisted) — resets on
@@ -145,9 +140,6 @@ export default class UIStore extends BaseStore {
     constructor(root_store) {
         const local_storage_properties = [
             'is_advanced_duration',
-            'is_chart_asset_info_visible',
-            'is_chart_countdown_visible',
-            'is_chart_layout_default',
             // The theme persists as `theme_preference` alone. `is_dark_mode_on` is derived from it,
             // and persisting the derived value too let rehydrate write back a stale boolean that
             // contradicted a 'system' preference whose OS theme had changed since the last visit.
@@ -163,8 +155,6 @@ export default class UIStore extends BaseStore {
 
         makeObservable(this, {
             is_services_error_visible: observable,
-            is_chart_countdown_visible: observable,
-            is_chart_layout_default: observable,
             is_chart_maximized: observable,
             is_chart_maximize_animating: observable,
             screen_width: observable,
@@ -216,7 +206,6 @@ export default class UIStore extends BaseStore {
             removeToast: action.bound,
             resetPurchaseStates: action.bound,
             setAppContentsScrollRef: action.bound,
-            setChartLayout: action.bound,
             setIsChartMaximized: action.bound,
             setChartMaximizeAnimating: action.bound,
             toggleChartMaximized: action.bound,
@@ -411,16 +400,6 @@ export default class UIStore extends BaseStore {
     resetPurchaseStates() {
         this.purchase_states = [false, false];
     }
-
-    setChartLayout(is_default) {
-        this.is_chart_layout_default = is_default;
-    }
-
-    // TODO: enable asset information
-    // @action.bound
-    // setChartAssetInfo(is_visible) {
-    //     this.is_chart_asset_info_visible = is_visible;
-    // }
 
     setIsChartMaximized(is_maximized) {
         this.is_chart_maximized = is_maximized;

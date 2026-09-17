@@ -118,13 +118,7 @@ export default class CommonStore extends BaseStore {
     }
 
     setInitialRouteHistoryItem(location) {
-        if (window.location.href.indexOf('?ext_platform_url=') !== -1) {
-            this.addRouteHistoryItem({ ...location, action: 'PUSH' });
-
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            this.addRouteHistoryItem({ ...location, action: 'PUSH' });
-        }
+        this.addRouteHistoryItem({ ...location, action: 'PUSH' });
     }
 
     setServerTime(server_time) {

@@ -33,7 +33,6 @@ const ReplayChart = observer(
         const { audit_details, barrier_count } = contract_info;
         const allow_scroll_to_epoch = chart_state === 'READY' || chart_state === 'SCROLL_TO_LEFT';
         const { current_language, is_socket_opened } = common;
-        const { is_chart_layout_default, is_chart_countdown_visible } = ui;
         const { end_epoch, chart_type, start_epoch, granularity } = contract_config || {};
         const is_dark_theme = is_dark_theme_prop || ui.is_dark_mode_on;
         // Forwarding contract logic removed - contracts now always use start_epoch
@@ -48,9 +47,9 @@ const ReplayChart = observer(
         const settings = {
             language: current_language,
             theme: is_dark_theme && !should_force_light_theme ? 'dark' : 'light',
-            position: is_chart_layout_default ? 'bottom' : 'left',
-            countdown: is_chart_countdown_visible,
-            assetInformation: false, // ui.is_chart_asset_info_visible,
+            position: 'bottom',
+            countdown: false,
+            assetInformation: false,
             isHighestLowestMarkerEnabled: false, // TODO: Pending UI
         };
         const scroll_to_epoch = allow_scroll_to_epoch && contract_config ? contract_config.scroll_to_epoch : undefined;

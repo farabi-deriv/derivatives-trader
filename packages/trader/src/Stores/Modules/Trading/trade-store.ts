@@ -2163,7 +2163,7 @@ export default class TradeStore extends BaseStore<TRootStore> {
 
     clearLimitOrderBarriers() {
         this.hovered_contract_type = null;
-        const { barriers } = this;
+        const { barriers } = this.root_store.portfolio;
         setLimitOrderBarriers({
             barriers,
             is_over: false,
@@ -2787,8 +2787,8 @@ export default class TradeStore extends BaseStore<TRootStore> {
                 theme: this.root_store.ui.is_dark_mode_on ? 'dark' : 'light',
                 positions_drawer: this.root_store.ui.active_sidebar_flyout ? 'open' : 'closed',
                 chart: {
-                    toolbar_position: this.root_store.ui.is_chart_layout_default ? 'bottom' : 'left',
-                    chart_asset_info: this.root_store.ui.is_chart_asset_info_visible ? 'visible' : 'hidden',
+                    toolbar_position: 'bottom',
+                    chart_asset_info: 'hidden',
                     chart_type: this.root_store.contract_trade.chart_type,
                     granularity: this.root_store.contract_trade.granularity,
                 },

@@ -188,7 +188,6 @@ type TClientStore = {
     email_address: string;
     should_redirect_user_to_login: boolean;
     setShouldRedirectToLogin: (value: boolean) => void;
-    has_cookie_account: boolean;
     has_logged_out: boolean;
     initialized_broadcast: boolean;
     is_authorize: boolean;
@@ -202,7 +201,6 @@ type TClientStore = {
     landing_company_shortcode: string;
     loginid?: string;
     residence: string;
-    email: string;
     default_currency: string;
 
     // Essential actions
@@ -213,7 +211,6 @@ type TClientStore = {
     setLoginId: (loginid: string) => void;
     setIsAuthorize: (value: boolean) => void;
     setBalanceActiveAccount: (obj_balance: any) => void;
-    setEmail: (email: string) => void;
     resetVirtualBalance: () => Promise<void>;
     logout: () => Promise<LogOutResponse>;
     removeTokenFromUrl: () => void;
@@ -276,9 +273,6 @@ type TUiStore = {
     enableApp: () => void;
     is_advanced_duration: boolean;
     is_history_tab_active: boolean;
-    is_chart_asset_info_visible?: boolean;
-    is_chart_layout_default: boolean;
-    is_chart_countdown_visible: boolean;
     is_chart_maximized: boolean;
     is_chart_maximize_animating: boolean;
     is_dark_mode_on: boolean;
@@ -587,6 +581,7 @@ type TContractReplay = {
                   type: string;
               }>;
     };
+    contract_update: NonNullable<ProposalOpenContract>['limit_order'];
     chart_state: string;
     chartStateChange: (state: string, option?: TChartStateChangeOption) => void;
     error_code?: string;

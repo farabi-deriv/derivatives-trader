@@ -13,7 +13,7 @@ describe('useStore', () => {
     test('should be able to access store data if StoreContext has been provided', async () => {
         const mockRootStore: DeepPartial<TStores> = {
             client: {
-                email: 'john@company.com',
+                loginid: 'CR1234',
             },
             ui: {
                 is_dark_mode_on: true,
@@ -25,7 +25,7 @@ describe('useStore', () => {
         );
         const { result } = renderHook(() => useStore(), { wrapper });
 
-        expect(result.current.client.email).toBe('john@company.com');
+        expect(result.current.client.loginid).toBe('CR1234');
         expect(result.current.ui.is_dark_mode_on).toBe(true);
     });
 
