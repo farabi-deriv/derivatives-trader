@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change p2-buy-button-stays-enabled-and-quotes-a-payout-when-stake-is-5x-available-balance. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [BABG-006] The server-driven insufficient-balance path is preserved
 
 The insufficient-balance error path SHALL be the sole authority for affordability. When the balance state is reported by the price response or by a failed buy, **Buy** SHALL stay pressable and pressing it SHALL open the existing insufficient-balance sheet with its existing title, message, and **Deposit now** (real account) / **OK** (virtual account) actions.
@@ -35,4 +37,3 @@ Capping would rewrite a user's own input without asking, and would frequently pr
 
 - **WHEN** the balance is `0.77 USD` and the contract's minimum stake is `1.00 USD`, so no affordable stake exists
 - **THEN** the inline reason is shown and **Buy** stays unavailable, rather than a sub-minimum stake being substituted
-

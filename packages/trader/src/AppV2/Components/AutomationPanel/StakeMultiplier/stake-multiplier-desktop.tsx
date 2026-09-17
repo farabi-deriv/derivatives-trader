@@ -31,6 +31,7 @@ type TStakeMultiplierDesktopProps = {
     selectedValue: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: number) => void;
 };
 
@@ -143,6 +144,7 @@ const StakeMultiplierDesktop = ({
     selectedValue,
     description,
     disabled,
+    is_market_closed,
     onSelect,
 }: TStakeMultiplierDesktopProps) => {
     const { localize: localizeForLanguage, instance } = useTranslations();
@@ -168,6 +170,7 @@ const StakeMultiplierDesktop = ({
             value={is_multiplier ? `x${selectedValue}` : `${selectedValue} ${localize('unit')}`}
             popover_classname='automation-popover'
             popoverWidth={376}
+            disabled={is_market_closed}
             is_locked={disabled}
             description={<Text size='sm'>{description || fallback_description}</Text>}
         >

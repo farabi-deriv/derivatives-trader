@@ -15,6 +15,7 @@ type TThresholdInputMobileProps = {
     currency: string;
     initialValue: number;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number) => void;
 };
 
@@ -24,6 +25,7 @@ const ThresholdInputMobile = ({
     currency,
     initialValue,
     disabled,
+    is_market_closed,
     onSave,
 }: TThresholdInputMobileProps) => {
     const { localize } = useTranslations();
@@ -73,7 +75,7 @@ const ThresholdInputMobile = ({
                 <TextField
                     variant='fill'
                     readOnly
-                    disabled={disabled}
+                    disabled={disabled || is_market_closed}
                     label={label}
                     value={`${currency_symbol}${initialValue}`}
                     noStatusIcon

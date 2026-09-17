@@ -15,6 +15,7 @@ type TMaxTradeStakeMobileProps = {
     initialStake?: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number | null) => void;
 };
 
@@ -24,6 +25,7 @@ const MaxTradeStakeMobile = ({
     initialStake,
     description,
     disabled,
+    is_market_closed,
     onSave,
 }: TMaxTradeStakeMobileProps) => {
     const { localize } = useTranslations();
@@ -97,7 +99,7 @@ const MaxTradeStakeMobile = ({
                 <TextField
                     variant='fill'
                     readOnly
-                    disabled={disabled}
+                    disabled={disabled || is_market_closed}
                     label={<Localize i18n_default_text='Max. stake' />}
                     value={initialValue ? `${currency_symbol}${initialValue}` : '-'}
                     noStatusIcon

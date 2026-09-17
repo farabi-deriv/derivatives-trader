@@ -24,7 +24,7 @@ import './automation-panel.scss';
  */
 const AutomationPanel = observer(() => {
     const trade_store = useTraderStore();
-    const { amount, contract_type, currency, is_automation_params_locked } = trade_store;
+    const { amount, contract_type, currency, is_automation_params_locked, is_market_closed } = trade_store;
     const automation_store = useAutomationStore();
     const { config } = automation_store;
 
@@ -77,6 +77,7 @@ const AutomationPanel = observer(() => {
                         selectedValue={config.strategy}
                         description={strategy_description}
                         disabled={is_automation_params_locked}
+                        is_market_closed={is_market_closed}
                         onSelect={selectStrategy}
                     />
 
@@ -87,6 +88,7 @@ const AutomationPanel = observer(() => {
                             selectedValue={getParamNumber(KNOWN_PARAM_KEYS.MULTIPLIER)}
                             description={getSchemaDescription(KNOWN_PARAM_KEYS.MULTIPLIER)}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSelect={value => setParamFromNumber(KNOWN_PARAM_KEYS.MULTIPLIER, value)}
                         />
                     )}
@@ -98,6 +100,7 @@ const AutomationPanel = observer(() => {
                             selectedValue={getParamNumber(KNOWN_PARAM_KEYS.UNIT)}
                             description={getSchemaDescription(KNOWN_PARAM_KEYS.UNIT)}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSelect={value => setParamFromNumber(KNOWN_PARAM_KEYS.UNIT, value)}
                         />
                     )}
@@ -109,6 +112,7 @@ const AutomationPanel = observer(() => {
                             initialStake={Number(amount) || undefined}
                             description={getSchemaDescription(KNOWN_PARAM_KEYS.MAX_STAKE)}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSave={value => setParamFromNumberOrNull(KNOWN_PARAM_KEYS.MAX_STAKE, value)}
                         />
                     )}
@@ -128,6 +132,7 @@ const AutomationPanel = observer(() => {
                             currency={display_currency}
                             initialValue={getParamNumber(KNOWN_PARAM_KEYS.TAKE_PROFIT)}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSave={value => setParamFromNumber(KNOWN_PARAM_KEYS.TAKE_PROFIT, value)}
                         />
                     )}
@@ -139,6 +144,7 @@ const AutomationPanel = observer(() => {
                             currency={display_currency}
                             initialValue={getParamNumber(KNOWN_PARAM_KEYS.STOP_LOSS)}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSave={value => setParamFromNumber(KNOWN_PARAM_KEYS.STOP_LOSS, value)}
                         />
                     )}

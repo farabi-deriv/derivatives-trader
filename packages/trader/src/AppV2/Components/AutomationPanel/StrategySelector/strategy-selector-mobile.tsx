@@ -14,10 +14,17 @@ type TStrategySelectorMobileProps = {
     selectedValue: string;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: string) => void;
 };
 
-const StrategySelectorMobile = ({ options, selectedValue, disabled, onSelect }: TStrategySelectorMobileProps) => {
+const StrategySelectorMobile = ({
+    options,
+    selectedValue,
+    disabled,
+    is_market_closed,
+    onSelect,
+}: TStrategySelectorMobileProps) => {
     const { localize } = useTranslations();
     const [is_open, setIsOpen] = React.useState(false);
     const [preview_value, setPreviewValue] = React.useState(selectedValue);
@@ -46,7 +53,7 @@ const StrategySelectorMobile = ({ options, selectedValue, disabled, onSelect }: 
                 <TextField
                     variant='fill'
                     readOnly
-                    disabled={disabled}
+                    disabled={disabled || is_market_closed}
                     label={<Localize i18n_default_text='Strategy' />}
                     value={getStrategyLabel(selectedValue, options)}
                     noStatusIcon

@@ -15,6 +15,7 @@ type TStakeMultiplierProps = {
     selectedValue: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: number) => void;
 };
 

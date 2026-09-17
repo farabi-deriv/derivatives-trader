@@ -9,6 +9,7 @@ type TThresholdInputProps = {
     currency: string;
     initialValue: number;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number) => void;
 };
 

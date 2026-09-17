@@ -69,4 +69,12 @@ describe('MaxTradeStakeMobile', () => {
         fireEvent.mouseEnter(screen.getByRole('button', { name: 'Max. stake' }));
         expect(screen.getByText('Upper limit for stake multiplying.')).toBeInTheDocument();
     });
+
+    it('[ASP-001][ASP-002] disables the trigger field on a closed market with no lock overlay', () => {
+        const { container } = render(<MaxTradeStakeMobile {...defaultProps} is_market_closed />);
+
+        expect(screen.getByRole('textbox')).toBeDisabled();
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        expect(container.querySelector('.trade-params__lock-overlay')).toBeNull();
+    });
 });

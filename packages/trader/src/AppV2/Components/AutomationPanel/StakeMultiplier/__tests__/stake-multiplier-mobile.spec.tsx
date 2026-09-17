@@ -100,4 +100,12 @@ describe('StakeMultiplierMobile header actions', () => {
         fireEvent.mouseEnter(screen.getByRole('button', { name: 'Stake multiplier' }));
         expect(screen.getByText('Factor applied to the stake after each loss.')).toBeInTheDocument();
     });
+
+    it('[ASP-001][ASP-002] disables the trigger field on a closed market with no lock overlay', () => {
+        const { container } = render(<StakeMultiplierMobile {...defaultProps} is_market_closed />);
+
+        expect(screen.getByRole('textbox')).toBeDisabled();
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        expect(container.querySelector('.trade-params__lock-overlay')).toBeNull();
+    });
 });

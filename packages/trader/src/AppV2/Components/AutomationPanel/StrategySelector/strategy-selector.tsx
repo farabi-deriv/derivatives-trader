@@ -12,6 +12,7 @@ type TStrategySelectorProps = {
     selectedValue: string;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: string) => void;
 };
 

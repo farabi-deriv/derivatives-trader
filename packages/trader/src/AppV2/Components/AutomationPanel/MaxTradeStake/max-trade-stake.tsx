@@ -11,6 +11,7 @@ type TMaxTradeStakeProps = {
     initialStake?: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number | null) => void;
 };
 

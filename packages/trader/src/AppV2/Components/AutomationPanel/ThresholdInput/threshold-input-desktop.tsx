@@ -14,6 +14,7 @@ type TThresholdInputDesktopProps = {
     currency: string;
     initialValue: number;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number) => void;
 };
 
@@ -91,6 +92,7 @@ const ThresholdInputDesktop = ({
     currency,
     initialValue,
     disabled,
+    is_market_closed,
     onSave,
 }: TThresholdInputDesktopProps) => {
     const { localize } = useTranslations();
@@ -102,6 +104,7 @@ const ThresholdInputDesktop = ({
             label={label}
             value={`${currency_symbol}${initialValue}`}
             popover_classname='automation-popover'
+            disabled={is_market_closed}
             is_locked={disabled}
             description={description ? <Text size='sm'>{description}</Text> : undefined}
         >

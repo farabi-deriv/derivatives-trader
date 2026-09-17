@@ -28,6 +28,7 @@ type TStakeMultiplierMobileProps = {
     selectedValue: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: number) => void;
 };
 
@@ -37,6 +38,7 @@ const StakeMultiplierMobile = ({
     selectedValue,
     description,
     disabled,
+    is_market_closed,
     onSelect,
 }: TStakeMultiplierMobileProps) => {
     const is_multiplier = param_key === KNOWN_PARAM_KEYS.MULTIPLIER;
@@ -105,7 +107,7 @@ const StakeMultiplierMobile = ({
                 <TextField
                     variant='fill'
                     readOnly
-                    disabled={disabled}
+                    disabled={disabled || is_market_closed}
                     label={
                         is_multiplier ? (
                             <Localize i18n_default_text='Stake multiplier' />

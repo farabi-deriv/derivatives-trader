@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change default-stake-presets-allow-values-above-the-available-balance-without-a-deposit-gate. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: The stake input warns when the drafted stake exceeds the balance
 
 Both stake inputs — the mobile sheet (`packages/trader/src/AppV2/Components/TradeParameters/Stake/stake-input.tsx`) and the desktop modal (`.../stake-input-desktop.tsx`) — SHALL show a balance-aware hint whenever the currently drafted stake exceeds the active account's balance.
@@ -114,4 +116,3 @@ Both stake editors SHALL block committing the drafted amount while the balance h
 - **THEN** the footer **Save** button is disabled while the balance hint shows, and invoking `onSave` directly does not commit the amount or close the modal
 - **WHEN** the user then drafts an affordable `4`
 - **THEN** the footer **Save** button is enabled again
-

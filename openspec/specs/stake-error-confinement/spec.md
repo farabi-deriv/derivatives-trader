@@ -1,8 +1,11 @@
 # stake-error-confinement Specification
 
 ## Purpose
+
 TBD - created by archiving change confine-stake-validation-error-input. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [SEC-001] A stake-field error does not mark the collapsed stake trade parameter in error
 
 The collapsed stake trade-parameter control on the trade page — the chip/field that opens the stake editor (`packages/trader/src/AppV2/Components/TradeParameters/Stake/stake-mobile.tsx` and `stake-desktop.tsx`) — SHALL NOT be rendered in its error (red) state as a consequence of any stake-field error. This covers all three sources: a front-end amount validation error, a proposal error tagged to the `stake`/`amount` field, and a drafted or committed stake that exceeds the available balance.
@@ -50,4 +53,3 @@ Confining the error to the editor SHALL NOT change the stake editor's existing b
 
 - **WHEN** the user drafts a stake in the desktop popover that the proposal rejects with a stake-field error
 - **THEN** the input shows that error message in its error state, exactly as before this change
-

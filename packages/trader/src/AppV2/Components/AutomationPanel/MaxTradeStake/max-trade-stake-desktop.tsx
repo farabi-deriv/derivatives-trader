@@ -14,6 +14,7 @@ type TMaxTradeStakeDesktopProps = {
     initialStake?: number;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSave: (value: number | null) => void;
 };
 
@@ -118,6 +119,7 @@ const MaxTradeStakeDesktop = ({
     initialStake,
     description,
     disabled,
+    is_market_closed,
     onSave,
 }: TMaxTradeStakeDesktopProps) => {
     const currency_symbol = getCurrencySymbol(currency);
@@ -127,6 +129,7 @@ const MaxTradeStakeDesktop = ({
             label={<Localize i18n_default_text='Max. stake' />}
             value={initialValue ? `${currency_symbol}${initialValue}` : '-'}
             popover_classname='automation-popover'
+            disabled={is_market_closed}
             is_locked={disabled}
             description={
                 <Text size='sm'>

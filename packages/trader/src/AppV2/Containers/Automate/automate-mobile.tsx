@@ -162,6 +162,7 @@ const AutomateMobile = observer(() => {
                             selectedValue={config.strategy}
                             description={strategy_description}
                             disabled={is_automation_params_locked}
+                            is_market_closed={is_market_closed}
                             onSelect={selectStrategy}
                         />
 
@@ -172,6 +173,7 @@ const AutomateMobile = observer(() => {
                                 selectedValue={getParamNumber(KNOWN_PARAM_KEYS.MULTIPLIER)}
                                 description={getSchemaDescription(KNOWN_PARAM_KEYS.MULTIPLIER)}
                                 disabled={is_automation_params_locked}
+                                is_market_closed={is_market_closed}
                                 onSelect={value => setParamFromNumber(KNOWN_PARAM_KEYS.MULTIPLIER, value)}
                             />
                         )}
@@ -183,6 +185,7 @@ const AutomateMobile = observer(() => {
                                 selectedValue={getParamNumber(KNOWN_PARAM_KEYS.UNIT)}
                                 description={getSchemaDescription(KNOWN_PARAM_KEYS.UNIT)}
                                 disabled={is_automation_params_locked}
+                                is_market_closed={is_market_closed}
                                 onSelect={value => setParamFromNumber(KNOWN_PARAM_KEYS.UNIT, value)}
                             />
                         )}
@@ -194,6 +197,7 @@ const AutomateMobile = observer(() => {
                                 initialStake={Number(amount) || undefined}
                                 description={getSchemaDescription(KNOWN_PARAM_KEYS.MAX_STAKE)}
                                 disabled={is_automation_params_locked}
+                                is_market_closed={is_market_closed}
                                 onSave={value => setParamFromNumberOrNull(KNOWN_PARAM_KEYS.MAX_STAKE, value)}
                             />
                         )}
@@ -211,6 +215,7 @@ const AutomateMobile = observer(() => {
                                 currency={display_currency}
                                 initialValue={getParamNumber(KNOWN_PARAM_KEYS.TAKE_PROFIT)}
                                 disabled={is_automation_params_locked}
+                                is_market_closed={is_market_closed}
                                 onSave={value => setParamFromNumber(KNOWN_PARAM_KEYS.TAKE_PROFIT, value)}
                             />
                         )}
@@ -222,6 +227,7 @@ const AutomateMobile = observer(() => {
                                 currency={display_currency}
                                 initialValue={getParamNumber(KNOWN_PARAM_KEYS.STOP_LOSS)}
                                 disabled={is_automation_params_locked}
+                                is_market_closed={is_market_closed}
                                 onSave={value => setParamFromNumber(KNOWN_PARAM_KEYS.STOP_LOSS, value)}
                             />
                         )}

@@ -1,8 +1,11 @@
 # automate-stake-multiplier-range Specification
 
 ## Purpose
+
 TBD - created by archiving change automate-stake-multiplier-range-2-10. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [ASMR-001] The Stake multiplier editor shows the allowed range hint
 
 The Stake multiplier / Stake increment editor SHALL display a helper hint under the input, identically on desktop and mobile, whenever no validation error is active.
@@ -80,4 +83,3 @@ Preset chips commit directly without passing through the input's validation, so 
 
 - **WHEN** the resolved bounds for the multiplier are `> 1` and `<= 5`
 - **THEN** the editor offers the presets 2, 3, 4 and 5, and does not offer 6 or 7
-

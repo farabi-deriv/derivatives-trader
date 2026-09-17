@@ -12,6 +12,7 @@ type TStrategySelectorDesktopProps = {
     selectedValue: string;
     description?: string;
     disabled?: boolean;
+    is_market_closed?: boolean;
     onSelect: (value: string) => void;
 };
 
@@ -20,12 +21,14 @@ const StrategySelectorDesktop = ({
     selectedValue,
     description,
     disabled,
+    is_market_closed,
     onSelect,
 }: TStrategySelectorDesktopProps) => (
     <TradeParameterPopover
         label={<Localize i18n_default_text='Strategy' />}
         value={getStrategyLabel(selectedValue, options)}
         popover_classname='automation-popover'
+        disabled={is_market_closed}
         is_locked={disabled}
         description={description ? <Text size='sm'>{description}</Text> : undefined}
     >
