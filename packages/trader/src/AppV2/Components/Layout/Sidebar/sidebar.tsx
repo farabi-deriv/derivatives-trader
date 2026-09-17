@@ -2,7 +2,6 @@ import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 
-import { useMobileBridge } from '@deriv/api';
 import { Button, Flyout, Text } from '@deriv/components';
 import {
     DerivProductBrandLightDerivTraderLogoIcon,
@@ -45,7 +44,6 @@ const Sidebar = observer(() => {
     const location = useLocation();
     const history = useHistory();
     const sidebar_ref = React.useRef<HTMLElement>(null);
-    const { sendBridgeEvent, isBridgeAvailable } = useMobileBridge();
     const is_on_index = location.pathname === routes.index;
 
     React.useEffect(() => {
@@ -76,9 +74,7 @@ const Sidebar = observer(() => {
 
     const handleLogout = () => {
         closeSidebarFlyout();
-        sendBridgeEvent('trading:back', () => {
-            logout();
-        });
+        logout();
     };
 
     const handlePositionsToggle = () => {
@@ -97,12 +93,10 @@ const Sidebar = observer(() => {
 
     const handleHomeClick = () => {
         closeSidebarFlyout();
-        sendBridgeEvent('trading:home', () => {
-            const brandUrl = getBrandUrl();
-            const lang_param = current_language ? `&lang=${current_language}` : '';
-            const currency = client.currency || '';
-            window.location.href = `${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`;
-        });
+        const brandUrl = getBrandUrl();
+        const lang_param = current_language ? `&lang=${current_language}` : '';
+        const currency = client.currency || '';
+        window.location.href = `${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`;
     };
 
     const closeFlyout = () => {
@@ -184,7 +178,7 @@ const Sidebar = observer(() => {
         {
             id: 'logout',
             icon: <StandaloneRightFromBracketRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
-            label: isBridgeAvailable ? localize('Back to app') : localize('Log out'),
+            label: localize('Log out'),
             onClick: handleLogout,
             isActive: false,
             dataTestId: 'dt_sidebar_logout',

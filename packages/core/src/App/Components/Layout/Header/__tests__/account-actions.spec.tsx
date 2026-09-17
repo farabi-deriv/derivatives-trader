@@ -27,20 +27,9 @@ const mockUseDerivativesAccount = jest.fn(() => ({
     refetch: jest.fn(),
 }));
 
-// Mock useMobileBridge hook
-const mockSendBridgeEvent = jest.fn(async (_event, fallback) => {
-    // Execute fallback to simulate browser behavior
-    if (fallback) await fallback();
-    return true;
-});
-
 jest.mock('@deriv/api', () => ({
     ...jest.requireActual('@deriv/api'),
     useDerivativesAccount: () => mockUseDerivativesAccount(),
-    useMobileBridge: () => ({
-        sendBridgeEvent: mockSendBridgeEvent,
-        isBridgeAvailable: false,
-    }),
 }));
 
 jest.mock('@deriv-com/ui', () => ({
@@ -95,7 +84,6 @@ describe('AccountActions component', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockSendBridgeEvent.mockClear();
         // Reset to default mock with both account types
         mockUseDerivativesAccount.mockReturnValue({
             data: {
@@ -281,18 +269,8 @@ describe('AccountActions component', () => {
         });
     });
 
-    describe('Bridge events', () => {
-        it('should call sendBridgeEvent with trading:transfer event when deposit button is clicked', async () => {
-            renderWithStore();
-
-            await screen.findByTestId('dt_account_info');
-            const deposit_button = screen.getByRole('button', { name: /deposit/i });
-            await userEvent.click(deposit_button);
-
-            expect(mockSendBridgeEvent).toHaveBeenCalledWith('trading:transfer', expect.any(Function));
-        });
-
-        it('should execute fallback (redirect) when bridge is not available', async () => {
+    describe('Deposit / Try real', () => {
+        it('[MBR-002] should redirect to the brand transfer URL when the deposit button is clicked', async () => {
             // Mock window.location.href
             delete (window as any).location;
             (window as any).location = { href: '' };
@@ -303,12 +281,11 @@ describe('AccountActions component', () => {
             const deposit_button = screen.getByRole('button', { name: /deposit/i });
             await userEvent.click(deposit_button);
 
-            // Since mockSendBridgeEvent executes the fallback, window.location should be set
             expect(window.location.href).toContain('deriv.com/transfer');
             expect(window.location.href).toContain('curr=USD');
         });
 
-        it('should not call sendBridgeEvent for Try real button (should open modal instead)', async () => {
+        it('should open the Try-real modal instead of redirecting when the Try real button is clicked', async () => {
             // Mock useDerivativesAccount to return only demo accounts
             mockUseDerivativesAccount.mockReturnValue({
                 data: {
@@ -336,9 +313,8 @@ describe('AccountActions component', () => {
             const try_real_button = screen.getByRole('button', { name: /try real/i });
             await userEvent.click(try_real_button);
 
-            // Should open modal, not send bridge event
+            // Should open modal instead of redirecting
             expect(toggleTryRealModal).toHaveBeenCalledWith(true);
-            expect(mockSendBridgeEvent).not.toHaveBeenCalled();
         });
     });
 

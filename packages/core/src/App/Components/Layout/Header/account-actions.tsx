@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 
-import { useDerivativesAccount, useMobileBridge } from '@deriv/api';
+import { useDerivativesAccount } from '@deriv/api';
 import { Button, Skeleton, Text } from '@deriv/components';
 import { getBrandUrl, isDemoAccountId, trackAnalyticsEvent } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
@@ -23,7 +23,6 @@ const AccountActionsComponent = observer(() => {
     const { is_switching_account, setIsSwitchingAccount } = ui;
 
     const { localize } = useTranslations();
-    const { sendBridgeEvent } = useMobileBridge();
 
     // Fetch derivatives accounts to determine button type (single source of truth)
     const { data, isLoading, error, refetch } = useDerivativesAccount(loginid, is_logged_in);
@@ -66,9 +65,7 @@ const AccountActionsComponent = observer(() => {
             // Deposit button (for both account types or real-only accounts)
             const brandUrl = getBrandUrl();
             const lang_param = common.current_language ? `&lang=${common.current_language}` : '';
-            sendBridgeEvent('trading:transfer', () => {
-                window.location.href = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
-            });
+            window.location.href = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
         }
     };
 

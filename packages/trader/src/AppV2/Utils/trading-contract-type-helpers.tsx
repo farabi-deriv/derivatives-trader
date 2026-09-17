@@ -52,13 +52,11 @@ export const getContractTypeCategoryIcons = () => ({
  * }
  * @param {object} contract_types_list  - list of all contracts
  * @param {array}  unsupported_list - list of unsupported contract types
- * @param {array}  nativeAppAllowedTradeTypes - optional list of allowed trade types for native mobile app
  */
 
 export const getAvailableContractTypes = (
     contract_types_list: TContractTypesList,
-    unsupported_list: typeof unsupported_contract_types_list,
-    nativeAppAllowedTradeTypes?: string[]
+    unsupported_list: typeof unsupported_contract_types_list
 ) => {
     const filtered_contract_types = Object.keys(contract_types_list)
         .map(key => {
@@ -89,10 +87,6 @@ export const getAvailableContractTypes = (
         icon: React.ReactElement;
         component: JSX.Element | null;
     }[];
-
-    if (nativeAppAllowedTradeTypes) {
-        return filtered_contract_types.filter(category => nativeAppAllowedTradeTypes.includes(category.label));
-    }
 
     return filtered_contract_types;
 };

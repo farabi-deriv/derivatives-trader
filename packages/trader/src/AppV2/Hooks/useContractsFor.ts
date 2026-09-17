@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 
-import { useMobileBridge, useQuery } from '@deriv/api';
+import { useQuery } from '@deriv/api';
 import { cloneObject, getContractCategoriesConfig, getContractTypesConfig } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
 
@@ -9,8 +9,6 @@ import { getTradeTypesList } from 'AppV2/Utils/trade-types-utils';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { useTraderStore } from 'Stores/useTraderStores';
 import { TConfig, TContractTypesList } from 'Types';
-
-import useNativeAppAllowedTradeTypes from './useNativeAppAllowedTradeTypes';
 
 const useContractsFor = () => {
     const [contract_types_list, setContractTypesList] = React.useState<TContractTypesList | []>([]);
@@ -29,8 +27,6 @@ const useContractsFor = () => {
     } = useTraderStore();
     const { client } = useStore();
     const { loginid } = client;
-    const { isMobileApp } = useMobileBridge();
-    const nativeAppAllowedTradeTypes = useNativeAppAllowedTradeTypes();
 
     // Helper function to get underlying_symbol from active_symbols
     const getUnderlyingSymbol = useCallback(
@@ -85,14 +81,11 @@ const useContractsFor = () => {
 
     const is_fetching_ref = useRef(isLoading);
 
-    const getTradeTypes = useCallback(
-        (categories: TContractTypesList) => {
-            return Array.isArray(categories) && categories.length === 0
-                ? []
-                : getTradeTypesList(categories as TContractTypesList, nativeAppAllowedTradeTypes);
-        },
-        [nativeAppAllowedTradeTypes]
-    );
+    const getTradeTypes = useCallback((categories: TContractTypesList) => {
+        return Array.isArray(categories) && categories.length === 0
+            ? []
+            : getTradeTypesList(categories as TContractTypesList);
+    }, []);
 
     useEffect(() => {
         setAvailableContractTypes(undefined);
@@ -103,11 +96,6 @@ const useContractsFor = () => {
     useEffect(() => {
         // Skip processing stale response data during loading
         if (isLoading) {
-            return;
-        }
-        // Wait for native app allowed trade types to be ready before processing
-        // to prevent showing unfiltered trade types during bridge initialization
-        if (isMobileApp && nativeAppAllowedTradeTypes === undefined) {
             return;
         }
 
@@ -229,7 +217,7 @@ const useContractsFor = () => {
             setIsAwaitingContractsFor(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [response, isLoading, isMobileApp, nativeAppAllowedTradeTypes]);
+    }, [response, isLoading]);
 
     // Same degradation when the contracts_for request itself fails — otherwise the
     // proposal hold is never released for this symbol.

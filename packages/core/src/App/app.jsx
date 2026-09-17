@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-import { APIProvider, useMobileBridge } from '@deriv/api';
+import { APIProvider } from '@deriv/api';
 import { Loading } from '@deriv/components';
 import { initFormErrorMessages, setUrlLanguage, setWebsocket } from '@deriv/shared';
 import { StoreProvider } from '@deriv/stores';
@@ -27,14 +27,6 @@ const App = ({ root_store }) => {
     const has_base = /^\/(br_)/.test(l.pathname);
     const { preferred_language } = root_store.client;
     const language = preferred_language ?? getInitialLanguage();
-    const { isBridgeAvailable, sendBridgeEvent } = useMobileBridge();
-
-    // Send trading:ready event to ensure smooth loader transition
-    React.useEffect(() => {
-        if (isBridgeAvailable) {
-            sendBridgeEvent('trading:ready');
-        }
-    }, [isBridgeAvailable, sendBridgeEvent]);
 
     React.useEffect(() => {
         sessionStorage.removeItem('redirect_url');

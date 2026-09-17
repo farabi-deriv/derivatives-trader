@@ -2,7 +2,6 @@ import React from 'react';
 import { Redirect, useHistory } from 'react-router-dom';
 import classNames from 'classnames';
 
-import { useMobileBridge } from '@deriv/api';
 import { Text } from '@deriv/components';
 import {
     IllustrativeEtfIcon,
@@ -28,7 +27,6 @@ import MenuLink from 'App/Components/Layout/Header/menu-link';
 const MenuPage = observer(() => {
     const history = useHistory();
     const { isMobile } = useDevice();
-    const { sendBridgeEvent, isMobileApp } = useMobileBridge();
     const { ui, client } = useStore();
     const { theme_preference, setThemePreference, is_dark_mode_on } = ui;
     const { is_logged_in, logout: logoutClient } = client;
@@ -63,15 +61,13 @@ const MenuPage = observer(() => {
 
     const handleLogout = React.useCallback(async () => {
         try {
-            await sendBridgeEvent('trading:back', async () => {
-                await logoutClient();
-            });
+            await logoutClient();
             history.push(routes.index);
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Logout failed:', error);
         }
-    }, [logoutClient, sendBridgeEvent, history]);
+    }, [logoutClient, history]);
 
     const handleHelpCentreClick = React.useCallback(() => {
         window.open(getHelpCentreUrl(), '_blank', 'noopener,noreferrer');
@@ -127,15 +123,13 @@ const MenuPage = observer(() => {
                                 {localize('Settings')}
                             </Text>
                         </div>
-                        {!isMobileApp && (
-                            <div className='menu-page__item' onClick={() => setShowLanguageSelector(true)}>
-                                <MenuLink
-                                    icon={<StandaloneGlobeRegularIcon iconSize='sm' />}
-                                    text={localize('Language')}
-                                    suffix_icon={<StandaloneChevronRightRegularIcon iconSize='sm' />}
-                                />
-                            </div>
-                        )}
+                        <div className='menu-page__item' onClick={() => setShowLanguageSelector(true)}>
+                            <MenuLink
+                                icon={<StandaloneGlobeRegularIcon iconSize='sm' />}
+                                text={localize('Language')}
+                                suffix_icon={<StandaloneChevronRightRegularIcon iconSize='sm' />}
+                            />
+                        </div>
                         <div className='menu-page__item' onClick={() => setShowThemeSelector(true)}>
                             <MenuLink
                                 icon={
@@ -153,26 +147,22 @@ const MenuPage = observer(() => {
 
                     {/* Support Section */}
                     <div className='header__menu-section'>
-                        {!isMobileApp && (
-                            <>
-                                <div className='header__menu-section-header'>
-                                    <Text className='header__menu-section-title' size='xsm' weight='bold'>
-                                        {localize('Support')}
-                                    </Text>
-                                </div>
-                                <div className='menu-page__item' onClick={handleHelpCentreClick}>
-                                    <MenuLink
-                                        icon={<StandaloneLifeRingRegularIcon iconSize='sm' />}
-                                        text={localize('Help centre')}
-                                        suffix_icon={<StandaloneChevronRightRegularIcon iconSize='sm' />}
-                                    />
-                                </div>
-                            </>
-                        )}
+                        <div className='header__menu-section-header'>
+                            <Text className='header__menu-section-title' size='xsm' weight='bold'>
+                                {localize('Support')}
+                            </Text>
+                        </div>
+                        <div className='menu-page__item' onClick={handleHelpCentreClick}>
+                            <MenuLink
+                                icon={<StandaloneLifeRingRegularIcon iconSize='sm' />}
+                                text={localize('Help centre')}
+                                suffix_icon={<StandaloneChevronRightRegularIcon iconSize='sm' />}
+                            />
+                        </div>
                     </div>
 
                     {/* Log out */}
-                    {is_logged_in && !isMobileApp && (
+                    {is_logged_in && (
                         <div className='menu-page__item header__menu-logout' onClick={handleLogout}>
                             <MenuLink
                                 icon={
@@ -189,28 +179,26 @@ const MenuPage = observer(() => {
             </div>
 
             {/* Language selector — slides in from the right as a full-screen drawer */}
-            {!isMobileApp && (
-                <div
-                    className={classNames('menu-page__language-drawer', {
-                        'menu-page__language-drawer--open': show_language_selector,
-                    })}
-                    data-testid='dt_menu_language_drawer'
-                >
-                    <div className='menu-page__header'>
-                        <div
-                            className='menu-page__header-close'
-                            data-testid='dt_menu_language_close'
-                            onClick={() => setShowLanguageSelector(false)}
-                        >
-                            <StandaloneChevronLeftRegularIcon iconSize='sm' fill='var(--color-text-primary)' />
-                        </div>
-                        <Text weight='bold' size='s'>
-                            {localize('Language')}
-                        </Text>
+            <div
+                className={classNames('menu-page__language-drawer', {
+                    'menu-page__language-drawer--open': show_language_selector,
+                })}
+                data-testid='dt_menu_language_drawer'
+            >
+                <div className='menu-page__header'>
+                    <div
+                        className='menu-page__header-close'
+                        data-testid='dt_menu_language_close'
+                        onClick={() => setShowLanguageSelector(false)}
+                    >
+                        <StandaloneChevronLeftRegularIcon iconSize='sm' fill='var(--color-text-primary)' />
                     </div>
-                    <MobileLanguageMenu toggleDrawer={() => setShowLanguageSelector(false)} />
+                    <Text weight='bold' size='s'>
+                        {localize('Language')}
+                    </Text>
                 </div>
-            )}
+                <MobileLanguageMenu toggleDrawer={() => setShowLanguageSelector(false)} />
+            </div>
 
             {/* Theme selector — slides in from the right as a full-screen drawer */}
             <div

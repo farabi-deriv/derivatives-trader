@@ -6,7 +6,6 @@ import {
     fetchLegacyHistoryMigrationStatus,
     getAccountId,
     getApiCoreBaseUrl,
-    getBrandDomains,
     isDemoAccountId,
     removeCookies,
 } from '@deriv/shared';
@@ -42,28 +41,6 @@ export const initStore = async notification_messages => {
         const server_url = localStorage.getItem('config.server_url');
         localStorage.clear();
         if (server_url) localStorage.setItem('config.server_url', server_url);
-    }
-
-    // Handle Ory recovery link for mobile app — must run before whoami so the cookie is set
-    const is_mobile_app = url_params?.get('is_mobile_app');
-    const ory_cookie_link = url_params?.get('ory_cookie_link');
-
-    if (is_mobile_app && ory_cookie_link) {
-        try {
-            const decodedRecoveryLink = atob(ory_cookie_link);
-            const url = new URL(decodedRecoveryLink);
-            const allowedHosts = getBrandDomains().flatMap(domain => [`auth.${domain}`, `staging-auth.${domain}`]);
-
-            if (allowedHosts.includes(url.hostname) && url.protocol === 'https:') {
-                await fetch(decodedRecoveryLink, { credentials: 'include' });
-            } else {
-                // eslint-disable-next-line no-console
-                console.error('Invalid ory_cookie_link domain or protocol:', url.hostname, url.protocol);
-            }
-        } catch (e) {
-            // eslint-disable-next-line no-console
-            console.error('Failed to decode ory_cookie_link:', e);
-        }
     }
 
     // whoami must complete before RootStore is created so we can clear stale credentials

@@ -3,7 +3,7 @@ import { matchPath, useHistory, useLocation } from 'react-router';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 
-import { useDerivativesAccount, useMobileBridge } from '@deriv/api';
+import { useDerivativesAccount } from '@deriv/api';
 import {
     StandaloneBarsRegularIcon,
     StandaloneClockThreeFillIcon,
@@ -33,7 +33,6 @@ const BottomNav = observer(({ className }: BottomNavProps) => {
     const { currency, is_logged_in, loginid } = client;
     const { current_language } = common;
     const { is_chart_maximized } = ui;
-    const { sendBridgeEvent } = useMobileBridge();
     const { data: derivatives_account, isError: is_derivatives_account_error } = useDerivativesAccount(
         loginid,
         is_logged_in
@@ -162,12 +161,10 @@ const BottomNav = observer(({ className }: BottomNavProps) => {
         const item = bottomNavItems[index];
 
         if (item.action === 'home') {
-            sendBridgeEvent('trading:home', () => {
-                const brandUrl = getBrandUrl();
-                const lang_param = current_language ? `&lang=${encodeURIComponent(current_language)}` : '';
-                const curr = encodeURIComponent(currency || '');
-                window.location.href = `${brandUrl}/home?source=options&acc=options&curr=${curr}${lang_param}`;
-            });
+            const brandUrl = getBrandUrl();
+            const lang_param = current_language ? `&lang=${encodeURIComponent(current_language)}` : '';
+            const curr = encodeURIComponent(currency || '');
+            window.location.href = `${brandUrl}/home?source=options&acc=options&curr=${curr}${lang_param}`;
             return;
         }
 

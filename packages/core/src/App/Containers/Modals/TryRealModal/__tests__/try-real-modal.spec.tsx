@@ -12,21 +12,6 @@ jest.mock('@deriv/shared', () => ({
     getBrandUrl: jest.fn(() => 'https://home.deriv.com/dashboard'),
 }));
 
-// Mock useMobileBridge hook
-const mockSendBridgeEvent = jest.fn(async (_event, fallback) => {
-    // Execute fallback to simulate browser behavior
-    if (fallback) await fallback();
-    return true;
-});
-
-jest.mock('@deriv/api', () => ({
-    ...jest.requireActual('@deriv/api'),
-    useMobileBridge: () => ({
-        sendBridgeEvent: mockSendBridgeEvent,
-        isBridgeAvailable: false,
-    }),
-}));
-
 // Mock window.location.href
 delete (window as any).location;
 window.location = { href: '' } as any;
@@ -95,12 +80,11 @@ describe('TryRealModal', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockSendBridgeEvent.mockClear();
         window.location.href = '';
     });
 
     describe('Desktop Modal', () => {
-        it('should render modal when visible', () => {
+        it('[MBR-006] should render modal when visible', () => {
             renderComponent();
 
             expect(screen.getByTestId('modal')).toBeInTheDocument();
@@ -119,7 +103,7 @@ describe('TryRealModal', () => {
             expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
         });
 
-        it('should redirect to onboarding page when "Complete setup" is clicked', async () => {
+        it('[MBR-002] should redirect to onboarding page when "Complete setup" is clicked', async () => {
             renderComponent();
 
             const completeSetupButton = screen.getByTestId('primary-button');
@@ -128,28 +112,6 @@ describe('TryRealModal', () => {
             expect(window.location.href).toBe(
                 'https://home.deriv.com/dashboard/onboarding/personal-details?source=options&lang=EN'
             );
-        });
-
-        it('should call sendBridgeEvent with trading:account_creation when "Complete setup" is clicked', async () => {
-            renderComponent();
-
-            const completeSetupButton = screen.getByTestId('primary-button');
-            await userEvent.click(completeSetupButton);
-
-            expect(mockSendBridgeEvent).toHaveBeenCalledWith('trading:account_creation', expect.any(Function));
-        });
-
-        it('should execute fallback (redirect) when bridge is not available', async () => {
-            window.location.href = '';
-            renderComponent();
-
-            const completeSetupButton = screen.getByTestId('primary-button');
-            await userEvent.click(completeSetupButton);
-
-            // Since mockSendBridgeEvent executes the fallback, window.location should be set
-            expect(window.location.href).toContain('home.deriv.com/dashboard/onboarding/personal-details');
-            expect(window.location.href).toContain('source=options');
-            expect(window.location.href).toContain('lang=EN');
         });
 
         it('should include language parameter in URL when language is set', async () => {
@@ -205,7 +167,7 @@ describe('TryRealModal', () => {
             expect(screen.queryByTestId('action-sheet')).not.toBeInTheDocument();
         });
 
-        it('should redirect to onboarding page when mobile button is clicked', async () => {
+        it('[MBR-002] should redirect to onboarding page when mobile button is clicked', async () => {
             renderComponent({
                 ui: {
                     ...default_mock_store.ui,
@@ -219,20 +181,6 @@ describe('TryRealModal', () => {
             expect(window.location.href).toBe(
                 'https://home.deriv.com/dashboard/onboarding/personal-details?source=options&lang=EN'
             );
-        });
-
-        it('should call sendBridgeEvent when mobile button is clicked', async () => {
-            renderComponent({
-                ui: {
-                    ...default_mock_store.ui,
-                    is_mobile: true,
-                },
-            });
-
-            const completeSetupButton = screen.getByTestId('primary-action-button');
-            await userEvent.click(completeSetupButton);
-
-            expect(mockSendBridgeEvent).toHaveBeenCalledWith('trading:account_creation', expect.any(Function));
         });
     });
 });

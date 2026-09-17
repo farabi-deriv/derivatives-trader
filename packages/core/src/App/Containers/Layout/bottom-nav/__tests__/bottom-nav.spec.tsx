@@ -15,10 +15,6 @@ jest.mock('@deriv-com/quill-ui', () => ({
 
 jest.mock('@deriv/api', () => ({
     ...jest.requireActual('@deriv/api'),
-    useMobileBridge: jest.fn(() => ({
-        sendBridgeEvent: jest.fn((eventName, callback) => callback && callback()),
-        isBridgeAvailable: false,
-    })),
     useDerivativesAccount: jest.fn(() => ({ data: undefined })),
 }));
 

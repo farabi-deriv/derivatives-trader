@@ -151,51 +151,10 @@ describe('trade-types-utils', () => {
     });
 
     describe('getAvailableContracts', () => {
-        it('should return all contracts when no filter is provided', () => {
+        it('[MBR-004] should return the full contracts list in PO display order', () => {
             const contracts = getAvailableContracts();
             expect(contracts).toEqual(AVAILABLE_CONTRACTS);
             expect(contracts).toHaveLength(10);
-        });
-
-        it('should return all contracts when undefined is passed', () => {
-            const contracts = getAvailableContracts(undefined);
-            expect(contracts).toEqual(AVAILABLE_CONTRACTS);
-        });
-
-        it('should filter by native app allowed trade types', () => {
-            const allowedTypes = ['Accumulators', 'Multipliers', 'Rise/Fall'];
-            const contracts = getAvailableContracts(allowedTypes);
-
-            expect(contracts).toHaveLength(3);
-            expect(contracts.map(c => c.id)).toEqual(['Rise/Fall', 'Accumulators', 'Multipliers']);
-        });
-
-        it('should return empty array when no contracts match filter', () => {
-            const allowedTypes = ['NonExistent'];
-            const contracts = getAvailableContracts(allowedTypes);
-
-            expect(contracts).toEqual([]);
-        });
-
-        it('should handle empty filter array', () => {
-            const contracts = getAvailableContracts([]);
-            expect(contracts).toEqual([]);
-        });
-
-        it('should filter case-sensitively', () => {
-            const allowedTypes = ['accumulators']; // lowercase
-            const contracts = getAvailableContracts(allowedTypes);
-
-            // Should not match 'Accumulators' (uppercase A)
-            expect(contracts).toEqual([]);
-        });
-
-        it('should maintain original order when filtering', () => {
-            const allowedTypes = ['Multipliers', 'Accumulators', 'Turbos']; // Different order
-            const contracts = getAvailableContracts(allowedTypes);
-
-            // Should maintain AVAILABLE_CONTRACTS order, not allowedTypes order
-            expect(contracts.map(c => c.id)).toEqual(['Accumulators', 'Multipliers', 'Turbos']);
         });
     });
 

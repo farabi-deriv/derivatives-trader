@@ -4,13 +4,7 @@ import { renderHook } from '@testing-library/react-hooks';
 import { CONTRACT_LIST } from 'AppV2/Utils/trade-types-utils';
 
 import useAvailableContracts from '../useAvailableContracts';
-import useNativeAppAllowedTradeTypes from '../useNativeAppAllowedTradeTypes';
 import useTradeTypeAvailability from '../useTradeTypeAvailability';
-
-jest.mock('../useNativeAppAllowedTradeTypes', () => ({
-    __esModule: true,
-    default: jest.fn(() => undefined),
-}));
 
 jest.mock('../useTradeTypeAvailability', () => ({
     __esModule: true,
@@ -40,8 +34,7 @@ describe('useAvailableContracts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
-        // Reset to default mocks: nothing restricted, everything tradeable.
-        (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
+        // Everything tradeable by default.
         mockAvailability({});
     });
 
@@ -49,10 +42,8 @@ describe('useAvailableContracts', () => {
         jest.clearAllMocks();
     });
 
-    describe('Web App (No Filtering)', () => {
-        it('should return all available contracts when not on native mobile app', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
+    describe('Full web set (no native-app filtering)', () => {
+        it('[MBR-004] returns every available contract with no remote-config allow-list applied', () => {
             const { result } = renderHook(() => useAvailableContracts());
 
             expect(result.current).toHaveLength(10);
@@ -72,9 +63,7 @@ describe('useAvailableContracts', () => {
             );
         });
 
-        it('should return contracts with correct structure', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
+        it('[MBR-004] returns contracts with the correct structure', () => {
             const { result } = renderHook(() => useAvailableContracts());
 
             const firstContract = result.current[0];
@@ -84,9 +73,7 @@ describe('useAvailableContracts', () => {
             expect(Array.isArray(firstContract.for)).toBe(true);
         });
 
-        it('should include correct trade type values in "for" array', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
+        it('[MBR-004] includes correct trade type values in the "for" array', () => {
             const { result } = renderHook(() => useAvailableContracts());
 
             const accumulatorContract = result.current.find(c => c.id === CONTRACT_LIST.ACCUMULATORS);
@@ -100,103 +87,8 @@ describe('useAvailableContracts', () => {
         });
     });
 
-    describe('Native Mobile App (With Filtering)', () => {
-        it('should filter contracts when native app allows only specific trade types', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators', 'Multipliers']);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(2);
-            expect(result.current).toEqual([
-                expect.objectContaining({ id: CONTRACT_LIST.ACCUMULATORS }),
-                expect.objectContaining({ id: CONTRACT_LIST.MULTIPLIERS }),
-            ]);
-        });
-
-        it('should return all contracts when native app allows all trade types', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                'Accumulators',
-                'Vanillas',
-                'Turbos',
-                'Multipliers',
-                'Rise/Fall',
-                'Higher/Lower',
-                'Touch/No Touch',
-                'Matches/Differs',
-                'Even/Odd',
-                'Over/Under',
-            ]);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(10);
-        });
-
-        it('should return empty array when native app allows no trade types (fail-safe)', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([]);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toEqual([]);
-        });
-
-        it('should filter correctly with single allowed trade type', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Vanillas']);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(1);
-            expect(result.current[0].id).toBe(CONTRACT_LIST.VANILLAS);
-        });
-
-        it('should filter correctly with multiple allowed trade types', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                'Accumulators',
-                'Vanillas',
-                'Turbos',
-                'Multipliers',
-            ]);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(4);
-            expect(result.current.map(c => c.id)).toEqual([
-                CONTRACT_LIST.ACCUMULATORS,
-                CONTRACT_LIST.MULTIPLIERS,
-                CONTRACT_LIST.TURBOS,
-                CONTRACT_LIST.VANILLAS,
-            ]);
-        });
-
-        it('should maintain original order after filtering', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Multipliers', 'Accumulators', 'Vanillas']);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            // Should maintain order from AVAILABLE_CONTRACTS, not from allowed types
-            expect(result.current[0].id).toBe(CONTRACT_LIST.ACCUMULATORS);
-            expect(result.current[1].id).toBe(CONTRACT_LIST.MULTIPLIERS);
-            expect(result.current[2].id).toBe(CONTRACT_LIST.VANILLAS);
-        });
-
-        it('should ignore non-existent trade types in allowed list', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                'Accumulators',
-                'NonExistentType',
-                'Multipliers',
-            ]);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(2);
-            expect(result.current.map(c => c.id)).toEqual([CONTRACT_LIST.ACCUMULATORS, CONTRACT_LIST.MULTIPLIERS]);
-        });
-    });
-
     describe('Memoization', () => {
         it('should memoize result when dependencies do not change', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators', 'Multipliers']);
-
             const { result, rerender } = renderHook(() => useAvailableContracts());
 
             const firstResult = result.current;
@@ -206,67 +98,10 @@ describe('useAvailableContracts', () => {
             // Should return the same reference if dependencies haven't changed
             expect(firstResult).toBe(secondResult);
         });
-
-        it('should recompute when nativeAppAllowedTradeTypes changes', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators']);
-
-            const { result, rerender } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(1);
-
-            // Update mock to return different allowed types
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Multipliers']);
-
-            rerender();
-
-            expect(result.current).toHaveLength(1);
-            expect(result.current[0].id).toBe(CONTRACT_LIST.MULTIPLIERS);
-        });
-
-        it('should recompute when switching between web and mobile', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
-            const { result, rerender } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(10);
-
-            // Switch to mobile with filtering
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators', 'Multipliers']);
-
-            rerender();
-
-            expect(result.current).toHaveLength(2);
-        });
-    });
-
-    describe('Integration with useNativeAppAllowedTradeTypes', () => {
-        it('should call useNativeAppAllowedTradeTypes hook', () => {
-            renderHook(() => useAvailableContracts());
-
-            expect(useNativeAppAllowedTradeTypes).toHaveBeenCalled();
-        });
-
-        it('should pass undefined from useNativeAppAllowedTradeTypes to getAvailableContracts', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            // When undefined, should return all contracts
-            expect(result.current).toHaveLength(10);
-        });
-
-        it('should pass array from useNativeAppAllowedTradeTypes to getAvailableContracts', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators', 'Vanillas']);
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            // When array provided, should filter
-            expect(result.current).toHaveLength(2);
-        });
     });
 
     describe('Server availability', () => {
-        it('drops trade types the server returns no symbols for (e.g. EU: Multipliers only)', () => {
+        it('[MBR-004] drops trade types the server returns no symbols for (e.g. EU: Multipliers only)', () => {
             mockAvailability({ available_ids: [CONTRACT_LIST.MULTIPLIERS] });
 
             const { result } = renderHook(() => useAvailableContracts());
@@ -275,7 +110,7 @@ describe('useAvailableContracts', () => {
             expect(result.current[0].id).toBe(CONTRACT_LIST.MULTIPLIERS);
         });
 
-        it('keeps every trade type the server returns symbols for', () => {
+        it('[MBR-004] keeps every trade type the server returns symbols for', () => {
             mockAvailability({ available_ids: [CONTRACT_LIST.MULTIPLIERS, CONTRACT_LIST.RISE_FALL] });
 
             const { result } = renderHook(() => useAvailableContracts());
@@ -286,7 +121,7 @@ describe('useAvailableContracts', () => {
             ]);
         });
 
-        it('fails open while the availability lookup is still loading', () => {
+        it('[TTA-001] fails open while the availability lookup is still loading', () => {
             mockAvailability({ available_ids: [], isLoading: true });
 
             const { result } = renderHook(() => useAvailableContracts());
@@ -294,25 +129,12 @@ describe('useAvailableContracts', () => {
             expect(result.current).toHaveLength(10);
         });
 
-        it('fails open when the lookup returns nothing at all, rather than showing an empty list', () => {
+        it('[TTA-001] fails open when the lookup returns nothing at all, rather than showing an empty list', () => {
             mockAvailability({ available_ids: [] });
 
             const { result } = renderHook(() => useAvailableContracts());
 
             expect(result.current).toHaveLength(10);
-        });
-
-        it('applies the native-app restriction and server availability together', () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                CONTRACT_LIST.ACCUMULATORS,
-                CONTRACT_LIST.MULTIPLIERS,
-            ]);
-            mockAvailability({ available_ids: [CONTRACT_LIST.MULTIPLIERS, CONTRACT_LIST.RISE_FALL] });
-
-            const { result } = renderHook(() => useAvailableContracts());
-
-            expect(result.current).toHaveLength(1);
-            expect(result.current[0].id).toBe(CONTRACT_LIST.MULTIPLIERS);
         });
     });
 });

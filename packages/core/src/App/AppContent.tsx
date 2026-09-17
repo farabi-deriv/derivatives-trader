@@ -1,11 +1,10 @@
 import React from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 
-import { useMobileBridge } from '@deriv/api';
 import { routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { ThemeProvider } from '@deriv-com/quill-ui';
-import { getInitialLanguage, useTranslations } from '@deriv-com/translations';
+import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import ErrorBoundary from './Components/Elements/Errors/error-boundary.jsx';
@@ -29,7 +28,6 @@ const AppContent: React.FC<{ passthrough: any }> = observer(({ passthrough }) =>
     const hide_header = !!matchPath(location.pathname, { path: routes.contract, exact: true });
 
     const { switchLanguage } = useTranslations();
-    const { isBridgeAvailable, sendBridgeEvent } = useMobileBridge();
 
     const html = document.documentElement;
 
@@ -45,17 +43,6 @@ const AppContent: React.FC<{ passthrough: any }> = observer(({ passthrough }) =>
             document.body.removeAttribute('dir');
         }
     }, [current_language, switchLanguage, html, isMobile]);
-
-    // Send trading:config event when language or theme changes
-    React.useEffect(() => {
-        if (isBridgeAvailable) {
-            const language = current_language || getInitialLanguage();
-            sendBridgeEvent('trading:config', {
-                lang: language,
-                theme: is_dark_mode_on ? 'dark' : 'light',
-            });
-        }
-    }, [isBridgeAvailable, sendBridgeEvent, current_language, is_dark_mode_on]);
 
     return (
         <ThemeProvider theme={is_dark_mode_on ? 'dark' : 'light'}>

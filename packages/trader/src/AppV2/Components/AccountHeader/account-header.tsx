@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 
-import { useDerivativesAccount, useMobileBridge } from '@deriv/api';
+import { useDerivativesAccount } from '@deriv/api';
 import { Button, Skeleton, Text } from '@deriv/components';
 import AccountSwitcher from '@deriv/core/src/App/Components/Layout/Header/account-switcher';
 import { LegacyChevronDown1pxIcon } from '@deriv/quill-icons';
@@ -39,7 +39,6 @@ const AccountHeader = observer(
         const { is_switching_account, setIsSwitchingAccount } = ui;
 
         const { isMobile } = useDevice();
-        const { sendBridgeEvent } = useMobileBridge();
 
         // Use props if provided, otherwise fall back to store
         const balance = balanceProp ?? client.balance;
@@ -120,9 +119,7 @@ const AccountHeader = observer(
                 // Transfer button (for both account types or real-only accounts)
                 const brandUrl = getBrandUrl();
                 const lang_param = common.current_language ? `&lang=${common.current_language}` : '';
-                sendBridgeEvent('trading:transfer', () => {
-                    window.location.href = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
-                });
+                window.location.href = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
             }
         };
 

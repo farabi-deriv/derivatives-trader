@@ -216,26 +216,16 @@ export const getOrderedAvailableContracts = (supported_trade_types?: Set<string>
         ? AVAILABLE_CONTRACTS.filter(contract => contract.for.some(type => supported_trade_types.has(type)))
         : AVAILABLE_CONTRACTS;
 
-/**
- * Returns the available contracts list, filtered by native app allowed trade types if provided.
- * @param nativeAppAllowedTradeTypes - Optional array of allowed trade type names from remote config
- * @returns Filtered array of available contracts
- */
-export const getAvailableContracts = (nativeAppAllowedTradeTypes?: string[]) => {
-    if (!nativeAppAllowedTradeTypes) return AVAILABLE_CONTRACTS;
-    return AVAILABLE_CONTRACTS.filter(contract => nativeAppAllowedTradeTypes.includes(contract.id));
-};
+/** Returns the full available contracts list in PO display order. */
+export const getAvailableContracts = () => AVAILABLE_CONTRACTS;
 
-export const getTradeTypesList = (
-    contract_types_list: ReturnType<typeof useTraderStore>['contract_types_list'],
-    nativeAppAllowedTradeTypes?: string[]
-) => {
+export const getTradeTypesList = (contract_types_list: ReturnType<typeof useTraderStore>['contract_types_list']) => {
     const available_trade_types = getAvailableContractTypes(
         contract_types_list as unknown as Parameters<typeof getAvailableContractTypes>[0],
         unsupported_contract_types_list
     );
 
-    let filtered_types = Object.values(getCategoriesSortedByKey(available_trade_types))
+    const filtered_types = Object.values(getCategoriesSortedByKey(available_trade_types))
         .map(({ contract_types }) =>
             contract_types[0].value.startsWith('vanilla')
                 ? contract_types.map(type => ({ ...type, text: 'Vanillas' }))
@@ -246,11 +236,6 @@ export const getTradeTypesList = (
             ({ value }) =>
                 ![TRADE_TYPES.VANILLA.PUT, TRADE_TYPES.TURBOS.SHORT, TRADE_TYPES.RISE_FALL_EQUAL].includes(value)
         );
-
-    // Filter for native mobile app - only show allowed trade types from remote config
-    if (nativeAppAllowedTradeTypes) {
-        filtered_types = filtered_types.filter(({ text }) => text && nativeAppAllowedTradeTypes.includes(text));
-    }
 
     // Sort by manual order defined in AVAILABLE_CONTRACTS
     return filtered_types.sort((a, b) => getTradeTypePriority(a.value) - getTradeTypePriority(b.value));

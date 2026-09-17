@@ -15,23 +15,6 @@ jest.mock('@deriv/shared', () => ({
     getBrandUrl: jest.fn(() => 'https://home.deriv.com/dashboard'),
 }));
 
-// Mock useMobileBridge hook
-const mockSendBridgeEvent = jest.fn(async (_event, dataOrFallback, fallback) => {
-    // Handle overloaded signature - detect if second param is function or data
-    const actualFallback = typeof dataOrFallback === 'function' ? dataOrFallback : fallback;
-    // Execute fallback to simulate browser behavior
-    if (actualFallback) await actualFallback();
-    return true;
-});
-
-jest.mock('@deriv/api', () => ({
-    ...jest.requireActual('@deriv/api'),
-    useMobileBridge: () => ({
-        sendBridgeEvent: mockSendBridgeEvent,
-        isBridgeAvailable: false,
-    }),
-}));
-
 // Mock window.location.href
 delete (window as any).location;
 window.location = { href: '' } as any;
@@ -82,7 +65,6 @@ describe('<InsufficientBalanceModal />', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockSendBridgeEvent.mockClear();
         mock_store = mockStore({
             ui: {
                 is_mobile: false,
@@ -128,7 +110,7 @@ describe('<InsufficientBalanceModal />', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('should redirect to brand deposit page when "Deposit now" is clicked for real accounts', async () => {
+    it('[MBR-002] should redirect to brand deposit page when "Deposit now" is clicked for real accounts', async () => {
         mocked_props.is_virtual = false;
         mocked_props.is_visible = true;
 
@@ -142,45 +124,15 @@ describe('<InsufficientBalanceModal />', () => {
         );
     });
 
-    describe('Bridge events', () => {
-        it('should call sendBridgeEvent with trading:transfer when "Deposit now" is clicked', async () => {
-            mocked_props.is_virtual = false;
-            mocked_props.is_visible = true;
+    it('should close the modal without redirecting when OK is clicked for virtual accounts', async () => {
+        mocked_props.is_virtual = true;
+        mocked_props.is_visible = true;
 
-            render(<InsufficientBalanceModal {...mocked_props} />, { wrapper });
-            const button = screen.getByText(/Deposit now/i);
+        render(<InsufficientBalanceModal {...mocked_props} />, { wrapper });
+        const button = screen.getByText(/ok/i);
 
-            await userEvent.click(button);
+        await userEvent.click(button);
 
-            expect(mockSendBridgeEvent).toHaveBeenCalledWith('trading:transfer', expect.any(Function));
-        });
-
-        it('should not call sendBridgeEvent when OK button is clicked for virtual accounts', async () => {
-            mocked_props.is_virtual = true;
-            mocked_props.is_visible = true;
-
-            render(<InsufficientBalanceModal {...mocked_props} />, { wrapper });
-            const button = screen.getByText(/ok/i);
-
-            await userEvent.click(button);
-
-            expect(mockSendBridgeEvent).not.toHaveBeenCalled();
-            expect(mocked_props.toggleModal).toHaveBeenCalled();
-        });
-
-        it('should execute fallback (redirect) when bridge is not available', async () => {
-            mocked_props.is_virtual = false;
-            mocked_props.is_visible = true;
-            window.location.href = '';
-
-            render(<InsufficientBalanceModal {...mocked_props} />, { wrapper });
-            const button = screen.getByText(/Deposit now/i);
-
-            await userEvent.click(button);
-
-            // Since mockSendBridgeEvent executes the fallback, window.location should be set
-            expect(window.location.href).toContain('home.deriv.com/dashboard/transfer');
-            expect(window.location.href).toContain('curr=USD');
-        });
+        expect(mocked_props.toggleModal).toHaveBeenCalled();
     });
 });

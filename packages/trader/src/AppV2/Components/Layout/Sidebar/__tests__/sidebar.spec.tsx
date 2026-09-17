@@ -15,18 +15,6 @@ jest.mock('@deriv/shared', () => ({
     getHelpCentreUrl: jest.fn(() => 'https://deriv.com/helpcentre/deriv-trader'),
 }));
 
-jest.mock('@deriv/api', () => ({
-    ...jest.requireActual('@deriv/api'),
-    useMobileBridge: jest.fn(() => ({
-        isBridgeAvailable: false,
-        sendBridgeEvent: jest.fn((_event, dataOrFallback, callback) => {
-            // Handle overloaded signature - detect if second param is function or data
-            const actualFallback = typeof dataOrFallback === 'function' ? dataOrFallback : callback;
-            return actualFallback && actualFallback();
-        }),
-    })),
-}));
-
 jest.mock('@deriv-com/translations', () => ({
     localize: (key: string) => key,
     Localize: jest.fn(({ i18n_default_text }) => <>{i18n_default_text}</>),
@@ -185,11 +173,12 @@ describe('<Sidebar />', () => {
         expect(store.ui.closeSidebarFlyout).toHaveBeenCalled();
     });
 
-    it('should render utility items (language, theme, and log out) when logged in', () => {
+    it('[MBR-003] should render utility items (language, theme, and log out) with a "Log out" label when logged in', () => {
         renderSidebar();
         expect(screen.getByTestId('dt_sidebar_language')).toBeInTheDocument();
         expect(screen.getByTestId('dt_sidebar_theme')).toBeInTheDocument();
         expect(screen.getByTestId('dt_sidebar_logout')).toBeInTheDocument();
+        expect(screen.getByTestId('dt_sidebar_logout')).toHaveTextContent('Log out');
     });
 
     it('should not render Log out button when user is not logged in', () => {
@@ -317,7 +306,7 @@ describe('<Sidebar />', () => {
         expect(screen.getByText('LanguageSelector')).toBeInTheDocument();
     });
 
-    it('should log out (not open a flyout) when the Log out button is clicked', () => {
+    it('[MBR-002] should log the client out directly (not open a flyout) when the Log out button is clicked', () => {
         const store = mockStore(defaultStoreConfig);
         renderSidebar(store);
         const logoutButton = screen.getByTestId('dt_sidebar_logout');

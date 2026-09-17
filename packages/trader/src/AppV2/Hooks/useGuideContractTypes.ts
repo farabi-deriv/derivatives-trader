@@ -3,8 +3,6 @@ import { useMemo } from 'react';
 import { getTradeTypesList } from 'AppV2/Utils/trade-types-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
-import useNativeAppAllowedTradeTypes from './useNativeAppAllowedTradeTypes';
-
 /**
  * Lightweight hook for Guide component that uses existing trade store data
  * without triggering API calls. This prevents the barrier reset issue caused
@@ -12,7 +10,6 @@ import useNativeAppAllowedTradeTypes from './useNativeAppAllowedTradeTypes';
  */
 const useGuideContractTypes = () => {
     const { contract_types_list_v2 } = useTraderStore();
-    const nativeAppAllowedTradeTypes = useNativeAppAllowedTradeTypes();
 
     const trade_types = useMemo(() => {
         const contract_list = contract_types_list_v2;
@@ -23,8 +20,8 @@ const useGuideContractTypes = () => {
         }
 
         // Use the same logic as useContractsFor but without API calls
-        return getTradeTypesList(contract_list, nativeAppAllowedTradeTypes);
-    }, [contract_types_list_v2, nativeAppAllowedTradeTypes]);
+        return getTradeTypesList(contract_list);
+    }, [contract_types_list_v2]);
 
     return { trade_types };
 };

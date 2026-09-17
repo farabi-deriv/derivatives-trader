@@ -2,7 +2,6 @@ import React, { act } from 'react';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
 
-import { useMobileBridge } from '@deriv/api';
 import { mockStore, StoreProvider } from '@deriv/stores';
 import { useDevice } from '@deriv-com/ui';
 import { render, screen } from '@testing-library/react';
@@ -13,14 +12,6 @@ import MenuPage from '../menu';
 jest.mock('@deriv-com/ui', () => ({
     ...jest.requireActual('@deriv-com/ui'),
     useDevice: jest.fn(() => ({ isMobile: true, isDesktop: false })),
-}));
-
-jest.mock('@deriv/api', () => ({
-    ...jest.requireActual('@deriv/api'),
-    useMobileBridge: jest.fn(() => ({
-        sendBridgeEvent: jest.fn((_event: string, callback: () => void) => callback && callback()),
-        isMobileApp: false,
-    })),
 }));
 
 jest.mock('@deriv-com/translations', () => ({
@@ -46,10 +37,6 @@ describe('MenuPage', () => {
     beforeEach(() => {
         history = createMemoryHistory();
         (useDevice as jest.Mock).mockReturnValue({ isMobile: true, isDesktop: false });
-        (useMobileBridge as jest.Mock).mockReturnValue({
-            sendBridgeEvent: jest.fn((_event: string, callback: () => void) => callback && callback()),
-            isMobileApp: false,
-        });
         default_mock_store = mockStore({
             client: {
                 is_logged_in: true,
@@ -95,7 +82,7 @@ describe('MenuPage', () => {
             expect(screen.getByText('Statement')).toBeInTheDocument();
         });
 
-        it('should render the Settings section', () => {
+        it('[MBR-003] should render the Settings section with the Language item', () => {
             renderMenuPage();
 
             expect(screen.getByText('Settings')).toBeInTheDocument();
@@ -103,25 +90,14 @@ describe('MenuPage', () => {
             expect(screen.getAllByText('Language').length).toBeGreaterThan(0);
         });
 
-        it('should render the Support section when bridge is not available', () => {
+        it('[MBR-003] should render the Support section', () => {
             renderMenuPage();
 
             expect(screen.getByText('Support')).toBeInTheDocument();
             expect(screen.getByText('Help centre')).toBeInTheDocument();
         });
 
-        it('should not render the Support section when in mobile app', () => {
-            (useMobileBridge as jest.Mock).mockReturnValue({
-                sendBridgeEvent: jest.fn(),
-                isMobileApp: true,
-            });
-            renderMenuPage();
-
-            expect(screen.queryByText('Support')).not.toBeInTheDocument();
-            expect(screen.queryByText('Help centre')).not.toBeInTheDocument();
-        });
-
-        it('should render Log out when user is logged in and bridge is not available', () => {
+        it('[MBR-003] should render Log out when user is logged in', () => {
             renderMenuPage();
 
             expect(screen.getByText('Log out')).toBeInTheDocument();
@@ -133,16 +109,6 @@ describe('MenuPage', () => {
                 client: { is_logged_in: false, logout: jest.fn() },
             });
             renderMenuPage(store);
-
-            expect(screen.queryByText('Log out')).not.toBeInTheDocument();
-        });
-
-        it('should not render Log out when in mobile app', () => {
-            (useMobileBridge as jest.Mock).mockReturnValue({
-                sendBridgeEvent: jest.fn(),
-                isMobileApp: true,
-            });
-            renderMenuPage();
 
             expect(screen.queryByText('Log out')).not.toBeInTheDocument();
         });
@@ -184,17 +150,6 @@ describe('MenuPage', () => {
     });
 
     describe('Language selector', () => {
-        it('should not render language selector when in mobile app', () => {
-            (useMobileBridge as jest.Mock).mockReturnValue({
-                sendBridgeEvent: jest.fn(),
-                isMobileApp: true,
-            });
-            renderMenuPage();
-
-            expect(screen.queryByText('Language')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('dt_menu_language_drawer')).not.toBeInTheDocument();
-        });
-
         it('should open language drawer when Language is clicked', async () => {
             const user = userEvent.setup();
             renderMenuPage();
@@ -329,13 +284,8 @@ describe('MenuPage', () => {
     });
 
     describe('Logout', () => {
-        it('should call sendBridgeEvent and navigate to / on logout', async () => {
-            const sendBridgeEvent = jest.fn((_event: string, callback: () => void) => callback && callback());
+        it('[MBR-002] should log the client out directly and navigate to / on logout', async () => {
             const logout = jest.fn();
-            (useMobileBridge as jest.Mock).mockReturnValue({
-                sendBridgeEvent,
-                isMobileApp: false,
-            });
             const store = mockStore({
                 client: { is_logged_in: true, logout },
                 ui: { is_dark_mode_on: false, setDarkMode: jest.fn() },
@@ -347,7 +297,6 @@ describe('MenuPage', () => {
                 await user.click(screen.getByText('Log out'));
             });
 
-            expect(sendBridgeEvent).toHaveBeenCalledWith('trading:back', expect.any(Function));
             expect(logout).toHaveBeenCalled();
             expect(history.location.pathname).toBe('/');
         });

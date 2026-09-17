@@ -6,7 +6,6 @@ import { renderHook } from '@testing-library/react-hooks';
 
 import TraderProviders from '../../../trader-providers';
 import useContractsFor from '../useContractsFor';
-import useNativeAppAllowedTradeTypes from '../useNativeAppAllowedTradeTypes';
 
 jest.mock('@deriv/api', () => ({
     ...jest.requireActual('@deriv/api'),
@@ -15,9 +14,6 @@ jest.mock('@deriv/api', () => ({
         error: null,
         isLoading: false,
     })),
-    useMobileBridge: jest.fn(() => ({
-        isMobileApp: false,
-    })),
 }));
 
 jest.mock('@deriv/shared', () => ({
@@ -25,11 +21,6 @@ jest.mock('@deriv/shared', () => ({
     getContractCategoriesConfig: jest.fn(),
     getContractTypesConfig: jest.fn(),
     cloneObject: jest.fn(),
-}));
-
-jest.mock('../useNativeAppAllowedTradeTypes', () => ({
-    __esModule: true,
-    default: jest.fn(() => undefined),
 }));
 
 jest.mock('Stores/Modules/Trading/Helpers/contract-type', () => ({
@@ -81,9 +72,6 @@ describe('useContractsFor', () => {
         });
 
         (cloneObject as jest.Mock).mockImplementation(obj => JSON.parse(JSON.stringify(obj)));
-
-        // Reset useNativeAppAllowedTradeTypes mock to default
-        (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
     });
 
     afterEach(() => {
@@ -405,14 +393,8 @@ describe('useContractsFor', () => {
         });
     });
 
-    describe('Native App Allowed Trade Types', () => {
-        beforeEach(() => {
-            jest.clearAllMocks();
-        });
-
-        it('should not filter trade types when not a native mobile app', async () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(undefined);
-
+    describe('Trade-type availability (no native-app allow-list)', () => {
+        it('[MBR-004] offers the full server-available set with no remote-config allow-list filtering', async () => {
             (useQuery as jest.Mock).mockReturnValue({
                 data: {
                     contracts_for: {
@@ -430,113 +412,7 @@ describe('useContractsFor', () => {
             const { result } = renderHook(() => useContractsFor(), { wrapper });
 
             await waitFor(() => {
-                // All trade types should be available (no filtering)
-                expect(result.current.trade_types.length).toBeGreaterThan(0);
-            });
-        });
-
-        it('should filter trade types when native mobile app is available', async () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue(['Accumulators', 'Multipliers']);
-
-            (useQuery as jest.Mock).mockReturnValue({
-                data: {
-                    contracts_for: {
-                        available: [
-                            { contract_type: 'type_1', underlying_symbol: 'EURUSD', default_stake: 10 },
-                            { contract_type: 'type_2', underlying_symbol: 'GBPUSD', default_stake: 20 },
-                        ],
-                        hit_count: 2,
-                    },
-                },
-                error: null,
-                isLoading: false,
-            });
-
-            const { result } = renderHook(() => useContractsFor(), { wrapper });
-
-            await waitFor(() => {
-                // Trade types should be filtered based on remote config
-                expect(result.current.trade_types).toBeDefined();
-            });
-        });
-
-        it('should use remote config values from native_app_allowed_trade_types', async () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                'Accumulators',
-                'Vanillas',
-                'Turbos',
-                'Multipliers',
-            ]);
-
-            renderHook(() => useContractsFor(), { wrapper });
-
-            await waitFor(() => {
-                expect(useNativeAppAllowedTradeTypes).toHaveBeenCalled();
-            });
-        });
-
-        it('should handle empty remote config gracefully with fallback', async () => {
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([
-                'Accumulators',
-                'Multipliers',
-                'Vanillas',
-                'Turbos',
-            ]);
-
-            const { result } = renderHook(() => useContractsFor(), { wrapper });
-
-            await waitFor(() => {
-                // Should not crash and should have valid data
-                expect(result.current).toBeDefined();
-            });
-        });
-
-        it('should block all trade types when native_app_allowed_trade_types is missing (fail-safe)', async () => {
-            // Simulate corrupted remote config - missing native_app_allowed_trade_types
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([]);
-
-            (useQuery as jest.Mock).mockReturnValue({
-                data: {
-                    contracts_for: {
-                        available: [
-                            { contract_type: 'type_1', underlying_symbol: 'EURUSD', default_stake: 10 },
-                            { contract_type: 'type_2', underlying_symbol: 'GBPUSD', default_stake: 20 },
-                        ],
-                        hit_count: 2,
-                    },
-                },
-                error: null,
-                isLoading: false,
-            });
-
-            const { result } = renderHook(() => useContractsFor(), { wrapper });
-
-            await waitFor(() => {
-                // Should block all trade types as fail-safe (empty array means filter out everything)
-                expect(result.current.trade_types).toEqual([]);
-            });
-        });
-
-        it('should block all trade types when remoteConfigData is null (fail-safe)', async () => {
-            // Simulate null remote config data
-            (useNativeAppAllowedTradeTypes as jest.Mock).mockReturnValue([]);
-
-            (useQuery as jest.Mock).mockReturnValue({
-                data: {
-                    contracts_for: {
-                        available: [{ contract_type: 'type_1', underlying_symbol: 'EURUSD', default_stake: 10 }],
-                        hit_count: 1,
-                    },
-                },
-                error: null,
-                isLoading: false,
-            });
-
-            const { result } = renderHook(() => useContractsFor(), { wrapper });
-
-            await waitFor(() => {
-                // Should block all trade types as fail-safe
-                expect(result.current.trade_types).toEqual([]);
+                expect(result.current.trade_types.map(type => type.value)).toEqual(['type_1', 'type_2']);
             });
         });
     });

@@ -32,7 +32,7 @@
                 display: var(--initial-loader-display) !important;
             }
         </style>
-        <!-- Start theme styles and mobile app loader control -->
+        <!-- Start theme styles -->
         <script type="text/javascript">
             var l = window.location;
 
@@ -93,14 +93,8 @@
             // automatic dark-theme features do not force-darken the page. Kept in step afterwards by
             // ui-store's changeTheme().
             document.documentElement.style.colorScheme = is_dark_theme ? 'dark' : 'light';
-
-            // Hide web app loader when inside native mobile app to prevent double loaders
-            var isMobileApp = urlParams.get('is_mobile_app') === 'true';
-            if (isMobileApp) {
-                document.documentElement.style.setProperty('--initial-loader-display', 'none');
-            }
         </script>
-        <!-- End theme styles and mobile app loader control -->
+        <!-- End theme styles -->
         <!-- Start Anti-Clickjack -->
         <style id="antiClickjack">
             body {

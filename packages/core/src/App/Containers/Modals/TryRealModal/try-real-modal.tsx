@@ -1,4 +1,3 @@
-import { useMobileBridge } from '@deriv/api';
 import { getBrandUrl } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { ActionSheet, Modal, Text } from '@deriv-com/quill-ui';
@@ -7,16 +6,13 @@ import { Localize } from '@deriv-com/translations';
 const TryRealModal = observer(() => {
     const { ui, common } = useStore();
     const { is_try_real_modal_visible, toggleTryRealModal, is_mobile } = ui;
-    const { sendBridgeEvent } = useMobileBridge();
 
     const onClose = () => toggleTryRealModal(false);
 
     const handleCreateRealAccount = () => {
         const brandUrl = getBrandUrl();
         const lang_param = common.current_language ? `&lang=${common.current_language}` : '';
-        sendBridgeEvent('trading:account_creation', () => {
-            window.location.href = `${brandUrl}/onboarding/personal-details?source=options${lang_param}`;
-        });
+        window.location.href = `${brandUrl}/onboarding/personal-details?source=options${lang_param}`;
     };
 
     if (!is_try_real_modal_visible) return null;

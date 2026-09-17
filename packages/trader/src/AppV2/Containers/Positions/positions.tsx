@@ -2,7 +2,7 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 
-import { useLocalStorageData, useMobileBridge } from '@deriv/api';
+import { useLocalStorageData } from '@deriv/api';
 import { getPositionsV2TabIndexFromURL, routes, trackAnalyticsEvent } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
 import { Tab } from '@deriv-com/quill-ui';
@@ -27,7 +27,6 @@ const Positions = observer(() => {
     const {
         client: { is_logged_in },
     } = useStore();
-    const { isBridgeAvailable } = useMobileBridge();
     const {
         positions: { onUnmount },
     } = useModulesStore();
@@ -97,9 +96,7 @@ const Positions = observer(() => {
                     </Tab.Content>
                 </Tab.Container>
             </div>
-            {/* TODO: Remove isBridgeAvailable check when onboarding video with Accumulators is available*/}
-            {/* OnboardingGuide now only shows for mobile users */}
-            {!guide_dtrader_v2?.positions_page && is_logged_in && !isBridgeAvailable && (
+            {!guide_dtrader_v2?.positions_page && is_logged_in && (
                 <OnboardingGuide type='positions_page' callback={() => setHasButtonsDemo(true)} />
             )}
         </>

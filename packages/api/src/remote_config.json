@@ -1,10 +1,4 @@
 {
     "tracking_rudderstack": true,
-    "tracking_posthog": true,
-    "native_app_allowed_trade_types": {
-        "ACCUMULATORS": "Accumulators",
-        "VANILLAS": "Vanillas",
-        "TURBOS": "Turbos",
-        "MULTIPLIERS": "Multipliers"
-    }
+    "tracking_posthog": true
 }
