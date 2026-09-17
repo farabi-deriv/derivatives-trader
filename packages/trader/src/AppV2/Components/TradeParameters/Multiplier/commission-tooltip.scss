@@ -1,0 +1,40 @@
+.commission-tooltip {
+    position: relative;
+    display: inline-block;
+
+    &__label {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        // Explicit theme-aware colour: the label is a plain wrapper span, so its currentColor falls back to
+        // black and the dotted line is invisible on dark backgrounds. (The quill <Text> child sets its own
+        // colour, which is why only the underline was affected.)
+        text-decoration-color: var(--component-textIcon-normal-prominent);
+        text-underline-offset: 0.4rem;
+        cursor: pointer;
+    }
+
+    &__bubble {
+        position: absolute;
+        bottom: calc(100% + 0.4rem);
+        width: max-content;
+        max-width: 24rem;
+        text-align: center;
+        background-color: var(--color-surface-inverse);
+        color: var(--color-text-inverse);
+        padding: 0.8rem 1.6rem;
+        border-radius: 0.8rem;
+        box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.3);
+        font-size: 1.2rem;
+        line-height: 1.5;
+        z-index: 10;
+
+        &--center {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        &--start {
+            left: 0;
+        }
+    }
+}

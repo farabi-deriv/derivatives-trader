@@ -12,12 +12,23 @@ import { formatAmountWithSymbol } from 'AppV2/Utils/currency-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
+import CommissionFormula, { getCommissionPercentage } from '../Multiplier/commission-formula';
+
 import './multipliers-information.scss';
 
-type TDescriptionKey = 'stop_out' | 'stop_out_level';
+type TDescriptionKey = 'stop_out' | 'stop_out_level' | 'commission';
 
 const MultipliersInformation = observer(() => {
-    const { contract_type, currency, is_market_closed, proposal_info, trade_types, trade_type_tab } = useTraderStore();
+    const {
+        amount,
+        contract_type,
+        currency,
+        is_market_closed,
+        multiplier,
+        proposal_info,
+        trade_types,
+        trade_type_tab,
+    } = useTraderStore();
     const { isDesktop } = useDevice();
     // Which explanation the mobile ActionSheet is showing (null = closed).
     const [open_description, setOpenDescription] = React.useState<TDescriptionKey | null>(null);
@@ -37,6 +48,11 @@ const MultipliersInformation = observer(() => {
     // hover. Direction-specific (Up stops out below the spot, Down above it), so it must come from the
     // selected side only: falling back to the other one would show a price from the wrong direction.
     const stop_out_level = displayed_proposal?.limit_order?.stop_out?.value;
+
+    // Commission is a function of stake and multiplier, not direction, so it takes the same Up→Down
+    // fallback the loss amount does rather than the level's selected-side-only rule.
+    const commission = any_proposal?.commission;
+    const commission_percentage = getCommissionPercentage(commission, multiplier, amount);
 
     // The stop out level is configured per asset/multiplier on the backend and is not sent as a
     // percentage. Derive it from the stop out loss amount (order_amount) relative to the stake
@@ -65,11 +81,30 @@ const MultipliersInformation = observer(() => {
                 <Localize i18n_default_text='The price at which your position closes automatically, capping your loss at your stake.' />
             ),
         },
+        commission: {
+            title: <Localize i18n_default_text='Commission' />,
+            message: (
+                <CommissionFormula
+                    commission={commission}
+                    multiplier={multiplier}
+                    amount={amount}
+                    currency={currency}
+                />
+            ),
+        },
     };
 
     const has_error =
         proposal_info?.[CONTRACT_TYPES.MULTIPLIER.UP]?.has_error ||
         proposal_info?.[CONTRACT_TYPES.MULTIPLIER.DOWN]?.has_error;
+
+    // The commission sheet is controlled, so it would survive the conditional unmount and re-open on
+    // its own once the percentage returned. Close it the moment the formula stops being derivable.
+    React.useEffect(() => {
+        if (commission_percentage === null || isDesktop) {
+            setOpenDescription(current => (current === 'commission' ? null : current));
+        }
+    }, [commission_percentage, isDesktop]);
 
     // Desktop shows the explanation as a hover tooltip; mobile opens it in an ActionSheet.
     const renderLabel = (key: TDescriptionKey) => {
@@ -78,6 +113,15 @@ const MultipliersInformation = observer(() => {
             'multipliers-information__label--underlined',
             is_market_closed && 'trade-params__text--disabled'
         );
+
+        // Nothing to explain without a derivable percentage, so the label stays plain and inert.
+        if (key === 'commission' && commission_percentage === null) {
+            return (
+                <Text size='sm' className={clsx(is_market_closed && 'trade-params__text--disabled')}>
+                    {title}
+                </Text>
+            );
+        }
 
         if (isDesktop) {
             return (
@@ -123,6 +167,18 @@ const MultipliersInformation = observer(() => {
                 {stop_out_level ? (
                     <Text size='sm' className={clsx(is_market_closed && 'trade-params__text--disabled')}>
                         {stop_out_level}
+                    </Text>
+                ) : (
+                    <Skeleton width={100} height={14} />
+                )}
+            </div>
+
+            {/* Commission - a charge on open, so an amount like Stop out */}
+            <div className='multipliers-information__row'>
+                {renderLabel('commission')}
+                {commission !== undefined && commission !== null ? (
+                    <Text size='sm' className={clsx(is_market_closed && 'trade-params__text--disabled')}>
+                        {formatAmountWithSymbol(currency, Math.abs(Number(commission)))}
                     </Text>
                 ) : (
                     <Skeleton width={100} height={14} />

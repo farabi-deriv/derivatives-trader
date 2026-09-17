@@ -434,7 +434,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/multipliers/verify-multipliers-no-tpsl.spec.ts` — `VERIFY Buy "Up" Multipliers Contract and Close (without TP/SL) (Demo Account)` / `(Real Account)`
 **Unique params:** Multiplier (`x200`), Stake (`5.40`) — NO Duration, NO TP/SL
 
-> **Structural note:** Multipliers has no Duration param and no Barrier. The trade-page info panel shows **Stop out** (loss amount, `$N.NN`) and **Stop out level** (bare price) — Commission is not shown on the trade panel. Commission is rendered on the contract details page from the API: it is captured from the open contract details page and asserted exactly on the closed page.
+> **Structural note:** Multipliers has no Duration param and no Barrier. The trade-page info panel (and the mobile Stake sheet) shows **Stop out** (loss amount, `$N.NN`), **Stop out level** (bare price) and **Commission** (`$N.NN`). Commission is also rendered on the contract details page from the API, and it is that copy the buy/sell assertions use: it is captured from the open contract details page and asserted exactly on the closed page.
 >
 > **Stop out capture:** `readStopOut()` stores the **numeric** amount (`20.00`), not `$20.00`. Trade params use `$N.NN`; **contract details still render Money as `-20.00 USD`**. Mobile closed Order Details "Stop out level" is asserted with `toContainText` on that numeric. On mobile, Stop out lives only in the Stake sheet — reopen it, read the rows, dismiss with **Close** (header Save stays disabled while the draft equals the committed stake).
 
@@ -495,7 +495,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 > **Implementation notes:**
 >
 > - TP input on mobile requires `pressSequentially` + `Tab` press to blur, then a 1500ms wait for the API response before clicking Save. The "acceptable range" hint can render from stale store state and is not a reliable guard alone — `is_api_response_tp_received_ref` must be `true` (set by API response) or `onSave()` returns early.
-> - Commission is not on the trade panel. Pre-buy capture is `readStopOut()` only (Stop out amount + assert Stop out level present). Commission is captured from the open contract details page and asserted on the closed page.
+> - Commission is shown on the trade panel and the Stake sheet alongside Stop out and Stop out level, but pre-buy capture is still `readStopOut()` only (Stop out amount + assert Stop out level present). Commission is captured from the open contract details page and asserted on the closed page.
 > - Open positions card on mobile renders TP as `"30.01"` (no `+` prefix); desktop renders `"+30.01"`.
 
 | #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                             | Platform |

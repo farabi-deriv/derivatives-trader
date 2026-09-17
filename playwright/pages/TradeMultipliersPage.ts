@@ -644,8 +644,9 @@ export class TradeMultipliersPage extends TradeParametersPage {
      * instead of the default window.
      *
      * The "Stop out level" row is asserted to be present here but its value is not captured — it is
-     * not asserted on the closed contract details page. Commission is not present on the trade panel;
-     * the contract details page renders it from the API, so it is read there instead.
+     * not asserted on the closed contract details page. Commission is now shown on the trade panel
+     * too, but the buy/sell assertions still read it from the contract details page, which renders it
+     * from the API.
      */
     private async readStopOut(): Promise<{ stopOut: string }> {
         if (this.isMobile) {

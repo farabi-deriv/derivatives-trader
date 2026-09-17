@@ -44,6 +44,9 @@ type TStakeState = {
         max_stake: string | number;
         min_stake: string | number;
         stop_out?: string | number;
+        commission?: string | number | null;
+        // The stake `commission` was priced for, so the formula's divisor never lags its numerator.
+        drafted_amount?: string | number;
     };
 };
 type TStakeAction =
@@ -115,6 +118,9 @@ const createInitialState = (trade_store: ReturnType<typeof useTraderStore>, deci
     const { stake } = (validation_params[contract_types[0]] || validation_params[contract_types[1]]) ?? {};
     const { max: max_stake = 0, min: min_stake = 0 } = stake ?? {};
 
+    // Commission is identical for MULTUP/MULTDOWN, so either side covers the other still loading.
+    const commission = proposal_info[contract_types[0]]?.commission ?? proposal_info[contract_types[1]]?.commission;
+
     return {
         proposal_request_values: { amount },
         stake_error: '',
@@ -131,6 +137,8 @@ const createInitialState = (trade_store: ReturnType<typeof useTraderStore>, deci
             max_stake,
             min_stake,
             stop_out,
+            commission,
+            drafted_amount: amount,
         },
     };
 };
@@ -297,21 +305,23 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
 
             // Update proposal details after a successful API call
             if (proposal) {
-                const { limit_order, validation_params } = proposal as ExpandedProposal;
+                const { commission, limit_order, validation_params } = proposal as ExpandedProposal;
                 const { max, min } = validation_params?.stake ?? {};
                 const { order_amount } = limit_order?.stop_out ?? {};
 
                 dispatch({
                     type: 'UPDATE_DETAILS',
                     payload: {
-                        ...(is_multiplier && order_amount ? { stop_out: order_amount } : {}),
+                        ...(is_multiplier && order_amount
+                            ? { stop_out: order_amount, commission, drafted_amount: proposal_request_values.amount }
+                            : {}),
                         ...(details.max_stake || details.min_stake ? {} : { max_stake: max, min_stake: min }),
                     },
                 });
             } else if (!proposal && is_multiplier) {
                 dispatch({
                     type: 'UPDATE_DETAILS',
-                    payload: { stop_out: 0 },
+                    payload: { stop_out: 0, commission: 0, drafted_amount: 0 },
                 });
             }
         }

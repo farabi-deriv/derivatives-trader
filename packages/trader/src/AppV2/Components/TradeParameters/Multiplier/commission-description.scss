@@ -1,0 +1,15 @@
+.commission-description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--core-spacing-800);
+
+    // The dynamic formula in an emphasised, centered pill below the description. NOT display:flex —
+    // that would turn the inline text runs into flex items and trim the spaces around the % and the
+    // amount ("0.0350%of (2.00× 100)"); a plain centered block keeps the inline whitespace.
+    &__formula {
+        text-align: center;
+        padding: var(--core-spacing-800) var(--core-spacing-1200);
+        border-radius: var(--core-borderRadius-800, 16px);
+        background: var(--semantic-color-monochrome-surface-normal-lowest);
+    }
+}

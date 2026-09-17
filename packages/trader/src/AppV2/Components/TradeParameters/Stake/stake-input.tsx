@@ -25,12 +25,24 @@ import StakeDetails from './stake-details';
 
 const DEFAULT_PRESET_VALUES = [1, 5, 10, 20, 50, 100];
 
+/** The drafted commission and the stake it was priced for, as the Commission explanation needs them. */
+export type TCommissionDetails = {
+    commission?: string | number | null;
+    amount?: string | number;
+};
+
 type TStakeInput = {
     onClose: () => void;
     is_open?: boolean;
-    /** Mobile only: open the Stop out / Stop out level explanation as a page within the stake sheet. */
+    /** Mobile only: open the Stop out / Stop out level / Commission explanation as a page within the stake sheet. */
     onOpenStopOut?: () => void;
     onOpenStopOutLevel?: () => void;
+    onOpenCommission?: () => void;
+    /**
+     * Mobile only: publish the drafted commission up to the sheet host, so the Commission page
+     * explains the stake being drafted rather than the committed one.
+     */
+    registerCommissionDetails?: (commission_details: TCommissionDetails) => void;
     /**
      * Mobile only: publish the commit handler and dirty/error gate up to the sheet host so the
      * header check (page 0 `StakeSheetHeader`) can commit and stay disabled until the value changes.
@@ -59,6 +71,9 @@ type TStakeState = {
         max_stake: string | number;
         min_stake: string | number;
         stop_out?: string | number;
+        commission?: string | number | null;
+        // The stake `commission` was priced for, so the formula's divisor never lags its numerator.
+        drafted_amount?: string | number;
     };
 };
 type TStakeAction =
@@ -130,6 +145,9 @@ const createInitialState = (trade_store: ReturnType<typeof useTraderStore>, deci
     const { stake } = (validation_params[contract_types[0]] || validation_params[contract_types[1]]) ?? {};
     const { max: max_stake = 0, min: min_stake = 0 } = stake ?? {};
 
+    // Commission is identical for MULTUP/MULTDOWN, so either side covers the other still loading.
+    const commission = proposal_info[contract_types[0]]?.commission ?? proposal_info[contract_types[1]]?.commission;
+
     return {
         proposal_request_values: { amount },
         stake_error: '',
@@ -146,12 +164,22 @@ const createInitialState = (trade_store: ReturnType<typeof useTraderStore>, deci
             max_stake,
             min_stake,
             stop_out,
+            commission,
+            drafted_amount: amount,
         },
     };
 };
 
 const StakeInput = observer(
-    ({ onClose, is_open, onOpenStopOut, onOpenStopOutLevel, registerHeaderActions }: TStakeInput) => {
+    ({
+        onClose,
+        is_open,
+        onOpenStopOut,
+        onOpenStopOutLevel,
+        onOpenCommission,
+        registerCommissionDetails,
+        registerHeaderActions,
+    }: TStakeInput) => {
         const { localize } = useTranslations();
         const trade_store = useTraderStore();
         const {
@@ -319,21 +347,27 @@ const StakeInput = observer(
 
                 // Update proposal details after a successful API call
                 if (proposal) {
-                    const { limit_order, validation_params } = proposal as ExpandedProposal;
+                    const { commission, limit_order, validation_params } = proposal as ExpandedProposal;
                     const { max, min } = validation_params?.stake ?? {};
                     const { order_amount } = limit_order?.stop_out ?? {};
 
                     dispatch({
                         type: 'UPDATE_DETAILS',
                         payload: {
-                            ...(is_multiplier && order_amount ? { stop_out: order_amount } : {}),
+                            ...(is_multiplier && order_amount
+                                ? {
+                                      stop_out: order_amount,
+                                      commission,
+                                      drafted_amount: proposal_request_values.amount,
+                                  }
+                                : {}),
                             ...(details.max_stake || details.min_stake ? {} : { max_stake: max, min_stake: min }),
                         },
                     });
                 } else if (!proposal && is_multiplier) {
                     dispatch({
                         type: 'UPDATE_DETAILS',
-                        payload: { stop_out: 0 },
+                        payload: { stop_out: 0, commission: 0, drafted_amount: 0 },
                     });
                 }
             }
@@ -602,6 +636,11 @@ const StakeInput = observer(
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [is_save_disabled, displayAmount, proposal_request_values.amount, is_loading_proposal]);
 
+        React.useEffect(() => {
+            registerCommissionDetails?.({ commission: details.commission, amount: details.drafted_amount });
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [details.commission, details.drafted_amount]);
+
         return (
             <React.Fragment>
                 <ActionSheet.Content className='stake-content'>
@@ -662,6 +701,7 @@ const StakeInput = observer(
                         should_show_payout_details={should_show_payout_details}
                         onOpenStopOut={onOpenStopOut}
                         onOpenStopOutLevel={onOpenStopOutLevel}
+                        onOpenCommission={onOpenCommission}
                     />
                 </ActionSheet.Content>
             </React.Fragment>

@@ -14,15 +14,17 @@ import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { AutomationStoreContext } from 'Stores/useAutomationStore';
 import { useTraderStore } from 'Stores/useTraderStores';
 
+import CommissionDescription from '../Multiplier/commission-description';
 import { AutomationLockOverlay } from '../Shared';
 import { TTradeParametersProps } from '../trade-parameters';
 
-import StakeInput from './stake-input';
+import StakeInput, { TCommissionDetails } from './stake-input';
 
 // Page order within the stake sheet carousel.
 const STAKE_PAGE = 0;
 const STOP_OUT_PAGE = 1;
 const STOP_OUT_LEVEL_PAGE = 2;
+const COMMISSION_PAGE = 3;
 
 type TStakeHeaderActions = {
     onSave: () => void;
@@ -68,6 +70,7 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
         is_automation_params_locked,
         is_market_closed,
         is_multiplier,
+        multiplier,
         proposal_info,
         is_automation_tab,
     } = useTraderStore();
@@ -76,6 +79,7 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
 
     const [is_open, setIsOpen] = React.useState(false);
     const [carousel_index, setCarouselIndex] = React.useState(STAKE_PAGE);
+    const [commission_details, setCommissionDetails] = React.useState<TCommissionDetails>({});
 
     // `StakeInput` owns the draft/validation state, so it publishes its commit handler and gate here
     // (page 0's header check). The handler lives in a ref (a new identity every render) so it never
@@ -120,9 +124,17 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
     const stop_out_level_description = (
         <Localize i18n_default_text='The price at which your position closes automatically, capping your loss at your stake.' />
     );
+    // `StakeInput` re-prices commission per keystroke, so the explanation takes its figures from the
+    // draft it publishes; the committed proposal only covers the render before the first publish.
+    const committed_commission =
+        proposal_info?.[CONTRACT_TYPES.MULTIPLIER.UP]?.commission ??
+        proposal_info?.[CONTRACT_TYPES.MULTIPLIER.DOWN]?.commission;
+    const commission = commission_details.commission ?? committed_commission;
+    const commission_amount = commission_details.amount ?? amount;
     const getSheetTitle = () => {
         if (carousel_index === STOP_OUT_PAGE) return <Localize i18n_default_text='Stop out' />;
         if (carousel_index === STOP_OUT_LEVEL_PAGE) return <Localize i18n_default_text='Stop out level' />;
+        if (carousel_index === COMMISSION_PAGE) return <Localize i18n_default_text='Commission' />;
         return <Localize i18n_default_text='Stake' />;
     };
 
@@ -135,6 +147,8 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
                     is_open={is_open}
                     onOpenStopOut={() => setCarouselIndex(STOP_OUT_PAGE)}
                     onOpenStopOutLevel={() => setCarouselIndex(STOP_OUT_LEVEL_PAGE)}
+                    onOpenCommission={() => setCarouselIndex(COMMISSION_PAGE)}
+                    registerCommissionDetails={setCommissionDetails}
                     registerHeaderActions={registerHeaderActions}
                 />
             ),
@@ -143,7 +157,23 @@ const Stake = observer(({ is_minimized, is_automation }: TTradeParametersProps) 
     if (is_multiplier) {
         pages.push(
             { id: STOP_OUT_PAGE, component: <TradeParamDefinition description={stop_out_description} /> },
-            { id: STOP_OUT_LEVEL_PAGE, component: <TradeParamDefinition description={stop_out_level_description} /> }
+            { id: STOP_OUT_LEVEL_PAGE, component: <TradeParamDefinition description={stop_out_level_description} /> },
+            {
+                id: COMMISSION_PAGE,
+                component: (
+                    <TradeParamDefinition
+                        is_custom_description
+                        description={
+                            <CommissionDescription
+                                commission={commission}
+                                multiplier={multiplier}
+                                amount={commission_amount}
+                                currency={currency}
+                            />
+                        }
+                    />
+                ),
+            }
         );
     }
 

@@ -1100,13 +1100,16 @@ describe('Multipliers stop out (mobile sheet)', () => {
                     // The defect: with Stop loss committed, the Stake sheet used to drop the Stop out row.
                     has_stop_loss: true,
                     is_multiplier: true,
+                    multiplier: 100,
                     proposal_info: {
                         [CONTRACT_TYPES.MULTIPLIER.UP]: {
+                            commission: 0.5,
                             has_error: false,
                             limit_order: { stop_out: { order_amount: -10 } },
                             stake: 10,
                         },
                         [CONTRACT_TYPES.MULTIPLIER.DOWN]: {
+                            commission: 0.5,
                             has_error: false,
                             limit_order: { stop_out: { order_amount: -10 } },
                             stake: 10,
@@ -1223,6 +1226,92 @@ describe('Multipliers stop out (mobile sheet)', () => {
                 'The price at which your position closes automatically, capping your loss at your stake.'
             )
         );
+    });
+
+    it('[MCD-001] [MCD-006] shows the Commission row seeded from the trade page proposal', async () => {
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSheet(user);
+
+        expect(screen.getByText('Commission')).toBeInTheDocument();
+        expect(await screen.findByText('$0.50')).toBeInTheDocument();
+    });
+
+    it('[MCD-005] opens the Commission explanation page when the label is tapped', async () => {
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSettledSheet(user);
+        await user.click(screen.getByText('Commission'));
+
+        // commission_percentage = (0.5 * 100) / (100 * 10) = 0.0500
+        await waitFor(() =>
+            expect(getActivePage()).toHaveTextContent(
+                'Commission is calculated as 0.0500% of your stake multiplied by the multiplier.'
+            )
+        );
+        expect(getActivePage()).toHaveTextContent('0.0500%');
+    });
+
+    // Commission is banded, so the drafted stake's rate differs from the committed one's — which is
+    // what tells apart a page built from the draft and one built from the committed parameters.
+    const priced_by_amount: Record<string, unknown> = {
+        '10': { proposal: { commission: 0.5, limit_order: { stop_out: { order_amount: -10 } } } },
+        '100': { proposal: { commission: 2.5, limit_order: { stop_out: { order_amount: -100 } } } },
+    };
+    const settle = () => new Promise(resolve => setTimeout(resolve, 400));
+
+    it('[MCD-005] [MCD-009] explains the stake being drafted, not the committed one', async () => {
+        useProposal.mockImplementation(
+            ({ proposal_request_values }: { proposal_request_values?: { amount?: unknown } } = {}) => ({
+                data: priced_by_amount[String(proposal_request_values?.amount)] ?? priced_by_amount['10'],
+                error: null,
+                isFetching: false,
+            })
+        );
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSettledSheet(user);
+        const input = screen.getByTestId('dt_stake_input');
+        await user.clear(input);
+        await user.type(input, '100');
+        await settle();
+        await screen.findByText('$2.50');
+
+        await user.click(screen.getByText('Commission'));
+
+        // (2.5 * 100) / (100 * 100) = 0.0250 — the committed pair would give 0.0500.
+        await waitFor(() => expect(getActivePage()).toHaveTextContent('0.0250%'));
+        expect(getActivePage()).not.toHaveTextContent('0.0500%');
+        expect(getActivePage()).toHaveTextContent('100.00');
+    });
+
+    it('[MCD-006] [MCD-009] leaves the Commission label inert once a drafted stake fails to price', async () => {
+        useProposal.mockImplementation(
+            ({ proposal_request_values }: { proposal_request_values?: { amount?: unknown } } = {}) =>
+                Number(proposal_request_values?.amount) === 9999
+                    ? {
+                          data: undefined,
+                          error: { message: 'Invalid stake', details: { field: 'stake' } },
+                          isFetching: false,
+                      }
+                    : { data: priced_by_amount['10'], error: null, isFetching: false }
+        );
+        const user = userEvent.setup();
+        renderMobileStake();
+
+        await openSettledSheet(user);
+        const input = screen.getByTestId('dt_stake_input');
+        await user.clear(input);
+        await user.type(input, '9999');
+        await settle();
+        await waitFor(() => expect(screen.queryByText('$0.50')).not.toBeInTheDocument());
+
+        await user.click(screen.getByText('Commission'));
+
+        expect(getActivePage()).not.toHaveTextContent('Commission is calculated as');
     });
 });
 

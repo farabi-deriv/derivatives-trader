@@ -108,7 +108,7 @@ const TradeParameters = observer(({ is_minimized, is_automation }: TTradeParamet
             </div>
             {/* On responsive these below-params info rows are dropped: payout-related values are shown
                 in the purchase button (Rise/Fall, Accumulators Max payout), and the rest already live
-                in an action sheet (Stake: Stop out, Stop out level; Payout per point: Turbos barrier;
+                in an action sheet (Stake: Stop out, Stop out level, Commission; Payout per point: Turbos barrier;
                 Strike: Vanilla payout per point; Risk management: DC fee, Expires on). Desktop keeps
                 the rows. */}
             {!isMobile && (

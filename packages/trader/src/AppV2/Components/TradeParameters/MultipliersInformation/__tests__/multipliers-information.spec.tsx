@@ -10,6 +10,7 @@ import MultipliersInformation from '../multipliers-information';
 
 const stop_out_label = 'Stop out';
 const stop_out_level_label = 'Stop out level';
+const commission_label = 'Commission';
 
 jest.mock('@deriv-com/ui', () => ({
     ...jest.requireActual('@deriv-com/ui'),
@@ -98,7 +99,7 @@ describe('MultipliersInformation', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('renders skeletons for both rows if the proposal has no stop out data but there is no API error', () => {
+    it('[MCD-004] renders skeletons for all three rows if the proposal has no data but there is no API error', () => {
         default_mock_store.modules.trade.proposal_info = {
             MULTUP: {},
             MULTDOWN: {},
@@ -107,7 +108,8 @@ describe('MultipliersInformation', () => {
 
         expect(screen.getByText(stop_out_label)).toBeInTheDocument();
         expect(screen.getByText(stop_out_level_label)).toBeInTheDocument();
-        expect(screen.getAllByTestId('dt_skeleton')).toHaveLength(2);
+        expect(screen.getByText(commission_label)).toBeInTheDocument();
+        expect(screen.getAllByTestId('dt_skeleton')).toHaveLength(3);
     });
 
     it('renders stop out and stop out level with the correct values for the Up side', () => {
@@ -138,7 +140,8 @@ describe('MultipliersInformation', () => {
         mockMultipliersInformation();
 
         expect(screen.queryByText('8160.12')).not.toBeInTheDocument();
-        expect(screen.getByTestId('dt_skeleton')).toBeInTheDocument();
+        // The stop out level and the (unpriced) commission.
+        expect(screen.getAllByTestId('dt_skeleton')).toHaveLength(2);
     });
 
     it('renders the stop out level without a currency code', () => {
@@ -154,10 +157,11 @@ describe('MultipliersInformation', () => {
         mockMultipliersInformation();
 
         expect(screen.getByText(stop_out_level_label)).toBeInTheDocument();
-        expect(screen.getByTestId('dt_skeleton')).toBeInTheDocument();
+        // The stop out level and the (unpriced) commission.
+        expect(screen.getAllByTestId('dt_skeleton')).toHaveLength(2);
     });
 
-    it('does not render a commission row', () => {
+    it('[MCD-001] [MCD-003] renders a commission row with a currency-formatted amount', () => {
         default_mock_store.modules.trade.amount = 10;
         default_mock_store.modules.trade.multiplier = 100;
         default_mock_store.modules.trade.proposal_info = {
@@ -165,8 +169,21 @@ describe('MultipliersInformation', () => {
         };
         mockMultipliersInformation();
 
-        expect(screen.queryByText('Commission')).not.toBeInTheDocument();
-        expect(screen.queryByText('$0.50')).not.toBeInTheDocument();
+        expect(screen.getByText(commission_label)).toBeInTheDocument();
+        expect(screen.getByText('$0.50')).toBeInTheDocument();
+    });
+
+    // Commission is a function of stake and multiplier, not direction, so either side will do.
+    it('[MCD-002] falls back to the other direction for the commission', () => {
+        default_mock_store.modules.trade.amount = 10;
+        default_mock_store.modules.trade.multiplier = 100;
+        default_mock_store.modules.trade.proposal_info = {
+            MULTDOWN: { commission: 0.5, limit_order: { stop_out: { order_amount: -10.5 } } },
+        };
+        mockMultipliersInformation();
+
+        expect(screen.getByText(commission_label)).toBeInTheDocument();
+        expect(screen.getByText('$0.50')).toBeInTheDocument();
     });
 
     it('uses absolute value for negative stop out amount', () => {
@@ -201,12 +218,13 @@ describe('MultipliersInformation', () => {
         expect(screen.getByText('$15.00')).toBeInTheDocument();
     });
 
-    it('applies disabled class when market is closed', () => {
+    it('[MCD-007] applies disabled class when market is closed', () => {
         default_mock_store.modules.trade.is_market_closed = true;
         mockMultipliersInformation();
 
         expect(screen.getByText(stop_out_label)).toHaveClass('trade-params__text--disabled');
         expect(screen.getByText(stop_out_level_label)).toHaveClass('trade-params__text--disabled');
+        expect(screen.getByText(commission_label)).toHaveClass('trade-params__text--disabled');
     });
 
     it('does not apply disabled class when market is open', () => {
@@ -344,6 +362,51 @@ describe('MultipliersInformation', () => {
 
             expect(screen.queryByText(stop_out_level_description)).not.toBeInTheDocument();
             expect(screen.getByText('Got it')).toBeInTheDocument();
+        });
+    });
+
+    describe('commission explanation (mobile)', () => {
+        // clearAllMocks keeps implementations, so reset the device the desktop block set above.
+        beforeEach(() => {
+            (useDevice as jest.Mock).mockReturnValue({ isDesktop: false });
+            default_mock_store.modules.trade.amount = 10;
+            default_mock_store.modules.trade.multiplier = 100;
+            default_mock_store.modules.trade.proposal_info = {
+                MULTUP: { commission: 0.5, limit_order: { stop_out: { order_amount: -10.5, value: '8160.12' } } },
+            };
+        });
+
+        it('[MCD-005] opens an ActionSheet with the formula when the label is tapped', async () => {
+            mockMultipliersInformation();
+
+            await userEvent.click(screen.getByText(commission_label));
+
+            // commission_percentage = (0.5 * 100) / (100 * 10) = 0.0500
+            expect(screen.getByText('0.0500%')).toBeInTheDocument();
+            expect(screen.getByText('Got it')).toBeInTheDocument();
+        });
+
+        it('[MCD-005] does not open the ActionSheet when the market is closed', async () => {
+            default_mock_store.modules.trade.is_market_closed = true;
+            mockMultipliersInformation();
+
+            await userEvent.click(screen.getByText(commission_label));
+
+            expect(screen.queryByText('0.0500%')).not.toBeInTheDocument();
+            expect(screen.queryByText('Got it')).not.toBeInTheDocument();
+        });
+
+        it('[MCD-009] leaves the label plain and inert when the percentage cannot be derived', async () => {
+            default_mock_store.modules.trade.amount = 0;
+            mockMultipliersInformation();
+
+            expect(screen.getByText(commission_label)).not.toHaveClass('multipliers-information__label--underlined');
+
+            await userEvent.click(screen.getByText(commission_label));
+
+            expect(screen.queryByText('Got it')).not.toBeInTheDocument();
+            // The value row is still rendered, per MCD-004.
+            expect(screen.getByText('$0.50')).toBeInTheDocument();
         });
     });
 });

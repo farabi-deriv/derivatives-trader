@@ -10,6 +10,9 @@ import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 import { TTradeStore } from 'Types';
 
+import { getCommissionPercentage } from '../Multiplier/commission-formula';
+import CommissionTooltip from '../Multiplier/commission-tooltip';
+
 type TStakeDetailsProps = Pick<TTradeStore, 'contract_type' | 'currency' | 'is_multiplier'> & {
     contract_types: string[];
     details: {
@@ -23,14 +26,19 @@ type TStakeDetailsProps = Pick<TTradeStore, 'contract_type' | 'currency' | 'is_m
         min_stake: string | number;
         second_contract_payout: number;
         stop_out?: number | string;
+        commission?: number | string | null;
+        /** The stake `commission` was priced for — the percentage's divisor must match its numerator. */
+        drafted_amount?: number | string;
     };
     is_loading_proposal: boolean;
     is_empty?: boolean;
     should_show_payout_details: boolean;
-    /** Mobile only: open the Stop out / Stop out level explanation as a page within the stake sheet.
-     * When omitted (desktop), both are plain labels. */
+    /** Mobile only: open the Stop out / Stop out level / Commission explanation as a page within the
+     * stake sheet. When omitted (desktop), Stop out and Stop out level are plain labels and Commission
+     * falls back to its hover tooltip. */
     onOpenStopOut?: () => void;
     onOpenStopOutLevel?: () => void;
+    onOpenCommission?: () => void;
 };
 
 const StakeDetails = observer(
@@ -45,6 +53,7 @@ const StakeDetails = observer(
         should_show_payout_details,
         onOpenStopOut,
         onOpenStopOutLevel,
+        onOpenCommission,
     }: TStakeDetailsProps) => {
         // Stop out level is read live from the store rather than from `details`: the popover's own
         // proposal is a one-shot request, so anything derived from it is a snapshot taken when the
@@ -52,9 +61,15 @@ const StakeDetails = observer(
         // tracking the spot. It is stake-independent (a function of the multiplier and the spot), so
         // using the committed-parameter value is correct even while the stake is being edited — unlike
         // the stop out *amount*, which scales with the stake and stays on `details`.
-        const { root_store, stop_out_level } = useTraderStore();
+        const { amount, multiplier, root_store, stop_out_level } = useTraderStore();
         const is_mobile = root_store?.ui?.is_mobile;
         const currency_symbol = getCurrencySymbol(currency);
+
+        const commission_percentage = getCommissionPercentage(
+            details.commission,
+            multiplier,
+            details.drafted_amount ?? amount
+        );
 
         const [displayed_values, setDisplayedValues] = React.useState({
             is_first_payout_exceeded: false,
@@ -63,6 +78,7 @@ const StakeDetails = observer(
             max_payout: '',
             second_contract_payout: '',
             stop_out: '',
+            commission: '',
         });
 
         React.useEffect(() => {
@@ -78,11 +94,13 @@ const StakeDetails = observer(
                 is_second_payout_exceeded,
                 second_contract_payout,
                 stop_out: stop_out_value,
+                commission: commission_value,
                 max_payout,
             } = displayed_values;
             const new_payout_1 = getDisplayedValue(details.first_contract_payout, first_contract_payout);
             const new_payout_2 = getDisplayedValue(details.second_contract_payout, second_contract_payout);
             const new_stop_out = getDisplayedValue(Math.abs(Number(details.stop_out)), stop_out_value);
+            const new_commission = getDisplayedValue(Math.abs(Number(details.commission)), commission_value);
             const new_max_payout = getDisplayedValue(details.max_payout, max_payout);
 
             if (
@@ -91,6 +109,7 @@ const StakeDetails = observer(
                 displayed_values.is_second_payout_exceeded !== is_second_payout_exceeded ||
                 second_contract_payout !== new_payout_2 ||
                 stop_out_value !== new_stop_out ||
+                commission_value !== new_commission ||
                 max_payout !== new_max_payout
             ) {
                 setDisplayedValues({
@@ -99,6 +118,7 @@ const StakeDetails = observer(
                     is_second_payout_exceeded,
                     second_contract_payout: new_payout_2,
                     stop_out: new_stop_out,
+                    commission: new_commission,
                     max_payout: new_max_payout,
                 });
             }
@@ -123,6 +143,12 @@ const StakeDetails = observer(
                 has_no_currency: true,
                 label: <Localize i18n_default_text='Stop out level' />,
                 value: is_empty ? '-' : (stop_out_level ?? '-'),
+            },
+            {
+                is_displayed: is_multiplier && !should_show_payout_details,
+                is_commission: true,
+                label: <Localize i18n_default_text='Commission' />,
+                value: displayed_values.commission,
             },
             {
                 is_displayed: !!details.max_payout && should_show_payout_details,
@@ -164,15 +190,33 @@ const StakeDetails = observer(
         );
 
         // Stop out and Stop out level open their explanation as a page within the stake sheet on mobile;
-        // on desktop they are plain labels.
+        // on desktop they are plain labels. Commission has no in-sheet page on desktop, so it falls back
+        // to its hover tooltip; both routes stay inert while the percentage cannot be derived.
         const renderLabel = ({
             contract_type: row_contract_type,
             is_stop_out,
             is_stop_out_level,
+            is_commission,
             label,
         }: (typeof content)[number]) => {
             if (is_stop_out && onOpenStopOut) return renderClickableLabel(label, onOpenStopOut);
             if (is_stop_out_level && onOpenStopOutLevel) return renderClickableLabel(label, onOpenStopOutLevel);
+            if (is_commission && onOpenCommission && commission_percentage !== null)
+                return renderClickableLabel(label, onOpenCommission);
+            if (is_commission)
+                return (
+                    <Text size='sm'>
+                        <CommissionTooltip
+                            commission={details.commission}
+                            multiplier={multiplier}
+                            amount={details.drafted_amount ?? amount}
+                            currency={currency}
+                            align='start'
+                        >
+                            {label}
+                        </CommissionTooltip>
+                    </Text>
+                );
             return (
                 <Text size='sm'>
                     {label}

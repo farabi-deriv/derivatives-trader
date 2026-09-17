@@ -1,4 +1,5 @@
 import { mockStore } from '@deriv/stores';
+import { useDevice } from '@deriv-com/ui';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -31,6 +32,9 @@ const base_props = {
 };
 
 describe('StakeDetails multiplier info', () => {
+    // The desktop hover test below flips this; every other test is the mobile sheet.
+    beforeEach(() => (useDevice as jest.Mock).mockReturnValue({ isDesktop: false }));
+
     const renderStakeDetails = (props = {}, trade_overrides = {}) => {
         const store = mockStore({
             modules: { trade: { amount: 10, multiplier: 100, stop_out_level: '8160.12', ...trade_overrides } },
@@ -124,10 +128,84 @@ describe('StakeDetails multiplier info', () => {
         expect(screen.getByText('$10.00')).toBeInTheDocument();
     });
 
-    it('does not render a commission row', () => {
+    it('[MCD-001] [MCD-003] renders the Commission row with a currency-formatted amount', () => {
+        renderStakeDetails({ details: { ...base_props.details, commission: 0.5 } });
+
+        expect(screen.getByText('Commission')).toBeInTheDocument();
+        expect(screen.getByText('$0.50')).toBeInTheDocument();
+    });
+
+    it('[MCD-004] keeps the Commission row visible with a placeholder when no commission is priced', () => {
         renderStakeDetails();
 
-        expect(screen.queryByText('Commission')).not.toBeInTheDocument();
+        expect(screen.getByText('Commission')).toBeInTheDocument();
+        expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
+
+    it('[MCD-004] keeps the Commission row visible with a placeholder for a zero commission', () => {
+        renderStakeDetails({ details: { ...base_props.details, commission: 0 } });
+
+        expect(screen.getByText('Commission')).toBeInTheDocument();
+        expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
+        expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
+
+    it('[MCD-004] shows a placeholder for the commission while the stake input is empty', () => {
+        renderStakeDetails({ details: { ...base_props.details, commission: 0.5 }, is_empty: true });
+
+        expect(screen.getByText('Commission')).toBeInTheDocument();
+        expect(screen.queryByText('$0.50')).not.toBeInTheDocument();
+        expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    });
+
+    it('[MCD-005] opens the Commission explanation (in-sheet page) when the label is tapped', async () => {
+        const onOpenCommission = jest.fn();
+        renderStakeDetails({ details: { ...base_props.details, commission: 0.5 }, onOpenCommission });
+
+        await userEvent.click(screen.getByText('Commission'));
+
+        expect(onOpenCommission).toHaveBeenCalledTimes(1);
+    });
+
+    it('[MCD-009] leaves the Commission label inert when the percentage cannot be derived', async () => {
+        const onOpenCommission = jest.fn();
+        renderStakeDetails({ onOpenCommission });
+
+        await userEvent.click(screen.getByText('Commission'));
+
+        expect(onOpenCommission).not.toHaveBeenCalled();
+        expect(screen.getByText('Commission')).not.toHaveClass('stake-content__info-label');
+    });
+
+    it('[MCD-005] reveals the formula on hover in the desktop popover, where there is no in-sheet page', async () => {
+        (useDevice as jest.Mock).mockReturnValue({ isDesktop: true });
+        renderStakeDetails({ details: { ...base_props.details, commission: 0.5 } });
+
+        await userEvent.hover(screen.getByText('Commission'));
+
+        // commission_percentage = (0.5 * 100) / (100 * 10) = 0.0500
+        expect(screen.getByText('0.0500%')).toBeInTheDocument();
+    });
+
+    // D9: the numerator is the drafted stake's commission, so the divisor must be the drafted stake
+    // too — pairing it with the committed one inflated the percentage ten-fold.
+    it('[MCD-009] [MCD-006] derives the percentage from the drafted stake, not the committed one', async () => {
+        renderStakeDetails({ details: { ...base_props.details, commission: 5, drafted_amount: 100 } });
+
+        await userEvent.click(screen.getByText('Commission'));
+
+        expect(screen.getByText('0.0500%')).toBeInTheDocument();
+        expect(screen.queryByText('0.5000%')).not.toBeInTheDocument();
+    });
+
+    // The Stop out pair is untouched by the Commission row joining it.
+    it('[MCD-008] leaves the Stop out sources and formats unchanged alongside Commission', () => {
+        renderStakeDetails({ details: { ...base_props.details, commission: 0.5 } });
+
+        expect(screen.getByText('$10.00')).toBeInTheDocument();
+        expect(screen.getByText('8160.12')).toBeInTheDocument();
+        expect(screen.queryByText('$8160.12')).not.toBeInTheDocument();
+        expect(screen.getByText('Commission')).toBeInTheDocument();
     });
 
     it('falls back to a placeholder when the proposal has no stop out level yet', () => {
@@ -144,10 +222,15 @@ describe('StakeDetails multiplier info', () => {
         expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });
 
-    it('does not render the multiplier rows for non-multiplier contracts', () => {
-        renderStakeDetails({ is_multiplier: false, should_show_payout_details: true });
+    it('[MCD-007] does not render the multiplier rows for non-multiplier contracts', () => {
+        renderStakeDetails({
+            details: { ...base_props.details, commission: 0.5 },
+            is_multiplier: false,
+            should_show_payout_details: true,
+        });
 
         expect(screen.queryByText('Stop out')).not.toBeInTheDocument();
         expect(screen.queryByText('Stop out level')).not.toBeInTheDocument();
+        expect(screen.queryByText('Commission')).not.toBeInTheDocument();
     });
 });
