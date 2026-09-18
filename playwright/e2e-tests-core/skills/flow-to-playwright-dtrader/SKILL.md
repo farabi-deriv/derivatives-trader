@@ -440,7 +440,7 @@ test.describe(
         });
 
         /** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */
-        test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ tradeAutomatePage }) => {
+        test('VERIFY automated trade run - Martingale - Rise (Demo)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runRiseFallAndVerify({
                 accountType: 'demo',
                 market: 'Volatility 100 Index',
@@ -468,6 +468,7 @@ test.describe(
 - **`TradeBasePage.seedLocalStorageOnOrigin(page)`** before every login (automate panel persistence).
 - **`afterEach` → `stopAutomateRunIfActive()`** on every spec that can start a run — mandatory cleanup.
 - **`test.describe.configure({ mode: 'serial' })`** on lifecycle specs sharing one backup account.
+- **Lifecycle test titles:** `VERIFY automated trade run - {Strategy} - {surface} ({account})` — e.g. `VERIFY automated trade run - Martingale - Rise (Demo)`; double-quote when the title contains `D'Alembert`.
 - **Distinct params per test** (stake, thresholds, digit, duration) — copy values from `flow.md` inline blocks; do not reuse identical params across demo/real or across specs on the same backup account.
 
 ### Production smoke exception (Flow 12.2)

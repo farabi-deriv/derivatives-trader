@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string = undefined!;
 let accountPassword: string = undefined!;
 
-test.describe('Trade — Higher/Lower — Higher', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
+test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {

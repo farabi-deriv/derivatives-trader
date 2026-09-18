@@ -11,70 +11,66 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe(
-    'Automate — Rise/Fall — Rise (Martingale)',
-    { tag: ['@automate', '@martingale', '@desktop', '@mobile'] },
-    () => {
-        test.describe.configure({ mode: 'serial' });
+test.describe('Trade Automate — Rise/Fall', { tag: ['@automate', '@martingale', '@desktop', '@mobile'] }, () => {
+    test.describe.configure({ mode: 'serial' });
 
-        test.beforeAll(async ({}, testInfo) => {
-            const isMobile = testInfo.project.name.includes('mobile');
-            const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_RISE_FALL_MOBILE' : 'TEST_EMAIL_AUTOMATE_RISE_FALL';
+    test.beforeAll(async ({}, testInfo) => {
+        const isMobile = testInfo.project.name.includes('mobile');
+        const backupEmailVar = isMobile ? 'TEST_EMAIL_AUTOMATE_RISE_FALL_MOBILE' : 'TEST_EMAIL_AUTOMATE_RISE_FALL';
 
-            const account = await createAccountV2viaJS('real', {
-                currency: 'USD',
-                trading: true,
-                backupAccount: process.env[backupEmailVar],
-            });
-            accountEmail = account.email;
-            accountPassword = account.password;
+        const account = await createAccountV2viaJS('real', {
+            currency: 'USD',
+            trading: true,
+            backupAccount: process.env[backupEmailVar],
         });
+        accountEmail = account.email;
+        accountPassword = account.password;
+    });
 
-        test.beforeEach(async ({ page, loginPage }) => {
-            await TradeBasePage.seedLocalStorageOnOrigin(page);
-            await loginPage.login(accountEmail, accountPassword);
-        });
+    test.beforeEach(async ({ page, loginPage }) => {
+        await TradeBasePage.seedLocalStorageOnOrigin(page);
+        await loginPage.login(accountEmail, accountPassword);
+    });
 
-        test.afterEach(async ({ tradeAutomatePage }) => {
-            await tradeAutomatePage.stopAutomateRunIfActive();
-        });
+    test.afterEach(async ({ tradeAutomatePage }) => {
+        await tradeAutomatePage.stopAutomateRunIfActive();
+    });
 
-        /** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */
-        test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ tradeAutomatePage }) => {
-            await tradeAutomatePage.runRiseFallAndVerify({
-                accountType: 'demo',
-                market: 'Volatility 100 Index',
-                tradeType: 'Rise',
-                durationUnit: 'Ticks',
-                durationValue: '10 ticks',
-                stake: '1',
-                automation: {
-                    strategy: 'Martingale',
-                    stakeMultiplier: 2,
-                    maxStake: '150',
-                    profitThreshold: '150',
-                    lossThreshold: '150',
-                },
-            });
+    /** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */
+    test('VERIFY automated trade run - Martingale - Rise (Demo)', async ({ tradeAutomatePage }) => {
+        await tradeAutomatePage.runRiseFallAndVerify({
+            accountType: 'demo',
+            market: 'Volatility 100 Index',
+            tradeType: 'Rise',
+            durationUnit: 'Ticks',
+            durationValue: '10 ticks',
+            stake: '1',
+            automation: {
+                strategy: 'Martingale',
+                stakeMultiplier: 2,
+                maxStake: '150',
+                profitThreshold: '150',
+                lossThreshold: '150',
+            },
         });
+    });
 
-        /** Flow 5.2 — Rise/Fall Martingale: Rise (real) */
-        test('VERIFY automation run on Rise/Fall — Rise (Real Account)', async ({ tradeAutomatePage }) => {
-            await tradeAutomatePage.runRiseFallAndVerify({
-                accountType: 'real',
-                market: 'Volatility 100 Index',
-                tradeType: 'Rise',
-                durationUnit: 'Ticks',
-                durationValue: '10 ticks',
-                stake: '3',
-                automation: {
-                    strategy: 'Martingale',
-                    stakeMultiplier: 2,
-                    maxStake: '151',
-                    profitThreshold: '151',
-                    lossThreshold: '151',
-                },
-            });
+    /** Flow 5.2 — Rise/Fall Martingale: Rise (real) */
+    test('VERIFY automated trade run - Martingale - Rise (Real)', async ({ tradeAutomatePage }) => {
+        await tradeAutomatePage.runRiseFallAndVerify({
+            accountType: 'real',
+            market: 'Volatility 100 Index',
+            tradeType: 'Rise',
+            durationUnit: 'Ticks',
+            durationValue: '10 ticks',
+            stake: '3',
+            automation: {
+                strategy: 'Martingale',
+                stakeMultiplier: 2,
+                maxStake: '151',
+                profitThreshold: '151',
+                lossThreshold: '151',
+            },
         });
-    }
-);
+    });
+});

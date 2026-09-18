@@ -12,7 +12,7 @@ let accountEmail: string;
 let accountPassword: string;
 
 test.describe(
-    "Automate — Over/Under — Over (D'Alembert)",
+    'Trade Automate — Over/Under',
     { tag: ['@automate', '@dalembert', '@smoke', '@desktop', '@mobile', '@production'] },
     () => {
         test.describe.configure({ mode: 'serial' });
@@ -52,7 +52,7 @@ test.describe(
         });
 
         /** Flow 12.1 — Over/Under D'Alembert: Over (demo) */
-        test("VERIFY D'Alembert automation run on Over/Under — Over (Demo Account)", async ({ tradeAutomatePage }) => {
+        test("VERIFY automated trade run - D'Alembert - Over (Demo)", async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'demo',
                 market: 'Volatility 10 Index',
@@ -71,7 +71,7 @@ test.describe(
         });
 
         /** Flow 12.2 — Over/Under D'Alembert: Over (real) */
-        test("VERIFY D'Alembert automation run on Over/Under — Over (Real Account)", async ({ tradeAutomatePage }) => {
+        test("VERIFY automated trade run - D'Alembert - Over (Real)", async ({ tradeAutomatePage }) => {
             const isProduction = process.env.TEST_ENV === 'production';
             await tradeAutomatePage.runOverUnderAndVerify({
                 accountType: 'real',

@@ -1,8 +1,10 @@
 # Automate Journey Coverage
 
-**Analysis date:** 2026-09-15
+**Analysis date:** 2026-09-18
 
 > **Child flow IDs:** one ID per test case. **Accumulators (Flow 6):** `.1`/`.2` = Martingale demo/real · `.3`/`.4` = D'Alembert demo/real. **Dual-outcome types** (Rise/Fall, Matches/Differs, Over/Under, Even/Odd): `.1`/`.2` = first outcome demo/real · `.3`/`.4` = second outcome demo/real.
+>
+> **Lifecycle test titles (Flows 5–13):** `VERIFY automated trade run - {Strategy} - {surface} ({account})` — e.g. Flow **5.1** → `VERIFY automated trade run - Martingale - Rise (Demo)` · Flow **6.3** → `"VERIFY automated trade run - D'Alembert - Accumulators (Demo)"`.
 
 ---
 

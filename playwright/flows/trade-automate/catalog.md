@@ -3,7 +3,7 @@
 > Source of truth: `playwright/pages/TradeAutomatePage.ts` (extends `TradeParametersPage → TradeBasePage`)
 > Source components: `packages/trader/src/AppV2/Components/AutomationPanel/` · `packages/trader/src/AppV2/Containers/Automate/` · `packages/trader/src/AppV2/Hooks/useRunControls.ts` · `packages/trader/src/Stores/Modules/Trading/automation-store.ts` · `packages/trader/src/AppV2/Components/TradePanelTabs/trade-panel-tabs.tsx` · `packages/trader/src/AppV2/Routes/AutomateSwitch.tsx`
 > Fixture: `tradeAutomatePage` in `playwright/fixtures/fixtures.ts`
-> Last updated: 2026-09-15
+> Last updated: 2026-09-18
 
 ---
 
@@ -374,10 +374,25 @@ await tradeAutomatePage.runRiseFallAndVerify({
 | 12     | `trade-automate/over-under/verify-over-dalembert.spec.ts` · `verify-under-dalembert.spec.ts`                   | `TEST_EMAIL_AUTOMATE_OVER_UNDER` / `_MOBILE`      |
 | 13     | `trade-automate/even-odd/verify-even-dalembert.spec.ts` · `verify-odd-dalembert.spec.ts`                       | `TEST_EMAIL_AUTOMATE_EVEN_ODD` / `_MOBILE`        |
 
-Dual-outcome specs map one file per outcome and strategy — **5.1** `verify-rise-martingale.spec.ts` · **5.3** `verify-fall-martingale.spec.ts`, **7.1** `verify-matches-martingale.spec.ts` · **7.3** `verify-differs-martingale.spec.ts`, etc. (D'Alembert: **10.1**–**13.4** same pattern). Accumulators map to **6.1**/**6.2** (Martingale) and **6.3**/**6.4** (D'Alembert) in one spec per strategy. Params vary per test (unique stakes/thresholds avoid cross-contamination on closed-position lookup):
+Dual-outcome specs map one file per outcome and strategy — **5.1** `verify-rise-martingale.spec.ts` · **5.3** `verify-fall-martingale.spec.ts`, **7.1** `verify-matches-martingale.spec.ts` · **7.3** `verify-differs-martingale.spec.ts`, etc. (D'Alembert: **10.1**–**13.4** same pattern). Accumulators map to **6.1**/**6.2** (Martingale) and **6.3**/**6.4** (D'Alembert) in one spec per strategy. Params vary per test (unique stakes/thresholds avoid cross-contamination on closed-position lookup).
+
+**Lifecycle test titles (Flows 5–13):**
+
+```text
+VERIFY automated trade run - {Strategy} - {surface} ({account})
+```
+
+| Slot     | Values                                                                |
+| -------- | --------------------------------------------------------------------- |
+| Strategy | `Martingale` or `D'Alembert`                                          |
+| surface  | Outcome only (`Rise`, `Even`, `Over`, `Matches`, …) or `Accumulators` |
+| account  | `Demo` or `Real` (not `Demo Account`)                                 |
+
+Use double-quoted strings when the title contains `D'Alembert`. Examples:
 
 ```typescript
-test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ tradeAutomatePage }) => {
+/** Flow 5.1 — Rise/Fall Martingale: Rise (demo) */
+test('VERIFY automated trade run - Martingale - Rise (Demo)', async ({ tradeAutomatePage }) => {
     await tradeAutomatePage.runRiseFallAndVerify({
         accountType: 'demo',
         market: 'Volatility 100 Index',
@@ -395,7 +410,8 @@ test('VERIFY automation run on Rise/Fall — Rise (Demo Account)', async ({ trad
     });
 });
 
-test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({ tradeAutomatePage }) => {
+/** Flow 6.1 — Accumulators Martingale (demo) */
+test('VERIFY automated trade run - Martingale - Accumulators (Demo)', async ({ tradeAutomatePage }) => {
     await tradeAutomatePage.runAccumulatorsAndVerify({
         accountType: 'demo',
         market: 'Volatility 10 Index',
@@ -409,6 +425,11 @@ test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({
             lossThreshold: '102',
         },
     });
+});
+
+/** Flow 12.1 — Over/Under D'Alembert: Over (demo) */
+test("VERIFY automated trade run - D'Alembert - Over (Demo)", async ({ tradeAutomatePage }) => {
+    // …runOverUnderAndVerify({ accountType: 'demo', tradeType: 'Over', … })
 });
 ```
 

@@ -211,8 +211,8 @@ jobs:
           if [ -n "$RESOLVED_SPEC" ]; then
             SHARD_TOTAL=1
           else
-            # Hardcoded default — smoke and regression split across 2 shard jobs per platform (incl. preview runs).
-            SHARD_TOTAL=2
+            # Hardcoded default — smoke and regression split across 3 shard jobs per platform (incl. preview runs).
+            SHARD_TOTAL=3
           fi
 
           if [ "$SHARD_TOTAL" -le 1 ]; then

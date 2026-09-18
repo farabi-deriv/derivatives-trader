@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@desktop', '@mobile'] }, () => {
+test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@dalembert', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -39,9 +39,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
     });
 
     /** Flow 6.3 — Accumulators D'Alembert: demo lifecycle */
-    test("VERIFY D'Alembert automation run on Accumulators trade type (Demo Account)", async ({
-        tradeAutomatePage,
-    }) => {
+    test("VERIFY automated trade run - D'Alembert - Accumulators (Demo)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
             market: 'Volatility 100 (1s) Index',
@@ -58,9 +56,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@dalembert', '@
     });
 
     /** Flow 6.4 — Accumulators D'Alembert: real lifecycle */
-    test("VERIFY D'Alembert automation run on Accumulators trade type (Real Account)", async ({
-        tradeAutomatePage,
-    }) => {
+    test("VERIFY automated trade run - D'Alembert - Accumulators (Real)", async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
             market: 'Volatility 100 (1s) Index',

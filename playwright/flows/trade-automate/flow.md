@@ -41,6 +41,8 @@
 
 **Test folder layout:** Panel/control specs live at `playwright/tests/trade-automate/*.spec.ts` (Flows **14–17**). Trade-type specs live under `playwright/tests/trade-automate/<trade-type>/`. Dual-outcome types use **one file per outcome and strategy** — each file holds **two tests** (demo + real), e.g. `verify-rise-martingale.spec.ts` → Flows **5.1** and **5.2**. Accumulators keep **one file per strategy** with two tests — Flows **6.1** demo · **6.2** real.
 
+**Lifecycle test titles (Flows 5–13):** `VERIFY automated trade run - {Strategy} - {surface} ({account})` — e.g. `VERIFY automated trade run - Martingale - Rise (Demo)`, `"VERIFY automated trade run - D'Alembert - Accumulators (Real)"`. Use outcome-only surface labels (`Rise`, not `Rise/Fall — Rise`); use double quotes when the title contains `D'Alembert`.
+
 > **No manual close of individual contracts** — stop the run via **Stop**; the bot manages its own contracts.
 
 ---

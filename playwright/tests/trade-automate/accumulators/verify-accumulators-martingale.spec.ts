@@ -11,7 +11,7 @@ import { createAccountV2viaJS } from '../../../utils';
 let accountEmail: string;
 let accountPassword: string;
 
-test.describe('Automate — Accumulators', { tag: ['@automate', '@martingale', '@desktop', '@mobile'] }, () => {
+test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@martingale', '@desktop', '@mobile'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({}, testInfo) => {
@@ -39,7 +39,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@martingale', '
     });
 
     /** Flow 6.1 — Accumulators Martingale: demo lifecycle */
-    test('VERIFY automation run on Accumulators trade type (Demo Account)', async ({ tradeAutomatePage }) => {
+    test('VERIFY automated trade run - Martingale - Accumulators (Demo)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
             market: 'Volatility 100 (1s) Index',
@@ -56,7 +56,7 @@ test.describe('Automate — Accumulators', { tag: ['@automate', '@martingale', '
     });
 
     /** Flow 6.2 — Accumulators Martingale: real lifecycle */
-    test('VERIFY automation run on Accumulators trade type (Real Account)', async ({ tradeAutomatePage }) => {
+    test('VERIFY automated trade run - Martingale - Accumulators (Real)', async ({ tradeAutomatePage }) => {
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
             market: 'Volatility 100 (1s) Index',

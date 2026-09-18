@@ -1,4 +1,4 @@
-import { Locator, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import { NavigationUtils } from '../e2e-tests-core/utils';
 import { TradeBasePage } from './TradeBasePage';
 
@@ -877,7 +877,7 @@ export class PositionsPage extends TradeBasePage {
             `Closed card trade type should match ${tradeTypeCategory}`
         ).toHaveText(tradeTypeMatcher);
         await expect(
-            card.locator('.contract-card__details-col').getByTestId('dt_span'),
+            this.automationCardStakeLocator(card, formattedStake, currency),
             `Closed card stake should be "${expectedStake}"`
         ).toHaveText(expectedStake);
         await expect(
@@ -932,17 +932,20 @@ export class PositionsPage extends TradeBasePage {
         currency: string
     ): Locator {
         const tradeTypeMatcher = this.automationCardTradeTypeMatcher(tradeTypeCategory);
-        const expectedStake = `${formattedStake} ${currency}`;
         return this.closedPositionsCards()
             .filter({ has: this.page.locator('p.symbol').filter({ hasText: market }) })
             .filter({ has: this.page.locator('.trade-type').filter({ hasText: tradeTypeMatcher }) })
-            .filter({
-                has: this.page
-                    .locator('.contract-card__details-col')
-                    .getByTestId('dt_span')
-                    .filter({ hasText: expectedStake }),
-            })
+            .filter({ has: this.automationCardStakeLocator(this.page, formattedStake, currency) })
             .first();
+    }
+
+    /** Stake label on a contract card — exact match (`2.00 USD` must not match `32.00 USD`). */
+    private automationCardStakeLocator(scope: Locator | Page, formattedStake: string, currency: string): Locator {
+        const expectedStake = `${formattedStake} ${currency}`;
+        return scope
+            .locator('.contract-card__details-col')
+            .getByTestId('dt_span')
+            .getByText(expectedStake, { exact: true });
     }
 
     /**

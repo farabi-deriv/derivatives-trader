@@ -12,7 +12,7 @@ let accountEmail: string;
 let accountPassword: string;
 
 test.describe(
-    'Automate — Even/Odd — Odd (Martingale)',
+    'Trade Automate — Even/Odd',
     { tag: ['@automate', '@martingale', '@smoke', '@desktop', '@mobile'] },
     () => {
         test.describe.configure({ mode: 'serial' });
@@ -40,7 +40,7 @@ test.describe(
         });
 
         /** Flow 9.3 — Even/Odd Martingale: Odd (demo) */
-        test('VERIFY automation run on Even/Odd — Odd (Demo Account)', async ({ tradeAutomatePage }) => {
+        test('VERIFY automated trade run - Martingale - Odd (Demo)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'demo',
                 market: 'Volatility 10 Index',
@@ -58,7 +58,7 @@ test.describe(
         });
 
         /** Flow 9.4 — Even/Odd Martingale: Odd (real) */
-        test('VERIFY automation run on Even/Odd — Odd (Real Account)', async ({ tradeAutomatePage }) => {
+        test('VERIFY automated trade run - Martingale - Odd (Real)', async ({ tradeAutomatePage }) => {
             await tradeAutomatePage.runEvenOddAndVerify({
                 accountType: 'real',
                 market: 'Volatility 10 Index',
