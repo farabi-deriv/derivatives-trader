@@ -245,9 +245,9 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/feed/` · **Test folder:** `playwright/tests/feed/`
 
-| Flow   | Priority | Description                                                                                                             | User State      | Status      |
-| ------ | -------- | ----------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
-| Flow 1 | P0       | All markets: live feed ticks on Market Info for every tradeable symbol (~65; skip CLOSED in search list; picker reused) | unauthenticated | `automated` |
+| Flow         | Priority | Description                                                                                                                       | User State      | Status      |
+| ------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
+| Flow 1.1–1.5 | P0       | One test per category chip (Derived, Forex, Stocks & indices, Cryptocurrencies, Commodities); all markets on smoke and production | unauthenticated | `automated` |
 
 ---
 
@@ -293,7 +293,7 @@ Each module section lists every documented flow with its current **status** and 
 | **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — Flows 16–17 automated (#916, #917, #995)                                     |
 | **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                |
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
-| **Done** | `feed`             | Flow 1 automated (~65 symbols via Market Info)                                                                                  |
+| **Done** | `feed`             | Flows 1.1–1.5 — one test per category chip, all markets on `@smoke` `@production`                                               |
 | **Done** | `positions`        | All 11 flows automated (former G1–G4 promoted to Flows 8–11)                                                                    |
 | **Done** | `reports`          | Flows 1–8 automated; G1/G2 have specs (Section 2) but remain `documented` in Section 1 glance                                   |
 | **Done** | `trade`            | All Section 1 flows automated; Flow 15 skips when no CLOSED market at runtime                                                   |

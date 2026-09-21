@@ -31,6 +31,12 @@ export class MarketSelectionPage extends TradeBasePage {
     private static readonly MARKET_INFO_LOOKUP_PACE_MS = 800;
 
     /**
+     * Longer gap for feed walks (search → Info → live-tick poll). Heavier than the description
+     * matrix, so staging needs more breathing room between symbols.
+     */
+    private static readonly FEED_MARKET_INFO_LOOKUP_PACE_MS = 2_000;
+
+    /**
      * Max number of tabs that can be open simultaneously — 4 on mobile, 7 on desktop, both
      * intentional and final (confirmed via `getMaxOpenMarkets()`,
      * `packages/trader/src/AppV2/Utils/open-markets-utils.ts`, and its own Jest test).
@@ -677,6 +683,7 @@ export class MarketSelectionPage extends TradeBasePage {
         await expect
             .poll(
                 async () => {
+                    await this.assertNotRateLimited(market);
                     if (await this.marketSearchLoadingList.isVisible().catch(() => false)) {
                         return false;
                     }
@@ -888,26 +895,47 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
-     * Staging surfaces a full-page error when Deriv API rate-limits the session. Wait and refresh
-     * so the matrix can continue instead of failing on a missing `.market-info__description`.
+     * Throw while the staging rate-limit page is up so a poll stops immediately and the caller can refresh.
      */
-    private async recoverFromRateLimitIfNeeded(): Promise<void> {
+    async assertNotRateLimited(context: string): Promise<void> {
+        const rateLimit = this.page.getByText(/rate limit of requests per second/i);
+        if (await rateLimit.isVisible().catch(() => false)) {
+            throw new Error(`[${context}] Staging is showing the rate limit page`);
+        }
+    }
+
+    /**
+     * Staging surfaces a full-page error when Deriv API rate-limits the session. Wait and refresh
+     * so a long market walk can continue instead of failing on a missing picker or Market Info screen.
+     *
+     * @returns `true` when the rate-limit page was visible and a refresh was attempted.
+     */
+    async recoverFromRateLimitIfNeeded(): Promise<boolean> {
         const rateLimit = this.page.getByText(/rate limit of requests per second/i);
         if (!(await rateLimit.isVisible({ timeout: 500 }).catch(() => false))) {
-            return;
+            return false;
         }
 
-        await this.page.waitForTimeout(5_000);
+        await this.page.waitForTimeout(10_000);
         const refresh = this.page.getByRole('button', { name: 'Refresh' });
         if (await refresh.isVisible().catch(() => false)) {
             await refresh.click();
         }
         await NavigationUtils.waitForDerivApiSettled(this.page);
+        return true;
     }
 
-    /** Pace between sequential market-info lookups to avoid staging API rate limits. */
-    async paceMarketInfoLookup(): Promise<void> {
-        await this.page.waitForTimeout(MarketSelectionPage.MARKET_INFO_LOOKUP_PACE_MS);
+    /**
+     * Pace between sequential market-info lookups to avoid staging API rate limits.
+     * Defaults to the description-matrix gap; pass {@link FEED_MARKET_INFO_LOOKUP_PACE_MS} for feed walks.
+     */
+    async paceMarketInfoLookup(paceMs: number = MarketSelectionPage.MARKET_INFO_LOOKUP_PACE_MS): Promise<void> {
+        await this.page.waitForTimeout(paceMs);
+    }
+
+    /** Feed-category walks — longer than {@link paceMarketInfoLookup}'s default. */
+    async paceFeedMarketInfoLookup(): Promise<void> {
+        await this.paceMarketInfoLookup(MarketSelectionPage.FEED_MARKET_INFO_LOOKUP_PACE_MS);
     }
 
     /**
