@@ -178,11 +178,11 @@ describe('DurationActionSheetContainer', () => {
         expect(screen.getByText('0 sec')).toBeInTheDocument();
     });
 
-    it('should always render seconds from 0 even when the intraday minimum is higher', () => {
+    it('[DTW-001] renders seconds starting at the intraday minimum when hours and minutes are both 0', () => {
         renderDurationContainer(default_trade_store, { selected_time: [0, 0, 15] });
 
-        expect(screen.getByText('0 sec')).toBeInTheDocument();
-        expect(screen.getByText('14 sec')).toBeInTheDocument();
+        expect(screen.queryByText('0 sec')).not.toBeInTheDocument();
+        expect(screen.queryByText('14 sec')).not.toBeInTheDocument();
         expect(screen.getByText('15 sec')).toBeInTheDocument();
         expect(screen.getByText('59 sec')).toBeInTheDocument();
     });
@@ -269,7 +269,7 @@ describe('DurationActionSheetContainer', () => {
         expect(selections[selections.length - 1]).toEqual([0, 6, 30]);
     });
 
-    it('should not render a seconds wheel when seconds are not available', () => {
+    it('[DTW-001] does not render a seconds wheel and floors minutes at the intraday minimum when seconds are not available', () => {
         default_trade_store.modules.trade.duration_units_list = [
             { value: 'm', text: 'minutes' },
             { value: 'h', text: 'hours' },
@@ -279,7 +279,7 @@ describe('DurationActionSheetContainer', () => {
         renderDurationContainer(default_trade_store, { selected_time: [0, 15, 0] });
 
         expect(screen.queryByText(/sec/)).not.toBeInTheDocument();
-        expect(screen.getByText('0 min')).toBeInTheDocument();
+        expect(screen.queryByText('0 min')).not.toBeInTheDocument();
         expect(screen.getByText('15 min')).toBeInTheDocument();
         expect(screen.getByText('59 min')).toBeInTheDocument();
     });

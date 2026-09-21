@@ -150,8 +150,14 @@ function chunkNamesForPackage(pkg, rootDir = ROOT) {
     return [...names].sort();
 }
 
+/**
+ * A package counts as "built this run" only once its dist/ actually contains emitted JS — an empty
+ * (or webpack-created-then-failed) dist/ directory must read as "not built" (null), not as "built
+ * with zero chunks", or a partial local build wipes out another package's committed chunk set.
+ */
 function distExists(pkg, rootDir = ROOT) {
-    return fs.existsSync(path.join(rootDir, 'packages', pkg, 'dist'));
+    const distDir = path.join(rootDir, 'packages', pkg, 'dist');
+    return listFilesRecursive(distDir, file => file.endsWith('.js')).length > 0;
 }
 
 function anyDistExists(rootDir = ROOT) {
@@ -487,6 +493,7 @@ module.exports = {
     toLogicalChunkName,
     isStableChunkName,
     chunkNamesForPackage,
+    distExists,
     buildChunkNames,
     aliasRootsForPackage,
     buildAliasImportRegex,

@@ -77,11 +77,26 @@ export const DurationTimeWheel = observer(
             setSelectedTime(next);
         };
 
-        // Column ranges are static (a value shows if it is valid in at least one combination), so
-        // scrolling one column never rebuilds another and the wheels keep their scroll positions
+        // quill's wheel re-centers and rebinds its scroll listener whenever a column's data array
+        // gets a new reference, so a column's array is cached and only rebuilt when its own
+        // {min, max} changes (never on that column's own scroll, since it can't move its own bound)
+        const column_data_cache = React.useRef(
+            new Map<string, { min: number; max: number; options: ReturnType<typeof getTimeWheelColumnOptions> }>()
+        );
         const data = React.useMemo(
-            () => (intraday ? visible_units.map(unit => getTimeWheelColumnOptions(unit, visible_units, intraday)) : []),
-            [visible_units, intraday]
+            () =>
+                intraday
+                    ? visible_units.map(unit => {
+                          const { min, max } = getTimeWheelColumnRange(unit, visible_units, intraday, selected_time);
+                          const cached = column_data_cache.current.get(unit);
+                          if (cached && cached.min === min && cached.max === max) return cached.options;
+
+                          const options = getTimeWheelColumnOptions(unit, visible_units, intraday, selected_time);
+                          column_data_cache.current.set(unit, { min, max, options });
+                          return options;
+                      })
+                    : [],
+            [visible_units, intraday, selected_time]
         );
 
         // The quill wheel does not re-center on its selected value, so drive its list to the
@@ -128,14 +143,26 @@ export const DurationTimeWheel = observer(
             next[TIME_WHEEL_UNITS.indexOf(unit)] = Number(value);
 
             // A finer column sitting at its forced minimum follows that minimum when a coarser
-            // change relaxes it (0 min 15 sec → scrolling minutes to 1 gives 1 min 0 sec)
+            // change relaxes it (0 min 15 sec → scrolling minutes to 1 gives 1 min 0 sec).
+            // A coarser change can also tighten a finer column's range past its current value
+            // (1 hr 0 sec → scrolling hours to 0 raises the seconds floor to 15), which is
+            // clamped immediately rather than left dangling until the snap-back timer fires.
             visible_units.slice(column_index + 1).forEach((finer_unit, offset) => {
                 const finer_index = TIME_WHEEL_UNITS.indexOf(finer_unit);
                 const old_min = getTimeWheelColumnRange(finer_unit, visible_units, intraday, prev).min;
-                const new_min = getTimeWheelColumnRange(finer_unit, visible_units, intraday, next).min;
+                const { min: new_min, max: new_max } = getTimeWheelColumnRange(
+                    finer_unit,
+                    visible_units,
+                    intraday,
+                    next
+                );
                 if (prev[finer_index] === old_min && new_min < old_min) {
                     next[finer_index] = new_min;
                     scrollColumnToValue(column_index + 1 + offset, new_min);
+                } else if (next[finer_index] < new_min || next[finer_index] > new_max) {
+                    const clamped_value = Math.min(new_max, Math.max(new_min, next[finer_index]));
+                    next[finer_index] = clamped_value;
+                    scrollColumnToValue(column_index + 1 + offset, clamped_value);
                 }
             });
 

@@ -408,26 +408,18 @@ export const getTimeWheelColumnRange = (
 };
 
 /**
- * Full set of values rendered on one column of the merged hr/min/sec wheel. Bounds are static
- * (independent of the other columns' selections) so column identities stay stable while
- * scrolling: a value is rendered when it appears in at least one valid combination, e.g. seconds
- * render from 0 even when the intraday minimum is 15s. Combinations that end up below the
- * minimum (or above the maximum) snap back to the valid range once scrolling settles.
+ * Full set of values rendered on one column of the merged hr/min/sec wheel, bounded by
+ * `getTimeWheelColumnRange` so the floor reflects what the coarser columns' current selection
+ * actually leaves reachable (e.g. seconds render from 15, not 0, when hours and minutes are 0
+ * and the intraday minimum is 15s).
  */
 export const getTimeWheelColumnOptions = (
     unit: string,
     visible_units: string[],
-    intraday: { min: number; max: number }
+    intraday: { min: number; max: number },
+    selected: number[]
 ) => {
-    const getNaturalCap = (u: string) =>
-        u === DURATION_UNIT.HOURS
-            ? Math.floor(intraday.max / 3600)
-            : Math.min(59, Math.floor(intraday.max / TIME_WHEEL_UNIT_SECONDS[u]));
-    const others_capacity = visible_units
-        .filter(u => u !== unit)
-        .reduce((total, u) => total + getNaturalCap(u) * TIME_WHEEL_UNIT_SECONDS[u], 0);
-    const min = Math.max(0, Math.ceil((intraday.min - others_capacity) / TIME_WHEEL_UNIT_SECONDS[unit]));
-    const max = Math.max(min, getNaturalCap(unit));
+    const { min, max } = getTimeWheelColumnRange(unit, visible_units, intraday, selected);
     const unit_label = {
         [DURATION_UNIT.HOURS]: localize('hr'),
         [DURATION_UNIT.MINUTES]: localize('min'),

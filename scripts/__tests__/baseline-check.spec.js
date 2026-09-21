@@ -13,6 +13,8 @@ const {
     freshnessDrift,
     serialize,
     buildAliasImportRegex,
+    distExists,
+    buildChunkNames,
 } = require('../baseline-check');
 
 describe('baseline-check structural snapshots (CSN-004)', () => {
@@ -90,6 +92,19 @@ describe('baseline-check gating (CSN-005)', () => {
         const baseline = { trader: ['AppV2', 'Modules'] };
         const current = { trader: ['AppV2', 'Modules', 'NewRoot'] };
         expect(driftForKeyedSets('alias-root', current, baseline)).toEqual(['alias-root [trader] ADDED: NewRoot']);
+    });
+
+    it('[CSN-005] treats an empty dist/ (present but no emitted JS) as "not built", not "built with zero chunks"', () => {
+        // Regression: a leftover/interrupted-build empty dist/ dir must not be read as a real build
+        // that emits zero chunks, or `--update` wipes out that package's committed chunk set.
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'baseline-empty-dist-'));
+        fs.mkdirSync(path.join(dir, 'packages', 'core', 'dist'), { recursive: true });
+        fs.mkdirSync(path.join(dir, 'packages', 'trader', 'dist', 'js'), { recursive: true });
+        fs.writeFileSync(path.join(dir, 'packages', 'trader', 'dist', 'js', 'trader.main.1e42765fdee4cc5a.js'), '');
+
+        expect(distExists('core', dir)).toBe(false);
+        expect(distExists('trader', dir)).toBe(true);
+        expect(buildChunkNames(dir)).toEqual({ trader: ['main'], reports: null, core: null });
     });
 
     it('[CSN-005] does not flag REMOVED when a package was not rebuilt (null current set)', () => {

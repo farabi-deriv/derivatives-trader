@@ -23,6 +23,7 @@ import {
     getSnackBarText,
     getTicksWheelOptions,
     getTickWheelRange,
+    getTimeWheelColumnOptions,
     getTimeWheelColumnRange,
     getTimeWheelSelectionFromDuration,
     getTimeWheelVisibleUnits,
@@ -849,6 +850,36 @@ describe('getTimeWheelColumnRange', () => {
             min: 0,
             max: 59,
         });
+    });
+});
+
+describe('getTimeWheelColumnOptions', () => {
+    const all_units = ['h', 'm', 's'];
+    const intraday = { min: 15, max: 3600 };
+
+    it('[DTW-001] restricts seconds to the intraday minimum when hours and minutes are both 0', () => {
+        const options = getTimeWheelColumnOptions('s', all_units, intraday, [0, 0, 0]);
+        expect(options[0].value).toBe(15);
+        expect(options[options.length - 1].value).toBe(59);
+        expect(options.some(option => option.value < 15)).toBe(false);
+    });
+
+    it('[DTW-001] renders seconds from 0 once minutes alone already covers the intraday minimum', () => {
+        const options = getTimeWheelColumnOptions('s', all_units, intraday, [0, 1, 0]);
+        expect(options[0].value).toBe(0);
+        expect(options[options.length - 1].value).toBe(59);
+    });
+
+    it('[DTW-001] restricts seconds to the intraday minimum for a seconds-only contract', () => {
+        const options = getTimeWheelColumnOptions('s', ['s'], intraday, [0, 0, 0]);
+        expect(options[0].value).toBe(15);
+        expect(options[options.length - 1].value).toBe(59);
+    });
+
+    it('[DTW-001] leaves the hours column range unaffected by this change', () => {
+        const options = getTimeWheelColumnOptions('h', all_units, intraday, [0, 0, 0]);
+        expect(options[0].value).toBe(0);
+        expect(options[options.length - 1].value).toBe(1);
     });
 });
 
