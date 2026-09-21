@@ -5,6 +5,7 @@ jest.mock('copy-anything', () => ({
 
 jest.mock('@deriv-com/analytics', () => ({
     Analytics: {
+        initialise: jest.fn(),
         trackEvent: jest.fn(),
         pageView: jest.fn(),
         reset: jest.fn(),

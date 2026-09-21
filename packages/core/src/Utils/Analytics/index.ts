@@ -3,6 +3,8 @@ import { Analytics } from '@deriv-com/analytics';
 
 import { FeatureFlags, isFeatureFlags } from '../../types/feature-flags';
 
+const APP_VERSION = process.env.APP_VERSION || '0.0.0';
+
 /**
  * Fetches remote configuration with proper error handling and logging
  */
@@ -56,6 +58,7 @@ export const AnalyticsInitializer = async () => {
     if (hasRudderStack || hasPostHog) {
         const config: {
             rudderstackKey?: string;
+            app_version?: string;
             posthogOptions?: {
                 apiKey: string;
                 allowedDomains?: string[];
@@ -64,7 +67,7 @@ export const AnalyticsInitializer = async () => {
                     capture_exceptions?: boolean;
                 };
             };
-        } = {};
+        } = { app_version: APP_VERSION };
 
         if (hasRudderStack) {
             config.rudderstackKey = process.env.RUDDERSTACK_KEY!;

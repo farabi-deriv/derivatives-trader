@@ -103,7 +103,7 @@
     "dependencies": {
         "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
         "@babel/preset-typescript": "^7.24.7",
-        "@deriv-com/analytics": "1.42.1",
+        "@deriv-com/analytics": "1.43.0",
         "@deriv-com/smartcharts-champion": "1.13.0",
         "@deriv-com/translations": "^1.4.9",
         "@types/react-transition-group": "^4.4.5",

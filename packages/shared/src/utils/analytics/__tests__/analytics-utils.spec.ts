@@ -92,6 +92,16 @@ describe('trackAnalyticsEvent app_version stamping', () => {
         const [, props] = spy.mock.calls[0];
         expect(props.app_version).toBe('production_1.2.3');
     });
+
+    it('[ANLY-003] keeps stamping app_version identically to AnalyticsInitializer after the 1.43.0 bump', () => {
+        const { track, spy } = loadFunnelWithAppVersion('production_1.2.3');
+
+        track('some_event');
+
+        const [, props] = spy.mock.calls[0];
+        // Same env-derived value the AnalyticsInitializer config now carries as app_version (see index.spec.ts ANLY-002)
+        expect(props.app_version).toBe(process.env.APP_VERSION);
+    });
 });
 
 /**
@@ -117,5 +127,33 @@ describe('AEV-003 deployed app_version matches the app-info beacon', () => {
         expect(yml).toMatch(/version:\s*staging_\$\{\{\s*github\.sha\s*\}\}/);
         // the pre-change literal `master`/ref_name version must be gone
         expect(yml).not.toMatch(/version:\s*\$\{\{\s*github\.ref_name\s*\}\}/);
+    });
+});
+
+describe('[ANLY-001] @deriv-com/analytics is pinned to 1.43.0', () => {
+    const repo_root = path.resolve(__dirname, '../../../../../../');
+    const readJSON = (relative_path: string) =>
+        JSON.parse(fs.readFileSync(path.join(repo_root, relative_path), 'utf8'));
+
+    it('[ANLY-001] pins @deriv-com/analytics to 1.43.0 in every package manifest', () => {
+        [
+            'package.json',
+            'packages/core/package.json',
+            'packages/reports/package.json',
+            'packages/shared/package.json',
+            'packages/trader/package.json',
+            'packages/utils/package.json',
+        ].forEach(relative_path => {
+            const manifest = readJSON(relative_path);
+            expect(manifest.dependencies['@deriv-com/analytics']).toBe('1.43.0');
+        });
+    });
+
+    it('[ANLY-001] resolves @deriv-com/analytics to 1.43.0 everywhere in package-lock.json', () => {
+        const lockfile_text = fs.readFileSync(path.join(repo_root, 'package-lock.json'), 'utf8');
+        const version_matches = lockfile_text.match(/"@deriv-com\/analytics":\s*"[^"]+"/g) ?? [];
+        expect(version_matches.length).toBeGreaterThan(0);
+        version_matches.forEach(match => expect(match).toContain('1.43.0'));
+        expect(lockfile_text).toContain('analytics-1.43.0.tgz');
     });
 });

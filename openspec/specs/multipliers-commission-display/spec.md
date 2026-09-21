@@ -1,8 +1,11 @@
 # multipliers-commission-display Specification
 
 ## Purpose
+
 TBD - created by archiving change display-both-commission-stop-out-level-6. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [MCD-001] Commission is shown alongside Stop out and Stop out level
 
 On Multipliers, a **Commission** row SHALL be displayed on every surface that already carries the
@@ -255,4 +258,3 @@ discard-on-dismiss, and the analytics emitted on commit all remain as they are.
 - **WHEN** a mobile trader opens the Stake action sheet and has not yet changed the stake
 - **THEN** the header save action is disabled, and becomes enabled once the drafted stake differs
   from the committed stake and has validated
-

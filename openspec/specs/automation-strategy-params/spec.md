@@ -1,8 +1,11 @@
 # automation-strategy-params Specification
 
 ## Purpose
+
 TBD - created by archiving change strategy-params-should-disable-closed. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [ASP-001] Automation strategy and risk-management parameters are disabled while the market is closed
 
 The automation configuration fields — the **Strategy** selector, the **Stake multiplier / increment**, the **Max. stake**, and the **Profit / Loss threshold** (take-profit / stop-loss) inputs — SHALL be non-interactive whenever the active market is closed. This SHALL hold on both the mobile automation screen and the desktop Automated-trading panel, and SHALL match the disabled treatment the manual trade parameters already receive on a closed market. A disabled field SHALL NOT open its editor when interacted with.
@@ -54,4 +57,3 @@ The existing automation lock SHALL be unchanged. While an automation run is acti
 
 - **WHEN** the active market is closed
 - **THEN** the Run/Pause/Stop controls are not shown, as before this change
-

@@ -70,7 +70,7 @@
         "webpack-node-externals": "^2.5.2"
     },
     "dependencies": {
-        "@deriv-com/analytics": "1.42.1",
+        "@deriv-com/analytics": "1.43.0",
         "@deriv-com/quill-ui": "1.24.12",
         "@deriv-com/translations": "1.4.9",
         "@deriv-com/ui": "1.36.4",

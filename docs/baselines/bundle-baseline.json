@@ -1,10 +1,10 @@
 {
     "packages": {
         "core": {
-            "js_total": 54506677,
-            "css_total": 4973509,
-            "asset_count": 300,
-            "chunk_count": 135,
+            "js_total": 22420598,
+            "css_total": 4192345,
+            "asset_count": 256,
+            "chunk_count": 107,
             "largest_assets": [
                 {
                     "name": "js/smartcharts/chart/canvaskit/canvaskit.wasm",
@@ -19,80 +19,80 @@
                     "size": 3222359
                 },
                 {
-                    "name": "trader/js/trader.vendors-node_modules_deriv_deriv-api_dist_DerivAPIBasic_js-node_modules_deriv_quill-icons_dis-24e3b9.ed92dd43e0f26f23f9e3.js",
-                    "size": 2662341
+                    "name": "js/core.732.50445e98052aa79888ff.js",
+                    "size": 2525886
                 },
                 {
-                    "name": "js/core.main~d5ef20ee.29213337bafbd16f2e10.js",
-                    "size": 2650573
+                    "name": "js/core.495.3852a13e41eebbdeb03f.js",
+                    "size": 2322083
                 }
             ]
         },
         "trader": {
-            "js_total": 13970001,
-            "css_total": 1375909,
-            "asset_count": 39,
-            "chunk_count": 35,
+            "js_total": 11683897,
+            "css_total": 1317703,
+            "asset_count": 37,
+            "chunk_count": 33,
             "largest_assets": [
                 {
-                    "name": "trader/js/trader.vendors-node_modules_deriv_deriv-api_dist_DerivAPIBasic_js-node_modules_deriv_quill-icons_dis-89ecc5.a292fa6464fa6a14d49d.js",
-                    "size": 2575935
+                    "name": "trader/js/trader.default-src_AppV2_Components_LottieAnimation_index_ts-src_AppV2_Components_MarketCountdownTim-529de5.c3648d357ae710249891.js",
+                    "size": 2027335
                 },
                 {
-                    "name": "trader/js/trader.default-src_AppV2_Components_LottieAnimation_index_ts-src_AppV2_Components_MarketCountdownTim-529de5.5eb5cc165c808c15dcc0.js",
-                    "size": 1979984
+                    "name": "trader/js/trader.trader-app-v2.c24e3f9e200bf5184cde.js",
+                    "size": 1869371
                 },
                 {
-                    "name": "trader/js/trader.trader-app-v2.356e4be49f72452aced5.js",
-                    "size": 1758813
-                },
-                {
-                    "name": "trader/js/trader.vendors-node_modules_deriv_quill-icons_dist_esm_react_Legacy_LegacyClose2pxIcon_js-node_modul-86cd27.02ddc278b1a465e8f95a.js",
-                    "size": 999456
+                    "name": "trader/js/trader.vendors-node_modules_deriv_quill-icons_dist_esm_react_Legacy_LegacyTrendUpIcon_js-node_module-83217c.57be7f60f3eaeccc52ca.js",
+                    "size": 992803
                 },
                 {
                     "name": "trader/css/trader.quill-ui-vendor-4744d429.5107342841bdf0458379.css",
                     "size": 931028
+                },
+                {
+                    "name": "trader/js/trader.vendors-node_modules_deriv_deriv-api_dist_DerivAPIBasic_js-node_modules_deriv_quill-icons_dis-2ce942.0b4da8f85a99097f8d06.js",
+                    "size": 852633
                 }
             ]
         },
         "reports": {
-            "js_total": 2525015,
-            "css_total": 1018052,
-            "asset_count": 13,
-            "chunk_count": 9,
+            "js_total": 1683087,
+            "css_total": 1016665,
+            "asset_count": 11,
+            "chunk_count": 7,
             "largest_assets": [
                 {
-                    "name": "reports/css/reports.vendors-node_modules_deriv_quill-icons_dist_esm_react_Currencies_CurrencyAudIcon_js-node_modu-304d56.e0597fb4b24324b3e3dc.css",
-                    "size": 968733
+                    "name": "reports/css/reports.vendors-node_modules_deriv_quill-icons_dist_esm_react_Currencies_CurrencyAudIcon_js-node_modu-4cc802.e8c4768c9bf5c5927871.css",
+                    "size": 969475
                 },
                 {
-                    "name": "reports/js/reports.vendors-node_modules_deriv_quill-icons_dist_esm_react_Currencies_CurrencyAudIcon_js-node_modu-304d56.dbd9b774599bdfe5b745.js",
-                    "size": 852411
+                    "name": "reports/js/reports.vendors-node_modules_deriv_quill-icons_dist_esm_react_Currencies_CurrencyAudIcon_js-node_modu-4cc802.a98a6c5c39a73013c2b2.js",
+                    "size": 838074
                 },
                 {
-                    "name": "reports/js/reports.vendors-node_modules_deriv_deriv-api_dist_DerivAPIBasic_js-node_modules_dayjs_plugin_customPa-f8c6ba.2b9584b4a4899b641f9e.js",
-                    "size": 568805
+                    "name": "reports/js/reports.reports-routes.5486a7d89bd2db052154.js",
+                    "size": 423605
                 },
                 {
-                    "name": "reports/js/reports.reports-routes.489f8b957b8566f2fce5.js",
-                    "size": 429175
+                    "name": "reports/js/reports.reports-app.fc6ab3ad87e976f76001.js",
+                    "size": 347239
                 },
                 {
-                    "name": "reports/js/reports.vendors-node_modules_deriv_quill-icons_dist_esm_react_Illustrative_IllustrativeEtfIcon_js-nod-def027.20c7fd91d739adfb78c4.js",
-                    "size": 317813
+                    "name": "reports/css/reports.reports-routes.c5d64a439dc6b73c857d.css",
+                    "size": 43360
                 }
             ]
         },
         "components": {
-            "js_total": 1667238,
+            "js_total": 1430637,
             "css_total": 0,
             "asset_count": 2,
             "chunk_count": 1,
             "largest_assets": [
                 {
                     "name": "components.js",
-                    "size": 1667238
+                    "size": 1430637
                 },
                 {
                     "name": "30c2aecd084ccbf5d98f.webp",
@@ -102,9 +102,9 @@
         }
     },
     "total": {
-        "js_total": 72668931,
-        "css_total": 7367470,
-        "asset_count": 354,
-        "chunk_count": 180
+        "js_total": 37218219,
+        "css_total": 6526713,
+        "asset_count": 306,
+        "chunk_count": 148
     }
 }

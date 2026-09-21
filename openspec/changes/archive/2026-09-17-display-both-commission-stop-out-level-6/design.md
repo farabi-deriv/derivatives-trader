@@ -70,7 +70,7 @@ it destructures `stop_out`. Rejected — `stop_out` is grandfathered; new state 
 ### D2 — Up→Down fallback for the value, like the stop out **amount**
 
 Commission is identical for `MULTUP` and `MULTDOWN` — the comment #1107 deleted said so explicitly
-("commission and cancellation.ask_price is the same for MULTUP/MULTDOWN"), and it follows from
+("commission and cancellation.`ask_price` is the same for MULTUP/MULTDOWN"), and it follows from
 commission being a function of stake and multiplier, not direction. So it uses `any_proposal` in
 `MultipliersInformation` (selected side, else Up, else Down) and the same `contract_types[0] ??
 contract_types[1]` fallback in the stake editors. It must **not** copy the Stop out _level_'s
