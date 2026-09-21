@@ -26,7 +26,7 @@
 | 3   | Wait for results               | Poll until loading skeleton (`.market-selection-list--loading`) clears and the first matching row is visible                                             | First row for the label in list order is ready (not scoped to a single trade type)                                                                                                                                                               | Both     |
 | 4   | Skip closed in list (optional) | If first row shows **CLOSED** tag (`.tag__color--error-fill`) and market is `session_gated` → return; do not open Info                                   | Search page stays open for next `fill()`. Always-open markets must **fail** if CLOSED appears                                                                                                                                                    | Both     |
 | 5   | Open Info (live rows only)     | Click **Info** on that row — desktop: `getByRole('button', { name: 'Info' })`; mobile: `dispatchEvent('click')` on `.market-selection-row__action--info` | Market Info (`.market-info`) opens; `.market-info__name` matches the market label                                                                                                                                                                | Both     |
-| 6   | Assert feed / skip closed      | Poll `.market-info__price` or **Closed** tag in `.market-info__price-row` (fallback)                                                                     | **Closed on Info:** skip session-gated. **Live:** `.market-info__price` ticks within 15 s (45 s for Stocks & indices). **Always-open:** must never show Closed                                                                                   | Both     |
+| 6   | Assert feed / skip closed      | Poll `.market-info__price` or **Closed** tag in `.market-info__price-row` (fallback)                                                                     | **Closed on Info:** skip session-gated. **Live:** `.market-info__price` ticks within 15 s (45 s for Forex and Stocks & indices). **Always-open:** must never show Closed                                                                         | Both     |
 | 7   | Back for next market           | Click **Back** (`aria-label="Back"`) on Market Info                                                                                                      | Info screen closes; search input is visible and editable again. Next loop `fill()` replaces the previous query — picker stays open                                                                                                               | Both     |
 
 > **Search is cross-trade-type.** Results are not filtered to Multipliers or any single trade type.
@@ -54,7 +54,7 @@
 | 2   | Loop the category              | `FeedPage.marketsIn(category)` for this flow's chip                                                    | —                                                                                                         | Both     |
 | 2a  | Ensure picker + search ready   | `verifyMarketFeedViaInfoScreen` → idempotent `openMarketSearchInPicker()` (opens once; no-op on retry) | Picker open; search input ready (see [Shared Step Pattern](#search--market-info--back-picker-stays-open)) | Both     |
 | 2b  | Search → skip or Info          | `searchMarketFirstResultRow` → `isSearchResultRowClosed` skip, else `openMarketInfoOnSearchRow`        | CLOSED in list: skip without Info. Live row: Market Info opens with correct `.market-info__name`          | Both     |
-| 2c  | Assert feed on Market Info     | `verifyMarketInfoFeedState(label, market.status, market.category)`                                     | Live price ticks (45 s for Stocks & indices), or session-gated **Closed** tag on Info skipped             | Both     |
+| 2c  | Assert feed on Market Info     | `verifyMarketInfoFeedState(label, market.status, market.category)`                                     | Live price ticks (45 s for Forex and Stocks & indices), or session-gated **Closed** tag on Info skipped   | Both     |
 | 2d  | Back (finally block)           | `returnFromMarketInfoForNextSearch` — only when Info was opened (not on search-list CLOSED skip)       | Back to search; input ready for next market's `fill()`                                                    | Both     |
 | 3   | Close picker after last market | `marketSelectionPage.closeMarketSelectionPicker()` after the loop                                      | Picker dismisses; trade page restored                                                                     | Both     |
 
@@ -86,6 +86,8 @@ Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category
 **Category chip:** `Forex`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Forex'`.
+
+> Tick wait is **45 s** for this category (slower FX sessions).
 
 **Example labels:** `'EUR/USD'`, `'GBP/USD'`.
 

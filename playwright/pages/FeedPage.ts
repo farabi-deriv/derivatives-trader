@@ -313,7 +313,7 @@ export class FeedPage extends TradeBasePage {
     /**
      * Assert the Market Info screen shows a live ticking price.
      * Session-gated markets that are closed at runtime are skipped — proceed to the next market.
-     * Stocks & indices ticks are slower than synthetics, so they get a longer poll window.
+     * Forex and Stocks & indices ticks are slower than synthetics, so they get a longer poll window.
      */
     async verifyMarketInfoFeedState(
         marketSelectionPage: MarketSelectionPage,
@@ -323,7 +323,8 @@ export class FeedPage extends TradeBasePage {
     ): Promise<void> {
         const marketInfoPrice = this.marketInfoPrice(marketSelectionPage);
         const marketInfoClosedTag = this.marketInfoClosedTag(marketSelectionPage);
-        const tickTimeoutMs = category === 'Stocks & indices' ? 45_000 : 15_000;
+        const slowTickCategories: MarketCategory[] = ['Forex', 'Stocks & indices'];
+        const tickTimeoutMs = slowTickCategories.includes(category) ? 45_000 : 15_000;
 
         await expect
             .poll(
