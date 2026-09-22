@@ -3,9 +3,7 @@
 ## Purpose
 
 TBD - created by archiving change cut-main-thread-work-behind-the-market-selector-inp-regression. Update Purpose after archive.
-
 ## Requirements
-
 ### Requirement: Trade-type availability is determined by symbol count
 
 The set of trade types offered to a client SHALL be derived from the static trade-type list by removing any trade type for which the server returns no tradeable symbols. A trade type is available if and only if its server response contains at least one symbol. Availability SHALL be decided from symbol counts only; the availability lookup SHALL NOT sort or retain the symbol lists it inspects.
@@ -19,25 +17,6 @@ The set of trade types offered to a client SHALL be derived from the static trad
 
 - **WHEN** the server returns no symbols for a trade type (e.g. an EU account for which only Multipliers is tradeable)
 - **THEN** that trade type is excluded from the offered trade-type list
-
-### Requirement: Availability filtering fails open
-
-While the availability lookup has not yet resolved, the offered trade-type list SHALL be the full (unfiltered) list so the trade-type list renders complete rather than empty. If the lookup resolves but yields no available trade types at all (for example, every request errored), the offered list SHALL likewise fall back to the full list rather than presenting a client with no trade types.
-
-#### Scenario: Loading state returns the full list
-
-- **WHEN** the availability lookup is still loading
-- **THEN** the full, unfiltered trade-type list is returned
-
-#### Scenario: Empty availability result returns the full list
-
-- **WHEN** the availability lookup has resolved but reports no available trade types
-- **THEN** the full, unfiltered trade-type list is returned rather than an empty list
-
-#### Scenario: Native-app restriction and server availability combine
-
-- **WHEN** the native app restricts the allowed trade types AND the server reports availability for a subset of them
-- **THEN** the offered list is the intersection — restricted to what the native app allows and what the server makes tradeable
 
 ### Requirement: Availability warm-up runs at page mount
 
@@ -56,3 +35,18 @@ The availability lookup SHALL reuse the exact same server requests as the symbol
 
 - **WHEN** availability is requested for a trade type whose symbols have already been fetched (or vice versa)
 - **THEN** the cached response is reused and no additional network request is issued
+
+### Requirement: [TTA-001] Availability filtering fails open
+
+While the availability lookup has not yet resolved, the offered trade-type list SHALL be the full (unfiltered) list so the trade-type list renders complete rather than empty. If the lookup resolves but yields no available trade types at all (for example, every request errored), the offered list SHALL likewise fall back to the full list rather than presenting a client with no trade types.
+
+#### Scenario: Loading state returns the full list
+
+- **WHEN** the availability lookup is still loading
+- **THEN** the full, unfiltered trade-type list is returned
+
+#### Scenario: Empty availability result returns the full list
+
+- **WHEN** the availability lookup has resolved but reports no available trade types
+- **THEN** the full, unfiltered trade-type list is returned rather than an empty list
+
