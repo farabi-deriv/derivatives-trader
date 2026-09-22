@@ -99,12 +99,17 @@ _Proceeding with the recommended option for each. Bugs 10, 11, 12 were pre-decid
 
 ## 12. V1/V2 gating — remnant refactor (bug 6 refactor · ABF-007 · CUTTABLE)
 
-- [ ] 12.1 Delete the dead always-`true` `is_dtrader_v2` getter (`trade-store.ts` ~L2750–2754) and collapse its ~15 unconditional branches (trade-store.ts + `useGuideContractTypes.ts`, `account-info-wrapper.tsx`, `replay-chart.tsx`) to the taken path; drop the specs that assert the dead getter
-- [ ] 12.2 Remove the `is_dtrader_v2_enabled = isMobile` V1 fork in `packages/trader/src/Modules/Contract/Containers/replay-chart.tsx` (~L105) and standardise the remaining device predicate on `useDevice().isMobile` rather than the deprecated `isMobile()` (`strike.tsx` ~L139)
-- [ ] 12.3 Update affected tests. **If this phase's diff exceeds a reviewable size, STOP at this phase boundary, file `docs/spec-to-pr/deferrals/v1-v2-gating-remnant-refactor.md`, and ship phases 1–11** (§0.4) — phase 11's strike-restore fix ships regardless
-- [ ] 12.4 **Green gate:** `build:all && test:jest && check-imports && knip:check` pass; if any route/alias/chunk SET changed, `npm run baseline:update` and commit the regenerated `docs/baselines/*.json` in the same PR
+**DEFERRED — not part of this change.** This phase was cut at its own §12.3 boundary (the diff
+exceeded a reviewable size) and shipped as phases 1–11 instead; the ABF-007 fix landed in §11. The
+full scope — the `is_dtrader_v2` getter removal and branch collapse (12.1), the `replay-chart.tsx`
+V1-fork removal and `useDevice().isMobile` standardisation (12.2), the test rewrites (12.3) and the
+green gate (12.4) — is recorded step by step in
+`docs/spec-to-pr/deferrals/v1-v2-gating-remnant-refactor.md`, tracked as issue #1271.
+
+Deliberately prose, not checkboxes: nobody on this change will ever tick them, and archive-on-merge
+archives a change only once every box is checked.
 
 ## 13. Final verification (Exit criteria)
 
-- [ ] 13.1 Full green gate: `bootstrap && build:all && test:jest && check-imports && knip:check`; knip diff shows only intended removals; `@deriv/stores` types/mocks compile
+- [x] 13.1 Full green gate: `bootstrap && build:all && test:jest && check-imports && knip:check`; knip diff shows only intended removals; `@deriv/stores` types/mocks compile
 - [x] 13.2 Confirm every checkbox above is ticked OR a deferral is filed under `docs/spec-to-pr/deferrals/`; `docs/spec-to-pr/pr-notes/c6.md` records the bug-11 cookie provenance and the bugs 11/12 Analytics notes — CONFIRMED: implementation phases 1–11 all ticked; phase 12 (12.1–12.4) deferred via `docs/spec-to-pr/deferrals/v1-v2-gating-remnant-refactor.md` (CUTTABLE per §12.3, refactor-only, ABF-007 fix shipped in §11); `docs/spec-to-pr/pr-notes/c6.md` records both the bug-11 cookie provenance and the bugs 11/12 Analytics notes. 13.1's full green gate (`bootstrap && build:all && test:jest && check-imports && knip:check`) is delegated to the automated verify stage and is intentionally left unticked here (not run in this implementation stage)

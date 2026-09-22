@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: [DCR-009] Dead trader helper files are removed
+### Requirement: [DCR-053] Dead trader helper files are removed
 
 The two fully-dead trader helper files SHALL be deleted with their co-located tests, each re-verified to have zero importers (static, dynamic, or barrel) at HEAD first:
 
@@ -14,7 +14,7 @@ Neither file is re-exported from a barrel, so no `index.ts` edit is required.
 - **WHEN** the trader-helper deletion phase lands
 - **THEN** `multiplier.ts` and `preview-proposal.ts` and their specs are gone, `proposal.ts` and the `AppV2` Multiplier module remain, and `check-imports`/`knip:check` (against the regenerated baseline) pass with no dangling importer
 
-### Requirement: [DCR-010] Forward-starting/session dead logic is collapsed in the trade helpers
+### Requirement: [DCR-054] Forward-starting/session dead logic is collapsed in the trade helpers
 
 Because forward-starting contracts and per-session trading windows are no longer supported (every contract defaults to spot; `store.sessions` is never populated), the dead session/start-date logic SHALL be collapsed:
 

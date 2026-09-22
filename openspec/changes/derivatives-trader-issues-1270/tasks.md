@@ -47,13 +47,13 @@ _Resolved defaults (see Open Questions): BaseStore = full move into `@deriv/stor
 - [x] 3.3 Barrier-error dedup (CANDIDATE): only merge the four `validation_errors.barrier_1/2 = []` sites (2563, 2648, 2738, 4164) if lifecycle timing is provably equivalent; otherwise leave as-is — LEFT AS-IS (the per-key, symbol-change-immediate, symbol-change-`setTimeout`, and `clearBarrierValidationErrors` sites guard different races; merging is not provably equivalent)
 - [x] 3.4 **Green gate:** `grep -rn "wsSubscribe\|wsForget\|g_subscribers_map" packages/*/src` returns zero; each removed member `\bmember\b`-dead; `build:all && test:jest && check-imports` pass
 
-## 4. C5c — dead trader helper whole-file deletions (DCR-009)
+## 4. C5c — dead trader helper whole-file deletions (DCR-053)
 
 - [x] 4.1 Re-verify zero importers, then delete `packages/trader/src/Stores/Modules/Trading/Helpers/multiplier.ts` + `__tests__/multiplier.spec.ts` (leave the unrelated `AppV2/.../Multiplier/` module)
 - [x] 4.2 Re-verify zero importers, then delete `packages/trader/src/Stores/Modules/Trading/Helpers/preview-proposal.ts` + `__tests__/preview-proposal.spec.ts` (keep the live `proposal.ts` it imported `createProposalRequests` from)
 - [x] 4.3 **Green gate:** `check-imports` passes with no dangling importer; the `preview-proposal` entry drops from `docs/baselines/knip-baseline.json` once regenerated in Phase 14; `build:all && test:jest` pass
 
-## 5. C5c — contract-type/validation-rules session collapse (DCR-010)
+## 5. C5c — contract-type/validation-rules session collapse (DCR-054)
 
 - [x] 5.1 In `packages/trader/src/Stores/Modules/Trading/Helpers/contract-type.ts` collapse the dead session/start-date logic: `getSessions` stub, `getValidTime` + `hours`/`minutes` consts, the `is_end_of_session` branch in `getExpiryTime`, and `getStartDates`/`start_dates_list`/`contract_start_type`; keep the live `getExpiryTime`/`getExpiryDate` (also dropped the `sessions` param from `getExpiryTime`/`getStartTime`, updated `Actions/start-date.ts`, and deleted the now-dead `Helpers/start-date.ts` + spec whose sole `isSessionAvailable` export lost all non-test importers)
 - [x] 5.2 Remove the paired dead trade-store outputs `sessions` (484, 723) and `start_dates_list` (482, 737) with any `mockStore.ts`/`types.ts` mirror; update `contract-type.spec.ts` / `Actions/contract-type.spec.ts` (no mirror existed in `mockStore.ts`/`types.ts`)
@@ -121,6 +121,6 @@ _Resolved defaults (see Open Questions): BaseStore = full move into `@deriv/stor
 ## 14. Final verification (Exit criteria)
 
 - [x] 14.1 Regenerate and commit the knip baseline: `npm run knip:baseline` (deletions shrink `docs/baselines/knip-baseline.json`, e.g. the `preview-proposal` entry drops); confirm `npm run knip:check` exits 0 against the regenerated baseline
-- [ ] 14.2 Run the full gate: `npm run build:all && npm run test:jest && npm run check-imports && npm run test:eslint-all && npm run baseline:check && npm run test:scripts`, plus per-package `tsc` (`npx tsc --project packages/api/tsconfig.json --noEmit && npx tsc --project packages/utils/tsconfig.json --noEmit && npx tsc --project packages/stores/tsconfig.json --noEmit`)
-- [ ] 14.3 Confirm `packages/stores/types.ts` and `packages/stores/src/mockStore.ts` compile and the knip diff shows only intended removals; every removed store member is `\bmember\b`-dead repo-wide
-- [ ] 14.4 Confirm every checkbox above is ticked OR a deferral is filed under `docs/spec-to-pr/deferrals/`
+- [x] 14.2 Run the full gate: `npm run build:all && npm run test:jest && npm run check-imports && npm run test:eslint-all && npm run baseline:check && npm run test:scripts`, plus per-package `tsc` (`npx tsc --project packages/api/tsconfig.json --noEmit && npx tsc --project packages/utils/tsconfig.json --noEmit && npx tsc --project packages/stores/tsconfig.json --noEmit`)
+- [x] 14.3 Confirm `packages/stores/types.ts` and `packages/stores/src/mockStore.ts` compile and the knip diff shows only intended removals; every removed store member is `\bmember\b`-dead repo-wide
+- [x] 14.4 Confirm every checkbox above is ticked OR a deferral is filed under `docs/spec-to-pr/deferrals/`
