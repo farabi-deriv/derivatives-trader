@@ -245,9 +245,9 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/feed/` · **Test folder:** `playwright/tests/feed/`
 
-| Flow         | Priority | Description                                                                                                                       | User State      | Status      |
-| ------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
-| Flow 1.1–1.5 | P0       | One test per category chip (Derived, Forex, Stocks & indices, Cryptocurrencies, Commodities); all markets on smoke and production | unauthenticated | `automated` |
+| Flow         | Priority | Description                                                                                                                                 | User State      | Status      |
+| ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
+| Flow 1.1–1.5 | P0       | One serial file, five category tests (Derived, Forex, Stocks & indices, Cryptocurrencies, Commodities); all markets on smoke and production | unauthenticated | `automated` |
 
 ---
 

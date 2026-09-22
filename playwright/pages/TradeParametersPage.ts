@@ -546,7 +546,7 @@ export class TradeParametersPage extends TradeBasePage {
     barrierTypeTab(type: 'Above spot' | 'Below spot' | 'Fixed barrier'): Locator {
         return this.isMobile
             ? this.barrierSheet.getByRole('tab', { name: type, exact: true })
-            : this.page.locator('.barrier-popover__sidebar').getByRole('tab', { name: type });
+            : this.barrierPopover.locator('.barrier-popover__sidebar').getByRole('tab', { name: type });
     }
 
     /**
@@ -566,13 +566,29 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
+     * Desktop barrier popover root (`.barrier-popover`). Closes after Save.
+     * Source: barrier-desktop.tsx → InputPopover `popover_classname='barrier-popover'`
+     */
+    get barrierPopover(): Locator {
+        return this.page.locator('.barrier-popover');
+    }
+
+    /**
+     * Desktop InputPopover backdrop. Blocks clicks on trade params while any popover is open.
+     * Source: input-popover.tsx
+     */
+    get inputPopoverOverlay(): Locator {
+        return this.page.locator('.input-popover-overlay');
+    }
+
+    /**
      * Save button inside the barrier popover/action-sheet.
      * Desktop: .barrier-content__save-button. Mobile: ActionSheet.Header Save.
      */
     get barrierSaveButton(): Locator {
         return this.isMobile
             ? this.actionSheetSaveButton(this.barrierSheet)
-            : this.page.locator('.barrier-content__save-button');
+            : this.barrierPopover.locator('.barrier-content__save-button');
     }
 
     /**
@@ -1226,7 +1242,7 @@ export class TradeParametersPage extends TradeBasePage {
             await expect(sheet, `${label} sheet should close after dismiss`).not.toBeVisible();
             return;
         }
-        await this.page.locator('.input-popover-overlay').click();
+        await this.inputPopoverOverlay.click();
         await expect(popover, `${label} popover should close after dismiss`).not.toBeVisible();
     }
 
@@ -2041,7 +2057,15 @@ export class TradeParametersPage extends TradeBasePage {
             }).toPass({ timeout: 20_000 });
             await expect(this.barrierSheet, 'Barrier sheet should close after Save').not.toBeVisible();
         } else {
-            await this.barrierSaveButton.click();
+            await expect(async () => {
+                await expect(
+                    this.barrierSaveButton,
+                    'Barrier Save should enable after proposal validates the draft'
+                ).toBeEnabled();
+                await this.barrierSaveButton.click();
+                await expect(this.barrierPopover, 'Barrier popover should close after Save').not.toBeVisible();
+            }).toPass({ timeout: 20_000 });
+            await expect(this.inputPopoverOverlay, 'Barrier overlay should dismiss after Save').not.toBeVisible();
         }
         // The app snaps the barrier to the nearest market-valid offset, so the saved value can differ
         // from the input. Assert the sign/format the type implies, then return the accepted offset.

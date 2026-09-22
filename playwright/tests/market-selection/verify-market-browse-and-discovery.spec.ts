@@ -21,6 +21,8 @@ const EXPECTED_TRADE_TYPES = [
 ];
 
 test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-selection'] }, () => {
+    test.describe.configure({ mode: 'serial' });
+
     test.beforeAll(async () => {
         if (!process.env.BASE_URL) throw new Error('BASE_URL is not set in playwright/.env');
     });

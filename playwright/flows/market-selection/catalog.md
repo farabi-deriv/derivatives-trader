@@ -27,6 +27,9 @@
 
 ## Section 2 — Flow Details
 
+> Spec `verify-market-browse-and-discovery.spec.ts` uses `test.describe.configure({ mode: 'serial' })`
+> so its tests run one after another (avoids parallel picker launches stampeding staging).
+
 ### Flows 1, 2, 13 — Open picker (new tab vs. replace), close without selecting
 
 > **Combined 2026-08-06** into one `test()` block (`'VERIFY market commit mechanics — new tab, replace
@@ -198,6 +201,9 @@ await expect(
 ### Flows 14–20, 23 — Core tab mechanics
 
 **Account setup:** none — all browsable without login. Flow 22 (Buy) is the only tab-strip flow needing an account.
+
+> Spec `verify-trade-tabs.spec.ts` uses `test.describe.configure({ mode: 'serial' })` so its tests
+> run one after another.
 
 > **Combined 2026-08-11** into three `test()` blocks in `verify-trade-tabs.spec.ts`: Flow 14 (switch
 > tabs) + Flow 15 (reselect dedup) + Flow 16 (independent trade type) share

@@ -39,7 +39,7 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
             durationUnit: 'Minutes',
             durationValue: '5 min',
             barrierType: 'Below spot',
-            barrier: '6.05',
+            barrier: '0.99',
             stake: '6.09',
             currency: 'USD',
         });
@@ -52,7 +52,7 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
             durationUnit: 'Minutes',
             durationValue: '5 min',
             barrierType: 'Below spot',
-            barrier: '6.05',
+            barrier: '0.99',
             stake: '6.09',
             currency: 'USD',
         });

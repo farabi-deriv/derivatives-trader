@@ -224,51 +224,53 @@
 
 ### Flow 4.1 — Touch/No Touch: buy Touch → close contract
 
-**Prerequisites:** Authenticated with funded account. Symbol supporting Touch/No Touch (e.g. Volatility 75 Index).
+**Prerequisites:** Authenticated with funded account. Symbol supporting Touch/No Touch (e.g. Volatility 10 (1s) Index).
 **Spec:** `playwright/tests/trade/touch-no-touch/verify-touch.spec.ts` — `VERIFY Buy "Touch" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Barrier, Duration (`15 min`), Stake (`10.00`)
+**Unique params:** Barrier (`Above spot`, `1.01`), Duration (`15 min`), Stake (`5.01`)
 
-| #   | Step                              | Action                                                              | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                    | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select Touch option               | `clickTouchNoTouchOption('Touch')`                                  | Purchase button turns green                                     | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                               | Duration field shows `15 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.00')`                                                 | Stake field shows `10.00`                                       | Both     |
-| 6   | Buy Touch contract                | `clickBuy()` — captures payout                                      | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`      | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                 | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`               | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                              | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                         | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`             | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                 | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                            | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                            | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| #   | Step                              | Action                                                                   | Expected Result                                                 | Platform |
+| --- | --------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                         | Trade page loaded                                               | Both     |
+| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 10 (1s) Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
+| 3   | Select Touch option               | `clickTouchNoTouchOption('Touch')`                                       | Purchase button turns green                                     | Both     |
+| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                                    | Duration field shows `15 min`                                   | Both     |
+| 5   | Set barrier                       | `setBarrier('1.01', 'Above spot')` — uses market-snapped accepted offset | Barrier field shows a valid `+` offset                          | Both     |
+| 6   | Set stake                         | `setStake('5.01')`                                                       | Stake field shows `5.01`                                        | Both     |
+| 7   | Buy Touch contract                | `clickBuy()` — captures payout                                           | Contract purchased                                              | Both     |
+| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`           | Card visible; balance reduced by stake                          | Both     |
+| 9   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                      | Headers, row values, footer totals correct                      | Both     |
+| 10  | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`                    | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
+| 11  | Close contract                    | `closeFirstContract()`                                                   | Contract card disappears from Positions                         | Both     |
+| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                              | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
+| 13  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`                  | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
+| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                      | Balance = balanceBeforeClose + stake + P&L                      | Both     |
+| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                 | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
+| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
 
 ### Flow 4.2 — Touch/No Touch: buy No Touch → close contract
 
 **Prerequisites:** Same as Flow 4.1.
 **Spec:** `playwright/tests/trade/touch-no-touch/verify-no-touch.spec.ts` — `VERIFY Buy "No Touch" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Duration (`18 min`), Stake (`10.00`)
+**Unique params:** Barrier (`Below spot`, `0.99`), Duration (`5 min`), Stake (`6.09`)
 
-| #   | Step                              | Action                                                              | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                    | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select No Touch option            | `clickTouchNoTouchOption('No Touch')`                               | Purchase button turns red                                       | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '18 min')`                               | Duration field shows `18 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.00')`                                                 | Stake field shows `10.00`                                       | Both     |
-| 6   | Buy No Touch contract             | `clickBuy()` — captures payout                                      | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`      | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                 | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`               | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                              | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                         | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`             | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                 | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                            | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                            | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| #   | Step                              | Action                                                                   | Expected Result                                                 | Platform |
+| --- | --------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- | -------- |
+| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                         | Trade page loaded                                               | Both     |
+| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 10 (1s) Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
+| 3   | Select No Touch option            | `clickTouchNoTouchOption('No Touch')`                                    | Purchase button turns red                                       | Both     |
+| 4   | Select duration                   | `selectDuration('Minutes', '5 min')`                                     | Duration field shows `5 min`                                    | Both     |
+| 5   | Set barrier                       | `setBarrier('0.99', 'Below spot')` — uses market-snapped accepted offset | Barrier field shows a valid `-` offset                          | Both     |
+| 6   | Set stake                         | `setStake('6.09')`                                                       | Stake field shows `6.09`                                        | Both     |
+| 7   | Buy No Touch contract             | `clickBuy()` — captures payout                                           | Contract purchased                                              | Both     |
+| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`           | Card visible; balance reduced by stake                          | Both     |
+| 9   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                      | Headers, row values, footer totals correct                      | Both     |
+| 10  | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`                    | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
+| 11  | Close contract                    | `closeFirstContract()`                                                   | Contract card disappears from Positions                         | Both     |
+| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                              | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
+| 13  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`                  | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
+| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                      | Balance = balanceBeforeClose + stake + P&L                      | Both     |
+| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                 | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
+| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
 
 ---
 

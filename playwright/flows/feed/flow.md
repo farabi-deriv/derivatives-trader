@@ -46,7 +46,7 @@
 
 ### Shared category walk (Flows 1.1–1.5)
 
-> Every flow below runs the same walk via `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category)`. Lookups are paced; a rate-limit page refreshes and retries that symbol once; any other failure closes the picker before the next symbol.
+> Every flow below runs the same walk via `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category)`. Spec: `playwright/tests/feed/verify-markets-streaming.spec.ts` — five category tests in **serial** mode so parallel launches do not trip staging rate limits on the initial trade-page load. Lookups are paced; a rate-limit page refreshes and retries that symbol once; any other failure closes the picker before the next symbol.
 
 | #   | Step                           | Action                                                                                                 | Expected Result                                                                                           | Platform |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------- |
@@ -67,10 +67,11 @@
 
 ---
 
-### Flow 1.1 — Derived — live feed or closed-market state
+### Flow 1.1 — Feed for Derived markets
 
 **Prerequisites:** Unauthenticated. Trade page reachable.
-**Spec:** `playwright/tests/feed/verify-derived-markets-streaming.spec.ts`
+**Spec:** `playwright/tests/feed/verify-markets-streaming.spec.ts` (serial with Flows 1.2–1.5)
+**Test:** `VERIFY Feed for Derived markets`
 **Category chip:** `Derived`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Derived'`.
@@ -79,10 +80,11 @@ Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category
 
 ---
 
-### Flow 1.2 — Forex — live feed or closed-market state
+### Flow 1.2 — Feed for Forex markets
 
 **Prerequisites:** Unauthenticated. Trade page reachable.
-**Spec:** `playwright/tests/feed/verify-forex-markets-streaming.spec.ts`
+**Spec:** `playwright/tests/feed/verify-markets-streaming.spec.ts` (serial with Flows 1.1–1.5)
+**Test:** `VERIFY Feed for Forex markets`
 **Category chip:** `Forex`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Forex'`.
@@ -93,10 +95,11 @@ Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category
 
 ---
 
-### Flow 1.3 — Stocks & indices — live feed or closed-market state
+### Flow 1.3 — Feed for Stocks & indices markets
 
 **Prerequisites:** Unauthenticated. Trade page reachable.
-**Spec:** `playwright/tests/feed/verify-stocks-indices-markets-streaming.spec.ts`
+**Spec:** `playwright/tests/feed/verify-markets-streaming.spec.ts` (serial with Flows 1.1–1.5)
+**Test:** `VERIFY Feed for Stocks & indices markets`
 **Category chip:** `Stocks & indices`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Stocks & indices'`.
@@ -107,10 +110,11 @@ Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category
 
 ---
 
-### Flow 1.4 — Cryptocurrencies — live feed or closed-market state
+### Flow 1.4 — Feed for Cryptocurrencies markets
 
 **Prerequisites:** Unauthenticated. Trade page reachable.
-**Spec:** `playwright/tests/feed/verify-cryptocurrencies-markets-streaming.spec.ts`
+**Spec:** `playwright/tests/feed/verify-markets-streaming.spec.ts` (serial with Flows 1.1–1.5)
+**Test:** `VERIFY Feed for Cryptocurrencies markets`
 **Category chip:** `Cryptocurrencies`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Cryptocurrencies'`.
@@ -119,10 +123,11 @@ Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category
 
 ---
 
-### Flow 1.5 — Commodities — live feed or closed-market state
+### Flow 1.5 — Feed for Commodities markets
 
 **Prerequisites:** Unauthenticated. Trade page reachable.
-**Spec:** `playwright/tests/feed/verify-commodities-markets-streaming.spec.ts`
+**Spec:** `playwright/tests/feed/verify-markets-streaming.spec.ts` (serial with Flows 1.1–1.5)
+**Test:** `VERIFY Feed for Commodities markets`
 **Category chip:** `Commodities`
 
 Follows [Shared category walk](#shared-category-walk-flows-11-15) with `category: 'Commodities'`.

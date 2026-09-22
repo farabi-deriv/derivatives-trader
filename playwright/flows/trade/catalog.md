@@ -230,7 +230,7 @@ test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouch
         durationUnit: 'Minutes',
         durationValue: '15 min',
         barrierType: 'Above spot',
-        barrier: '8.60',
+        barrier: '1.01',
         stake: '5.01',
         currency: 'USD',
     });
@@ -244,7 +244,7 @@ test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTo
         durationUnit: 'Minutes',
         durationValue: '5 min',
         barrierType: 'Below spot',
-        barrier: '6.05',
+        barrier: '0.99',
         stake: '6.09',
         currency: 'USD',
     });

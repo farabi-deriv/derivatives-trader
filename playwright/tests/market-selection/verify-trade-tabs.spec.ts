@@ -8,6 +8,8 @@ import { test, expect } from '../../fixtures/fixtures';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
 test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-selection', '@smoke'] }, () => {
+    test.describe.configure({ mode: 'serial' });
+
     test.beforeAll(async () => {
         if (!process.env.BASE_URL) throw new Error('BASE_URL is not set in playwright/.env');
     });

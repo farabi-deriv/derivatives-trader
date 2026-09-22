@@ -8,31 +8,27 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                | Tags                                        |
-| ---------- | -------------------------------------------------------- | ------------------------------------------- |
-| Flow 1.1   | `feed/verify-derived-markets-streaming.spec.ts`          | `@feed @smoke @desktop @mobile @production` |
-| Flow 1.2   | `feed/verify-forex-markets-streaming.spec.ts`            | `@feed @smoke @desktop @mobile @production` |
-| Flow 1.3   | `feed/verify-stocks-indices-markets-streaming.spec.ts`   | `@feed @smoke @desktop @mobile @production` |
-| Flow 1.4   | `feed/verify-cryptocurrencies-markets-streaming.spec.ts` | `@feed @smoke @desktop @mobile @production` |
-| Flow 1.5   | `feed/verify-commodities-markets-streaming.spec.ts`      | `@feed @smoke @desktop @mobile @production` |
+| Journey ID   | Spec File                               | Tags                                        |
+| ------------ | --------------------------------------- | ------------------------------------------- |
+| Flow 1.1–1.5 | `feed/verify-markets-streaming.spec.ts` | `@feed @smoke @desktop @mobile @production` |
 
 ---
 
 ## Section 2 — Flow Details
 
-### Flows 1.1–1.5 — one test per category chip
+### Flows 1.1–1.5 — one test per category chip (serial)
 
-Search stays cross-trade-type. The category chip is the **test boundary**, not the navigation: a chip only lists symbols the selected trade type offers. All five tests carry `@smoke` and `@production`, so production still checks every market in `FeedPage.MARKETS`.
+Search stays cross-trade-type. The category chip is the **test boundary**, not the navigation: a chip only lists symbols the selected trade type offers. All five tests live in one file with `test.describe.configure({ mode: 'serial' })` so category walks do not launch in parallel and stampede staging's rate limit. They still carry `@smoke` and `@production`, so production checks every market in `FeedPage.MARKETS`.
 
 Each test calls `FeedPage.marketsIn(category)`:
 
-| Flow | Category chip    |
-| ---- | ---------------- |
-| 1.1  | Derived          |
-| 1.2  | Forex            |
-| 1.3  | Stocks & indices |
-| 1.4  | Cryptocurrencies |
-| 1.5  | Commodities      |
+| Flow | Category chip    | Test title                                 |
+| ---- | ---------------- | ------------------------------------------ |
+| 1.1  | Derived          | `VERIFY Feed for Derived markets`          |
+| 1.2  | Forex            | `VERIFY Feed for Forex markets`            |
+| 1.3  | Stocks & indices | `VERIFY Feed for Stocks & indices markets` |
+| 1.4  | Cryptocurrencies | `VERIFY Feed for Cryptocurrencies markets` |
+| 1.5  | Commodities      | `VERIFY Feed for Commodities markets`      |
 
 ```typescript
 await feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, 'Derived');
