@@ -35,11 +35,11 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
     test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
         await tradeTouchNoTouchPage.buyNoTouchAndVerify({
             accountType: 'demo',
-            market: 'Volatility 10 (1s) Index',
+            market: 'Volatility 100 Index',
             durationUnit: 'Minutes',
             durationValue: '5 min',
             barrierType: 'Below spot',
-            barrier: '0.99',
+            barrier: '8.99',
             stake: '6.09',
             currency: 'USD',
         });
@@ -48,11 +48,11 @@ test.describe('Trade — Touch/No Touch', { tag: ['@desktop', '@mobile', '@trade
     test('VERIFY Buy "No Touch" Contract and Close (Real Account)', async ({ tradeTouchNoTouchPage }) => {
         await tradeTouchNoTouchPage.buyNoTouchAndVerify({
             accountType: 'real',
-            market: 'Volatility 10 (1s) Index',
+            market: 'Volatility 100 Index',
             durationUnit: 'Minutes',
             durationValue: '5 min',
             barrierType: 'Below spot',
-            barrier: '0.99',
+            barrier: '8.99',
             stake: '6.09',
             currency: 'USD',
         });

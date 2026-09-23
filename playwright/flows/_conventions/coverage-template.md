@@ -12,12 +12,12 @@
 One row per flow including gaps. The single fastest way to see what's done.
 
 ```markdown
-| #      | Journey           | Desktop | Mobile | Notes                           |
-| ------ | ----------------- | ------- | ------ | ------------------------------- |
-| Flow 1 | Short description | ✅      | ✅     |                                 |
-| Flow 2 | Short description | ✅      | ❌     |                                 |
-| G1     | Gap description   | ❌      | ❌     |                                 |
-| G2     | Gap description   | ❌      | N/A    | Covered by `some-other.spec.ts` |
+| # | Journey | Desktop | Mobile | Notes |
+| --- | --- | --- | --- | --- |
+| Flow 1 | Short description | ✅ | ✅ |  |
+| Flow 2 | Short description | ✅ | ❌ |  |
+| G1 | Gap description | ❌ | ❌ |  |
+| G2 | Gap description | ❌ | N/A | Covered by `some-other.spec.ts` |
 ```
 
 **Status values:**
@@ -39,10 +39,10 @@ One row per flow including gaps. The single fastest way to see what's done.
 One row per gap. Enough for an AI to know what file to create and where to find the test cases.
 
 ```markdown
-| Gap | Description                                | Proposed spec file              |
-| --- | ------------------------------------------ | ------------------------------- |
-| G1  | One-sentence description of what's missing | `feature/proposed-name.spec.ts` |
-| G2  | One-sentence description                   | `feature/proposed-name.spec.ts` |
+| Gap | Description | Proposed spec file |
+| --- | --- | --- |
+| G1 | One-sentence description of what's missing | `feature/proposed-name.spec.ts` |
+| G2 | One-sentence description | `feature/proposed-name.spec.ts` |
 ```
 
 **Rules:**
@@ -62,11 +62,11 @@ One row per gap. Enough for an AI to know what file to create and where to find 
 Ordered by implementation priority. Used by humans to pick the next gap to implement.
 
 ```markdown
-| Priority | Spec file                  | Gap | Reason                                       |
-| -------- | -------------------------- | --- | -------------------------------------------- |
-| P0       | `feature/critical.spec.ts` | G1  | One sentence on why this is highest priority |
-| P1       | `feature/next.spec.ts`     | G2  | One sentence                                 |
-| P2       | `feature/later.spec.ts`    | G3  | One sentence                                 |
+| Priority | Spec file | Gap | Reason |
+| --- | --- | --- | --- |
+| P0 | `feature/critical.spec.ts` | G1 | One sentence on why this is highest priority |
+| P1 | `feature/next.spec.ts` | G2 | One sentence |
+| P2 | `feature/later.spec.ts` | G3 | One sentence |
 ```
 
 **Priority values:**
@@ -80,9 +80,9 @@ Ordered by implementation priority. Used by humans to pick the next gap to imple
 
 ## What does NOT belong in coverage.md
 
-| Content                                                                | Where it belongs                                                |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Step-by-step test cases for gaps (what to verify at each step)         | `flow.md` — as `### G{n}` gap flow sections                     |
-| POM method names, account setup code                                   | `catalog.md`                                                    |
-| How to add a new variant / maintenance guide                           | `coverage.md` can have a brief note, but not a multi-step guide |
-| Coverage strategy rationale (why one file per pair, why positive-only) | Drop — not actionable                                           |
+| Content | Where it belongs |
+| --- | --- |
+| Step-by-step test cases for gaps (what to verify at each step) | `flow.md` — as `### G{n}` gap flow sections |
+| POM method names, account setup code | `catalog.md` |
+| How to add a new variant / maintenance guide | `coverage.md` can have a brief note, but not a multi-step guide |
+| Coverage strategy rationale (why one file per pair, why positive-only) | Drop — not actionable |

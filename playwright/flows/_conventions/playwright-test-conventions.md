@@ -9,12 +9,12 @@
 
 Tag every `test.describe` block:
 
-| Tag                             | Purpose               |
-| ------------------------------- | --------------------- |
-| `@desktop` / `@mobile`          | Platform targeting    |
-| `@smoke` / `@regression`        | Suite classification  |
-| `@trade` / `@auth` / `@reports` | Module targeting      |
-| `@production`                   | Production-only tests |
+| Tag | Purpose |
+| --- | --- |
+| `@desktop` / `@mobile` | Platform targeting |
+| `@smoke` / `@regression` | Suite classification |
+| `@trade` / `@auth` / `@reports` | Module targeting |
+| `@production` | Production-only tests |
 
 ```typescript
 test.describe('Trade Form', { tag: ['@desktop', '@smoke', '@trade'] }, () => {

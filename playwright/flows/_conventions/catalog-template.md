@@ -23,10 +23,10 @@
 One row per flow. Gives the AI the spec file path and tags without it having to guess either.
 
 ```markdown
-| Journey ID | Spec File                        | Tags                        |
-| ---------- | -------------------------------- | --------------------------- |
-| Flow 1     | `feature/create-account.spec.ts` | `@desktop @mobile @feature` |
-| G1         | `feature/validation.spec.ts`     | `@desktop @feature`         |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1 | `feature/create-account.spec.ts` | `@desktop @mobile @feature` |
+| G1 | `feature/validation.spec.ts` | `@desktop @feature` |
 ```
 
 **Rules:**
@@ -74,7 +74,7 @@ await expect(featurePage.successHeading, 'Success heading should be visible').to
 
 ```markdown
 | Tag | When to apply |
-|---|---|
+| --- | --- |
 | `@feature` | All tests in this feature area |
 | `@smoke` | Critical path only |
 | `@production` | Tests safe to run on production (no account creation, no mutations) |
@@ -107,12 +107,12 @@ One or two sentences: what the rule is and why it exists.
 
 ## What does NOT belong in catalog.md
 
-| Content                                      | Where it belongs                                                                              |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Step-by-step verification tables             | `flow.md`                                                                                     |
-| Coverage gaps and gap descriptions           | `coverage.md`                                                                                 |
-| Route/URL tree and data-testid map           | `flow.md` (orientation for humans)                                                            |
-| How to add a new variant / maintenance guide | `coverage.md` or a contributing doc                                                           |
-| How to debug / triage map                    | Not needed — the POM reference and decisions sections already point the AI to the right place |
-| Project-wide Playwright rules                | `playwright/AGENTS.md`                                                                        |
-| Shared utility docs                          | `playwright/flows/_conventions/utils-reference.md`                                            |
+| Content | Where it belongs |
+| --- | --- |
+| Step-by-step verification tables | `flow.md` |
+| Coverage gaps and gap descriptions | `coverage.md` |
+| Route/URL tree and data-testid map | `flow.md` (orientation for humans) |
+| How to add a new variant / maintenance guide | `coverage.md` or a contributing doc |
+| How to debug / triage map | Not needed — the POM reference and decisions sections already point the AI to the right place |
+| Project-wide Playwright rules | `playwright/AGENTS.md` |
+| Shared utility docs | `playwright/flows/_conventions/utils-reference.md` |

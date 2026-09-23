@@ -72,12 +72,12 @@ npx playwright test
 
 After tests finish (with failures), tell the AI any of these:
 
-| What you say                                   | What the AI does                             |
-| ---------------------------------------------- | -------------------------------------------- |
-| _"Create GitHub issues for the failing tests"_ | Shows all failures, asks which to file       |
-| _"Create issues for all failing tests"_        | Creates issues for every failure immediately |
-| _"Create a GitHub issue for test failure #2"_  | Creates an issue for that specific failure   |
-| _"Create issues for test failures 1 and 3"_    | Creates issues for the selected failures     |
+| What you say | What the AI does |
+| --- | --- |
+| _"Create GitHub issues for the failing tests"_ | Shows all failures, asks which to file |
+| _"Create issues for all failing tests"_ | Creates issues for every failure immediately |
+| _"Create a GitHub issue for test failure #2"_ | Creates an issue for that specific failure |
+| _"Create issues for test failures 1 and 3"_ | Creates issues for the selected failures |
 
 The AI will:
 
@@ -95,13 +95,13 @@ The AI will:
 
 Before creating each issue, the AI will ask you to select a priority:
 
-| Priority             | When to use                                      |
-| -------------------- | ------------------------------------------------ |
-| **P0** — Critical    | Login broken, trade form inaccessible, site down |
-| **P1** — High        | Core trading journey broken, no workaround       |
-| **P2** — Medium      | Specific feature broken, alternatives exist      |
-| **P3** — Low         | Cosmetic / visual glitch, non-blocking           |
-| **P4** — Enhancement | Nice-to-have, not a bug                          |
+| Priority | When to use |
+| --- | --- |
+| **P0** — Critical | Login broken, trade form inaccessible, site down |
+| **P1** — High | Core trading journey broken, no workaround |
+| **P2** — Medium | Specific feature broken, alternatives exist |
+| **P3** — Low | Cosmetic / visual glitch, non-blocking |
+| **P4** — Enhancement | Nice-to-have, not a bug |
 
 The priority is baked into the issue title at creation time:
 
@@ -140,12 +140,12 @@ The root cause of this test failure is a **400 Bad Request** from the Deriv WebS
 
 ### Request
 
-| Field         | Value                               |
-| ------------- | ----------------------------------- |
-| **Method**    | `WebSocket`                         |
-| **URL**       | `wss://api.deriv.com/websockets/v3` |
-| **Timestamp** | `2026-06-11T05:48:02.776Z`          |
-| **Duration**  | `3977ms`                            |
+| Field | Value |
+| --- | --- |
+| **Method** | `WebSocket` |
+| **URL** | `wss://api.deriv.com/websockets/v3` |
+| **Timestamp** | `2026-06-11T05:48:02.776Z` |
+| **Duration** | `3977ms` |
 
 **Request Body:**
 
@@ -162,8 +162,8 @@ The root cause of this test failure is a **400 Bad Request** from the Deriv WebS
 
 ### Response
 
-| Field      | Value             |
-| ---------- | ----------------- |
+| Field | Value |
+| --- | --- |
 | **Status** | `400 Bad Request` |
 
 **Response Body:**
@@ -193,7 +193,7 @@ Issues are created with this structure:
 ### Test Details
 
 | Field | Value |
-|-------|-------|
+| --- | --- |
 | **Test** | `VERIFY trade form loads on desktop` |
 | **Suite** | `Trade Form — Desktop` |
 | **File** | `playwright/tests/trade/verify-trade-form-desktop.spec.ts` |
@@ -277,7 +277,7 @@ npx playwright test playwright/tests/trade/verify-trade-form-desktop.spec.ts --p
 The file is at `playwright/playwright-report/results.json`. Key fields the AI uses:
 
 | Field | JSON path |
-|-------|-----------|
+| --- | --- |
 | Test title | `suites[].suites[].specs[].title` |
 | Tags | `suites[].suites[].specs[].tags` |
 | Project | `suites[].suites[].specs[].tests[].projectName` |
@@ -295,7 +295,7 @@ The file is at `playwright/playwright-report/results.json`. Key fields the AI us
 ## Troubleshooting
 
 | Problem | Solution |
-|---------|----------|
+| --- | --- |
 | GitHub MCP is not connected | Add your token to `cline_mcp_settings.json` and restart VS Code |
 | Issues created with wrong repo | Tell the AI explicitly: *"create issues in deriv-com/derivatives-trader"* |
 | Labels don't exist on the repo | Create the labels (`bug`, `playwright`, `automated`) on GitHub first, or ask the AI to use `bug` only |

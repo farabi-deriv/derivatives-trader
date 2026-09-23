@@ -7,13 +7,13 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                      | Tags                                        |
-| ---------- | ---------------------------------------------- | ------------------------------------------- |
-| Flow 1     | `auth/verify-login-via-email-password.spec.ts` | `@auth @smoke @desktop @mobile @production` |
-| Flow 2     | `auth/verify-login-via-otp.spec.ts`            | `@auth @smoke @desktop @mobile @production` |
-| Flow 3     | `auth/verify-logout.spec.ts`                   | `@auth @smoke @desktop @mobile @production` |
-| Flow 4.1   | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
-| Flow 4.2   | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1 | `auth/verify-login-via-email-password.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Flow 2 | `auth/verify-login-via-otp.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Flow 3 | `auth/verify-logout.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Flow 4.1 | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
+| Flow 4.2 | `auth/verify-home-to-dtrader-redirect.spec.ts` | `@auth @smoke @desktop @mobile @production` |
 
 ---
 
@@ -182,13 +182,13 @@ test.describe('Home to DTrader redirect', { tag: ['@auth', '@smoke', '@desktop',
 
 ## Section 3 — Tags Reference
 
-| Tag           | When to apply                                         |
-| ------------- | ----------------------------------------------------- |
-| `@auth`       | Login state, logout, session handling                 |
-| `@smoke`      | Critical path — must pass on every run                |
+| Tag | When to apply |
+| --- | --- |
+| `@auth` | Login state, logout, session handling |
+| `@smoke` | Critical path — must pass on every run |
 | `@production` | Safe to run on production (read-only assertions only) |
-| `@desktop`    | Desktop viewport (chromium project, 1728×1117)        |
-| `@mobile`     | Mobile viewport (chromium-mobile project, 500×850)    |
+| `@desktop` | Desktop viewport (chromium project, 1728×1117) |
+| `@mobile` | Mobile viewport (chromium-mobile project, 500×850) |
 
 ---
 

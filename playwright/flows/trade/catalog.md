@@ -7,49 +7,49 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                        | Tags                                           |
-| ---------- | ---------------------------------------------------------------- | ---------------------------------------------- |
-| Flow 1     | `trade/verify-trade-form-loads.spec.ts`                          | `@trade @smoke @desktop @mobile @production`   |
-| Flow 2.1   | `trade/rise-fall/verify-rise.spec.ts`                            | `@trade @smoke @desktop @mobile @production`   |
-| Flow 2.2   | `trade/rise-fall/verify-fall.spec.ts`                            | `@trade @smoke @desktop @mobile`               |
-| Flow 2.3   | `trade/rise-fall/verify-rise-allow-equals.spec.ts`               | `@trade @desktop @mobile`                      |
-| Flow 2.4   | `trade/rise-fall/verify-fall-allow-equals.spec.ts`               | `@trade @desktop @mobile`                      |
-| Flow 3.1   | `trade/higher-lower/verify-higher.spec.ts`                       | `@trade @desktop @mobile`                      |
-| Flow 3.2   | `trade/higher-lower/verify-lower.spec.ts`                        | `@trade @desktop @mobile`                      |
-| Flow 4.1   | `trade/touch-no-touch/verify-touch.spec.ts`                      | `@trade @desktop @mobile`                      |
-| Flow 4.2   | `trade/touch-no-touch/verify-no-touch.spec.ts`                   | `@trade @desktop @mobile`                      |
-| Flow 5.1   | `trade/matches-differs/verify-matches.spec.ts`                   | `@trade @smoke @desktop @mobile`               |
-| Flow 5.2   | `trade/matches-differs/verify-differs.spec.ts`                   | `@trade @smoke @desktop @mobile`               |
-| Flow 6.1   | `trade/over-under/verify-over.spec.ts`                           | `@trade @desktop @mobile`                      |
-| Flow 6.2   | `trade/over-under/verify-under.spec.ts`                          | `@trade @desktop @mobile`                      |
-| Flow 7.1   | `trade/even-odd/verify-even.spec.ts`                             | `@trade @desktop @mobile`                      |
-| Flow 7.2   | `trade/even-odd/verify-odd.spec.ts`                              | `@trade @desktop @mobile`                      |
-| Flow 8.1   | `trade/accumulators/verify-accumulators-no-tp.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 8.2   | `trade/accumulators/verify-accumulators-with-tp.spec.ts`         | `@trade @desktop @mobile`                      |
-| Flow 9.1   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.2   | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.3   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.4   | `trade/multipliers/verify-multipliers-with-tp.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.5   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.6   | `trade/multipliers/verify-multipliers-with-sl.spec.ts`           | `@trade @desktop @mobile`                      |
-| Flow 9.7   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                      |
-| Flow 9.8   | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile`                      |
-| Flow 10.1  | `trade/turbos/verify-turbos-up.spec.ts`                          | `@trade @desktop @mobile`                      |
-| Flow 10.2  | `trade/turbos/verify-turbos-down.spec.ts`                        | `@trade @desktop @mobile`                      |
-| Flow 10.3  | `trade/turbos/verify-turbos-up-with-tp.spec.ts`                  | `@trade @desktop @mobile`                      |
-| Flow 10.4  | `trade/turbos/verify-turbos-down-with-tp.spec.ts`                | `@trade @desktop @mobile`                      |
-| Flow 11.1  | `trade/vanillas/verify-vanillas-call.spec.ts`                    | `@trade @desktop @mobile`                      |
-| Flow 11.2  | `trade/vanillas/verify-vanillas-put.spec.ts`                     | `@trade @desktop @mobile`                      |
-| Flow 12    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
-| Flow 13    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
-| Flow 14    | `trade/verify-manual-trade-negative-validation.spec.ts`          | `@trade @regression @staging @desktop @mobile` |
-| Flow 15    | `trade/verify-closed-market.spec.ts`                             | `@trade @desktop @mobile`                      |
-| Flow 16    | `trade/verify-unauthenticated-purchase.spec.ts`                  | `@trade @desktop @mobile`                      |
-| Flow 17    | `trade/verify-insufficient-balance.spec.ts`                      | `@trade @desktop @mobile`                      |
-| Flow 18    | `trade/verify-invalid-url-modal.spec.ts`                         | `@trade @desktop @mobile`                      |
-| Flow 19    | `trade/verify-trade-param-info-icon-hover.spec.ts`               | `@trade @desktop @mobile`                      |
-| Flow 20    | `trade/verify-system-theme-option.spec.ts`                       | `@trade @desktop @mobile`                      |
-| Flow 21    | `trade/over-under/verify-over-under-validations.spec.ts`         | `@trade @desktop @mobile`                      |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1 | `trade/verify-trade-form-loads.spec.ts` | `@trade @smoke @desktop @mobile @production` |
+| Flow 2.1 | `trade/rise-fall/verify-rise.spec.ts` | `@trade @smoke @desktop @mobile @production` |
+| Flow 2.2 | `trade/rise-fall/verify-fall.spec.ts` | `@trade @smoke @desktop @mobile` |
+| Flow 2.3 | `trade/rise-fall/verify-rise-allow-equals.spec.ts` | `@trade @desktop @mobile` |
+| Flow 2.4 | `trade/rise-fall/verify-fall-allow-equals.spec.ts` | `@trade @desktop @mobile` |
+| Flow 3.1 | `trade/higher-lower/verify-higher.spec.ts` | `@trade @desktop @mobile` |
+| Flow 3.2 | `trade/higher-lower/verify-lower.spec.ts` | `@trade @desktop @mobile` |
+| Flow 4.1 | `trade/touch-no-touch/verify-touch.spec.ts` | `@trade @desktop @mobile` |
+| Flow 4.2 | `trade/touch-no-touch/verify-no-touch.spec.ts` | `@trade @desktop @mobile` |
+| Flow 5.1 | `trade/matches-differs/verify-matches.spec.ts` | `@trade @smoke @desktop @mobile` |
+| Flow 5.2 | `trade/matches-differs/verify-differs.spec.ts` | `@trade @smoke @desktop @mobile` |
+| Flow 6.1 | `trade/over-under/verify-over.spec.ts` | `@trade @desktop @mobile` |
+| Flow 6.2 | `trade/over-under/verify-under.spec.ts` | `@trade @desktop @mobile` |
+| Flow 7.1 | `trade/even-odd/verify-even.spec.ts` | `@trade @desktop @mobile` |
+| Flow 7.2 | `trade/even-odd/verify-odd.spec.ts` | `@trade @desktop @mobile` |
+| Flow 8.1 | `trade/accumulators/verify-accumulators-no-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 8.2 | `trade/accumulators/verify-accumulators-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.1 | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.2 | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.3 | `trade/multipliers/verify-multipliers-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.4 | `trade/multipliers/verify-multipliers-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.5 | `trade/multipliers/verify-multipliers-with-sl.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.6 | `trade/multipliers/verify-multipliers-with-sl.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.7 | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.8 | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile` |
+| Flow 10.1 | `trade/turbos/verify-turbos-up.spec.ts` | `@trade @desktop @mobile` |
+| Flow 10.2 | `trade/turbos/verify-turbos-down.spec.ts` | `@trade @desktop @mobile` |
+| Flow 10.3 | `trade/turbos/verify-turbos-up-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 10.4 | `trade/turbos/verify-turbos-down-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 11.1 | `trade/vanillas/verify-vanillas-call.spec.ts` | `@trade @desktop @mobile` |
+| Flow 11.2 | `trade/vanillas/verify-vanillas-put.spec.ts` | `@trade @desktop @mobile` |
+| Flow 12 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
+| Flow 13 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
+| Flow 14 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
+| Flow 15 | `trade/verify-closed-market.spec.ts` | `@trade @desktop @mobile` |
+| Flow 16 | `trade/verify-unauthenticated-purchase.spec.ts` | `@trade @desktop @mobile` |
+| Flow 17 | `trade/verify-insufficient-balance.spec.ts` | `@trade @desktop @mobile` |
+| Flow 18 | `trade/verify-invalid-url-modal.spec.ts` | `@trade @desktop @mobile` |
+| Flow 19 | `trade/verify-trade-param-info-icon-hover.spec.ts` | `@trade @desktop @mobile` |
+| Flow 20 | `trade/verify-system-theme-option.spec.ts` | `@trade @desktop @mobile` |
+| Flow 21 | `trade/over-under/verify-over-under-validations.spec.ts` | `@trade @desktop @mobile` |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
@@ -190,11 +190,11 @@ test('VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)', asyn
 test('VERIFY Buy "Higher" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
     await tradeHigherLowerPage.buyHigherAndVerify({
         accountType: 'demo',
-        market: 'Volatility 100 (1s) Index',
+        market: 'Volatility 100 Index',
         durationUnit: 'Hours',
         durationValue: '1 hr',
         barrierType: 'Above spot',
-        barrier: '5.11',
+        barrier: '8.11',
         stake: '10.00',
         currency: 'USD',
     });
@@ -204,11 +204,11 @@ test('VERIFY Buy "Higher" Contract and Close (Demo Account)', async ({ tradeHigh
 test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
     await tradeHigherLowerPage.buyLowerAndVerify({
         accountType: 'demo',
-        market: 'Volatility 100 (1s) Index',
+        market: 'Volatility 100 Index',
         durationUnit: 'Hours',
         durationValue: '1h 30m',
         barrierType: 'Below spot',
-        barrier: '5.00',
+        barrier: '8.00',
         stake: '10.00',
         currency: 'USD',
     });
@@ -228,11 +228,11 @@ test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHighe
 test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
     await tradeTouchNoTouchPage.buyTouchAndVerify({
         accountType: 'demo',
-        market: 'Volatility 10 (1s) Index',
+        market: 'Volatility 100 Index',
         durationUnit: 'Minutes',
         durationValue: '15 min',
         barrierType: 'Above spot',
-        barrier: '1.01',
+        barrier: '8.01',
         stake: '5.01',
         currency: 'USD',
     });
@@ -242,11 +242,11 @@ test('VERIFY Buy "Touch" Contract and Close (Demo Account)', async ({ tradeTouch
 test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTouchNoTouchPage }) => {
     await tradeTouchNoTouchPage.buyNoTouchAndVerify({
         accountType: 'demo',
-        market: 'Volatility 10 (1s) Index',
+        market: 'Volatility 100 Index',
         durationUnit: 'Minutes',
         durationValue: '5 min',
         barrierType: 'Below spot',
-        barrier: '0.99',
+        barrier: '8.99',
         stake: '6.09',
         currency: 'USD',
     });
@@ -982,53 +982,53 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 
 ## Section 3 — POM Method Reference
 
-| Purpose                                              | Page Object method                                                                                       |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Parse and validate current Stake limits              | `tradeValidationPage.verifyStakeRuntimeBoundaries()`                                                     |
-| Verify Stake input filtering                         | `tradeValidationPage.verifyStakeInputSanitization()`                                                     |
-| Validate current Duration limits/options             | `tradeValidationPage.verifyDurationRuntimeBoundaries()`                                                  |
-| Validate required/zero Barrier                       | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()`                                           |
-| Read current Digits availability                     | `tradeValidationPage.verifyDigitChoiceAvailability()`                                                    |
-| Read Multipliers TP/SL/DC options                    | `tradeValidationPage.verifyRiskManagementRuntimeOptions()`                                               |
-| Discover markets in an asset category                | `tradeValidationPage.readMarketsForCategory()`                                                           |
-| Select current closed market                         | `tradeValidationPage.selectFirstClosedMarket()`                                                          |
-| Verify insufficient balance client gate              | `tradeParametersPage.verifyInsufficientBalanceClientGate()`                                              |
-| Verify empty-balance stake editor hint               | `tradeParametersPage.verifyEmptyBalanceStakeEditorHint()`                                                |
-| Click Buy with insufficient balance                  | `tradeParametersPage.clickBuyWithInsufficientBalance()`                                                  |
-| Verify insufficient-balance popup                    | `tradeParametersPage.verifyInsufficientBalancePopup()`                                                   |
-| Dismiss insufficient-balance popup                   | `tradeParametersPage.clickInsufficientBalancePopupClose()`                                               |
-| Verify popup dismissed                               | `tradeParametersPage.verifyInsufficientBalancePopupDismissed()`                                          |
-| Click Deposit now on popup                           | `tradeParametersPage.clickInsufficientBalanceDepositButton()`                                            |
-| Verify DTrader → transfer redirect                   | `tradeParametersPage.verifyNavigatedToDepositFromDTrader()`                                              |
-| Verify insufficient balance behavior (Flow 13)       | `tradeValidationPage.verifyInsufficientBalanceBehavior()`                                                |
-| Verify desktop param info icon + tooltip (Flow 19)   | `tradeParametersPage.verifyTradeParamInfoIconOnDesktop()`                                                |
-| Verify mobile param info icon + tooltip (Flow 19)    | `tradeParametersPage.verifyTradeParamInfoIconsInMobileEditor()`                                          |
-| Open mobile Theme drawer (Flow 20)                   | `tradeParametersPage.openMobileThemeDrawer()`                                                            |
-| Select mobile theme preference (Flow 20)             | `tradeParametersPage.selectMobileThemePreference('System')`                                              |
-| Desktop sidebar theme toggle (Flow 20)               | `tradeParametersPage.clickSidebarThemeToggle()`                                                          |
-| Assert resolved body theme (Flow 20)                 | `tradeParametersPage.expectResolvedBodyTheme('dark')`                                                    |
-| Seed theme preference (Flow 20)                      | `TradeBasePage.seedThemePreference(page, 'system')`                                                      |
-| HL→OU proposal uses last_digit (Flow 21 / #1384)     | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })`                        |
-| Read committed stake (Flow 25 / market-selection)    | `tradeParametersPage.readCommittedStake()`                                                               |
-| Read committed duration (Flow 25 / market-selection) | `tradeParametersPage.readCommittedDuration()`                                                            |
-| Assert stake + duration (Flow 25)                    | `tradeParametersPage.expectCommittedStakeAndDuration()` — pass `{ differs: true }` for sibling isolation |
-| Reload + restore stake/duration (Flow 25)            | `tradeParametersPage.verifyStakeAndDurationPersistAcrossReload()`                                        |
-| Track duplicate Buy requests                         | `tradeValidationPage.startBuyRequestTracking()`                                                          |
-| Read complete Buy state                              | `tradeValidationPage.getPurchaseControlState()`                                                          |
+| Purpose | Page Object method |
+| --- | --- |
+| Parse and validate current Stake limits | `tradeValidationPage.verifyStakeRuntimeBoundaries()` |
+| Verify Stake input filtering | `tradeValidationPage.verifyStakeInputSanitization()` |
+| Validate current Duration limits/options | `tradeValidationPage.verifyDurationRuntimeBoundaries()` |
+| Validate required/zero Barrier | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()` |
+| Read current Digits availability | `tradeValidationPage.verifyDigitChoiceAvailability()` |
+| Read Multipliers TP/SL/DC options | `tradeValidationPage.verifyRiskManagementRuntimeOptions()` |
+| Discover markets in an asset category | `tradeValidationPage.readMarketsForCategory()` |
+| Select current closed market | `tradeValidationPage.selectFirstClosedMarket()` |
+| Verify insufficient balance client gate | `tradeParametersPage.verifyInsufficientBalanceClientGate()` |
+| Verify empty-balance stake editor hint | `tradeParametersPage.verifyEmptyBalanceStakeEditorHint()` |
+| Click Buy with insufficient balance | `tradeParametersPage.clickBuyWithInsufficientBalance()` |
+| Verify insufficient-balance popup | `tradeParametersPage.verifyInsufficientBalancePopup()` |
+| Dismiss insufficient-balance popup | `tradeParametersPage.clickInsufficientBalancePopupClose()` |
+| Verify popup dismissed | `tradeParametersPage.verifyInsufficientBalancePopupDismissed()` |
+| Click Deposit now on popup | `tradeParametersPage.clickInsufficientBalanceDepositButton()` |
+| Verify DTrader → transfer redirect | `tradeParametersPage.verifyNavigatedToDepositFromDTrader()` |
+| Verify insufficient balance behavior (Flow 13) | `tradeValidationPage.verifyInsufficientBalanceBehavior()` |
+| Verify desktop param info icon + tooltip (Flow 19) | `tradeParametersPage.verifyTradeParamInfoIconOnDesktop()` |
+| Verify mobile param info icon + tooltip (Flow 19) | `tradeParametersPage.verifyTradeParamInfoIconsInMobileEditor()` |
+| Open mobile Theme drawer (Flow 20) | `tradeParametersPage.openMobileThemeDrawer()` |
+| Select mobile theme preference (Flow 20) | `tradeParametersPage.selectMobileThemePreference('System')` |
+| Desktop sidebar theme toggle (Flow 20) | `tradeParametersPage.clickSidebarThemeToggle()` |
+| Assert resolved body theme (Flow 20) | `tradeParametersPage.expectResolvedBodyTheme('dark')` |
+| Seed theme preference (Flow 20) | `TradeBasePage.seedThemePreference(page, 'system')` |
+| HL→OU proposal uses last_digit (Flow 21 / #1384) | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })` |
+| Read committed stake (Flow 25 / market-selection) | `tradeParametersPage.readCommittedStake()` |
+| Read committed duration (Flow 25 / market-selection) | `tradeParametersPage.readCommittedDuration()` |
+| Assert stake + duration (Flow 25) | `tradeParametersPage.expectCommittedStakeAndDuration()` — pass `{ differs: true }` for sibling isolation |
+| Reload + restore stake/duration (Flow 25) | `tradeParametersPage.verifyStakeAndDurationPersistAcrossReload()` |
+| Track duplicate Buy requests | `tradeValidationPage.startBuyRequestTracking()` |
+| Read complete Buy state | `tradeValidationPage.getPurchaseControlState()` |
 
 ---
 
 ## Section 4 — Tags Reference
 
-| Tag           | When to apply                                           |
-| ------------- | ------------------------------------------------------- |
-| `@trade`      | Trade form, purchase flow, market selector, trade types |
-| `@auth`       | Login, logout, session handling                         |
-| `@reports`    | Positions, statements, P&L                              |
-| `@smoke`      | Critical path — must pass on every run                  |
-| `@production` | Safe to run on production (read-only assertions only)   |
-| `@desktop`    | Desktop viewport (chromium project, 1728×1117)          |
-| `@mobile`     | Mobile viewport (chromium-mobile project, 500×850)      |
+| Tag | When to apply |
+| --- | --- |
+| `@trade` | Trade form, purchase flow, market selector, trade types |
+| `@auth` | Login, logout, session handling |
+| `@reports` | Positions, statements, P&L |
+| `@smoke` | Critical path — must pass on every run |
+| `@production` | Safe to run on production (read-only assertions only) |
+| `@desktop` | Desktop viewport (chromium project, 1728×1117) |
+| `@mobile` | Mobile viewport (chromium-mobile project, 500×850) |
 
 ---
 
@@ -1040,37 +1040,37 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 
 ### Unique parameter locator map per trade type
 
-| Trade type        | Unique param                                                                                                                                  | Locator strategy                                                         |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Rise/Fall         | Allow equals                                                                                                                                  | `getByText('Allow equals')` — toggle, no testid                          |
-| Higher/Lower      | Barrier                                                                                                                                       | `getByText('Barrier')` — label, no testid                                |
-| Touch/No Touch    | Barrier                                                                                                                                       | `getByText('Barrier')`                                                   |
-| Matches/Differs   | Last digit prediction                                                                                                                         | `getByTestId('dt_digit_stats_percentage').first()`                       |
-| Over/Under        | Last digit prediction                                                                                                                         | `getByTestId('dt_digit_stats_percentage').first()`                       |
-| Accumulators      | Growth rate                                                                                                                                   | `getByText('Growth rate')`                                               |
-| Accumulators      | Take profit                                                                                                                                   | Mobile: `dt_tp_input`; Desktop: `dt_take_profit_input`                   |
-| Multipliers       | Multiplier                                                                                                                                    | `getByText('Multiplier')` — label, no testid                             |
-| Multipliers       | Risk management                                                                                                                               | `getByText('Risk management')`                                           |
-| Multipliers TP    | TP input                                                                                                                                      | Mobile: `dt_tp_input`; Desktop: `dt_tp_input_desktop`                    |
-| Multipliers SL    | SL input                                                                                                                                      | Mobile: `dt_sl_input`; Desktop: `dt_sl_input_desktop`                    |
-| Multipliers DC    | Deal cancellation badge                                                                                                                       | `getByTestId('dt_deal_cancellation_badge')`                              |
-| Buy (payout / DC) | Purchase-button amount (`$N.NN`)                                                                                                              | `dt_purchase_button_wrapper` → `locator('> span').last()` — no `dt_span` |
-| Turbos            | Payout per point                                                                                                                              | `getByText('Payout per point')`                                          |
-| Turbos            | Barrier info panel                                                                                                                            | `getByText('Barrier')` (info panel below params)                         |
-| Vanillas          | Strike price                                                                                                                                  | `getByText('Strike price')`                                              |
+| Trade type | Unique param | Locator strategy |
+| --- | --- | --- |
+| Rise/Fall | Allow equals | `getByText('Allow equals')` — toggle, no testid |
+| Higher/Lower | Barrier | `getByText('Barrier')` — label, no testid |
+| Touch/No Touch | Barrier | `getByText('Barrier')` |
+| Matches/Differs | Last digit prediction | `getByTestId('dt_digit_stats_percentage').first()` |
+| Over/Under | Last digit prediction | `getByTestId('dt_digit_stats_percentage').first()` |
+| Accumulators | Growth rate | `getByText('Growth rate')` |
+| Accumulators | Take profit | Mobile: `dt_tp_input`; Desktop: `dt_take_profit_input` |
+| Multipliers | Multiplier | `getByText('Multiplier')` — label, no testid |
+| Multipliers | Risk management | `getByText('Risk management')` |
+| Multipliers TP | TP input | Mobile: `dt_tp_input`; Desktop: `dt_tp_input_desktop` |
+| Multipliers SL | SL input | Mobile: `dt_sl_input`; Desktop: `dt_sl_input_desktop` |
+| Multipliers DC | Deal cancellation badge | `getByTestId('dt_deal_cancellation_badge')` |
+| Buy (payout / DC) | Purchase-button amount (`$N.NN`) | `dt_purchase_button_wrapper` → `locator('> span').last()` — no `dt_span` |
+| Turbos | Payout per point | `getByText('Payout per point')` |
+| Turbos | Barrier info panel | `getByText('Barrier')` (info panel below params) |
+| Vanillas | Strike price | `getByText('Strike price')` |
 | Stake (all types) | Chips `Select value $N`; Custom: `dt_stake_input_desktop` + `.stake-input-desktop__save-button`; Mobile: `dt_stake_input` + header Save/Close |
 
 ### Which trade types require manual close vs auto-expiry
 
-| Trade type                            | Close method                                                                                                                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rise/Fall                             | Desktop: `PositionsPage.closeFirstContract()` (inline Close button on card). Mobile: `PositionsPage.closeFirstContract()` (force-clicks hidden button). Then `verifyClosedContractDetailsPage()` extracts `sellId`. |
-| Higher/Lower, Touch/No Touch          | Manual close via contract details footer: `getByRole('button', { name: /^Close/ })`                                                                                                                                 |
-| Accumulators                          | Close button on trade page (`getByRole('button', { name: /^Close/ })`) while contract is active                                                                                                                     |
-| Multipliers                           | Manual close via contract details footer                                                                                                                                                                            |
-| Matches/Differs, Over/Under, Even/Odd | Auto-expiry — no manual close                                                                                                                                                                                       |
-| Turbos                                | Auto-expiry — no manual close; test only verifies purchase + position card                                                                                                                                          |
-| Vanillas                              | Early close via `PositionsPage.closeFirstContract()`; full closed-chain assertions via `verifyVanillasClosedContractDetailsPage()` and `verifyClosedContractInReports()`                                            |
+| Trade type | Close method |
+| --- | --- |
+| Rise/Fall | Desktop: `PositionsPage.closeFirstContract()` (inline Close button on card). Mobile: `PositionsPage.closeFirstContract()` (force-clicks hidden button). Then `verifyClosedContractDetailsPage()` extracts `sellId`. |
+| Higher/Lower, Touch/No Touch | Manual close via contract details footer: `getByRole('button', { name: /^Close/ })` |
+| Accumulators | Close button on trade page (`getByRole('button', { name: /^Close/ })`) while contract is active |
+| Multipliers | Manual close via contract details footer |
+| Matches/Differs, Over/Under, Even/Odd | Auto-expiry — no manual close |
+| Turbos | Auto-expiry — no manual close; test only verifies purchase + position card |
+| Vanillas | Early close via `PositionsPage.closeFirstContract()`; full closed-chain assertions via `verifyVanillasClosedContractDetailsPage()` and `verifyClosedContractInReports()` |
 
 ### `NavigationUtils.waitForDerivApiSettled(page)` required after every navigation
 

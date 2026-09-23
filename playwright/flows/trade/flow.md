@@ -20,24 +20,24 @@
 
 **Prerequisites:** No authentication. Market open.
 
-| #   | Step                       | Action                                | Expected Result                       | Platform |
-| --- | -------------------------- | ------------------------------------- | ------------------------------------- | -------- |
-| 1   | Navigate to trade page     | `tradeParametersPage.gotoTradePage()` | Trade page loads at `/`               | Both     |
-| 2   | Verify login button        | Observe header                        | Login button visible                  | Both     |
-| 3   | Verify account info absent | Observe header                        | Account info not visible              | Both     |
-| 4   | Verify trade type selector | Observe trade type row                | "View all trade types" button visible | Both     |
-| 5   | Verify selected chip       | Observe trade type chips              | Rise/Fall chip selected by default    | Both     |
-| 6   | Verify purchase button     | Observe buy area                      | Purchase button visible               | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `tradeParametersPage.gotoTradePage()` | Trade page loads at `/` | Both |
+| 2 | Verify login button | Observe header | Login button visible | Both |
+| 3 | Verify account info absent | Observe header | Account info not visible | Both |
+| 4 | Verify trade type selector | Observe trade type row | "View all trade types" button visible | Both |
+| 5 | Verify selected chip | Observe trade type chips | Rise/Fall chip selected by default | Both |
+| 6 | Verify purchase button | Observe buy area | Purchase button visible | Both |
 
 ### Flow 1b — Default symbol and trade type (fresh session)
 
 **Prerequisites:** No authentication. No localStorage (fresh browser context / incognito).
 
-| #   | Step                      | Action                                | Expected Result                                | Platform |
-| --- | ------------------------- | ------------------------------------- | ---------------------------------------------- | -------- |
-| 1   | Navigate to trade page    | `tradeParametersPage.gotoTradePage()` | Trade page loads at `/`                        | Both     |
-| 2   | Verify default symbol     | Observe market selector               | Symbol label shows "Volatility 100 (1s) Index" | Both     |
-| 3   | Verify default trade type | Observe trade type chips              | Rise/Fall chip is selected                     | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `tradeParametersPage.gotoTradePage()` | Trade page loads at `/` | Both |
+| 2 | Verify default symbol | Observe market selector | Symbol label shows "Volatility 100 (1s) Index" | Both |
+| 3 | Verify default trade type | Observe trade type chips | Rise/Fall chip is selected | Both |
 
 ---
 
@@ -45,23 +45,23 @@
 
 **Prerequisites:** Authenticated (real or demo account). Market open.
 
-| #   | Step                               | Action                       | Expected Result                                            | Platform |
-| --- | ---------------------------------- | ---------------------------- | ---------------------------------------------------------- | -------- |
-| 1   | Login                              | `loginPage.login()`          | Redirected to trade page; API settled                      | Both     |
-| 2   | Verify account info                | Observe header               | Account info, balance, deposit button visible              | Both     |
-| 3   | Verify login button absent         | Observe header               | Login button not visible                                   | Both     |
-| 4   | Verify market selector             | Observe market selector area | Market name + current spot price visible                   | Both     |
-| 5   | Verify trade type selector         | Observe trade type row       | "View all trade types" button visible                      | Both     |
-| 6   | Verify selected chip               | Observe trade type chips     | Rise/Fall chip selected by default                         | Both     |
-| 7   | Verify Rise/Fall buttons           | Observe segmented control    | Rise and Fall buttons visible                              | Both     |
-| 8   | Verify Duration + Stake            | Observe parameters           | Duration and Stake labels visible                          | Both     |
-| 9   | Verify Allow equals                | Observe parameters           | Allow equals text visible                                  | Both     |
-| 10  | Verify purchase button             | Observe buy area             | Purchase button visible                                    | Both     |
-| 11  | Verify param container (mobile)    | Observe bottom sheet         | `trade-params-container` visible (fixed height, no handle) | Mobile   |
-| 12  | Verify network status (desktop)    | Observe footer               | Network status indicator visible                           | Desktop  |
-| 13  | Verify fullscreen toggle (desktop) | Observe footer               | Fullscreen toggle visible                                  | Desktop  |
-| 14  | Verify sidebar (desktop)           | Observe sidebar              | Home, Positions, Reports, Help, Language, Theme, Account   | Desktop  |
-| 15  | Verify bottom nav (mobile)         | Observe bottom navigation    | Home, Trade, Positions, Menu tabs visible                  | Mobile   |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Login | `loginPage.login()` | Redirected to trade page; API settled | Both |
+| 2 | Verify account info | Observe header | Account info, balance, deposit button visible | Both |
+| 3 | Verify login button absent | Observe header | Login button not visible | Both |
+| 4 | Verify market selector | Observe market selector area | Market name + current spot price visible | Both |
+| 5 | Verify trade type selector | Observe trade type row | "View all trade types" button visible | Both |
+| 6 | Verify selected chip | Observe trade type chips | Rise/Fall chip selected by default | Both |
+| 7 | Verify Rise/Fall buttons | Observe segmented control | Rise and Fall buttons visible | Both |
+| 8 | Verify Duration + Stake | Observe parameters | Duration and Stake labels visible | Both |
+| 9 | Verify Allow equals | Observe parameters | Allow equals text visible | Both |
+| 10 | Verify purchase button | Observe buy area | Purchase button visible | Both |
+| 11 | Verify param container (mobile) | Observe bottom sheet | `trade-params-container` visible (fixed height, no handle) | Mobile |
+| 12 | Verify network status (desktop) | Observe footer | Network status indicator visible | Desktop |
+| 13 | Verify fullscreen toggle (desktop) | Observe footer | Fullscreen toggle visible | Desktop |
+| 14 | Verify sidebar (desktop) | Observe sidebar | Home, Positions, Reports, Help, Language, Theme, Account | Desktop |
+| 15 | Verify bottom nav (mobile) | Observe bottom navigation | Home, Trade, Positions, Menu tabs visible | Mobile |
 
 ---
 
@@ -73,46 +73,46 @@
 **Spec:** `playwright/tests/trade/rise-fall/verify-rise.spec.ts` — `VERIFY Buy "Rise" Contract and Close (Demo Account)` / `(Real Account)`
 **Unique params:** Duration (`15 min`), Stake (`10.50`), Allow equals toggle
 
-| #   | Step                              | Action                                                          | Expected Result                                                 | Platform |
-| --- | --------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Chip selected; Duration, Stake, Allow equals visible            | Both     |
-| 3   | Select Rise option                | `clickRiseFallOption('Rise')`                                   | Purchase button turns green                                     | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                           | Duration field shows `15 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.50')`                                             | Stake field shows `10.50`                                       | Both     |
-| 6   | Buy Rise contract                 | `clickBuy()` — captures payout                                  | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`  | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`             | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`           | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                          | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                     | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`         | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                             | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                        | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                        | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Chip selected; Duration, Stake, Allow equals visible | Both |
+| 3 | Select Rise option | `clickRiseFallOption('Rise')` | Purchase button turns green | Both |
+| 4 | Select duration | `selectDuration('Minutes', '15 min')` | Duration field shows `15 min` | Both |
+| 5 | Set stake | `setStake('10.50')` | Stake field shows `10.50` | Both |
+| 6 | Buy Rise contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 7 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 8 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 9 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 10 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 11 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 12 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 2.2 — Rise/Fall: buy Fall → close contract
 
 **Prerequisites:** Same as Flow 2.1.
 **Spec:** `playwright/tests/trade/rise-fall/verify-fall.spec.ts` — `VERIFY Buy "Fall" Contract and Close (Demo Account)` / `(Real Account)`
 
-| #   | Step                              | Action                                                          | Expected Result                                                 | Platform |
-| --- | --------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Chip selected; Duration, Stake, Allow equals visible            | Both     |
-| 3   | Select Fall option                | `clickRiseFallOption('Fall')`                                   | Purchase button turns red                                       | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                           | Duration field shows `15 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.50')`                                             | Stake field shows `10.50`                                       | Both     |
-| 6   | Buy Fall contract                 | `clickBuy()` — captures payout                                  | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`  | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`             | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`           | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                          | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                     | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`         | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                             | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                        | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                        | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Chip selected; Duration, Stake, Allow equals visible | Both |
+| 3 | Select Fall option | `clickRiseFallOption('Fall')` | Purchase button turns red | Both |
+| 4 | Select duration | `selectDuration('Minutes', '15 min')` | Duration field shows `15 min` | Both |
+| 5 | Set stake | `setStake('10.50')` | Stake field shows `10.50` | Both |
+| 6 | Buy Fall contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 7 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 8 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 9 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 10 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 11 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 12 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -124,23 +124,23 @@
 **Spec:** `playwright/tests/trade/rise-fall/verify-rise-allow-equals.spec.ts` — `VERIFY Buy "Rise" Contract with Allow Equals Enabled (Demo Account)` / `(Real Account)`
 **Unique params:** Allow equals toggle enabled (changes contract to RISEEQUAL), Duration (`15 min`), Stake (`10.50`)
 
-| #   | Step                              | Action                                                          | Expected Result                                                 | Platform |
-| --- | --------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Rise/Fall chip selected                                         | Both     |
-| 3   | Select duration                   | `selectDuration('Minutes', '15 min')`                           | Duration field shows `15 min`                                   | Both     |
-| 4   | Set stake amount                  | `setStake('10.50')`                                             | Stake input shows `10.50`                                       | Both     |
-| 5   | Enable Allow equals               | `buyRiseAndVerify({ allowEquals: true })`                       | Toggle activated; contract type changes to RISEEQUAL            | Both     |
-| 6   | Buy Rise contract                 | `clickBuy()` — captures payout                                  | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`  | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`             | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`           | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                          | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                     | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`         | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                             | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                        | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                        | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Rise/Fall chip selected | Both |
+| 3 | Select duration | `selectDuration('Minutes', '15 min')` | Duration field shows `15 min` | Both |
+| 4 | Set stake amount | `setStake('10.50')` | Stake input shows `10.50` | Both |
+| 5 | Enable Allow equals | `buyRiseAndVerify({ allowEquals: true })` | Toggle activated; contract type changes to RISEEQUAL | Both |
+| 6 | Buy Rise contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 7 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 8 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 9 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 10 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 11 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 12 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 2.4 — Rise/Fall Allow Equals: buy Fall → close contract
 
@@ -148,23 +148,23 @@
 **Spec:** `playwright/tests/trade/rise-fall/verify-fall-allow-equals.spec.ts` — `VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)` / `(Real Account)`
 **Unique params:** Allow equals toggle enabled (changes contract to FALLEQUAL), Duration (`18 min`), Stake (`20.50`)
 
-| #   | Step                              | Action                                                          | Expected Result                                                 | Platform |
-| --- | --------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Rise/Fall chip selected                                         | Both     |
-| 3   | Select duration                   | `selectDuration('Minutes', '18 min')`                           | Duration field shows `18 min`                                   | Both     |
-| 4   | Set stake amount                  | `setStake('20.50')`                                             | Stake input shows `20.50`                                       | Both     |
-| 5   | Enable Allow equals               | `buyFallAndVerify({ allowEquals: true })`                       | Toggle activated; contract type changes to FALLEQUAL            | Both     |
-| 6   | Buy Fall contract                 | `clickBuy()` — captures payout                                  | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`  | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`             | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`           | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                          | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                     | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`         | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                             | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                        | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                        | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall')` | Rise/Fall chip selected | Both |
+| 3 | Select duration | `selectDuration('Minutes', '18 min')` | Duration field shows `18 min` | Both |
+| 4 | Set stake amount | `setStake('20.50')` | Stake input shows `20.50` | Both |
+| 5 | Enable Allow equals | `buyFallAndVerify({ allowEquals: true })` | Toggle activated; contract type changes to FALLEQUAL | Both |
+| 6 | Buy Fall contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 7 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 8 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 9 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 10 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 11 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 12 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -172,51 +172,53 @@
 
 ### Flow 3.1 — Higher/Lower: buy Higher → close contract
 
-**Prerequisites:** Authenticated with funded account. Symbol supporting Higher/Lower with barrier (e.g. Volatility 75 Index).
+**Prerequisites:** Authenticated with funded account. Symbol supporting Higher/Lower with barrier (e.g. Volatility 100 Index).
 **Spec:** `playwright/tests/trade/higher-lower/verify-higher.spec.ts` — `VERIFY Buy "Higher" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Barrier (above/below spot), Duration (`15 min`), Stake (`10.00`)
+**Unique params:** Barrier (`Above spot`, `8.11`), Duration (`1 hr`), Stake (`10.00`)
 
-| #   | Step                              | Action                                                            | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Higher/Lower')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select Higher option              | `clickHigherLowerOption('Higher')`                                | Purchase button turns green                                     | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                             | Duration field shows `15 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                                       | Both     |
-| 6   | Buy Higher contract               | `clickBuy()` — captures payout                                    | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`             | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                            | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                       | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`           | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                               | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                          | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                          | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Higher/Lower')` | Chip selected; Barrier, Duration, Stake visible | Both |
+| 3 | Select Higher option | `clickHigherLowerOption('Higher')` | Purchase button turns green | Both |
+| 4 | Select duration | `selectDuration('Hours', '1 hr')` | Duration field shows `1 hr` | Both |
+| 5 | Set barrier | `setBarrier('8.11', 'Above spot')` — uses market-snapped accepted offset | Barrier field shows a valid `+` offset | Both |
+| 6 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 7 | Buy Higher contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 10 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 3.2 — Higher/Lower: buy Lower → close contract
 
 **Prerequisites:** Same as Flow 3.1.
 **Spec:** `playwright/tests/trade/higher-lower/verify-lower.spec.ts` — `VERIFY Buy "Lower" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Duration (`18 min`), Stake (`10.00`)
+**Unique params:** Barrier (`Below spot`, `8.00`), Duration (`1h 30m`), Stake (`10.00`)
 
-| #   | Step                              | Action                                                            | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Higher/Lower')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select Lower option               | `clickHigherLowerOption('Lower')`                                 | Purchase button turns red                                       | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '18 min')`                             | Duration field shows `18 min`                                   | Both     |
-| 5   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                                       | Both     |
-| 6   | Buy Lower contract                | `clickBuy()` — captures payout                                    | Contract purchased                                              | Both     |
-| 7   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake                          | Both     |
-| 8   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct                      | Both     |
-| 9   | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`             | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 10  | Close contract                    | `closeFirstContract()`                                            | Contract card disappears from Positions                         | Both     |
-| 11  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                       | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 12  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`           | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                               | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                          | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                          | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Higher/Lower')` | Chip selected; Barrier, Duration, Stake visible | Both |
+| 3 | Select Lower option | `clickHigherLowerOption('Lower')` | Purchase button turns red | Both |
+| 4 | Select duration | `selectDuration('Hours', '1h 30m')` | Duration field shows `1h 30m` | Both |
+| 5 | Set barrier | `setBarrier('8.00', 'Below spot')` — uses market-snapped accepted offset | Barrier field shows a valid `-` offset | Both |
+| 6 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 7 | Buy Lower contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 10 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -224,53 +226,53 @@
 
 ### Flow 4.1 — Touch/No Touch: buy Touch → close contract
 
-**Prerequisites:** Authenticated with funded account. Symbol supporting Touch/No Touch (e.g. Volatility 10 (1s) Index).
+**Prerequisites:** Authenticated with funded account. Symbol supporting Touch/No Touch (e.g. Volatility 100 Index).
 **Spec:** `playwright/tests/trade/touch-no-touch/verify-touch.spec.ts` — `VERIFY Buy "Touch" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Barrier (`Above spot`, `1.01`), Duration (`15 min`), Stake (`5.01`)
+**Unique params:** Barrier (`Above spot`, `8.01`), Duration (`15 min`), Stake (`5.01`)
 
-| #   | Step                              | Action                                                                   | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                         | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 10 (1s) Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select Touch option               | `clickTouchNoTouchOption('Touch')`                                       | Purchase button turns green                                     | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '15 min')`                                    | Duration field shows `15 min`                                   | Both     |
-| 5   | Set barrier                       | `setBarrier('1.01', 'Above spot')` — uses market-snapped accepted offset | Barrier field shows a valid `+` offset                          | Both     |
-| 6   | Set stake                         | `setStake('5.01')`                                                       | Stake field shows `5.01`                                        | Both     |
-| 7   | Buy Touch contract                | `clickBuy()` — captures payout                                           | Contract purchased                                              | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`           | Card visible; balance reduced by stake                          | Both     |
-| 9   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                      | Headers, row values, footer totals correct                      | Both     |
-| 10  | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`                    | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 11  | Close contract                    | `closeFirstContract()`                                                   | Contract card disappears from Positions                         | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                              | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 13  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`                  | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                      | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                 | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible | Both |
+| 3 | Select Touch option | `clickTouchNoTouchOption('Touch')` | Purchase button turns green | Both |
+| 4 | Select duration | `selectDuration('Minutes', '15 min')` | Duration field shows `15 min` | Both |
+| 5 | Set barrier | `setBarrier('8.01', 'Above spot')` — uses market-snapped accepted offset | Barrier field shows a valid `+` offset | Both |
+| 6 | Set stake | `setStake('5.01')` | Stake field shows `5.01` | Both |
+| 7 | Buy Touch contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 10 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 4.2 — Touch/No Touch: buy No Touch → close contract
 
 **Prerequisites:** Same as Flow 4.1.
 **Spec:** `playwright/tests/trade/touch-no-touch/verify-no-touch.spec.ts` — `VERIFY Buy "No Touch" Contract and Close (Demo Account)` / `(Real Account)`
-**Unique params:** Barrier (`Below spot`, `0.99`), Duration (`5 min`), Stake (`6.09`)
+**Unique params:** Barrier (`Below spot`, `8.99`), Duration (`5 min`), Stake (`6.09`)
 
-| #   | Step                              | Action                                                                   | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                         | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 10 (1s) Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible                 | Both     |
-| 3   | Select No Touch option            | `clickTouchNoTouchOption('No Touch')`                                    | Purchase button turns red                                       | Both     |
-| 4   | Select duration                   | `selectDuration('Minutes', '5 min')`                                     | Duration field shows `5 min`                                    | Both     |
-| 5   | Set barrier                       | `setBarrier('0.99', 'Below spot')` — uses market-snapped accepted offset | Barrier field shows a valid `-` offset                          | Both     |
-| 6   | Set stake                         | `setStake('6.09')`                                                       | Stake field shows `6.09`                                        | Both     |
-| 7   | Buy No Touch contract             | `clickBuy()` — captures payout                                           | Contract purchased                                              | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`           | Card visible; balance reduced by stake                          | Both     |
-| 9   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                      | Headers, row values, footer totals correct                      | Both     |
-| 10  | Open contract details (open)      | `openFirstContract()` + `verifyContractDetailsPage()`                    | Ref. ID, Duration, Start time, Entry spot, Barrier visible      | Both     |
-| 11  | Close contract                    | `closeFirstContract()`                                                   | Contract card disappears from Positions                         | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                              | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 13  | Open contract details (closed)    | `verifyClosedContractDetailsPage()` — captures `sellId`                  | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn  | Both     |
-| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                      | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                 | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Touch/No Touch')` | Chip selected; Barrier, Duration, Stake visible | Both |
+| 3 | Select No Touch option | `clickTouchNoTouchOption('No Touch')` | Purchase button turns red | Both |
+| 4 | Select duration | `selectDuration('Minutes', '5 min')` | Duration field shows `5 min` | Both |
+| 5 | Set barrier | `setBarrier('8.99', 'Below spot')` — uses market-snapped accepted offset | Barrier field shows a valid `-` offset | Both |
+| 6 | Set stake | `setStake('6.09')` | Stake field shows `6.09` | Both |
+| 7 | Buy No Touch contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 10 | Open contract details (open) | `openFirstContract()` + `verifyContractDetailsPage()` | Ref. ID, Duration, Start time, Entry spot, Barrier visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs, Exit spot, Exit time visible; no Sell btn | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -284,20 +286,20 @@
 **Spec:** `playwright/tests/trade/matches-differs/verify-matches.spec.ts` — `VERIFY Buy "Matches" Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Last digit prediction, Duration (ticks), Stake (`10.00`)
 
-| #   | Step                                 | Action                                                                             | Expected Result                                      | Platform |
-| --- | ------------------------------------ | ---------------------------------------------------------------------------------- | ---------------------------------------------------- | -------- |
-| 1   | Select market and trade type         | `selectMarketAndTradeType('Volatility 10 Index', 'Matches/Differs')`               | Chip selected; last digit prediction + Stake visible | Both     |
-| 2   | Select Matches                       | `clickMatchesDiffersOption('Matches')`                                             | Purchase button turns green                          | Both     |
-| 3   | Select duration (ticks only)         | `selectTicksDuration('10 ticks')`                                                  | Duration field shows `10 ticks`                      | Both     |
-| 4   | Set stake                            | `setStake('10.00')`                                                                | Stake field shows `10.00`                            | Both     |
-| 5   | Select digit prediction              | `selectDigit('5')`                                                                 | Digit 5 selected                                     | Both     |
-| 6   | Buy Matches contract                 | `clickBuy()` — captures payout                                                     | Contract purchased; balance reduced by stake         | Both     |
-| 7   | Open the open position's details     | `openFirstContract()` + `getBuyReferenceId()`                                      | Buy reference ID captured (pins this contract)       | Both     |
-| 8   | Wait for auto-expiry in place        | `waitForContractSettled()`                                                         | Sell reference ID appears (contract settled)         | Both     |
-| 9   | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L                    | Closed card shows market/type/stake/Closed + P/L     | Both     |
-| 10  | Verify settled contract details      | `verifyClosedDigitContractDetailsPage()` — asserts Target digit, extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time correct    | Both     |
-| 11  | Verify final balance                 | `verifyBalanceAfterContractClose()`                                                | Balance = afterBuy + stake + P/L                     | Both     |
-| 12  | Verify settled contract in Reports   | `verifyClosedContractInReports(buyId, sellId, …)`                                  | Trade table + Statement rows match                   | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select market and trade type | `selectMarketAndTradeType('Volatility 10 Index', 'Matches/Differs')` | Chip selected; last digit prediction + Stake visible | Both |
+| 2 | Select Matches | `clickMatchesDiffersOption('Matches')` | Purchase button turns green | Both |
+| 3 | Select duration (ticks only) | `selectTicksDuration('10 ticks')` | Duration field shows `10 ticks` | Both |
+| 4 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 5 | Select digit prediction | `selectDigit('5')` | Digit 5 selected | Both |
+| 6 | Buy Matches contract | `clickBuy()` — captures payout | Contract purchased; balance reduced by stake | Both |
+| 7 | Open the open position's details | `openFirstContract()` + `getBuyReferenceId()` | Buy reference ID captured (pins this contract) | Both |
+| 8 | Wait for auto-expiry in place | `waitForContractSettled()` | Sell reference ID appears (contract settled) | Both |
+| 9 | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L | Closed card shows market/type/stake/Closed + P/L | Both |
+| 10 | Verify settled contract details | `verifyClosedDigitContractDetailsPage()` — asserts Target digit, extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time correct | Both |
+| 11 | Verify final balance | `verifyBalanceAfterContractClose()` | Balance = afterBuy + stake + P/L | Both |
+| 12 | Verify settled contract in Reports | `verifyClosedContractInReports(buyId, sellId, …)` | Trade table + Statement rows match | Both |
 
 ### Flow 5.2 — Matches/Differs: buy Differs → settle → verify closed
 
@@ -319,20 +321,20 @@ Identical chain to Flow 5.1 with `clickMatchesDiffersOption('Differs')` (purchas
 **Spec:** `playwright/tests/trade/over-under/verify-over.spec.ts` — `VERIFY Buy "Over" Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Last digit prediction, Duration (ticks), Stake (`10.00`)
 
-| #   | Step                                 | Action                                                                             | Expected Result                                  | Platform |
-| --- | ------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------ | -------- |
-| 1   | Select market and trade type         | `selectMarketAndTradeType('Volatility 10 Index', 'Over/Under')`                    | Chip selected; last digit prediction + Stake     | Both     |
-| 2   | Select Over                          | `selectPredictionOption('Over', 'top')`                                            | Purchase button turns green                      | Both     |
-| 3   | Select duration (ticks only)         | `selectTicksDuration('10 ticks')`                                                  | Duration field shows `10 ticks`                  | Both     |
-| 4   | Set stake                            | `setStake('10.00')`                                                                | Stake field shows `10.00`                        | Both     |
-| 5   | Select digit prediction              | `selectDigit('5')`                                                                 | Digit 5 selected                                 | Both     |
-| 6   | Buy Over contract                    | `clickBuy()` — captures payout                                                     | Contract purchased; balance reduced by stake     | Both     |
-| 7   | Open the open position's details     | `openFirstContract()` + `getBuyReferenceId()`                                      | Buy reference ID captured (pins this contract)   | Both     |
-| 8   | Wait for auto-expiry in place        | `waitForContractSettled()`                                                         | Sell reference ID appears (contract settled)     | Both     |
-| 9   | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L                    | Closed card shows market/type/stake/Closed + P/L | Both     |
-| 10  | Verify settled contract details      | `verifyClosedDigitContractDetailsPage()` — asserts Target digit, extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time        | Both     |
-| 11  | Verify final balance                 | `verifyBalanceAfterContractClose()`                                                | Balance = afterBuy + stake + P/L                 | Both     |
-| 12  | Verify settled contract in Reports   | `verifyClosedContractInReports(buyId, sellId, …)`                                  | Trade table + Statement rows match               | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select market and trade type | `selectMarketAndTradeType('Volatility 10 Index', 'Over/Under')` | Chip selected; last digit prediction + Stake | Both |
+| 2 | Select Over | `selectPredictionOption('Over', 'top')` | Purchase button turns green | Both |
+| 3 | Select duration (ticks only) | `selectTicksDuration('10 ticks')` | Duration field shows `10 ticks` | Both |
+| 4 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 5 | Select digit prediction | `selectDigit('5')` | Digit 5 selected | Both |
+| 6 | Buy Over contract | `clickBuy()` — captures payout | Contract purchased; balance reduced by stake | Both |
+| 7 | Open the open position's details | `openFirstContract()` + `getBuyReferenceId()` | Buy reference ID captured (pins this contract) | Both |
+| 8 | Wait for auto-expiry in place | `waitForContractSettled()` | Sell reference ID appears (contract settled) | Both |
+| 9 | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L | Closed card shows market/type/stake/Closed + P/L | Both |
+| 10 | Verify settled contract details | `verifyClosedDigitContractDetailsPage()` — asserts Target digit, extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time | Both |
+| 11 | Verify final balance | `verifyBalanceAfterContractClose()` | Balance = afterBuy + stake + P/L | Both |
+| 12 | Verify settled contract in Reports | `verifyClosedContractInReports(buyId, sellId, …)` | Trade table + Statement rows match | Both |
 
 ### Flow 6.2 — Over/Under: buy Under → settle → verify closed
 
@@ -353,19 +355,19 @@ Identical chain to Flow 6.1 with `selectPredictionOption('Under', 'bottom')` (pu
 **Spec:** `playwright/tests/trade/even-odd/verify-even.spec.ts` — `VERIFY Buy "Even" Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Duration (ticks), Stake (`10.00`) — no digit selector
 
-| #   | Step                                 | Action                                                                            | Expected Result                                  | Platform |
-| --- | ------------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------ | -------- |
-| 1   | Select market and trade type         | `selectMarketAndTradeType('Volatility 10 Index', 'Even/Odd')`                     | Chip selected; Last digit prediction NOT visible | Both     |
-| 2   | Select Even                          | `selectPredictionOption('Even', 'top')`                                           | Purchase button turns green                      | Both     |
-| 3   | Select duration (ticks only)         | `selectTicksDuration('10 ticks')`                                                 | Duration field shows `10 ticks`                  | Both     |
-| 4   | Set stake                            | `setStake('10.00')`                                                               | Stake field shows `10.00`                        | Both     |
-| 5   | Buy Even contract                    | `clickBuy()` — captures payout                                                    | Contract purchased; balance reduced by stake     | Both     |
-| 6   | Open the open position's details     | `openFirstContract()` + `getBuyReferenceId()`                                     | Buy reference ID captured (pins this contract)   | Both     |
-| 7   | Wait for auto-expiry in place        | `waitForContractSettled()`                                                        | Sell reference ID appears (contract settled)     | Both     |
-| 8   | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L                   | Closed card shows market/type/stake/Closed + P/L | Both     |
-| 9   | Verify settled contract details      | `verifyClosedDigitContractDetailsPage()` — Target reads "Even", extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time        | Both     |
-| 10  | Verify final balance                 | `verifyBalanceAfterContractClose()`                                               | Balance = afterBuy + stake + P/L                 | Both     |
-| 11  | Verify settled contract in Reports   | `verifyClosedContractInReports(buyId, sellId, …)`                                 | Trade table + Statement rows match               | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select market and trade type | `selectMarketAndTradeType('Volatility 10 Index', 'Even/Odd')` | Chip selected; Last digit prediction NOT visible | Both |
+| 2 | Select Even | `selectPredictionOption('Even', 'top')` | Purchase button turns green | Both |
+| 3 | Select duration (ticks only) | `selectTicksDuration('10 ticks')` | Duration field shows `10 ticks` | Both |
+| 4 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 5 | Buy Even contract | `clickBuy()` — captures payout | Contract purchased; balance reduced by stake | Both |
+| 6 | Open the open position's details | `openFirstContract()` + `getBuyReferenceId()` | Buy reference ID captured (pins this contract) | Both |
+| 7 | Wait for auto-expiry in place | `waitForContractSettled()` | Sell reference ID appears (contract settled) | Both |
+| 8 | Verify settled contract in Positions | Closed tab → `verifyClosedPositionsTab()` — captures signed P/L | Closed card shows market/type/stake/Closed + P/L | Both |
+| 9 | Verify settled contract details | `verifyClosedDigitContractDetailsPage()` — Target reads "Even", extracts `sellId` | Ref IDs, Duration, Target, Exit spot/time | Both |
+| 10 | Verify final balance | `verifyBalanceAfterContractClose()` | Balance = afterBuy + stake + P/L | Both |
+| 11 | Verify settled contract in Reports | `verifyClosedContractInReports(buyId, sellId, …)` | Trade table + Statement rows match | Both |
 
 ### Flow 7.2 — Even/Odd: buy Odd → settle → verify closed
 
@@ -386,23 +388,23 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/accumulators/verify-accumulators-no-tp.spec.ts` — `VERIFY Buy Accumulators Contract Without Take Profit and Close (Demo Account)` / `(Real Account)`
 **Unique params:** Growth rate (`5%`), Stake (`10.00`) — NO Duration, Take profit left off
 
-| #   | Step                              | Action                                                             | Expected Result                                                 | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                   | Trade page loaded                                               | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Accumulators')` | Chip selected; Growth rate, Take profit, Stake visible          | Both     |
-| 3   | Verify no Duration param          | Observe parameters                                                 | "Duration" NOT visible                                          | Both     |
-| 4   | Set growth rate to 5%             | `setGrowthRate('5%')`                                              | Growth rate shows `5%`                                          | Both     |
-| 5   | Verify Take profit param visible  | Observe parameters                                                 | "Take profit" parameter visible                                 | Both     |
-| 6   | Verify Take profit is off         | Observe take profit toggle                                         | Take profit toggle is off by default                            | Both     |
-| 7   | Set stake                         | `setStake('10.00')`                                                | Stake field shows `10.00`                                       | Both     |
-| 8   | Buy Accumulators contract         | `clickBuy()` — captures payout                                     | Contract purchased                                              | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`     | Card visible; balance reduced by stake                          | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`                | Headers, row values, footer totals correct                      | Both     |
-| 11  | Close contract from trade page    | Click "Close [amount] [currency]" on purchase button (trade page)  | Contract closed                                                 | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                        | Card shows market, trade type, stake, "Closed" status, P&L      | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                | Balance = balanceBeforeClose + stake + P&L                      | Both     |
-| 14  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                           | Row by `buyId`; dates, stake, contract value, P&L correct       | Both     |
-| 15  | Reports — Statement               | `verifyClosedContractInReports()` step 3                           | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Accumulators')` | Chip selected; Growth rate, Take profit, Stake visible | Both |
+| 3 | Verify no Duration param | Observe parameters | "Duration" NOT visible | Both |
+| 4 | Set growth rate to 5% | `setGrowthRate('5%')` | Growth rate shows `5%` | Both |
+| 5 | Verify Take profit param visible | Observe parameters | "Take profit" parameter visible | Both |
+| 6 | Verify Take profit is off | Observe take profit toggle | Take profit toggle is off by default | Both |
+| 7 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 8 | Buy Accumulators contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 11 | Close contract from trade page | Click "Close [amount] [currency]" on purchase button (trade page) | Contract closed | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 8.2 — Accumulators with Take Profit: buy → TP closes contract
 
@@ -410,21 +412,21 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/accumulators/verify-accumulators-with-tp.spec.ts` — `VERIFY Buy Accumulators Contract With Take Profit and Close (Demo Account)` / `(Real Account)`
 **Unique params:** Growth rate (`5%`), Take profit toggle + input (`4.00`) enabled
 
-| #   | Step                              | Action                                                             | Expected Result                                                    | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                   | Trade page loaded                                                  | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Accumulators')` | Chip selected; Growth rate, Take profit, Stake visible             | Both     |
-| 3   | Set growth rate to 5%             | `setGrowthRate('5%')`                                              | Growth rate shows `5%`                                             | Both     |
-| 4   | Set stake                         | `setStake('10.00')`                                                | Stake field shows `10.00`                                          | Both     |
-| 5   | Enable take profit                | Toggle take profit on                                              | Take profit input appears (`dt_take_profit_input` / `dt_tp_input`) | Both     |
-| 6   | Set take profit amount            | Enter `4.00` in take profit input                                  | Take profit shows `4.00`                                           | Both     |
-| 7   | Save take profit                  | Click "Save"                                                       | Take profit applied                                                | Both     |
-| 8   | Buy Accumulators contract         | `clickBuy()` — captures payout                                     | Contract purchased                                                 | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`     | Card visible; balance reduced by stake                             | Both     |
-| 10  | Verify TP set in contract details | `openFirstContract()` + observe TP field                           | Contract details shows TP amount `4.00`                            | Both     |
-| 11  | Close contract from trade page    | Click "Close [amount] [currency]" on purchase button (trade page)  | Contract closed                                                    | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures P&L                        | Card shows market, trade type, stake, "Closed" status, P&L         | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                | Balance = balanceBeforeClose + stake + P&L                         | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Accumulators')` | Chip selected; Growth rate, Take profit, Stake visible | Both |
+| 3 | Set growth rate to 5% | `setGrowthRate('5%')` | Growth rate shows `5%` | Both |
+| 4 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 5 | Enable take profit | Toggle take profit on | Take profit input appears (`dt_take_profit_input` / `dt_tp_input`) | Both |
+| 6 | Set take profit amount | Enter `4.00` in take profit input | Take profit shows `4.00` | Both |
+| 7 | Save take profit | Click "Save" | Take profit applied | Both |
+| 8 | Buy Accumulators contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 10 | Verify TP set in contract details | `openFirstContract()` + observe TP field | Contract details shows TP amount `4.00` | Both |
+| 11 | Close contract from trade page | Click "Close [amount] [currency]" on purchase button (trade page) | Contract closed | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
 
 ---
 
@@ -440,24 +442,24 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 >
 > **Stop out capture:** `readStopOut()` stores the **numeric** amount (`20.00`), not `$20.00`. Trade params use `$N.NN`; **contract details still render Money as `-20.00 USD`**. Mobile closed Order Details "Stop out level" is asserted with `toContainText` on that numeric. On mobile, Stop out lives only in the Stake sheet — reopen it, read the rows, dismiss with **Close** (header Save stays disabled while the draft equals the committed stake).
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                       | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                     | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Multipliers')`                                  | Chip selected; Multiplier, Risk management, Stake visible                                                                                                                             | Both     |
-| 3   | Select Up direction               | `clickUpDownOption('Up')`                                                                               | "Up" segment selected                                                                                                                                                                 | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x200')`                                                                                 | Multiplier field shows `x200`                                                                                                                                                         | Both     |
-| 5   | Set stake                         | `setStake('5.40')`                                                                                      | Stake field shows `5.40`                                                                                                                                                              | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                           | Both     |
-| 7   | Buy Up contract                   | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                 | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake                                                                                                                                                | Both     |
-| 9   | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                | Both     |
-| 10  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible                                                                                                            | Both     |
-| 11  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                               | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                             | Both     |
-| 13  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, contains numeric `stopOut` in `-N.NN USD`); Start time, Entry spot (exact), Exit time/spot | Both     |
-| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                            | Both     |
-| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                             | Both     |
-| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                       | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Multipliers')` | Chip selected; Multiplier, Risk management, Stake visible | Both |
+| 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x200')` | Multiplier field shows `x200` | Both |
+| 5 | Set stake | `setStake('5.40')` | Stake field shows `5.40` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 10 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, contains numeric `stopOut` in `-N.NN USD`); Start time, Entry spot (exact), Exit time/spot | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 > **Mobile date format:** Entry/exit details section renders dates as `DD Mon YYYY` (e.g. `07 Jul 2026`). The ISO `buyDate` is converted internally — no extra param needed.
 
@@ -467,24 +469,24 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/multipliers/verify-multipliers-no-tpsl.spec.ts` — `VERIFY Buy "Down" Multipliers Contract and Close (without TP/SL) (Demo Account)` / `(Real Account)`
 **Unique params:** Multiplier (`x300`), Stake (`5.88`)
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                       | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                     | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Multipliers')`                                  | Chip selected; Multiplier, Risk management, Stake visible                                                                                                                             | Both     |
-| 3   | Select Down direction             | `clickUpDownOption('Down')`                                                                             | "Down" segment selected                                                                                                                                                               | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x300')`                                                                                 | Multiplier field shows `x300`                                                                                                                                                         | Both     |
-| 5   | Set stake                         | `setStake('5.88')`                                                                                      | Stake field shows `5.88`                                                                                                                                                              | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                           | Both     |
-| 7   | Buy Down contract                 | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                 | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake                                                                                                                                                | Both     |
-| 9   | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                | Both     |
-| 10  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible                                                                                                            | Both     |
-| 11  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                               | Both     |
-| 12  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                             | Both     |
-| 13  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, contains numeric `stopOut` in `-N.NN USD`); Start time, Entry spot (exact), Exit time/spot | Both     |
-| 14  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                            | Both     |
-| 15  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                             | Both     |
-| 16  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                       | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Multipliers')` | Chip selected; Multiplier, Risk management, Stake visible | Both |
+| 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x300')` | Multiplier field shows `x300` | Both |
+| 5 | Set stake | `setStake('5.88')` | Stake field shows `5.88` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 10 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible | Both |
+| 11 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 13 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, contains numeric `stopOut` in `-N.NN USD`); Start time, Entry spot (exact), Exit time/spot | Both |
+| 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -500,25 +502,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 > - Commission is shown on the trade panel and the Stake sheet alongside Stop out and Stop out level, but pre-buy capture is still `readStopOut()` only (Stop out amount + assert Stop out level present). Commission is captured from the open contract details page and asserted on the closed page.
 > - Open positions card on mobile renders TP as `"30.01"` (no `+` prefix); desktop renders `"+30.01"`.
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                             | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                           | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers')`                                   | Chip selected; Multiplier, Risk management, Stake visible                                                                                                                                   | Both     |
-| 3   | Select Up direction               | `clickUpDownOption('Up')`                                                                               | "Up" segment selected                                                                                                                                                                       | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x160')`                                                                                 | Multiplier field shows `x160`                                                                                                                                                               | Both     |
-| 5   | Set stake                         | `setStake('10.00')`                                                                                     | Stake field shows `10.00`                                                                                                                                                                   | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                                 | Both     |
-| 7   | Set risk management (TP)          | `setRiskManagement({ takeProfit: '30.01' })` — opens panel, toggles TP on, types value, Tab, wait, Save | TP of `30.01` applied; risk management closes                                                                                                                                               | Both     |
-| 8   | Buy Up contract                   | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                       | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `30.01` (mobile) / `+30.01` (desktop)                                                                                                   | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                      | Both     |
-| 11  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; TP amount shown                                                                                                 | Both     |
-| 12  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                                     | Both     |
-| 13  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                                   | Both     |
-| 14  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (`30.01`), Stop loss (Not set); Start time, Entry spot, Exit time/spot | Both     |
-| 15  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                                  | Both     |
-| 16  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                                   | Both     |
-| 17  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                             | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers')` | Chip selected; Multiplier, Risk management, Stake visible | Both |
+| 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x160')` | Multiplier field shows `x160` | Both |
+| 5 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Set risk management (TP) | `setRiskManagement({ takeProfit: '30.01' })` — opens panel, toggles TP on, types value, Tab, wait, Save | TP of `30.01` applied; risk management closes | Both |
+| 8 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `30.01` (mobile) / `+30.01` (desktop) | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 11 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; TP amount shown | Both |
+| 12 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 13 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 14 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (`30.01`), Stop loss (Not set); Start time, Entry spot, Exit time/spot | Both |
+| 15 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 16 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 17 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ### Flow 9.4 — Multipliers with Take Profit: buy Down → close contract
 
@@ -526,25 +528,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/multipliers/verify-multipliers-with-tp.spec.ts` — `VERIFY Buy "Down" Multipliers Contract With Take Profit and Close (Demo Account)` / `(Real Account)`
 **Unique params:** TP (`21.32`), Stake (`11.11`), Multiplier (`x400`)
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                             | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                           | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers')`                                   | Chip selected                                                                                                                                                                               | Both     |
-| 3   | Select Down direction             | `clickUpDownOption('Down')`                                                                             | "Down" segment selected                                                                                                                                                                     | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x400')`                                                                                 | Multiplier field shows `x400`                                                                                                                                                               | Both     |
-| 5   | Set stake                         | `setStake('11.11')`                                                                                     | Stake field shows `11.11`                                                                                                                                                                   | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                                 | Both     |
-| 7   | Set risk management (TP)          | `setRiskManagement({ takeProfit: '21.32' })`                                                            | TP of `21.32` applied                                                                                                                                                                       | Both     |
-| 8   | Buy Down contract                 | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                       | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `21.32` (mobile) / `+21.32` (desktop)                                                                                                   | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                      | Both     |
-| 11  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; TP amount shown                                                                                                 | Both     |
-| 12  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                                     | Both     |
-| 13  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                                   | Both     |
-| 14  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (`21.32`), Stop loss (Not set); Start time, Entry spot, Exit time/spot | Both     |
-| 15  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                                  | Both     |
-| 16  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                                   | Both     |
-| 17  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                             | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers')` | Chip selected | Both |
+| 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x400')` | Multiplier field shows `x400` | Both |
+| 5 | Set stake | `setStake('11.11')` | Stake field shows `11.11` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Set risk management (TP) | `setRiskManagement({ takeProfit: '21.32' })` | TP of `21.32` applied | Both |
+| 8 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `21.32` (mobile) / `+21.32` (desktop) | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 11 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; TP amount shown | Both |
+| 12 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 13 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 14 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (`21.32`), Stop loss (Not set); Start time, Entry spot, Exit time/spot | Both |
+| 15 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 16 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 17 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -560,25 +562,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 > - Open positions card (mobile) renders SL as `-21.10 ` (negative prefix + trailing space) — use `new RegExp('^-${stopLoss}\\s*$')` in the assertion.
 > - Contract details page (mobile) verifies: trade type (`Multipliers Up`), stake (`25.05 USD`), TP badge absent, SL badge present, SL toggle `aria-pressed="true"`, SL input value (`-21.10 USD`), start time contains `buyDate`, TP/SL history section with label/value rows.
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                             | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                           | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 50 (1s) Index', 'Multipliers')`                                   | Chip selected; Multiplier, Risk management, Stake visible                                                                                                                                   | Both     |
-| 3   | Select Up direction               | `clickUpDownOption('Up')`                                                                               | "Up" segment selected                                                                                                                                                                       | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x200')`                                                                                 | Multiplier field shows `x200`                                                                                                                                                               | Both     |
-| 5   | Set stake                         | `setStake('25.05')`                                                                                     | Stake field shows `25.05`                                                                                                                                                                   | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                                 | Both     |
-| 7   | Set risk management (SL)          | `setRiskManagement({ stopLoss: '21.10' })` — opens panel, toggles SL on, types value, Tab, wait, Save   | SL of `21.10` applied; risk management closes                                                                                                                                               | Both     |
-| 8   | Buy Up contract                   | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                       | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-21.10 ` (mobile) / `-21.10` (desktop)                                                                                                 | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                      | Both     |
-| 11  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; SL amount shown; mobile: trade type, stake, TP badge absent, SL badge present, toggles, history                 | Both     |
-| 12  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                                     | Both     |
-| 13  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                                   | Both     |
-| 14  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (Not set), Stop loss (`21.10`); Start time, Entry spot, Exit time/spot | Both     |
-| 15  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                                  | Both     |
-| 16  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                                   | Both     |
-| 17  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                             | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 50 (1s) Index', 'Multipliers')` | Chip selected; Multiplier, Risk management, Stake visible | Both |
+| 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x200')` | Multiplier field shows `x200` | Both |
+| 5 | Set stake | `setStake('25.05')` | Stake field shows `25.05` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Set risk management (SL) | `setRiskManagement({ stopLoss: '21.10' })` — opens panel, toggles SL on, types value, Tab, wait, Save | SL of `21.10` applied; risk management closes | Both |
+| 8 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-21.10 ` (mobile) / `-21.10` (desktop) | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 11 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; SL amount shown; mobile: trade type, stake, TP badge absent, SL badge present, toggles, history | Both |
+| 12 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 13 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 14 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (Not set), Stop loss (`21.10`); Start time, Entry spot, Exit time/spot | Both |
+| 15 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 16 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 17 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 > **Mobile SL display:** Open positions card renders SL as `-21.10 ` (negative prefix + trailing space) — asserted with `new RegExp('^-21.10\\s*$')`.
 > **Mobile date format:** Entry/exit details section renders dates as `DD Mon YYYY` (e.g. `07 Jul 2026`). The ISO `buyDate` is converted internally — no extra param needed.
@@ -589,25 +591,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/multipliers/verify-multipliers-with-sl.spec.ts` — `VERIFY Buy "Down" Multipliers Contract With Stop Loss and Close (Demo Account)` / `(Real Account)`
 **Unique params:** SL (`23.01`), Multiplier (`x600`), Stake (`25.00`)
 
-| #   | Step                              | Action                                                                                                  | Expected Result                                                                                                                                                                                | Platform |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                        | Trade page loaded                                                                                                                                                                              | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 50 (1s) Index', 'Multipliers')`                                   | Chip selected                                                                                                                                                                                  | Both     |
-| 3   | Select Down direction             | `clickUpDownOption('Down')`                                                                             | "Down" segment selected                                                                                                                                                                        | Both     |
-| 4   | Set multiplier value              | `setMultiplier('x600')`                                                                                 | Multiplier field shows `x600`                                                                                                                                                                  | Both     |
-| 5   | Set stake                         | `setStake('25.00')`                                                                                     | Stake field shows `25.00`                                                                                                                                                                      | Both     |
-| 6   | Capture pre-buy values            | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present                                   | Numeric `stopOut` captured; Stop out level row visible (value not captured)                                                                                                                    | Both     |
-| 7   | Set risk management (SL)          | `setRiskManagement({ stopLoss: '23.01' })`                                                              | SL of `23.01` applied                                                                                                                                                                          | Both     |
-| 8   | Buy Down contract                 | `clickMultipliersBuy()`                                                                                 | Contract purchased; buy date captured                                                                                                                                                          | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-23.01 ` (mobile) / `-23.01` (desktop)                                                                                                    | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)`                               | Multiplier, currency, stake, contract cost, contract value all correct                                                                                                                         | Both     |
-| 11  | Open contract details (open)      | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission`                | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; SL amount shown; mobile: trade type `Multipliers Down`, stake, TP badge absent, SL badge present, toggles, history | Both     |
-| 12  | Close contract                    | `closeFirstContract()`                                                                                  | Contract card disappears from Positions                                                                                                                                                        | Both     |
-| 13  | Verify closed contract card       | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount`                                      | Card shows market, trade type, stake, P&L                                                                                                                                                      | Both     |
-| 14  | Open contract details (closed)    | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId`                                      | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (Not set), Stop loss (`23.01`); Start time, Entry spot, Exit time/spot    | Both     |
-| 15  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                                                     | Balance = balanceBeforeClose + stake + P&L                                                                                                                                                     | Both     |
-| 16  | Reports — Trade table             | `verifyClosedContractInReports()` step 2                                                                | Row by `buyId`; dates, stake, contract value, P&L correct                                                                                                                                      | Both     |
-| 17  | Reports — Statement               | `verifyClosedContractInReports()` step 3                                                                | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct                                                                                                                                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 50 (1s) Index', 'Multipliers')` | Chip selected | Both |
+| 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
+| 4 | Set multiplier value | `setMultiplier('x600')` | Multiplier field shows `x600` | Both |
+| 5 | Set stake | `setStake('25.00')` | Stake field shows `25.00` | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 7 | Set risk management (SL) | `setRiskManagement({ stopLoss: '23.01' })` | SL of `23.01` applied | Both |
+| 8 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-23.01 ` (mobile) / `-23.01` (desktop) | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
+| 11 | Open contract details (open) | `verifyMultipliersContractDetailsPage()` — captures `buyId` + `entrySpot` + `commission` | Ref. ID, Multiplier, Commission (captured), Start time, Entry spot visible; SL amount shown; mobile: trade type `Multipliers Down`, stake, TP badge absent, SL badge present, toggles, history | Both |
+| 12 | Close contract | `closeFirstContract()` | Contract card disappears from Positions | Both |
+| 13 | Verify closed contract card | `verifyClosedPositionsTab()` — captures `contractProfitLossAmount` | Card shows market, trade type, stake, P&L | Both |
+| 14 | Open contract details (closed) | `verifyClosedMultipliersContractDetailsPage()` — captures `sellId` | Buy + Sell Ref. IDs; Multiplier, Stake, Commission (matches open), Stop out level (mobile, `-N.NN USD`); Take profit (Not set), Stop loss (`23.01`); Start time, Entry spot, Exit time/spot | Both |
+| 15 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+| 16 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
+| 17 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
 ---
 
@@ -621,21 +623,21 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 >
 > **Buy button:** with DC active the button reads **"Total cost $N.NN"** (symbol-prefixed, no Money `dt_span`). Capture that amount before buying — it is stake + DC fee + commission, and it is what the Positions card Stake row and the balance deduction use.
 
-| #   | Step                              | Action                                                                                                                                  | Expected Result                                                                                       | Platform |
-| --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                                                                                        | Trade page loaded                                                                                     | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 75 Index', 'Multipliers')`                                                                        | Chip selected                                                                                         | Both     |
-| 3   | Set stake                         | `setStake('20.00')`                                                                                                                     | Stake field shows `20.00`                                                                             | Both     |
-| 4   | Set multiplier value              | Select `x300` in multiplier selector                                                                                                    | Multiplier shows `x300`                                                                               | Both     |
-| 5   | Open Risk management              | Click "Risk management" param                                                                                                           | Panel opens                                                                                           | Both     |
-| 6   | Enable Deal cancellation          | Select "Deal cancellation" tab                                                                                                          | DC selected; saving DC turns TP/SL off (mutually exclusive)                                           | Both     |
-| 7   | Save                              | Click "Save"                                                                                                                            | DC applied; risk field shows `DC: 5 minutes`                                                          | Both     |
-| 8   | Capture Total cost and buy        | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`                                    | Total cost `$N.NN` captured as numeric; contract purchased                                            | Both     |
-| 9   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both     |
-| 10  | Open contract details             | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()`                                  | Open details: contract cost = stake, Stake = Total cost, DC fee set, Cancel countdown                 | Both     |
-| 11  | Cancel contract                   | Click "Cancel [mm:ss]" button                                                                                                           | Contract cancelled                                                                                    | Both     |
-| 12  | Verify closed position            | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                                                             | Card and details show executed DC; P/L equals the kept fee                                            | Both     |
-| 13  | Verify balance after cancel       | `verifyBalanceAfterContractClose()`                                                                                                     | Balance = after-buy + Total cost + P/L                                                                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 75 Index', 'Multipliers')` | Chip selected | Both |
+| 3 | Set stake | `setStake('20.00')` | Stake field shows `20.00` | Both |
+| 4 | Set multiplier value | Select `x300` in multiplier selector | Multiplier shows `x300` | Both |
+| 5 | Open Risk management | Click "Risk management" param | Panel opens | Both |
+| 6 | Enable Deal cancellation | Select "Deal cancellation" tab | DC selected; saving DC turns TP/SL off (mutually exclusive) | Both |
+| 7 | Save | Click "Save" | DC applied; risk field shows `DC: 5 minutes` | Both |
+| 8 | Capture Total cost and buy | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()` | Total cost `$N.NN` captured as numeric; contract purchased | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both |
+| 10 | Open contract details | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()` | Open details: contract cost = stake, Stake = Total cost, DC fee set, Cancel countdown | Both |
+| 11 | Cancel contract | Click "Cancel [mm:ss]" button | Contract cancelled | Both |
+| 12 | Verify closed position | Closed tab + `verifyClosedMultipliersContractDetailsPage()` | Card and details show executed DC; P/L equals the kept fee | Both |
+| 13 | Verify balance after cancel | `verifyBalanceAfterContractClose()` | Balance = after-buy + Total cost + P/L | Both |
 
 ### Flow 9.8 — Multipliers with Deal Cancellation: buy Down → cancel contract
 
@@ -645,15 +647,15 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 
 > **Structural exception:** Same as Flow 9.7 — cancel from details, then Closed tab + closed details; no Reports/Statement.
 
-| #   | Step                               | Action                                                                                                                                  | Expected Result                                                                                       | Platform |
-| --- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| 1–7 | Setup (same as Flow 9.7 steps 1–7) | Same setup steps                                                                                                                        | DC applied                                                                                            | Both     |
-| 8   | Capture Total cost and buy         | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()`                                    | Total cost `$N.NN` captured as numeric; contract purchased                                            | Both     |
-| 9   | Verify open position in Positions  | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both     |
-| 10  | Open contract details              | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()`                                  | Open details + DC timer/Cancel                                                                        | Both     |
-| 11  | Cancel contract                    | Click "Cancel [mm:ss]" button                                                                                                           | Contract cancelled                                                                                    | Both     |
-| 12  | Verify closed position             | Closed tab + `verifyClosedMultipliersContractDetailsPage()`                                                                             | Executed DC on closed details                                                                         | Both     |
-| 13  | Verify balance after cancel        | `verifyBalanceAfterContractClose()`                                                                                                     | Balance = after-buy + Total cost + P/L                                                                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1–7 | Setup (same as Flow 9.7 steps 1–7) | Same setup steps | DC applied | Both |
+| 8 | Capture Total cost and buy | Assert Buy shows "Total cost"; read `multipliersTotalCost`; `readStopOut()`; `clickMultipliersBuy()` | Total cost `$N.NN` captured as numeric; contract purchased | Both |
+| 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyMultipliersContractCardDetails()` + `verifyDesktopDealCancellationCancelOnOpenCard()` (desktop) | Card visible; desktop flyout shows `.contract-card__cancel-btn` (#899); balance reduced by Total cost | Both |
+| 10 | Open contract details | `openFirstContract()` + `verifyMultipliersContractDetailsPage()` + `verifyDealCancellationAvailable()` | Open details + DC timer/Cancel | Both |
+| 11 | Cancel contract | Click "Cancel [mm:ss]" button | Contract cancelled | Both |
+| 12 | Verify closed position | Closed tab + `verifyClosedMultipliersContractDetailsPage()` | Executed DC on closed details | Both |
+| 13 | Verify balance after cancel | `verifyBalanceAfterContractClose()` | Balance = after-buy + Total cost + P/L | Both |
 
 ---
 
@@ -667,19 +669,19 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/turbos/verify-turbos-up.spec.ts` — `VERIFY Buy "Up" Turbos Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Duration, Payout per point (`dt_payout-per-point_wrapper`), Stake (`10.00`) — Take profit off by default
 
-| #   | Step                              | Action                                                            | Expected Result                            | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------ | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                          | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected                       | Both     |
-| 3   | Verify Duration param visible     | Observe parameters                                                | "Duration" parameter visible               | Both     |
-| 4   | Verify Payout per point visible   | Observe parameters                                                | "Payout per point" parameter visible       | Both     |
-| 5   | Verify Take profit param visible  | Observe parameters                                                | "Take profit" parameter visible            | Both     |
-| 6   | Verify Take profit is off         | Observe take profit toggle                                        | Take profit toggle is off by default       | Both     |
-| 7   | Verify Barrier info panel visible | Observe below parameters                                          | Barrier info panel visible                 | Both     |
-| 8   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                  | Both     |
-| 9   | Buy Up contract                   | `clickBuy()` — captures payout                                    | Contract purchased                         | Both     |
-| 10  | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake     | Both     |
-| 11  | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected | Both |
+| 3 | Verify Duration param visible | Observe parameters | "Duration" parameter visible | Both |
+| 4 | Verify Payout per point visible | Observe parameters | "Payout per point" parameter visible | Both |
+| 5 | Verify Take profit param visible | Observe parameters | "Take profit" parameter visible | Both |
+| 6 | Verify Take profit is off | Observe take profit toggle | Take profit toggle is off by default | Both |
+| 7 | Verify Barrier info panel visible | Observe below parameters | Barrier info panel visible | Both |
+| 8 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 9 | Buy Up contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 10 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 11 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
 
 ### Flow 10.2 — Turbos without TP: buy Down → verify in positions
 
@@ -687,14 +689,14 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/turbos/verify-turbos-down.spec.ts` — `VERIFY Buy "Down" Turbos Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Stake (`10.00`)
 
-| #   | Step                              | Action                                                            | Expected Result                            | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------ | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                          | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected                       | Both     |
-| 3   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                  | Both     |
-| 4   | Buy Down contract                 | `clickBuy()` — captures payout                                    | Contract purchased                         | Both     |
-| 5   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake     | Both     |
-| 6   | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected | Both |
+| 3 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 4 | Buy Down contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 5 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 6 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
 
 ### Flow 10.3 — Turbos with Take Profit: buy Up → verify TP set in positions
 
@@ -702,18 +704,18 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/turbos/verify-turbos-up-with-tp.spec.ts` — `VERIFY Buy "Up" Turbos Contract With Take Profit (Demo Account)` / `(Real Account)`
 **Unique params:** TP (`20.00`), Stake (`10.00`)
 
-| #   | Step                              | Action                                                            | Expected Result                                           | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                                         | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected                                      | Both     |
-| 3   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                                 | Both     |
-| 4   | Enable take profit                | Toggle take profit on                                             | TP input appears (`dt_take_profit_input` / `dt_tp_input`) | Both     |
-| 5   | Set take profit amount            | Enter `20.00` in take profit input                                | TP input shows `20.00`                                    | Both     |
-| 6   | Save take profit                  | Click "Save"                                                      | Take profit applied                                       | Both     |
-| 7   | Buy Up contract                   | `clickBuy()` — captures payout                                    | Contract purchased                                        | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake                    | Both     |
-| 9   | Open contract details             | `openFirstContract()` + `verifyContractDetailsPage()`             | Contract details shows TP amount `20.00`                  | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected | Both |
+| 3 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 4 | Enable take profit | Toggle take profit on | TP input appears (`dt_take_profit_input` / `dt_tp_input`) | Both |
+| 5 | Set take profit amount | Enter `20.00` in take profit input | TP input shows `20.00` | Both |
+| 6 | Save take profit | Click "Save" | Take profit applied | Both |
+| 7 | Buy Up contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Open contract details | `openFirstContract()` + `verifyContractDetailsPage()` | Contract details shows TP amount `20.00` | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
 
 ### Flow 10.4 — Turbos with Take Profit: buy Down → verify TP set in positions
 
@@ -721,18 +723,18 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/turbos/verify-turbos-down-with-tp.spec.ts` — `VERIFY Buy "Down" Turbos Contract With Take Profit (Demo Account)` / `(Real Account)`
 **Unique params:** TP (`20.00`), Stake (`10.00`)
 
-| #   | Step                              | Action                                                            | Expected Result                                           | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                  | Trade page loaded                                         | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected                                      | Both     |
-| 3   | Set stake                         | `setStake('10.00')`                                               | Stake field shows `10.00`                                 | Both     |
-| 4   | Enable take profit                | Toggle take profit on                                             | TP input appears (`dt_take_profit_input` / `dt_tp_input`) | Both     |
-| 5   | Set take profit amount            | Enter `20.00` in take profit input                                | TP input shows `20.00`                                    | Both     |
-| 6   | Save take profit                  | Click "Save"                                                      | Take profit applied                                       | Both     |
-| 7   | Buy Down contract                 | `clickBuy()` — captures payout                                    | Contract purchased                                        | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`    | Card visible; balance reduced by stake                    | Both     |
-| 9   | Open contract details             | `openFirstContract()` + `verifyContractDetailsPage()`             | Contract details shows TP amount `20.00`                  | Both     |
-| 10  | Verify open position in Reports   | `verifyOpenPositionsInReports()` — captures `buyId`               | Headers, row values, footer totals correct                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Turbos chip selected | Both |
+| 3 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 4 | Enable take profit | Toggle take profit on | TP input appears (`dt_take_profit_input` / `dt_tp_input`) | Both |
+| 5 | Set take profit amount | Enter `20.00` in take profit input | TP input shows `20.00` | Both |
+| 6 | Save take profit | Click "Save" | Take profit applied | Both |
+| 7 | Buy Down contract | `clickBuy()` — captures payout | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
+| 9 | Open contract details | `openFirstContract()` + `verifyContractDetailsPage()` | Contract details shows TP amount `20.00` | Both |
+| 10 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
 
 ---
 
@@ -746,25 +748,25 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/vanillas/verify-vanillas-call.spec.ts` — `VERIFY Buy "Call" Vanillas Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Duration (`5 min`), Strike price (`+0.00`), Stake (`10.00`) — Payout per point info panel
 
-| #   | Step                                 | Action                                                                     | Expected Result                                                                            | Platform |
-| --- | ------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------- |
-| 1   | Navigate to trade page               | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                           | Trade page loaded                                                                          | Both     |
-| 2   | Select market and trade type         | `selectMarketAndTradeType('Volatility 100 Index', 'Vanillas')`             | Vanillas chip selected                                                                     | Both     |
-| 3   | Verify Strike price param visible    | Observe parameters                                                         | "Strike price" parameter visible                                                           | Both     |
-| 4   | Verify Duration param visible        | Observe parameters                                                         | "Duration" parameter visible                                                               | Both     |
-| 5   | Select Call direction                | `selectDirection('Call')`                                                  | Buy button enabled                                                                         | Both     |
-| 6   | Set strike price                     | `selectStrike('+0.00')`                                                    | Strike field shows `+0.00`                                                                 | Both     |
-| 7   | Verify Payout per point info visible | Observe below parameters (desktop) / Strike sheet (mobile)                 | Payout per point visible                                                                   | Both     |
-| 8   | Set duration                         | `selectDuration('Minutes', '5 min')`                                       | Duration field shows `5 min`                                                               | Both     |
-| 9   | Set stake                            | `setStake('10.00')`                                                        | Stake field shows `10.00`                                                                  | Both     |
-| 10  | Buy Call contract                    | `clickVanillasBuy()`                                                       | Contract purchased                                                                         | Both     |
-| 11  | Verify open position in Positions    | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`             | Card shows `"Vanillas Call"`; balance reduced by stake                                     | Both     |
-| 12  | Verify open position in Reports      | `verifyOpenPositionsInReportsForVanillas()` — captures `buyId`             | Headers, row values, footer totals correct                                                 | Both     |
-| 13  | Verify open contract details         | `verifyVanillasOpenContractDetailsPage()`                                  | Desktop: type `"Call"`; mobile: `"Vanillas Call"`; Strike, payout per point, buyId correct | Both     |
-| 14  | Close contract from Positions        | `closeFirstContract()`                                                     | Open tab empty; contract moved to Closed                                                   | Both     |
-| 15  | Verify closed position               | `verifyClosedPositionsTab()` + `verifyVanillasClosedContractDetailsPage()` | Closed card `"Vanillas Call"`; desktop details `"Call"`; sell ID correct                   | Both     |
-| 16  | Verify balance after close           | `verifyBalanceAfterContractClose()`                                        | Balance reflects P/L from early close                                                      | Both     |
-| 17  | Verify closed contract in Reports    | `verifyClosedContractInReports()`                                          | Trade table + Statement rows correct                                                       | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Vanillas')` | Vanillas chip selected | Both |
+| 3 | Verify Strike price param visible | Observe parameters | "Strike price" parameter visible | Both |
+| 4 | Verify Duration param visible | Observe parameters | "Duration" parameter visible | Both |
+| 5 | Select Call direction | `selectDirection('Call')` | Buy button enabled | Both |
+| 6 | Set strike price | `selectStrike('+0.00')` | Strike field shows `+0.00` | Both |
+| 7 | Verify Payout per point info visible | Observe below parameters (desktop) / Strike sheet (mobile) | Payout per point visible | Both |
+| 8 | Set duration | `selectDuration('Minutes', '5 min')` | Duration field shows `5 min` | Both |
+| 9 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 10 | Buy Call contract | `clickVanillasBuy()` | Contract purchased | Both |
+| 11 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card shows `"Vanillas Call"`; balance reduced by stake | Both |
+| 12 | Verify open position in Reports | `verifyOpenPositionsInReportsForVanillas()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 13 | Verify open contract details | `verifyVanillasOpenContractDetailsPage()` | Desktop: type `"Call"`; mobile: `"Vanillas Call"`; Strike, payout per point, buyId correct | Both |
+| 14 | Close contract from Positions | `closeFirstContract()` | Open tab empty; contract moved to Closed | Both |
+| 15 | Verify closed position | `verifyClosedPositionsTab()` + `verifyVanillasClosedContractDetailsPage()` | Closed card `"Vanillas Call"`; desktop details `"Call"`; sell ID correct | Both |
+| 16 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance reflects P/L from early close | Both |
+| 17 | Verify closed contract in Reports | `verifyClosedContractInReports()` | Trade table + Statement rows correct | Both |
 
 ### Flow 11.2 — Vanillas: buy Put → close contract
 
@@ -772,63 +774,63 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 **Spec:** `playwright/tests/trade/vanillas/verify-vanillas-put.spec.ts` — `VERIFY Buy "Put" Vanillas Contract (Demo Account)` / `(Real Account)`
 **Unique params:** Stake (`10.00`), Strike price (`+0.00`)
 
-| #   | Step                              | Action                                                                     | Expected Result                                                                          | Platform |
-| --- | --------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page            | `page.goto(BASE_URL)` + `waitForDerivApiSettled`                           | Trade page loaded                                                                        | Both     |
-| 2   | Select market and trade type      | `selectMarketAndTradeType('Volatility 100 Index', 'Vanillas')`             | Vanillas chip selected                                                                   | Both     |
-| 3   | Select Put direction              | `selectDirection('Put')`                                                   | Buy button enabled                                                                       | Both     |
-| 4   | Set strike price                  | `selectStrike('+0.00')`                                                    | Strike field shows `+0.00`                                                               | Both     |
-| 5   | Set duration                      | `selectDuration('Minutes', '5 min')`                                       | Duration field shows `5 min`                                                             | Both     |
-| 6   | Set stake                         | `setStake('10.00')`                                                        | Stake field shows `10.00`                                                                | Both     |
-| 7   | Buy Put contract                  | `clickVanillasBuy()`                                                       | Contract purchased                                                                       | Both     |
-| 8   | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()`             | Card shows `"Vanillas Put"`; balance reduced by stake                                    | Both     |
-| 9   | Verify open position in Reports   | `verifyOpenPositionsInReportsForVanillas()` — captures `buyId`             | Headers, row values, footer totals correct                                               | Both     |
-| 10  | Verify open contract details      | `verifyVanillasOpenContractDetailsPage()`                                  | Desktop: type `"Put"`; mobile: `"Vanillas Put"`; Strike, payout per point, buyId correct | Both     |
-| 11  | Close contract from Positions     | `closeFirstContract()`                                                     | Open tab empty; contract moved to Closed                                                 | Both     |
-| 12  | Verify closed position            | `verifyClosedPositionsTab()` + `verifyVanillasClosedContractDetailsPage()` | Closed card `"Vanillas Put"`; desktop details `"Put"`; sell ID correct                   | Both     |
-| 13  | Verify balance after close        | `verifyBalanceAfterContractClose()`                                        | Balance reflects P/L from early close                                                    | Both     |
-| 14  | Verify closed contract in Reports | `verifyClosedContractInReports()`                                          | Trade table + Statement rows correct                                                     | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `page.goto(BASE_URL)` + `waitForDerivApiSettled` | Trade page loaded | Both |
+| 2 | Select market and trade type | `selectMarketAndTradeType('Volatility 100 Index', 'Vanillas')` | Vanillas chip selected | Both |
+| 3 | Select Put direction | `selectDirection('Put')` | Buy button enabled | Both |
+| 4 | Set strike price | `selectStrike('+0.00')` | Strike field shows `+0.00` | Both |
+| 5 | Set duration | `selectDuration('Minutes', '5 min')` | Duration field shows `5 min` | Both |
+| 6 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
+| 7 | Buy Put contract | `clickVanillasBuy()` | Contract purchased | Both |
+| 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyContractCardDetails()` | Card shows `"Vanillas Put"`; balance reduced by stake | Both |
+| 9 | Verify open position in Reports | `verifyOpenPositionsInReportsForVanillas()` — captures `buyId` | Headers, row values, footer totals correct | Both |
+| 10 | Verify open contract details | `verifyVanillasOpenContractDetailsPage()` | Desktop: type `"Put"`; mobile: `"Vanillas Put"`; Strike, payout per point, buyId correct | Both |
+| 11 | Close contract from Positions | `closeFirstContract()` | Open tab empty; contract moved to Closed | Both |
+| 12 | Verify closed position | `verifyClosedPositionsTab()` + `verifyVanillasClosedContractDetailsPage()` | Closed card `"Vanillas Put"`; desktop details `"Put"`; sell ID correct | Both |
+| 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance reflects P/L from early close | Both |
+| 14 | Verify closed contract in Reports | `verifyClosedContractInReports()` | Trade table + Statement rows correct | Both |
 
 ## Flow 12 — Market closed: purchase hidden and open-market recovery · `verify-manual-trade-negative-validation.spec.ts`
 
 **Prerequisites:** Authenticated account and at least one currently closed market returned by staging.
 
-| #   | Step                      | Action                                                     | Expected Result                                                      | Platform |
-| --- | ------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- | -------- |
-| 1   | Discover a closed market  | Search the live market catalogue for a row tagged `CLOSED` | A closed symbol is selected without assuming its schedule            | Both     |
-| 2   | Verify closed state       | Observe trade parameters and reopening status              | Buy is absent; reopening status is visible; no stale payout is shown | Both     |
-| 3   | Recover on an open market | Select Volatility 100 Index / Rise/Fall                    | Buy returns without remaining in loading state                       | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Discover a closed market | Search the live market catalogue for a row tagged `CLOSED` | A closed symbol is selected without assuming its schedule | Both |
+| 2 | Verify closed state | Observe trade parameters and reopening status | Buy is absent; reopening status is visible; no stale payout is shown | Both |
+| 3 | Recover on an open market | Select Volatility 100 Index / Rise/Fall | Buy returns without remaining in loading state | Both |
 
 ## Flow 13 — Insufficient balance: inline-validation gate (post-#1398) · `verify-manual-trade-negative-validation.spec.ts`
 
 **Prerequisites:** Authenticated account whose readable balance is below an in-range stake.
 
-| #   | Step                         | Action                                                | Expected Result                                                               | Platform |
-| --- | ---------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------- | -------- |
-| 1   | Read live limits and balance | Parse the displayed Stake range and account balance   | Amount is generated above balance but inside the current range                | Both     |
-| 2   | Enter unaffordable stake     | Fill the generated amount in the stake editor         | Balance-aware guidance uses the current account balance                       | Both     |
-| 3   | Verify Save gate             | Observe Stake Save                                    | Save is disabled while the balance hint shows; draft cannot commit through UI | Both     |
-| 4   | Commit unaffordable stake    | Seed active tab `tab_trade_params_v2` amount + reload | Committed charge exceeds balance on the trade page                            | Both     |
-| 5   | Verify Buy ready             | Observe Buy and payout                                | Buy **enabled**; payout quoted (not `-`); no insufficient-balance popup yet   | Both     |
-| 6   | Verify no submission         | Inspect outbound buy count (Buy not clicked)          | No buy request is sent                                                        | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Read live limits and balance | Parse the displayed Stake range and account balance | Amount is generated above balance but inside the current range | Both |
+| 2 | Enter unaffordable stake | Fill the generated amount in the stake editor | Balance-aware guidance uses the current account balance | Both |
+| 3 | Verify Save gate | Observe Stake Save | Save is disabled while the balance hint shows; draft cannot commit through UI | Both |
+| 4 | Commit unaffordable stake | Seed active tab `tab_trade_params_v2` amount + reload | Committed charge exceeds balance on the trade page | Both |
+| 5 | Verify Buy ready | Observe Buy and payout | Buy **enabled**; payout quoted (not `-`); no insufficient-balance popup yet | Both |
+| 6 | Verify no submission | Inspect outbound buy count (Buy not clicked) | No buy request is sent | Both |
 
 ## Flow 14 — Manual Trading negative validation matrix · `verify-manual-trade-negative-validation.spec.ts`
 
 **Prerequisites:** Authenticated funded staging account. Limits and options are returned by the active contract configuration.
 
-| #   | Step                          | Action                                                                                                  | Expected Result                                                                                                      | Platform |
-| --- | ----------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Validate Stake matrix         | Run current-limit checks across every Stake-bearing trade type and one representative per market family | Invalid drafts show configuration-specific limits; exact minimum is accepted; committed Stake and Buy stay unchanged | Both     |
-| 2   | Validate Stake filtering      | Type letters, symbols, and excessive precision                                                          | Invalid characters are rejected and precision is bounded                                                             | Both     |
-| 3   | Validate Duration             | Read desktop range or mobile wheel options                                                              | Out-of-range values are blocked; mobile options are bounded                                                          | Both     |
-| 4   | Validate Barrier              | Enter zero and empty drafts                                                                             | Validation appears, Save is disabled, committed value remains                                                        | Both     |
-| 5   | Validate Digits               | Inspect Over/Under choices                                                                              | Digits 0–9 are represented with subtype availability                                                                 | Both     |
-| 6   | Validate Multipliers risk     | Read multiplier, TP/SL ranges, and DC choices                                                           | Values come from the active configuration                                                                            | Both     |
-| 7   | Validate market families      | Inspect all live asset categories                                                                       | Every major family has a representative                                                                              | Both     |
-| 8   | Validate stale values         | Switch symbols/types after setting parameters                                                           | Retained values belong to the new runtime ranges/options                                                             | Both     |
-| 9   | Validate duplicate purchase   | Double-click Accumulators Buy                                                                           | Exactly one buy request is sent                                                                                      | Both     |
-| 10  | Validate Accumulator recovery | Settle the Accumulator                                                                                  | Buy returns enabled                                                                                                  | Both     |
-| 11  | Validate Turbos lifecycle     | Buy and close a Turbos contract                                                                         | Open position closes and Buy recovers                                                                                | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Validate Stake matrix | Run current-limit checks across every Stake-bearing trade type and one representative per market family | Invalid drafts show configuration-specific limits; exact minimum is accepted; committed Stake and Buy stay unchanged | Both |
+| 2 | Validate Stake filtering | Type letters, symbols, and excessive precision | Invalid characters are rejected and precision is bounded | Both |
+| 3 | Validate Duration | Read desktop range or mobile wheel options | Out-of-range values are blocked; mobile options are bounded | Both |
+| 4 | Validate Barrier | Enter zero and empty drafts | Validation appears, Save is disabled, committed value remains | Both |
+| 5 | Validate Digits | Inspect Over/Under choices | Digits 0–9 are represented with subtype availability | Both |
+| 6 | Validate Multipliers risk | Read multiplier, TP/SL ranges, and DC choices | Values come from the active configuration | Both |
+| 7 | Validate market families | Inspect all live asset categories | Every major family has a representative | Both |
+| 8 | Validate stale values | Switch symbols/types after setting parameters | Retained values belong to the new runtime ranges/options | Both |
+| 9 | Validate duplicate purchase | Double-click Accumulators Buy | Exactly one buy request is sent | Both |
+| 10 | Validate Accumulator recovery | Settle the Accumulator | Buy returns enabled | Both |
+| 11 | Validate Turbos lifecycle | Buy and close a Turbos contract | Open position closes and Buy recovers | Both |
 
 > The current market picker does not expose Asians, Ends Between/Outside, or Stays Between/Goes Outside. Server-only open-position-cap setup is also unavailable with current account tooling; these states are not reported as passing by this flow.
 
@@ -853,14 +855,14 @@ Dedicated E2E for closed-market UI. Flow 12 in `verify-manual-trade-negative-val
 
 The spec searches `FeedPage.MARKETS` session-gated candidates in the market-selection picker (`selectClosedMarketFromPicker()` → `MarketSelectionPage.selectFirstClosedMarket()`), commits the first search row tagged **CLOSED**, then asserts via `verifyClosedMarketTradeState()`: Buy hidden, `ClosedMarketMessage` (reopen intro + `HH:MM:SS` countdown), every `button` / `input` in `.trade-params__options-wrapper` disabled, and **CLOSED** still shown when the picker is reopened. Skips when every candidate is open.
 
-| #   | Step                         | Action                                                                               | Expected Result                                                                                    | Platform |
-| --- | ---------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page       | `TradeBasePage.seedLocalStorageOnOrigin()` → `loginPage.login()` → `gotoTradePage()` | Trade page loaded; onboarding overlay suppressed                                                   | Both     |
-| 2   | Find CLOSED market in picker | `selectClosedMarketFromPicker()` — search session-gated symbols                      | First row with **CLOSED** tag is selected; active tab updates                                      | Both     |
-| 3   | Verify Buy hidden            | Observe purchase area                                                                | `dt_purchase_button_wrapper` not visible (`PurchaseButton` not rendered)                           | Both     |
-| 4   | Verify reopen countdown      | Observe `ClosedMarketMessage`                                                        | "This market will reopen at" + `HH:MM:SS` countdown visible (after `trading_times` loads)          | Both     |
-| 5   | Verify params disabled       | Observe `.trade-params__options-wrapper`                                             | Every visible `button` / `input` in the row is disabled (`:enabled` count 0) — trade-type agnostic | Both     |
-| 6   | Verify CLOSED in picker      | Reopen picker → search same market                                                   | Search row still shows **CLOSED** tag                                                              | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `TradeBasePage.seedLocalStorageOnOrigin()` → `loginPage.login()` → `gotoTradePage()` | Trade page loaded; onboarding overlay suppressed | Both |
+| 2 | Find CLOSED market in picker | `selectClosedMarketFromPicker()` — search session-gated symbols | First row with **CLOSED** tag is selected; active tab updates | Both |
+| 3 | Verify Buy hidden | Observe purchase area | `dt_purchase_button_wrapper` not visible (`PurchaseButton` not rendered) | Both |
+| 4 | Verify reopen countdown | Observe `ClosedMarketMessage` | "This market will reopen at" + `HH:MM:SS` countdown visible (after `trading_times` loads) | Both |
+| 5 | Verify params disabled | Observe `.trade-params__options-wrapper` | Every visible `button` / `input` in the row is disabled (`:enabled` count 0) — trade-type agnostic | Both |
+| 6 | Verify CLOSED in picker | Reopen picker → search same market | Search row still shows **CLOSED** tag | Both |
 
 ---
 
@@ -869,13 +871,13 @@ The spec searches `FeedPage.MARKETS` session-gated candidates in the market-sele
 **Prerequisites:** No authentication. Market open.
 **Spec:** `playwright/tests/trade/verify-unauthenticated-purchase.spec.ts`
 
-| #   | Step                               | Action                                                                          | Expected Result                                                                                               | Platform |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page             | `tradeParametersPage.gotoTradePage()`                                           | Trade page loads at `/`; login button visible; account info absent                                            | Both     |
-| 2   | Click Buy while logged out         | `tradeParametersPage.clickBuyLoggedOut()`                                       | Authorization `ServiceErrorSheet` opens (desktop: `.quill-modal__container`; mobile: `.service-error-sheet`)  | Both     |
-| 3   | Verify sheet copy and CTAs         | `tradeParametersPage.verifyAuthorizationRequiredSheet()`                        | Title "Start trading with us"; body "Log in or create a free account to place a trade."; both buttons visible | Both     |
-| 4   | Login button navigates to login    | `clickAuthorizationLoginButton()` → `verifyNavigatedToLoginPage()`              | Browser lands on Deriv login page (`LOGIN_URL`)                                                               | Both     |
-| 5   | Create account navigates to signup | `clickAuthorizationCreateFreeAccountButton()` → `verifyNavigatedToSignupPage()` | Browser lands on Deriv signup page (`SIGNUP_URL`)                                                             | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `tradeParametersPage.gotoTradePage()` | Trade page loads at `/`; login button visible; account info absent | Both |
+| 2 | Click Buy while logged out | `tradeParametersPage.clickBuyLoggedOut()` | Authorization `ServiceErrorSheet` opens (desktop: `.quill-modal__container`; mobile: `.service-error-sheet`) | Both |
+| 3 | Verify sheet copy and CTAs | `tradeParametersPage.verifyAuthorizationRequiredSheet()` | Title "Start trading with us"; body "Log in or create a free account to place a trade."; both buttons visible | Both |
+| 4 | Login button navigates to login | `clickAuthorizationLoginButton()` → `verifyNavigatedToLoginPage()` | Browser lands on Deriv login page (`LOGIN_URL`) | Both |
+| 5 | Create account navigates to signup | `clickAuthorizationCreateFreeAccountButton()` → `verifyNavigatedToSignupPage()` | Browser lands on Deriv signup page (`SIGNUP_URL`) | Both |
 
 > Steps 4 and 5 are separate tests — each starts from step 1–3 via shared `beforeEach`.
 
@@ -895,14 +897,14 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 
 **Prerequisites:** Authenticated **real** zero-balance account (`TEST_EMAIL_ZERO_BALANCE` — same inbox for desktop and mobile). Default committed stake above `0.00` (e.g. `$2`). Market open.
 
-| #   | Step                     | Action                                                                                      | Expected Result                                                                                                                                                                                       | Platform |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page   | `TradeBasePage.seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()` → `real` account | Balance shows `0.00`; default stake already unaffordable                                                                                                                                              | Both     |
-| 2   | Verify stake editor hint | Open **Stake** → **Custom** (desktop)                                                       | Error hint: `Balance is empty. Deposit funds to buy this contract.`; Save disabled                                                                                                                    | Both     |
-| 3   | Click Buy                | `clickBuyWithInsufficientBalance()`                                                         | Insufficient-balance popup: title **Insufficient balance**, backend body, **Deposit now** (real)                                                                                                      | Both     |
-| 4   | Dismiss popup            | Click **X** (desktop `.quill-modal__close-icon`) or overlay (mobile)                        | Popup hidden; trade page unchanged                                                                                                                                                                    | Both     |
-| 5   | Reopen popup             | Click **Buy** again                                                                         | Same popup content visible                                                                                                                                                                            | Both     |
-| 6   | Deposit now              | Click **Deposit now** → `verifyNavigatedToDepositFromDTrader()`                             | URL: `{LOGIN_URL origin}/dashboard/transfer?from=dtrader&source=options&acc=options&curr=USD`; **Transfer** heading; **From** Wallet; **To** Options `0.00 USD`; amount input + review button visible | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `TradeBasePage.seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()` → `real` account | Balance shows `0.00`; default stake already unaffordable | Both |
+| 2 | Verify stake editor hint | Open **Stake** → **Custom** (desktop) | Error hint: `Balance is empty. Deposit funds to buy this contract.`; Save disabled | Both |
+| 3 | Click Buy | `clickBuyWithInsufficientBalance()` | Insufficient-balance popup: title **Insufficient balance**, backend body, **Deposit now** (real) | Both |
+| 4 | Dismiss popup | Click **X** (desktop `.quill-modal__close-icon`) or overlay (mobile) | Popup hidden; trade page unchanged | Both |
+| 5 | Reopen popup | Click **Buy** again | Same popup content visible | Both |
+| 6 | Deposit now | Click **Deposit now** → `verifyNavigatedToDepositFromDTrader()` | URL: `{LOGIN_URL origin}/dashboard/transfer?from=dtrader&source=options&acc=options&curr=USD`; **Transfer** heading; **From** Wallet; **To** Options `0.00 USD`; amount input + review button visible | Both |
 
 > **POM:** `verifyEmptyBalanceStakeEditorHint()` → `clickBuyWithInsufficientBalance()` → `verifyInsufficientBalancePopup()` → `clickInsufficientBalancePopupClose()` → `verifyInsufficientBalancePopupDismissed()` → (repeat Buy + popup) → `clickInsufficientBalanceDepositButton()` → `verifyNavigatedToDepositFromDTrader()`.
 
@@ -914,13 +916,13 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 
 **Prerequisites:** Authenticated **real** account with Options balance below the committed proposal charge (`TEST_EMAIL_INSUFFICIENT_BALANCE` / `TEST_EMAIL_INSUFFICIENT_BALANCE_MOBILE`). Market open.
 
-| #   | Step                       | Action                                                                                     | Expected Result                                                                                     | Platform |
-| --- | -------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page     | Same setup as Flow 17.1 with low-balance accounts                                          | Trade page loaded; balance visible                                                                  | Both     |
-| 2   | Commit stake above balance | Seed active tab `tab_trade_params_v2` amount (`balance + 1`) + reload — **both viewports** | Committed charge exceeds header balance; Save cannot commit an unaffordable draft through the UI    | Both     |
-| 3   | Verify Buy enabled         | Observe `buyButton`                                                                        | Buy **enabled**; payout quoted (not `-`)                                                            | Both     |
-| 4   | Verify no popup yet        | Observe purchase area                                                                      | No insufficient-balance popup before Buy is clicked                                                 | Both     |
-| 5   | Draft stake above balance  | Open stake editor → **Custom** (desktop) → enter unaffordable amount                       | Balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`); **Save disabled** | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | Same setup as Flow 17.1 with low-balance accounts | Trade page loaded; balance visible | Both |
+| 2 | Commit stake above balance | Seed active tab `tab_trade_params_v2` amount (`balance + 1`) + reload — **both viewports** | Committed charge exceeds header balance; Save cannot commit an unaffordable draft through the UI | Both |
+| 3 | Verify Buy enabled | Observe `buyButton` | Buy **enabled**; payout quoted (not `-`) | Both |
+| 4 | Verify no popup yet | Observe purchase area | No insufficient-balance popup before Buy is clicked | Both |
+| 5 | Draft stake above balance | Open stake editor → **Custom** (desktop) → enter unaffordable amount | Balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`); **Save disabled** | Both |
 
 > **POM:** `verifyInsufficientBalanceClientGate()` — orchestrates steps 2–5 via `prepareCommittedUnaffordableStake()`, `verifyInsufficientBalanceBuyReady()`, `verifyInsufficientBalanceStakeHint()`.
 
@@ -935,14 +937,14 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 **Prerequisites:** No authentication required. Invalid `symbol` or `trade_type` in URL query.
 **Spec:** `playwright/tests/trade/verify-invalid-url-modal.spec.ts`
 
-| #   | Step                         | Action                                                 | Expected Result                                                  | Platform |
-| --- | ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------- | -------- |
-| 1   | Open invalid market link     | `gotoTradePageWithQuery('symbol=NOT_A_REAL_MARKET&…')` | UrlUnavailableModal opens                                        | Both     |
-| 2   | Verify market V2 copy        | Observe title + body                                   | "Unsupported market" + V2 guidance text (not legacy V1 copy)     | Both     |
-| 3   | Dismiss modal                | Click **Got it**                                       | Modal closes; default market tab still visible                   | Both     |
-| 4   | Open invalid trade_type link | `gotoTradePageWithQuery('trade_type=high_lowsd&…')`    | UrlUnavailableModal opens                                        | Both     |
-| 5   | Verify trade_type V2 copy    | Observe title + body                                   | "Unsupported trade type" + V2 guidance text (not legacy V1 copy) | Both     |
-| 6   | Dismiss modal                | Click **Got it**                                       | Modal closes; default market tab still visible                   | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open invalid market link | `gotoTradePageWithQuery('symbol=NOT_A_REAL_MARKET&…')` | UrlUnavailableModal opens | Both |
+| 2 | Verify market V2 copy | Observe title + body | "Unsupported market" + V2 guidance text (not legacy V1 copy) | Both |
+| 3 | Dismiss modal | Click **Got it** | Modal closes; default market tab still visible | Both |
+| 4 | Open invalid trade_type link | `gotoTradePageWithQuery('trade_type=high_lowsd&…')` | UrlUnavailableModal opens | Both |
+| 5 | Verify trade_type V2 copy | Observe title + body | "Unsupported trade type" + V2 guidance text (not legacy V1 copy) | Both |
+| 6 | Dismiss modal | Click **Got it** | Modal closes; default market tab still visible | Both |
 
 ---
 
@@ -954,14 +956,14 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 **Spec:** `playwright/tests/trade/verify-trade-param-info-icon-hover.spec.ts`
 **Matrix:** `TradeParametersPage.TRADE_PARAM_INFO_ICON_CASES` — Multipliers, Accumulators, Turbos, Vanillas (both viewports); Higher/Lower and Touch/No Touch Barrier (mobile only).
 
-| #   | Step                             | Action                                                                                | Expected Result                                                                                                                       | Platform |
-| --- | -------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Navigate to trade page           | `seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()`                          | Trade page loaded                                                                                                                     | Both     |
-| 2   | Select market + trade type       | `selectMarketAndTradeType(market, tradeType, { verifyParams: false })` per matrix row | Trade form shows the target trade type                                                                                                | Both     |
-| 3   | Desktop — reveal info icon       | Hover the parameter row (`.trade-params__field-with-info`)                            | Info icon wrapper opacity `0` → `1`                                                                                                   | Desktop  |
-| 4   | Desktop — verify description     | Hover the info icon → read `.trade-params__parameter-tooltip[role="tooltip"]`         | Tooltip shows the authored description for that parameter (e.g. Multiplier, Growth rate, Take profit, Risk management TP/SL copy)     | Desktop  |
-| 5   | Mobile — open parameter editor   | Tap the read-only parameter field (`getByRole('textbox', { name })`)                  | Action sheet opens                                                                                                                    | Mobile   |
-| 6   | Mobile — verify info icon + copy | Tap `button.action-sheet-header-tooltip[aria-label="…"]`                              | Portaled Quill tooltip paragraph shows the authored description (Risk management sheet: separate icons for Take profit and Stop loss) | Mobile   |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Navigate to trade page | `seedLocalStorageOnOrigin()` → `login()` → `gotoTradePage()` | Trade page loaded | Both |
+| 2 | Select market + trade type | `selectMarketAndTradeType(market, tradeType, { verifyParams: false })` per matrix row | Trade form shows the target trade type | Both |
+| 3 | Desktop — reveal info icon | Hover the parameter row (`.trade-params__field-with-info`) | Info icon wrapper opacity `0` → `1` | Desktop |
+| 4 | Desktop — verify description | Hover the info icon → read `.trade-params__parameter-tooltip[role="tooltip"]` | Tooltip shows the authored description for that parameter (e.g. Multiplier, Growth rate, Take profit, Risk management TP/SL copy) | Desktop |
+| 5 | Mobile — open parameter editor | Tap the read-only parameter field (`getByRole('textbox', { name })`) | Action sheet opens | Mobile |
+| 6 | Mobile — verify info icon + copy | Tap `button.action-sheet-header-tooltip[aria-label="…"]` | Portaled Quill tooltip paragraph shows the authored description (Risk management sheet: separate icons for Take profit and Stop loss) | Mobile |
 
 > **POM:** `verifyTradeParamInfoIconOnDesktop(label, descriptions)` · `verifyTradeParamInfoIconsInMobileEditor(openField, icons)` · matrix constant `TRADE_PARAM_INFO_DESCRIPTIONS`.
 >
@@ -982,23 +984,23 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 
 ### Mobile — Theme drawer (Light / Dark / System)
 
-| #   | Step                       | Action                                        | Expected Result                                                | Platform |
-| --- | -------------------------- | --------------------------------------------- | -------------------------------------------------------------- | -------- |
-| 1   | Open Theme drawer          | Bottom nav Menu → Theme                       | Drawer shows Light, Dark, and System radios                    | Mobile   |
-| 2   | Select System              | Tap System                                    | System is `aria-checked=true` (preference, not resolved theme) | Mobile   |
-| 3   | OS dark                    | `page.emulateMedia({ colorScheme: 'dark' })`  | `body` has `theme--dark`; System stays selected                | Mobile   |
-| 4   | OS light                   | `page.emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light`                                      | Mobile   |
-| 5   | Lock Light against dark OS | Select Light → emulate dark OS                | `body` stays `theme--light`; Light stays selected              | Mobile   |
-| 6   | Lock Dark against light OS | Select Dark → emulate light OS                | `body` stays `theme--dark`; Dark stays selected                | Mobile   |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open Theme drawer | Bottom nav Menu → Theme | Drawer shows Light, Dark, and System radios | Mobile |
+| 2 | Select System | Tap System | System is `aria-checked=true` (preference, not resolved theme) | Mobile |
+| 3 | OS dark | `page.emulateMedia({ colorScheme: 'dark' })` | `body` has `theme--dark`; System stays selected | Mobile |
+| 4 | OS light | `page.emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light` | Mobile |
+| 5 | Lock Light against dark OS | Select Light → emulate dark OS | `body` stays `theme--light`; Light stays selected | Mobile |
+| 6 | Lock Dark against light OS | Select Dark → emulate light OS | `body` stays `theme--dark`; Dark stays selected | Mobile |
 
 ### Desktop — sidebar Theme toggle (no System radio)
 
-| #   | Step                       | Action                                   | Expected Result             | Platform |
-| --- | -------------------------- | ---------------------------------------- | --------------------------- | -------- |
-| 1   | OS dark under System       | `emulateMedia({ colorScheme: 'dark' })`  | `body` has `theme--dark`    | Desktop  |
-| 2   | OS light under System      | `emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light`   | Desktop  |
-| 3   | Lock Light against dark OS | Toggle to Light → emulate dark OS        | `body` stays `theme--light` | Desktop  |
-| 4   | Lock Dark against light OS | Toggle to Dark → emulate light OS        | `body` stays `theme--dark`  | Desktop  |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | OS dark under System | `emulateMedia({ colorScheme: 'dark' })` | `body` has `theme--dark` | Desktop |
+| 2 | OS light under System | `emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light` | Desktop |
+| 3 | Lock Light against dark OS | Toggle to Light → emulate dark OS | `body` stays `theme--light` | Desktop |
+| 4 | Lock Dark against light OS | Toggle to Dark → emulate light OS | `body` stays `theme--dark` | Desktop |
 
 > **POM:** `seedThemePreference` · `setThemePreference` (branches Menu radios vs sidebar toggle) · `expectResolvedBodyTheme`.
 >
@@ -1012,11 +1014,11 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 **Spec:** `playwright/tests/trade/over-under/verify-over-under-validations.spec.ts`
 **Unique params:** Barrier on Higher/Lower → digit on Over/Under
 
-| #   | Step                        | Action                                                       | Expected Result                                    | Platform |
-| --- | --------------------------- | ------------------------------------------------------------ | -------------------------------------------------- | -------- |
-| 1   | Seed Higher/Lower barrier   | `selectMarketAndTradeType(…, 'Higher/Lower')` + `setBarrier` | Relative price barrier committed                   | Both     |
-| 2   | Switch to Over/Under        | `selectMarketAndTradeType(…, 'Over/Under')`                  | Last digit prediction visible                      | Both     |
-| 3   | Select digit                | `selectDigit('7')`                                           | Digit 7 selected                                   | Both     |
-| 4   | Assert proposal + Buy ready | `verifyProposalAfterHigherLowerToOverUnder()`                | No barrier-range toast; Buy enabled; payout priced | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Seed Higher/Lower barrier | `selectMarketAndTradeType(…, 'Higher/Lower')` + `setBarrier` | Relative price barrier committed | Both |
+| 2 | Switch to Over/Under | `selectMarketAndTradeType(…, 'Over/Under')` | Last digit prediction visible | Both |
+| 3 | Select digit | `selectDigit('7')` | Digit 7 selected | Both |
+| 4 | Assert proposal + Buy ready | `verifyProposalAfterHigherLowerToOverUnder()` | No barrier-range toast; Buy enabled; payout priced | Both |
 
 > **POM:** `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder`.

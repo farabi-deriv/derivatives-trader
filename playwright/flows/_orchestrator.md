@@ -184,9 +184,9 @@ Add after the last `## Module:` section, before `## Implementation Priority Orde
 
 **Flow docs:** `playwright/flows/<module>/` · **Test folder:** `playwright/tests/<module>/`
 
-| Flow   | Priority | Description | User State | Status       |
-| ------ | -------- | ----------- | ---------- | ------------ |
-| Flow 1 | P?       | ...         | ...        | `documented` |
+| Flow | Priority | Description | User State | Status |
+| --- | --- | --- | --- | --- |
+| Flow 1 | P? | ... | ... | `documented` |
 
 ---
 ```
@@ -207,12 +207,12 @@ Output format:
 ```markdown
 ## Module Run List
 
-| Module     | Automated | Total | Gap | Suggested Priority                        |
-| ---------- | --------- | ----- | --- | ----------------------------------------- |
-| `trade`    | 0         | 8     | 8   | High — P0 trade form untested             |
-| `contract` | 0         | 5     | 5   | High — P0 contract details untested       |
-| `reports`  | 0         | 4     | 4   | Medium — P1 positions/statements untested |
-| ...        |           |       |     |                                           |
+| Module | Automated | Total | Gap | Suggested Priority |
+| --- | --- | --- | --- | --- |
+| `trade` | 0 | 8 | 8 | High — P0 trade form untested |
+| `contract` | 0 | 5 | 5 | High — P0 contract details untested |
+| `reports` | 0 | 4 | 4 | Medium — P1 positions/statements untested |
+| ... |  |  |  |  |
 
 To implement flows for a module, say:
 "Follow flow-to-playwright skill and implement flows for module: <module_name>"
@@ -235,18 +235,18 @@ If no changes were needed, say: "✅ `_index.md` is already in sync. No edits ma
 
 ## File Map
 
-| File                                    | Purpose                                                       |
-| --------------------------------------- | ------------------------------------------------------------- |
-| `playwright/flows/_index.md`            | Master tracking file — AI edits everything here               |
-| `playwright/flows/<module>/coverage.md` | Source of truth for flows, gaps, priorities, coverage status  |
-| `playwright/tests/<module>/`            | Spec files — existence of a real `.spec.ts` means `automated` |
+| File | Purpose |
+| --- | --- |
+| `playwright/flows/_index.md` | Master tracking file — AI edits everything here |
+| `playwright/flows/<module>/coverage.md` | Source of truth for flows, gaps, priorities, coverage status |
+| `playwright/tests/<module>/` | Spec files — existence of a real `.spec.ts` means `automated` |
 
 ---
 
 ## Status Reference
 
-| Status       | Meaning                                                               |
-| ------------ | --------------------------------------------------------------------- |
-| `documented` | Flow/gap exists in `coverage.md`; no spec written yet                 |
-| `automated`  | Real `.spec.ts` exists in `playwright/tests/<module>/` and runs in CI |
-| `verified`   | Spec passes on staging in CI (only set when explicitly confirmed)     |
+| Status | Meaning |
+| --- | --- |
+| `documented` | Flow/gap exists in `coverage.md`; no spec written yet |
+| `automated` | Real `.spec.ts` exists in `playwright/tests/<module>/` and runs in CI |
+| `verified` | Spec passes on staging in CI (only set when explicitly confirmed) |

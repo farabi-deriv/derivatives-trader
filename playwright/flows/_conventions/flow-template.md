@@ -33,9 +33,9 @@ When multiple flows share the same step sequence (e.g. all MT5 transfers, all cr
 
 **Prerequisites:** {Account setup, env vars, or shared state required}
 
-| #   | Step | Action | Expected Result | Test Data |
-| --- | ---- | ------ | --------------- | --------- |
-| 1   | ...  | ...    | ...             | ...       |
+| # | Step | Action | Expected Result | Test Data |
+| --- | --- | --- | --- | --- |
+| 1 | ... | ... | ... | ... |
 ```
 
 **Rules:**
@@ -54,10 +54,10 @@ One section per flow. Use a compact header that identifies the spec file, env va
 
 **Display name:** `{UI label}` _(for flows that substitute a placeholder)_
 
-| Direction | From      | To        | Amount | Env var        |
-| --------- | --------- | --------- | ------ | -------------- |
-| N.1       | Account A | Account B | `1.00` | `ENV_VAR_NAME` |
-| N.2       | Account B | Account A | `1.00` | `ENV_VAR_NAME` |
+| Direction | From | To | Amount | Env var |
+| --- | --- | --- | --- | --- |
+| N.1 | Account A | Account B | `1.00` | `ENV_VAR_NAME` |
+| N.2 | Account B | Account A | `1.00` | `ENV_VAR_NAME` |
 
 > Follows [{Pattern Name} Steps](#{anchor}) — substitute `{UI label}` for `[Placeholder]`.
 ```
@@ -69,9 +69,9 @@ For flows that do NOT share a pattern, include the full step table directly:
 
 **Prerequisites:** {Account setup}
 
-| #   | Step | Action | Expected Result | Test Data |
-| --- | ---- | ------ | --------------- | --------- |
-| 1   | ...  | ...    | ...             | ...       |
+| # | Step | Action | Expected Result | Test Data |
+| --- | --- | --- | --- | --- |
+| 1 | ... | ... | ... | ... |
 ```
 
 **Rules:**
@@ -82,11 +82,11 @@ For flows that do NOT share a pattern, include the full step table directly:
 - For flows with Desktop/Mobile differences, add a `Platform` column with values `Desktop`, `Mobile`, or `Both`. Omit the column entirely when all steps are identical across platforms — locator differences alone do not require a `Platform` column.
 
 ```markdown
-| #   | Step        | Action            | Expected Result              | Platform |
-| --- | ----------- | ----------------- | ---------------------------- | -------- |
-| 1   | Open input  | Click Stake field | Stake input activates inline | Desktop  |
-| 1   | Open input  | Tap Stake chip    | Action sheet opens           | Mobile   |
-| 2   | Enter value | Type "10"         | Input shows "10.00"          | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open input | Click Stake field | Stake input activates inline | Desktop |
+| 1 | Open input | Tap Stake chip | Action sheet opens | Mobile |
+| 2 | Enter value | Type "10" | Input shows "10.00" | Both |
 ```
 
 ---
@@ -102,9 +102,9 @@ One subsection per gap from `coverage.md`. Each gap gets the same step table for
 
 ### G{n} — {Gap description}
 
-| #   | Test case     | Steps        | Expected Result  |
-| --- | ------------- | ------------ | ---------------- |
-| 1   | {Short label} | {What to do} | {What to assert} |
+| # | Test case | Steps | Expected Result |
+| --- | --- | --- | --- |
+| 1 | {Short label} | {What to do} | {What to assert} |
 ```
 
 **Rules:**
@@ -117,12 +117,12 @@ One subsection per gap from `coverage.md`. Each gap gets the same step table for
 
 ## What does NOT belong in flow.md
 
-| Content                                        | Where it belongs                                      |
-| ---------------------------------------------- | ----------------------------------------------------- |
-| POM method names, fixture names, import paths  | `playwright/pages/` — read the POM directly           |
-| `beforeAll` account setup code snippets        | `catalog.md` — Section 2 (Flow Details)               |
-| Test tags, spec file paths                     | `catalog.md` — Sections 1 and 3                       |
-| Feature description / "What is X?" prose       | Drop — not actionable                                 |
+| Content | Where it belongs |
+| --- | --- |
+| POM method names, fixture names, import paths | `playwright/pages/` — read the POM directly |
+| `beforeAll` account setup code snippets | `catalog.md` — Section 2 (Flow Details) |
+| Test tags, spec file paths | `catalog.md` — Sections 1 and 3 |
+| Feature description / "What is X?" prose | Drop — not actionable |
 | Known quirks / edge cases about implementation | `catalog.md` — Section 4 (Feature-Specific Decisions) |
-| Coverage status and priority list              | `coverage.md`                                         |
-| Gap descriptions (one-sentence)                | `coverage.md` — Section 2 (Gaps)                      |
+| Coverage status and priority list | `coverage.md` |
+| Gap descriptions (one-sentence) | `coverage.md` — Section 2 (Gaps) |

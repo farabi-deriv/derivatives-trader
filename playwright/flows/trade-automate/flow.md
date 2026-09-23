@@ -18,18 +18,18 @@
 
 **Run control API (`TradeAutomatePage`):**
 
-| Method                                          | Purpose                                                                                                                                                                                                                       |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `startAutomateRun()`                            | Click **Run** (waits for enabled first)                                                                                                                                                                                       |
-| `verifyAutomateBotIsRunning()`                  | Full running check: controls + open position + contract details (panel specs, post-resume)                                                                                                                                    |
-| `verifyAutomateRunningControls()`               | Fast running check only — Status, Pause/Stop, stats line, params disabled (private; tick lifecycles before sequential)                                                                                                        |
-| `verifyAutomateSequentialContractPurchase()`    | Tick types only: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). **Run immediately after** `verifyAutomateRunningControls()`, before open-position details |
-| `verifyPauseAndResumeWhileRunning()`            | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–13 lifecycles)                                                                                                                                        |
-| `stopAutomateRun()`                             | Click **Stop** and verify idle state (Run visible, Running status gone)                                                                                                                                                       |
-| `stopAutomateRunIfActive()`                     | `afterEach` cleanup — stop only if Stop is visible                                                                                                                                                                            |
-| `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`)                                                                                                                                                       |
-| `verifyLossThresholdAutoStop()`                 | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                                                            |
-| `verifyProfitThresholdAutoStop()`               | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop)                                                                                                                                          |
+| Method | Purpose |
+| --- | --- |
+| `startAutomateRun()` | Click **Run** (waits for enabled first) |
+| `verifyAutomateBotIsRunning()` | Full running check: controls + open position + contract details (panel specs, post-resume) |
+| `verifyAutomateRunningControls()` | Fast running check only — Status, Pause/Stop, stats line, params disabled (private; tick lifecycles before sequential) |
+| `verifyAutomateSequentialContractPurchase()` | Tick types only: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). **Run immediately after** `verifyAutomateRunningControls()`, before open-position details |
+| `verifyPauseAndResumeWhileRunning()` | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–13 lifecycles) |
+| `stopAutomateRun()` | Click **Stop** and verify idle state (Run visible, Running status gone) |
+| `stopAutomateRunIfActive()` | `afterEach` cleanup — stop only if Stop is visible |
+| `pauseRun()` / `resumeRun()` / `verifyPaused()` | Lower-level Flow 1 steps (used by `verifyPauseAndResumeWhileRunning()`) |
+| `verifyLossThresholdAutoStop()` | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop) |
+| `verifyProfitThresholdAutoStop()` | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop) |
 
 > **Tick lifecycle order:** `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` → open-position/contract-details (via `verifyAutomateOpenPositionAndContractDetails()`) → `verifyPauseAndResumeWhileRunning()`. Sequential must run while `Contracts: 1` for the first phase — not after the slow open-details retry loop.
 
@@ -57,10 +57,10 @@
 
 > **Removed:** Former standalone `verify-pause-resume.spec.ts` — pause/resume is embedded in every trade-type lifecycle (Flows 5–13).
 
-| #   | Step        | Action                                                                                       | Expected Result                                                         | Platform |
-| --- | ----------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------- |
-| 1   | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `verifyPauseAndResumeWhileRunning()` | Running → Paused (params disabled, no new contracts) → Resume → Running | Both     |
-| 2   | Stop        | `stopAutomateRun()`                                                                          | Run stops; idle **Run** button returns                                  | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` → `verifyPauseAndResumeWhileRunning()` | Running → Paused (params disabled, no new contracts) → Resume → Running | Both |
+| 2 | Stop | `stopAutomateRun()` | Run stops; idle **Run** button returns | Both |
 
 ---
 
@@ -74,11 +74,11 @@
 
 **Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks · loss threshold `1` · profit threshold `1000` (unreachable — run can only auto-stop on loss).
 
-| #   | Step               | Action                                                                                                                                                          | Expected Result                        | Platform |
-| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------- |
-| 1   | Configure          | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both     |
-| 2   | Start a run        | `startAutomateRun()` → `verifyAutomateBotIsRunning()`                                                                                                           | "Status: Running"                      | Both     |
-| 3   | Wait for auto-stop | `verifyLossThresholdAutoStop()` (no manual Stop)                                                                                                                | Snackbar + idle Run; params unlocked   | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Configure | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both |
+| 2 | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` | "Status: Running" | Both |
+| 3 | Wait for auto-stop | `verifyLossThresholdAutoStop()` (no manual Stop) | Snackbar + idle Run; params unlocked | Both |
 
 ---
 
@@ -92,11 +92,11 @@
 
 **Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks · profit threshold `1` · loss threshold `1000` (unreachable — run can only auto-stop on profit).
 
-| #   | Step               | Action                                                                                                                                                          | Expected Result                        | Platform |
-| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------- |
-| 1   | Configure          | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both     |
-| 2   | Start a run        | `startAutomateRun()` → `verifyAutomateBotIsRunning()`                                                                                                           | "Status: Running"                      | Both     |
-| 3   | Wait for auto-stop | `verifyProfitThresholdAutoStop()` (no manual Stop)                                                                                                              | Snackbar + idle Run; params unlocked   | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Configure | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` → thresholds | Automate panel ready; thresholds saved | Both |
+| 2 | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` | "Status: Running" | Both |
+| 3 | Wait for auto-stop | `verifyProfitThresholdAutoStop()` (no manual Stop) | Snackbar + idle Run; params unlocked | Both |
 
 ---
 
@@ -110,12 +110,12 @@
 
 **Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks (longer than default 5 ticks so `verifyAutomateBotIsRunning()` contract-details checks survive the account round-trip).
 
-| #   | Step           | Action                                                                                                                                             | Expected Result                                                                                    | Platform |
-| --- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Configure      | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` | Automate panel ready on Account A                                                                  | Both     |
-| 2   | Start a run    | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A                                                                                 | "Status: Running"                                                                                  | Both     |
-| 3   | Switch account | `switchToAccountType('demo')` → `goToAutomatedTrading()` → `verifyPanelDefaultState()` then `switchToAccountType('real')`                          | Demo shows idle panel (Run enabled); real run re-adopted as **Running** (not stuck on "Starting…") | Both     |
-| 4   | Verify + Stop  | `verifyAutomateBotIsRunning()` → `stopAutomateRun()`                                                                                               | Run stops; idle **Run** returns                                                                    | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Configure | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` | Automate panel ready on Account A | Both |
+| 2 | Start a run | `startAutomateRun()` → `verifyAutomateBotIsRunning()` on Account A | "Status: Running" | Both |
+| 3 | Switch account | `switchToAccountType('demo')` → `goToAutomatedTrading()` → `verifyPanelDefaultState()` then `switchToAccountType('real')` | Demo shows idle panel (Run enabled); real run re-adopted as **Running** (not stuck on "Starting…") | Both |
+| 4 | Verify + Stop | `verifyAutomateBotIsRunning()` → `stopAutomateRun()` | Run stops; idle **Run** returns | Both |
 
 > Guards the known intermittent "stuck on Starting…" resync behaviour (GRWT-9318). Uses full `verifyAutomateBotIsRunning()` (controls + open position + contract details) before and after the account round-trip — not `verifyAutomateRunningControls()` alone.
 
@@ -129,10 +129,10 @@
 
 **Prerequisites:** An **EU/DIEL** account.
 
-| #   | Step              | Action                                | Expected Result                                             | Platform |
-| --- | ----------------- | ------------------------------------- | ----------------------------------------------------------- | -------- |
-| 1   | Check trade panel | Log in on an EU account, open trade   | The **"Automated trading"** tab is **not** available        | Desktop  |
-| 1   | Check /automate   | Navigate to `/automate` on EU account | Redirected away from `/automate` (automation not available) | Mobile   |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Check trade panel | Log in on an EU account, open trade | The **"Automated trading"** tab is **not** available | Desktop |
+| 1 | Check /automate | Navigate to `/automate` on EU account | Redirected away from `/automate` (automation not available) | Mobile |
 
 ---
 
@@ -142,12 +142,12 @@
 
 **Tests per spec (child flows):**
 
-| Parent flow | Strategy   | Outcomes / account split | Child flows                                                                           |
-| ----------- | ---------- | ------------------------ | ------------------------------------------------------------------------------------- |
-| 5, 7–9      | Martingale | Dual-outcome trade types | `.1` outcome A demo · `.2` outcome A real · `.3` outcome B demo · `.4` outcome B real |
-| 6           | Martingale | Accumulators             | `.1` demo · `.2` real                                                                 |
-| 10–13       | D'Alembert | Dual-outcome trade types | `.1` outcome A demo · `.2` outcome A real · `.3` outcome B demo · `.4` outcome B real |
-| 11          | D'Alembert | Accumulators             | `.1` demo · `.2` real                                                                 |
+| Parent flow | Strategy | Outcomes / account split | Child flows |
+| --- | --- | --- | --- |
+| 5, 7–9 | Martingale | Dual-outcome trade types | `.1` outcome A demo · `.2` outcome A real · `.3` outcome B demo · `.4` outcome B real |
+| 6 | Martingale | Accumulators | `.1` demo · `.2` real |
+| 10–13 | D'Alembert | Dual-outcome trade types | `.1` outcome A demo · `.2` outcome A real · `.3` outcome B demo · `.4` outcome B real |
+| 11 | D'Alembert | Accumulators | `.1` demo · `.2` real |
 
 **Params shape:** trade-form fields at the top level + nested `automation` block (`strategy`, `stakeMultiplier` or `stakeIncrement`, `maxStake?`, `profitThreshold`, `lossThreshold`).
 
@@ -162,13 +162,13 @@
 
 > **Accumulators (Flow 6):** skip `verifyAutomateSequentialContractPurchase()`; call `verifyPauseAndResumeWhileRunning()` after the first contract is running.
 
-| Trade type      | Martingale | D'Alembert | Spec(s)                                                                                                                                             |
-| --------------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rise/Fall       | 5.1–5.4    | 10.1–10.4  | `verify-rise-martingale.spec.ts` · `verify-fall-martingale.spec.ts` · `verify-rise-dalembert.spec.ts` · `verify-fall-dalembert.spec.ts`             |
-| Accumulators    | 6.1–6.2    | 6.3–6.4    | `verify-accumulators-martingale.spec.ts` · `verify-accumulators-dalembert.spec.ts`                                                                  |
-| Matches/Differs | 7.1–7.4    | 11.1–11.4  | `verify-matches-martingale.spec.ts` · `verify-differs-martingale.spec.ts` · `verify-matches-dalembert.spec.ts` · `verify-differs-dalembert.spec.ts` |
-| Over/Under      | 8.1–8.4    | 12.1–12.4  | `verify-over-martingale.spec.ts` · `verify-under-martingale.spec.ts` · `verify-over-dalembert.spec.ts` · `verify-under-dalembert.spec.ts`           |
-| Even/Odd        | 9.1–9.4    | 13.1–13.4  | `verify-even-martingale.spec.ts` · `verify-odd-martingale.spec.ts` · `verify-even-dalembert.spec.ts` · `verify-odd-dalembert.spec.ts`               |
+| Trade type | Martingale | D'Alembert | Spec(s) |
+| --- | --- | --- | --- |
+| Rise/Fall | 5.1–5.4 | 10.1–10.4 | `verify-rise-martingale.spec.ts` · `verify-fall-martingale.spec.ts` · `verify-rise-dalembert.spec.ts` · `verify-fall-dalembert.spec.ts` |
+| Accumulators | 6.1–6.2 | 6.3–6.4 | `verify-accumulators-martingale.spec.ts` · `verify-accumulators-dalembert.spec.ts` |
+| Matches/Differs | 7.1–7.4 | 11.1–11.4 | `verify-matches-martingale.spec.ts` · `verify-differs-martingale.spec.ts` · `verify-matches-dalembert.spec.ts` · `verify-differs-dalembert.spec.ts` |
+| Over/Under | 8.1–8.4 | 12.1–12.4 | `verify-over-martingale.spec.ts` · `verify-under-martingale.spec.ts` · `verify-over-dalembert.spec.ts` · `verify-under-dalembert.spec.ts` |
+| Even/Odd | 9.1–9.4 | 13.1–13.4 | `verify-even-martingale.spec.ts` · `verify-odd-martingale.spec.ts` · `verify-even-dalembert.spec.ts` · `verify-odd-dalembert.spec.ts` |
 
 > For D'Alembert, use `strategy: "D'Alembert"` and `stakeIncrement` instead of `stakeMultiplier`. D'Alembert flows use distinct stakes/thresholds to avoid closed-position lookup collisions with Martingale runs on the same backup accounts.
 
@@ -180,18 +180,18 @@
 
 **Prerequisites:** Dedicated backup account (`TEST_EMAIL_AUTOMATE_RISE_FALL`).
 
-| #   | Step             | Action                                                                                                                                                                                                 | Expected Result                                                                                                                          | Platform |
-| --- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Open Automation  | `goToAutomatedTrading()`                                                                                                                                                                               | Automation tab/page active                                                                                                               | Both     |
-| 2   | Switch account   | `switchToAccountType(accountType)`                                                                                                                                                                     | Active account matches `accountType`                                                                                                     | Both     |
-| 3   | Select Rise/Fall | `selectMarketAndTradeType(market, 'Rise/Fall', { mode: 'automate' })`                                                                                                                                  | Rise/Fall trade form + Run visible                                                                                                       | Both     |
-| 4   | Select outcome   | `selectTradeTypeOption(tradeType, 'top' \| 'bottom')`                                                                                                                                                  | Purchase button colour matches Rise/Fall tab                                                                                             | Both     |
-| 5   | Guide popup      | `openAndVerifyAutomateGuide('Rise/Fall')`                                                                                                                                                              | Guide verified; dismiss (desktop **X**, mobile **Got it**)                                                                               | Both     |
-| 6   | Panel defaults   | `verifyAutomationPanelFieldsVisible()`                                                                                                                                                                 | Strategy params + risk management fields + Run visible                                                                                   | Both     |
-| 7   | Set duration     | `selectDuration(durationUnit, durationValue)`                                                                                                                                                          | Duration field reflects value                                                                                                            | Both     |
-| 8   | Set stake        | `setStake(stake)`                                                                                                                                                                                      | Initial stake saved                                                                                                                      | Both     |
-| 9   | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold`                                                                                                        | All automation params saved                                                                                                              | Both     |
-| 10  | Run lifecycle    | `startAutomateRun()` → running controls → `verifyAutomateSequentialContractPurchase()` → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; sequential purchase; **Pause → Resume → Running**; Stop returns idle **Run**; closed position matches initial stake | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open Automation | `goToAutomatedTrading()` | Automation tab/page active | Both |
+| 2 | Switch account | `switchToAccountType(accountType)` | Active account matches `accountType` | Both |
+| 3 | Select Rise/Fall | `selectMarketAndTradeType(market, 'Rise/Fall', { mode: 'automate' })` | Rise/Fall trade form + Run visible | Both |
+| 4 | Select outcome | `selectTradeTypeOption(tradeType, 'top' \ | 'bottom')` | Purchase button colour matches Rise/Fall tab | Both |
+| 5 | Guide popup | `openAndVerifyAutomateGuide('Rise/Fall')` | Guide verified; dismiss (desktop **X**, mobile **Got it**) | Both |
+| 6 | Panel defaults | `verifyAutomationPanelFieldsVisible()` | Strategy params + risk management fields + Run visible | Both |
+| 7 | Set duration | `selectDuration(durationUnit, durationValue)` | Duration field reflects value | Both |
+| 8 | Set stake | `setStake(stake)` | Initial stake saved | Both |
+| 9 | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold` | All automation params saved | Both |
+| 10 | Run lifecycle | `startAutomateRun()` → running controls → `verifyAutomateSequentialContractPurchase()` → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; sequential purchase; **Pause → Resume → Running**; Stop returns idle **Run**; closed position matches initial stake | Both |
 
 **Inline params (Flow 5.1 — Rise demo):**
 
@@ -447,14 +447,14 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 **Params:** Volatility 100 Index · Rise/Fall · stake `1` · 10 ticks (low stake so the live bot cannot burn much before cleanup).
 
-| #   | Step               | Action                                                                                                                                             | Expected Result                                                                           | Platform |
-| --- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------- |
-| 1   | Configure tab A    | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` | Tab A automate panel ready; run not started yet                                           | Both     |
-| 2   | Open stale tab B   | New page in same browser context → `goToAutomatedTrading()` → same market/trade type → `verifyPanelDefaultState()` **before** tab A starts the run | Tab B mount `recover()` finds no run → **Run** still visible (stale store)                | Both     |
-| 3   | Start run on tab A | `startAutomateRun()` → assert **Status: Running** on tab A                                                                                         | Tab B never receives focus/resync — store stays stale                                     | Both     |
-| 4   | Click Run on tab B | Tab B **Run** still enabled → click → in-click `resync()` finds tab A's run                                                                        | Snackbar **"Automation is already running for this account."**; no duplicate `auto_start` | Both     |
-| 5   | Verify adoption    | Assert tab B shows Pause/Stop + **Status: Running**; tab A still **Running**                                                                       | Tab B adopts the existing run; tab A untouched                                            | Both     |
-| 6   | Cleanup            | `stopAutomateRunIfActive()` in `afterEach`                                                                                                         | Run stopped                                                                               | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Configure tab A | `goToAutomatedTrading()` → `selectMarketAndTradeType(...)` → `verifyPanelDefaultState()` → `setStake('1')` → `selectDuration('Ticks', '10 ticks')` | Tab A automate panel ready; run not started yet | Both |
+| 2 | Open stale tab B | New page in same browser context → `goToAutomatedTrading()` → same market/trade type → `verifyPanelDefaultState()` **before** tab A starts the run | Tab B mount `recover()` finds no run → **Run** still visible (stale store) | Both |
+| 3 | Start run on tab A | `startAutomateRun()` → assert **Status: Running** on tab A | Tab B never receives focus/resync — store stays stale | Both |
+| 4 | Click Run on tab B | Tab B **Run** still enabled → click → in-click `resync()` finds tab A's run | Snackbar **"Automation is already running for this account."**; no duplicate `auto_start` | Both |
+| 5 | Verify adoption | Assert tab B shows Pause/Stop + **Status: Running**; tab A still **Running** | Tab B adopts the existing run; tab A untouched | Both |
+| 6 | Cleanup | `stopAutomateRunIfActive()` in `afterEach` | Run stopped | Both |
 
 > **Reachability:** the Run button only renders while the store is idle, and the store auto-adopts any server-side run on mount/focus — so the snackbar is reachable only from a **stale tab** (a second context loaded before the run started, never focused again). The spec models this with a second tab in the same browser context: tab A starts the run, tab B (loaded pre-start, idle with Run visible) clicks Run → its in-click `resync()` finds tab A's run → snackbar, and tab B adopts the run's Pause/Stop state (no duplicate `auto_start`).
 
@@ -472,34 +472,34 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 #### Flow 15.1 — Martingale (trade form + automation panel)
 
-| #   | Step                           | Action                                                                                             | Expected Result                                                                                                               | Platform |
-| --- | ------------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Configure valid baseline       | `goToAutomatedTrading()` → Rise/Fall automate → `verifyPanelDefaultState()` → stake `1` → 10 ticks | Martingale defaults; panel ready with valid committed params                                                                  | Both     |
-| 2   | Initial stake below minimum    | Open **Stake** Custom, enter `0.01` (below market min, e.g. `0.35`)                                | **"Please enter a stake amount that's at least …"**; **Save** disabled; dismiss restores prior stake                          | Both     |
-| 3   | Initial stake empty            | Re-open **Stake** Custom, clear field, **Save** (desktop)                                          | Desktop: **"Amount is a required field."**; Mobile: **Save** disabled; dismiss restores prior stake                           | Both     |
-| 4   | Initial stake invalid format   | Re-open **Stake** Custom, enter `1.` (trailing decimal)                                            | **"Should be a valid number."**; **Save** disabled; dismiss restores prior stake                                              | Both     |
-| 5   | Initial stake above max payout | Re-open **Stake** Custom → read **Max payout** from details → draft until **Payout** row errors    | **Payout** row `.error`; proposal min/max payout message; **Save** disabled; dismiss restores prior stake                     | Both     |
-| 6   | Initial stake above balance    | Enter `{balance + 0.01}` (computed from header balance)                                            | **"You only have {balance} {currency} left. Try a lower stake."**; Mobile: **Save** disabled; dismiss restores prior stake    | Both     |
-| 7   | Profit threshold empty         | Open **Profit threshold**, clear field                                                             | Desktop: **Save** disabled; Mobile: **Save** → **"Please enter a valid amount greater than 0"**; dismiss restores prior value | Both     |
-| 8   | Profit threshold zero          | Re-open **Profit threshold**, enter `0`, **Save**                                                  | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value                                          | Both     |
-| 9   | Loss threshold empty           | Open **Loss threshold**, clear field                                                               | Desktop: **Save** disabled; Mobile: **Save** → positive-amount error; dismiss restores prior value                            | Both     |
-| 10  | Loss threshold zero            | Re-open **Loss threshold**, enter `0`, **Save**                                                    | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value                                          | Both     |
-| 11  | Stake multiplier empty         | Open **Stake multiplier** Custom, clear field                                                      | **Save** disabled; dismiss restores prior multiplier                                                                          | Both     |
-| 12  | Stake multiplier zero          | Re-open **Stake multiplier** Custom, enter `0`, **Save**                                           | **"Multiplier must be at least …"**; **Save** disabled; dismiss restores prior multiplier                                     | Both     |
-| 13  | Stake multiplier above max     | Custom enter `11`, **Save**                                                                        | **"Multiplier cannot exceed 10"**; **Save** disabled; dismiss restores prior multiplier                                       | Both     |
-| 14  | Max. stake empty               | Open **Max. stake**, enable toggle, clear amount field                                             | **Save** disabled; dismiss restores `-`                                                                                       | Both     |
-| 15  | Max. stake zero                | Re-open, enable toggle, enter `0`, **Save**                                                        | **"Please enter a valid amount greater than 0"**; Desktop: **Save** disabled; dismiss restores `-`                            | Both     |
-| 16  | Max. stake below initial       | Enable toggle, enter `0.5` (initial stake `1`), **Save**                                           | **"Max. stake must be equal or greater than 1"**; Desktop: **Save** disabled; dismiss restores `-`                            | Both     |
-| 17  | Panel stays idle               | `verifyAutomatePanelIdleAfterParamValidation()`                                                    | **Run** visible and enabled; no **Status: Running**                                                                           | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Configure valid baseline | `goToAutomatedTrading()` → Rise/Fall automate → `verifyPanelDefaultState()` → stake `1` → 10 ticks | Martingale defaults; panel ready with valid committed params | Both |
+| 2 | Initial stake below minimum | Open **Stake** Custom, enter `0.01` (below market min, e.g. `0.35`) | **"Please enter a stake amount that's at least …"**; **Save** disabled; dismiss restores prior stake | Both |
+| 3 | Initial stake empty | Re-open **Stake** Custom, clear field, **Save** (desktop) | Desktop: **"Amount is a required field."**; Mobile: **Save** disabled; dismiss restores prior stake | Both |
+| 4 | Initial stake invalid format | Re-open **Stake** Custom, enter `1.` (trailing decimal) | **"Should be a valid number."**; **Save** disabled; dismiss restores prior stake | Both |
+| 5 | Initial stake above max payout | Re-open **Stake** Custom → read **Max payout** from details → draft until **Payout** row errors | **Payout** row `.error`; proposal min/max payout message; **Save** disabled; dismiss restores prior stake | Both |
+| 6 | Initial stake above balance | Enter `{balance + 0.01}` (computed from header balance) | **"You only have {balance} {currency} left. Try a lower stake."**; Mobile: **Save** disabled; dismiss restores prior stake | Both |
+| 7 | Profit threshold empty | Open **Profit threshold**, clear field | Desktop: **Save** disabled; Mobile: **Save** → **"Please enter a valid amount greater than 0"**; dismiss restores prior value | Both |
+| 8 | Profit threshold zero | Re-open **Profit threshold**, enter `0`, **Save** | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value | Both |
+| 9 | Loss threshold empty | Open **Loss threshold**, clear field | Desktop: **Save** disabled; Mobile: **Save** → positive-amount error; dismiss restores prior value | Both |
+| 10 | Loss threshold zero | Re-open **Loss threshold**, enter `0`, **Save** | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value | Both |
+| 11 | Stake multiplier empty | Open **Stake multiplier** Custom, clear field | **Save** disabled; dismiss restores prior multiplier | Both |
+| 12 | Stake multiplier zero | Re-open **Stake multiplier** Custom, enter `0`, **Save** | **"Multiplier must be at least …"**; **Save** disabled; dismiss restores prior multiplier | Both |
+| 13 | Stake multiplier above max | Custom enter `11`, **Save** | **"Multiplier cannot exceed 10"**; **Save** disabled; dismiss restores prior multiplier | Both |
+| 14 | Max. stake empty | Open **Max. stake**, enable toggle, clear amount field | **Save** disabled; dismiss restores `-` | Both |
+| 15 | Max. stake zero | Re-open, enable toggle, enter `0`, **Save** | **"Please enter a valid amount greater than 0"**; Desktop: **Save** disabled; dismiss restores `-` | Both |
+| 16 | Max. stake below initial | Enable toggle, enter `0.5` (initial stake `1`), **Save** | **"Max. stake must be equal or greater than 1"**; Desktop: **Save** disabled; dismiss restores `-` | Both |
+| 17 | Panel stays idle | `verifyAutomatePanelIdleAfterParamValidation()` | **Run** visible and enabled; no **Status: Running** | Both |
 
 #### Flow 15.2 — D'Alembert (stake increment)
 
-| #   | Step                  | Action                                                                                  | Expected Result                                                                         | Platform |
-| --- | --------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------- |
-| 1   | Switch strategy       | Same baseline as 15.1 → `selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 })` | **Stake increment** field visible (`2 unit`); multiplier field replaced                 | Both     |
-| 2   | Stake increment empty | Open **Stake increment** Custom, clear field                                            | **Save** disabled; dismiss restores prior increment (`2 unit`)                          | Both     |
-| 3   | Stake increment zero  | Re-open **Stake increment** Custom, enter `0`, **Save**                                 | **"Increment must be at least 1"**; **Save** disabled; dismiss restores prior increment | Both     |
-| 4   | Panel stays idle      | `verifyAutomatePanelIdleAfterParamValidation()`                                         | **Run** visible and enabled; no active run                                              | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Switch strategy | Same baseline as 15.1 → `selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 })` | **Stake increment** field visible (`2 unit`); multiplier field replaced | Both |
+| 2 | Stake increment empty | Open **Stake increment** Custom, clear field | **Save** disabled; dismiss restores prior increment (`2 unit`) | Both |
+| 3 | Stake increment zero | Re-open **Stake increment** Custom, enter `0`, **Save** | **"Increment must be at least 1"**; **Save** disabled; dismiss restores prior increment | Both |
+| 4 | Panel stays idle | `verifyAutomatePanelIdleAfterParamValidation()` | **Run** visible and enabled; no active run | Both |
 
 > Numeric automation editors strip non-digit input (`regex={/[^0-9.,]/g}`), so minus signs cannot be typed. Run-click validation for unsupported trade types remains **G2**.
 
@@ -509,12 +509,12 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 **Spec:** `playwright/tests/trade-automate/verify-automate-market-compatibility.spec.ts`
 
-| #   | Step                          | Action                                                              | Expected Result                                                                               | Platform |
-| --- | ----------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------- |
-| 1   | Open Automate                 | `goToAutomatedTrading()`                                            | Strategy parameters panel renders                                                             | Both     |
-| 2   | Select market in Automate     | `selectMarketAndTradeType(market, tradeType, { mode: 'automate' })` | Active tab reflects the chosen market + trade type — no infinite trade-type spinner (#916)    | Both     |
-| 3a  | Non-automatable (Range Break) | Range Break 100 Index · Multipliers                                 | Snackbar explains market unavailable for automation; **Run** disabled                         | Both     |
-| 3b  | Automatable (Crash/Boom)      | Crash 500 Index · Accumulators                                      | Tab stays on Crash 500 + Accumulators; Automate guide trigger visible; **Run** enabled (#917) | Both     |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open Automate | `goToAutomatedTrading()` | Strategy parameters panel renders | Both |
+| 2 | Select market in Automate | `selectMarketAndTradeType(market, tradeType, { mode: 'automate' })` | Active tab reflects the chosen market + trade type — no infinite trade-type spinner (#916) | Both |
+| 3a | Non-automatable (Range Break) | Range Break 100 Index · Multipliers | Snackbar explains market unavailable for automation; **Run** disabled | Both |
+| 3b | Automatable (Crash/Boom) | Crash 500 Index · Accumulators | Tab stays on Crash 500 + Accumulators; Automate guide trigger visible; **Run** enabled (#917) | Both |
 
 ---
 
@@ -526,14 +526,14 @@ await tradeAutomatePage.runOverUnderAndVerify({
 **Spec:** `playwright/tests/trade-automate/verify-automate-param-info-icon-hover.spec.ts`
 **Matrix:** `TradeAutomatePage.AUTOMATE_PARAM_INFO_ICON_CASES` — Rise/Fall (strategy panel only); Accumulators (strategy panel + Growth rate / Take profit trade-form rows).
 
-| #   | Step                              | Action                                                                                          | Expected Result                                                        | Platform |
-| --- | --------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------- |
-| 1   | Open Automate                     | `goToAutomatedTrading()`                                                                        | Strategy parameters panel renders                                      | Both     |
-| 2   | Select market + trade type        | `selectMarketAndTradeType(market, tradeType, { mode: 'automate', verifyParams: false })`        | Automate panel shows the target trade type                             | Both     |
-| 3   | Desktop — strategy params         | Hover each automation-panel row (Strategy, Stake multiplier, Max. stake, Profit/Loss threshold) | Info icon opacity `0` → `1`; tooltip shows `automation-config.ts` copy | Desktop  |
-| 4   | Desktop — Accumulators trade form | Hover Growth rate / Take profit collapsed rows                                                  | Same hover-reveal tooltip copy as manual Flow 19                       | Desktop  |
-| 5   | Mobile — open parameter editor    | Tap each read-only parameter field                                                              | Action sheet opens                                                     | Mobile   |
-| 6   | Mobile — verify info icon + copy  | Tap `button.action-sheet-header-tooltip[aria-label="…"]`                                        | Portaled tooltip shows the authored description                        | Mobile   |
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open Automate | `goToAutomatedTrading()` | Strategy parameters panel renders | Both |
+| 2 | Select market + trade type | `selectMarketAndTradeType(market, tradeType, { mode: 'automate', verifyParams: false })` | Automate panel shows the target trade type | Both |
+| 3 | Desktop — strategy params | Hover each automation-panel row (Strategy, Stake multiplier, Max. stake, Profit/Loss threshold) | Info icon opacity `0` → `1`; tooltip shows `automation-config.ts` copy | Desktop |
+| 4 | Desktop — Accumulators trade form | Hover Growth rate / Take profit collapsed rows | Same hover-reveal tooltip copy as manual Flow 19 | Desktop |
+| 5 | Mobile — open parameter editor | Tap each read-only parameter field | Action sheet opens | Mobile |
+| 6 | Mobile — verify info icon + copy | Tap `button.action-sheet-header-tooltip[aria-label="…"]` | Portaled tooltip shows the authored description | Mobile |
 
 > **POM:** `verifyAutomateParamInfoIconOnDesktop()` · inherited `verifyTradeParamInfoIconOnDesktop()` / `verifyTradeParamInfoIconsInMobileEditor()` for trade-form rows · matrix constants `AUTOMATE_PARAM_INFO_DESCRIPTIONS` + `TRADE_PARAM_INFO_DESCRIPTIONS`.
 >
@@ -549,9 +549,9 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 ### G2 — Validation / unsupported-contract-type error
 
-| #   | Test case              | Steps                                                                    | Expected Result                                                                          |
-| --- | ---------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| 1   | Unsupported trade type | Select a trade type the strategy doesn't support, click **Run**          | Inline error banner (e.g. strategy does not support this trade type); run does not start |
-| 2   | Invalid params         | Enter an invalid strategy parameter (e.g. multiplier ≤ 1), click **Run** | Validation error shown; run does not start                                               |
+| # | Test case | Steps | Expected Result |
+| --- | --- | --- | --- |
+| 1 | Unsupported trade type | Select a trade type the strategy doesn't support, click **Run** | Inline error banner (e.g. strategy does not support this trade type); run does not start |
+| 2 | Invalid params | Enter an invalid strategy parameter (e.g. multiplier ≤ 1), click **Run** | Validation error shown; run does not start |
 
 > **Flow 15** covers in-editor validation for trade-form stake (below-min, empty, max payout, above balance) and automation thresholds/multiplier — drafts blocked or surfaced before Run. G2 case 2 (Run-click invalid params) remains a separate gap if needed.

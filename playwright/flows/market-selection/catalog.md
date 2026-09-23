@@ -9,19 +9,19 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID         | Spec File                                                      | Tags                                                    |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------- |
-| Flow 1–6, 12, 13   | `market-selection/verify-market-browse-and-discovery.spec.ts`  | `@market-selection @desktop @mobile`                    |
-| Flow 7             | `market-selection/verify-market-info-screen.spec.ts`           | `@market-selection @desktop @mobile`                    |
-| Flow 8, 9          | `market-selection/verify-market-search.spec.ts`                | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 10            | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
-| Flow 11            | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
-| Flow 14–20, 23, 26 | `market-selection/verify-trade-tabs.spec.ts`                   | `@market-selection @smoke @desktop @mobile`             |
-| Flow 21            | `market-selection/verify-trade-tabs-persistence.spec.ts`       | `@market-selection @desktop @mobile`                    |
-| Flow 22            | `market-selection/verify-trade-tabs-buy.spec.ts`               | `@market-selection @trade @regression @desktop @mobile` |
-| Flow 24            | `market-selection/verify-trade-tabs-max-limit.spec.ts`         | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 25            | `market-selection/verify-trade-tabs-param-persistence.spec.ts` | `@market-selection @desktop @mobile`                    |
-| G2                 | Not automated — see [`coverage.md`](./coverage.md)             | —                                                       |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1–6, 12, 13 | `market-selection/verify-market-browse-and-discovery.spec.ts` | `@market-selection @desktop @mobile` |
+| Flow 7 | `market-selection/verify-market-info-screen.spec.ts` | `@market-selection @desktop @mobile` |
+| Flow 8, 9 | `market-selection/verify-market-search.spec.ts` | `@market-selection @smoke @production @desktop @mobile` |
+| Flow 10 | `market-selection/verify-market-favourites.spec.ts` | `@market-selection @desktop @mobile` |
+| Flow 11 | `market-selection/verify-market-favourites.spec.ts` | `@market-selection @desktop @mobile` |
+| Flow 14–20, 23, 26 | `market-selection/verify-trade-tabs.spec.ts` | `@market-selection @smoke @desktop @mobile` |
+| Flow 21 | `market-selection/verify-trade-tabs-persistence.spec.ts` | `@market-selection @desktop @mobile` |
+| Flow 22 | `market-selection/verify-trade-tabs-buy.spec.ts` | `@market-selection @trade @regression @desktop @mobile` |
+| Flow 24 | `market-selection/verify-trade-tabs-max-limit.spec.ts` | `@market-selection @smoke @production @desktop @mobile` |
+| Flow 25 | `market-selection/verify-trade-tabs-param-persistence.spec.ts` | `@market-selection @desktop @mobile` |
+| G2 | Not automated — see [`coverage.md`](./coverage.md) | — |
 
 ---
 
@@ -123,11 +123,11 @@ await expect(
 
 **Tags:** `@market-selection @desktop @mobile` — unauthenticated (public trade page).
 
-| Test                                                                              | Flow steps                              |
-| --------------------------------------------------------------------------------- | --------------------------------------- |
-| `VERIFY Info screen shows market details and a Trade-on CTA commits the market`   | 3–5 (description matrix + Trade-on CTA) |
-| `VERIFY the Favourite toggle on the Info screen updates independently of the row` | 6                                       |
-| `VERIFY the Back button returns to the previous browse view without committing`   | 7                                       |
+| Test | Flow steps |
+| --- | --- |
+| `VERIFY Info screen shows market details and a Trade-on CTA commits the market` | 3–5 (description matrix + Trade-on CTA) |
+| `VERIFY the Favourite toggle on the Info screen updates independently of the row` | 6 |
+| `VERIFY the Back button returns to the previous browse view without committing` | 7 |
 
 **Description matrix** — spec loops `MARKET_INFO_DESCRIPTION_CASES` (75 rows mirroring `market-descriptions.ts`) with one `test.step` per symbol. `MarketSelectionPage.verifyMarketInfoDescription(market, description)` opens Info via `openMarketInfoFromSearch` (first matching row; trade-type group is irrelevant) and retries once after `recoverFromRateLimitIfNeeded()` on lookup failure. Paced at 800ms via `paceMarketInfoLookup()` between symbols.
 
@@ -314,15 +314,15 @@ if (!isMobileViewport) {
 
 ## Section 3 — Tags Reference
 
-| Tag                 | When to apply                                                                            |
-| ------------------- | ---------------------------------------------------------------------------------------- |
-| `@market-selection` | All tests in this feature area (picker + tab strip)                                      |
-| `@trade`            | Additionally applied when a flow also exercises Buy (Flow 22)                            |
-| `@smoke`            | Critical path — search, core tab mechanics, and max-tab limit (Flows 8–9, 14–20, 23, 24) |
-| `@production`       | Safe on production — no login, no balance mutation (Flows 8–9, 24 only)                  |
-| `@regression`       | Flow 22 only (`verify-trade-tabs-buy.spec.ts` — mutates balance/positions)               |
-| `@desktop`          | Desktop viewport (chromium project)                                                      |
-| `@mobile`           | Mobile viewport (chromium-mobile project)                                                |
+| Tag | When to apply |
+| --- | --- |
+| `@market-selection` | All tests in this feature area (picker + tab strip) |
+| `@trade` | Additionally applied when a flow also exercises Buy (Flow 22) |
+| `@smoke` | Critical path — search, core tab mechanics, and max-tab limit (Flows 8–9, 14–20, 23, 24) |
+| `@production` | Safe on production — no login, no balance mutation (Flows 8–9, 24 only) |
+| `@regression` | Flow 22 only (`verify-trade-tabs-buy.spec.ts` — mutates balance/positions) |
+| `@desktop` | Desktop viewport (chromium project) |
+| `@mobile` | Mobile viewport (chromium-mobile project) |
 
 > Only search (Flows 8–9) and max-tab limit (Flow 24) carry `@production`. Core tab mechanics (Flows 14–20, 23) are staging smoke only — no `@production` on `verify-trade-tabs.spec.ts`. Flow 22 mutates a real account's balance/positions; discovery/favourites/persistence flows depend on live data that isn't safe to assert deterministically on production.
 

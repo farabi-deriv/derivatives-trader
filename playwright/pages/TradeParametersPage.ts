@@ -2131,23 +2131,31 @@ export class TradeParametersPage extends TradeBasePage {
         await input.clear();
         await input.fill(value);
         await expect(input, `Barrier input should contain "${value}" before saving`).toHaveValue(value);
+        // Wait for proposal refresh after typing before Save is safe to click.
+        await expect(
+            this.barrierSaveButton,
+            'Barrier Save should enable after proposal validates the draft'
+        ).toBeEnabled({ timeout: 20_000 });
         if (this.isMobile) {
             await expect(async () => {
-                await expect(
-                    this.barrierSaveButton,
-                    'Barrier Save should enable after proposal validates the draft'
-                ).toBeEnabled();
+                await expect(this.barrierSaveButton, 'Barrier Save should stay enabled before Save').toBeEnabled({
+                    timeout: 5_000,
+                });
                 await this.saveMobileSheet(this.barrierSheet);
+                await expect(this.barrierSheet, 'Barrier sheet should close after Save').not.toBeVisible({
+                    timeout: 3_000,
+                });
             }).toPass({ timeout: 20_000 });
-            await expect(this.barrierSheet, 'Barrier sheet should close after Save').not.toBeVisible();
         } else {
+            // Short close timeout lets toPass retry if Save is swallowed mid-refresh.
             await expect(async () => {
-                await expect(
-                    this.barrierSaveButton,
-                    'Barrier Save should enable after proposal validates the draft'
-                ).toBeEnabled();
+                await expect(this.barrierSaveButton, 'Barrier Save should stay enabled before Save').toBeEnabled({
+                    timeout: 5_000,
+                });
                 await this.barrierSaveButton.click();
-                await expect(this.barrierPopover, 'Barrier popover should close after Save').not.toBeVisible();
+                await expect(this.barrierPopover, 'Barrier popover should close after Save').not.toBeVisible({
+                    timeout: 3_000,
+                });
             }).toPass({ timeout: 20_000 });
             await expect(this.inputPopoverOverlay, 'Barrier overlay should dismiss after Save').not.toBeVisible();
         }

@@ -35,11 +35,11 @@ test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade']
     test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHigherLowerPage }) => {
         await tradeHigherLowerPage.buyLowerAndVerify({
             accountType: 'demo',
-            market: 'Volatility 100 (1s) Index',
+            market: 'Volatility 100 Index',
             durationUnit: 'Hours',
             durationValue: '1h 30m',
             barrierType: 'Below spot',
-            barrier: '5.00',
+            barrier: '8.00',
             stake: '10.00',
             currency: 'USD',
         });
@@ -48,11 +48,11 @@ test.describe('Trade — Higher/Lower', { tag: ['@desktop', '@mobile', '@trade']
     test('VERIFY Buy "Lower" Contract and Close (Real Account)', async ({ tradeHigherLowerPage }) => {
         await tradeHigherLowerPage.buyLowerAndVerify({
             accountType: 'real',
-            market: 'Volatility 100 (1s) Index',
+            market: 'Volatility 100 Index',
             durationUnit: 'Hours',
             durationValue: '1h 30m',
             barrierType: 'Below spot',
-            barrier: '5.00',
+            barrier: '8.00',
             stake: '10.00',
             currency: 'USD',
         });

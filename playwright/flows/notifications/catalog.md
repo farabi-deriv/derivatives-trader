@@ -7,17 +7,17 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                    | Tags                              | Status                    |
-| ---------- | ------------------------------------------------------------ | --------------------------------- | ------------------------- |
-| Flow 1     | `notifications/verify-trade-banner-purchase.spec.ts`         | `@notifications @mobile`          | ✅ Automated              |
-| Flow 2     | `notifications/verify-trade-banner-sell.spec.ts`             | `@notifications @mobile`          | ✅ Automated              |
-| Flow 3     | —                                                            | —                                 | **N/A — surface removed** |
-| Flow 4     | —                                                            | —                                 | **N/A — surface removed** |
-| Flow 5     | —                                                            | —                                 | **N/A — surface removed** |
-| Flow 6     | —                                                            | —                                 | **N/A — surface removed** |
-| Flow 7     | —                                                            | —                                 | **N/A — surface removed** |
-| G1         | `notifications/verify-no-bell-on-trade-page.spec.ts`         | `@notifications @desktop @mobile` | ✅ Automated              |
-| G2         | `notifications/verify-trade-banner-locator-fallback.spec.ts` | `@notifications @mobile`          | ✅ Automated              |
+| Journey ID | Spec File | Tags | Status |
+| --- | --- | --- | --- |
+| Flow 1 | `notifications/verify-trade-banner-purchase.spec.ts` | `@notifications @mobile` | ✅ Automated |
+| Flow 2 | `notifications/verify-trade-banner-sell.spec.ts` | `@notifications @mobile` | ✅ Automated |
+| Flow 3 | — | — | **N/A — surface removed** |
+| Flow 4 | — | — | **N/A — surface removed** |
+| Flow 5 | — | — | **N/A — surface removed** |
+| Flow 6 | — | — | **N/A — surface removed** |
+| Flow 7 | — | — | **N/A — surface removed** |
+| G1 | `notifications/verify-no-bell-on-trade-page.spec.ts` | `@notifications @desktop @mobile` | ✅ Automated |
+| G2 | `notifications/verify-trade-banner-locator-fallback.spec.ts` | `@notifications @mobile` | ✅ Automated |
 
 > **Flows 3–7 are N/A**: the bell entry point (`ShowNotifications`) lost its last host in commit `1221b37030` (TRAH-6133, 2025-06-19) — `show-notifications.tsx` has zero importers, so the notification centre (`NotificationsDialog/`, `dt_notifications_list_wrapper`) is unreachable. The previously proposed centre specs (`verify-notification-centre-*.spec.ts`) are cancelled. The `NotificationsPage` bell/centre locators are dead test code pending the app team's cleanup of the dead app components (see `flow.md` Architecture Note).
 
@@ -251,12 +251,12 @@ test.describe('Notifications — Centre clear all', { tag: ['@notifications', '@
 
 ## Section 3 — Tags Reference
 
-| Tag              | When to apply                                                                           |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| `@notifications` | All tests in the notifications module                                                   |
-| `@smoke`         | Not used on any automated spec today (cancelled centre flows 3–7 would have carried it) |
-| `@desktop`       | Desktop viewport only (notification centre inline dropdown)                             |
-| `@mobile`        | Mobile viewport (trade banner is AppV2-only; notification centre opens as MobileDialog) |
+| Tag | When to apply |
+| --- | --- |
+| `@notifications` | All tests in the notifications module |
+| `@smoke` | Not used on any automated spec today (cancelled centre flows 3–7 would have carried it) |
+| `@desktop` | Desktop viewport only (notification centre inline dropdown) |
+| `@mobile` | Mobile viewport (trade banner is AppV2-only; notification centre opens as MobileDialog) |
 
 ---
 

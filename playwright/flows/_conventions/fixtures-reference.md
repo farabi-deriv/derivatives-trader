@@ -30,12 +30,12 @@ test('my test', async ({ tradePage }) => {
 
 ## Available Page Object Fixtures
 
-| Fixture             | Page Object         | Used for                                                                      |
-| ------------------- | ------------------- | ----------------------------------------------------------------------------- |
-| `loginPage`         | `LoginPage`         | Deriv OAuth login flow                                                        |
-| `tradePage`         | `TradePage`         | Desktop trade form (DTrader)                                                  |
-| `tradeVanillasPage` | `TradeVanillasPage` | Vanillas Call/Put purchase + open/closed position verification                |
-| `isMobileViewport`  | `boolean`           | `true` when running under `chromium-mobile` project (viewport width < 1024px) |
+| Fixture | Page Object | Used for |
+| --- | --- | --- |
+| `loginPage` | `LoginPage` | Deriv OAuth login flow |
+| `tradePage` | `TradePage` | Desktop trade form (DTrader) |
+| `tradeVanillasPage` | `TradeVanillasPage` | Vanillas Call/Put purchase + open/closed position verification |
+| `isMobileViewport` | `boolean` | `true` when running under `chromium-mobile` project (viewport width < 1024px) |
 
 > **Note:** As more page objects are added to `playwright/pages/`, register them in `playwright/fixtures/fixtures.ts` and add a row here.
 

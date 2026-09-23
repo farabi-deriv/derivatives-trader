@@ -7,9 +7,9 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID | Spec File                                                 | Tags                           |
-| ---------- | --------------------------------------------------------- | ------------------------------ |
-| Flow 1     | `pageerrors/verify-no-delay-amount-error-on-load.spec.ts` | `@pageerrors @desktop @mobile` |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1 | `pageerrors/verify-no-delay-amount-error-on-load.spec.ts` | `@pageerrors @desktop @mobile` |
 
 ---
 

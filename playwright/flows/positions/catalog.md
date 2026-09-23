@@ -7,12 +7,12 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID      | Spec File                                         | Tags                             |
-| --------------- | ------------------------------------------------- | -------------------------------- |
-| Flow 1, 2, 4, 7 | `positions/verify-positions-load.spec.ts`         | `@positions @desktop @mobile`    |
-| Flow 3, 10      | `positions/verify-positions-empty-states.spec.ts` | `@positions @regression @mobile` |
-| Flow 5, 6, 11   | `positions/verify-positions-filters.spec.ts`      | `@positions @regression @mobile` |
-| Flow 8, 9       | `positions/verify-positions-actions.spec.ts`      | `@positions @regression @mobile` |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1, 2, 4, 7 | `positions/verify-positions-load.spec.ts` | `@positions @desktop @mobile` |
+| Flow 3, 10 | `positions/verify-positions-empty-states.spec.ts` | `@positions @regression @mobile` |
+| Flow 5, 6, 11 | `positions/verify-positions-filters.spec.ts` | `@positions @regression @mobile` |
+| Flow 8, 9 | `positions/verify-positions-actions.spec.ts` | `@positions @regression @mobile` |
 
 ---
 
@@ -26,12 +26,12 @@
 
 **Cleanup:** `afterEach` → redirect mobile to `/positions`, then `closeAllOpenContracts()`.
 
-| Flow | Platform | Test name                                                                 |
-| ---- | -------- | ------------------------------------------------------------------------- |
-| 1    | Mobile   | `VERIFY open positions list loads with contract cards on mobile`          |
-| 2    | Desktop  | `VERIFY positions flyout opens from sidebar on desktop`                   |
-| 4    | Mobile   | `VERIFY closed positions tab shows contracts grouped by date on mobile`   |
-| 7    | Mobile   | `VERIFY clicking a contract card navigates to contract details on mobile` |
+| Flow | Platform | Test name |
+| --- | --- | --- |
+| 1 | Mobile | `VERIFY open positions list loads with contract cards on mobile` |
+| 2 | Desktop | `VERIFY positions flyout opens from sidebar on desktop` |
+| 4 | Mobile | `VERIFY closed positions tab shows contracts grouped by date on mobile` |
+| 7 | Mobile | `VERIFY clicking a contract card navigates to contract details on mobile` |
 
 **Describe block:**
 
@@ -89,10 +89,10 @@ await expect(positionsPage.firstContractCard).toBeVisible();
 
 **Tags:** `@positions @regression @mobile` — mobile-only (desktop skips).
 
-| Flow | Test name                                                          |
-| ---- | ------------------------------------------------------------------ |
-| 3    | `VERIFY empty open positions state on mobile` (light + dark theme) |
-| 10   | `VERIFY empty closed positions state on mobile`                    |
+| Flow | Test name |
+| --- | --- |
+| 3 | `VERIFY empty open positions state on mobile` (light + dark theme) |
+| 10 | `VERIFY empty closed positions state on mobile` |
 
 **Flow 3 — empty open tab (light theme, then dark-theme icon contrast #1036):**
 
@@ -117,11 +117,11 @@ await positionsPage.verifyEmptyClosedPositionsState();
 
 **Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only; `beforeEach`/`afterEach` no-op on desktop.
 
-| Flow | Test name                                                                       |
-| ---- | ------------------------------------------------------------------------------- |
-| 5    | `VERIFY filter by trade type narrows open positions list and can be cleared`    |
-| 11   | `VERIFY no-matches state when trade type filter has no matching open positions` |
-| 6    | `VERIFY time filter narrows closed positions list and can be reset`             |
+| Flow | Test name |
+| --- | --- |
+| 5 | `VERIFY filter by trade type narrows open positions list and can be cleared` |
+| 11 | `VERIFY no-matches state when trade type filter has no matching open positions` |
+| 6 | `VERIFY time filter narrows closed positions list and can be reset` |
 
 **Flow 5 — trade-type filter:**
 
@@ -158,10 +158,10 @@ await positionsPage.resetTimeFilter();
 
 **Account:** `TEST_EMAIL` / `_MOBILE`. Mobile-only swipe/force-click actions.
 
-| Flow | Test name                                                                          |
-| ---- | ---------------------------------------------------------------------------------- |
-| 8    | `VERIFY swiping left on a contract card allows closing the position on mobile`     |
-| 9    | `VERIFY swiping left on a multiplier contract with DC allows cancelling on mobile` |
+| Flow | Test name |
+| --- | --- |
+| 8 | `VERIFY swiping left on a contract card allows closing the position on mobile` |
+| 9 | `VERIFY swiping left on a multiplier contract with DC allows cancelling on mobile` |
 
 **Flow 8 — close via swipe action:**
 
@@ -182,14 +182,14 @@ await expect(positionsPage.emptyStateIcon).toBeVisible();
 
 ## Section 3 — Tags Reference
 
-| Tag           | When to apply                                                                                                                         |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `@positions`  | All tests in the positions feature area                                                                                               |
-| `@smoke`      | Not used on any automated spec today                                                                                                  |
+| Tag | When to apply |
+| --- | --- |
+| `@positions` | All tests in the positions feature area |
+| `@smoke` | Not used on any automated spec today |
 | `@regression` | Filters, empty states, close/cancel actions (`verify-positions-filters`, `verify-positions-empty-states`, `verify-positions-actions`) |
-| `@production` | Not used — Positions tests require login and contract mutations                                                                       |
-| `@desktop`    | Desktop viewport — sidebar flyout flow only (Flow 2 in load spec)                                                                     |
-| `@mobile`     | Mobile viewport — full-page `/positions` route with tabs                                                                              |
+| `@production` | Not used — Positions tests require login and contract mutations |
+| `@desktop` | Desktop viewport — sidebar flyout flow only (Flow 2 in load spec) |
+| `@mobile` | Mobile viewport — full-page `/positions` route with tabs |
 
 ---
 

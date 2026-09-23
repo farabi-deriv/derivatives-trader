@@ -12,16 +12,16 @@
 
 ## Available Utilities
 
-| Utility                                                          | Source                                          | Used for                                              |
-| ---------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------- |
-| `NavigationUtils`                                                | `e2e-tests-core/utils/navigationUtils.ts`       | Wait for Deriv API to settle, browser back navigation |
-| `MailiskUtils`                                                   | `e2e-tests-core/utils/mailisk.ts`               | Retrieve OTP emails from Mailisk inboxes              |
-| `DataFactory`                                                    | `e2e-tests-core/utils/dataFactory.ts`           | Generate test data (emails, names, addresses)         |
-| `createAccountV1` / `createAccountV2`                            | `e2e-tests-core/utils/accountCreationRunner.ts` | Provision staging test accounts                       |
-| `topupAccount` / `changePoiPoaStatus`                            | `e2e-tests-core/utils/accountCreationRunner.ts` | Top up / KYC staging accounts                         |
-| `enableFeatureFlags` / `disableFeatureFlags` / `getFeatureFlags` | `e2e-tests-core/utils/featureFlags.ts`          | Toggle feature flags via localStorage                 |
-| `CoinGeckoUtils`                                                 | `e2e-tests-core/utils/coinGeckoUtils.ts`        | Live crypto exchange rate validation                  |
-| `TestData`                                                       | `utils/testData.ts`                             | File paths for document/image uploads                 |
+| Utility | Source | Used for |
+| --- | --- | --- |
+| `NavigationUtils` | `e2e-tests-core/utils/navigationUtils.ts` | Wait for Deriv API to settle, browser back navigation |
+| `MailiskUtils` | `e2e-tests-core/utils/mailisk.ts` | Retrieve OTP emails from Mailisk inboxes |
+| `DataFactory` | `e2e-tests-core/utils/dataFactory.ts` | Generate test data (emails, names, addresses) |
+| `createAccountV1` / `createAccountV2` | `e2e-tests-core/utils/accountCreationRunner.ts` | Provision staging test accounts |
+| `topupAccount` / `changePoiPoaStatus` | `e2e-tests-core/utils/accountCreationRunner.ts` | Top up / KYC staging accounts |
+| `enableFeatureFlags` / `disableFeatureFlags` / `getFeatureFlags` | `e2e-tests-core/utils/featureFlags.ts` | Toggle feature flags via localStorage |
+| `CoinGeckoUtils` | `e2e-tests-core/utils/coinGeckoUtils.ts` | Live crypto exchange rate validation |
+| `TestData` | `utils/testData.ts` | File paths for document/image uploads |
 
 All utilities are re-exported from `playwright/utils/index.ts` — import from `'../utils'`, not from individual files.
 
@@ -207,12 +207,12 @@ Files live in:
 
 ## Quick Cheat Sheet
 
-| Task                                         | Use                                                                                            |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Wait for page to fully load after navigation | `NavigationUtils.waitForDerivApiSettled(page)`                                                 |
-| Generate a test email                        | `DataFactory.generateEmailWithPrefix('context')`                                               |
-| Retrieve OTP from email                      | `MailiskUtils.extractOtp('webapps', { to_addr_prefix, from_timestamp }, { timeout: 180_000 })` |
-| Navigate to a page                           | `redirectionHelpers.redirectTo(page, '/reports/positions')`                                    |
-| Create a staging account                     | `createAccountV2('real', 'al', { currency: 'USD' })`                                           |
-| Resolve a test file path                     | `TestData.document('filename.pdf')`                                                            |
-| Toggle a feature flag                        | `enableFeatureFlags(page, 'FLAG_NAME')`                                                        |
+| Task | Use |
+| --- | --- |
+| Wait for page to fully load after navigation | `NavigationUtils.waitForDerivApiSettled(page)` |
+| Generate a test email | `DataFactory.generateEmailWithPrefix('context')` |
+| Retrieve OTP from email | `MailiskUtils.extractOtp('webapps', { to_addr_prefix, from_timestamp }, { timeout: 180_000 })` |
+| Navigate to a page | `redirectionHelpers.redirectTo(page, '/reports/positions')` |
+| Create a staging account | `createAccountV2('real', 'al', { currency: 'USD' })` |
+| Resolve a test file path | `TestData.document('filename.pdf')` |
+| Toggle a feature flag | `enableFeatureFlags(page, 'FLAG_NAME')` |

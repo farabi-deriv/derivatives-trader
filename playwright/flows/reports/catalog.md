@@ -7,12 +7,12 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID   | Spec File                                       | Tags                                    |
-| ------------ | ----------------------------------------------- | --------------------------------------- |
-| Flow 1, 5, 6 | `reports/verify-reports-navigation.spec.ts`     | `@reports @regression @desktop @mobile` |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
+| Flow 1, 5, 6 | `reports/verify-reports-navigation.spec.ts` | `@reports @regression @desktop @mobile` |
 | Flow 2–4, G1 | `reports/verify-reports-open-positions.spec.ts` | `@reports @regression @desktop @mobile` |
-| Flow 7, 8    | `reports/verify-reports-empty-states.spec.ts`   | `@reports @regression @desktop @mobile` |
-| G2           | `reports/verify-reports-navigation.spec.ts`     | `@reports @regression @desktop @mobile` |
+| Flow 7, 8 | `reports/verify-reports-empty-states.spec.ts` | `@reports @regression @desktop @mobile` |
+| G2 | `reports/verify-reports-navigation.spec.ts` | `@reports @regression @desktop @mobile` |
 
 ---
 
@@ -26,13 +26,13 @@
 
 **Cleanup:** `afterEach` → `positionsPage.closeAllOpenContracts()`.
 
-| Flow       | Test name                                                                  |
-| ---------- | -------------------------------------------------------------------------- |
-| 1          | `VERIFY reports page loads with default Open positions tab`                |
-| 5          | `VERIFY trade table tab loads with date filter and content`                |
-| 6          | `VERIFY statement tab loads with transaction filter and statement content` |
-| 6 (filter) | `VERIFY filtering by Buy on statement tab`                                 |
-| G2         | `VERIFY archived statement route and header display`                       |
+| Flow | Test name |
+| --- | --- |
+| 1 | `VERIFY reports page loads with default Open positions tab` |
+| 5 | `VERIFY trade table tab loads with date filter and content` |
+| 6 | `VERIFY statement tab loads with transaction filter and statement content` |
+| 6 (filter) | `VERIFY filtering by Buy on statement tab` |
+| G2 | `VERIFY archived statement route and header display` |
 
 **Describe block:**
 
@@ -102,12 +102,12 @@ await expect(reportsPage.archivedStatementTab).toBeVisible();
 
 **Account / cleanup:** Same as navigation spec (`TEST_EMAIL` / `_MOBILE`, `closeAllOpenContracts` in `afterEach`).
 
-| Flow | Test name                                                                 |
-| ---- | ------------------------------------------------------------------------- |
-| 2    | `VERIFY open positions tab shows Options contracts by default`            |
-| 3    | `VERIFY switching to Multipliers filter shows multiplier contracts`       |
-| 4    | `VERIFY switching to Accumulators filter displays growth rate sub-filter` |
-| G1   | `VERIFY clicking an open position row navigates to contract details`      |
+| Flow | Test name |
+| --- | --- |
+| 2 | `VERIFY open positions tab shows Options contracts by default` |
+| 3 | `VERIFY switching to Multipliers filter shows multiplier contracts` |
+| 4 | `VERIFY switching to Accumulators filter displays growth rate sub-filter` |
+| G1 | `VERIFY clicking an open position row navigates to contract details` |
 
 **Flow 2 — Options row visible (after in-test Rise buy):**
 
@@ -145,10 +145,10 @@ await expect(page.getByText('Contract details').first()).toBeVisible();
 
 **Account:** Fresh account — `createAccountV2viaJS('real', …)` on staging (backup `TEST_EMAIL` / `_MOBILE`); production uses env credentials directly.
 
-| Flow | Test name                                                                                 |
-| ---- | ----------------------------------------------------------------------------------------- |
-| 7    | `VERIFY empty state shown on Trade Table when account has no trading activity`            |
-| 8    | `VERIFY empty state shown on Statement when account has no transactions of selected type` |
+| Flow | Test name |
+| --- | --- |
+| 7 | `VERIFY empty state shown on Trade Table when account has no trading activity` |
+| 8 | `VERIFY empty state shown on Statement when account has no transactions of selected type` |
 
 **Flow 7:**
 
@@ -173,14 +173,14 @@ await expect(
 
 ## Section 3 — Tags Reference
 
-| Tag           | When to apply                                                            |
-| ------------- | ------------------------------------------------------------------------ |
-| `@reports`    | All tests in the reports feature area                                    |
-| `@smoke`      | Not used on any automated spec today                                     |
+| Tag | When to apply |
+| --- | --- |
+| `@reports` | All tests in the reports feature area |
+| `@smoke` | Not used on any automated spec today |
 | `@regression` | All automated Reports specs (no `@smoke` or `@production` in code today) |
-| `@production` | Not used — Reports tests require login and contract/statement mutations  |
-| `@desktop`    | Desktop viewport — `VerticalTab` sidebar navigation                      |
-| `@mobile`     | Mobile viewport — `SelectNative` dropdown tab navigation                 |
+| `@production` | Not used — Reports tests require login and contract/statement mutations |
+| `@desktop` | Desktop viewport — `VerticalTab` sidebar navigation |
+| `@mobile` | Mobile viewport — `SelectNative` dropdown tab navigation |
 
 ---
 

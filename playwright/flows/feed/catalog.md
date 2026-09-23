@@ -8,8 +8,8 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID   | Spec File                               | Tags                                        |
-| ------------ | --------------------------------------- | ------------------------------------------- |
+| Journey ID | Spec File | Tags |
+| --- | --- | --- |
 | Flow 1.1–1.5 | `feed/verify-markets-streaming.spec.ts` | `@feed @smoke @desktop @mobile @production` |
 
 ---
@@ -22,13 +22,13 @@ Search stays cross-trade-type. The category chip is the **test boundary**, not t
 
 Each test calls `FeedPage.marketsIn(category)`:
 
-| Flow | Category chip    | Test title                                 |
-| ---- | ---------------- | ------------------------------------------ |
-| 1.1  | Derived          | `VERIFY Feed for Derived markets`          |
-| 1.2  | Forex            | `VERIFY Feed for Forex markets`            |
-| 1.3  | Stocks & indices | `VERIFY Feed for Stocks & indices markets` |
-| 1.4  | Cryptocurrencies | `VERIFY Feed for Cryptocurrencies markets` |
-| 1.5  | Commodities      | `VERIFY Feed for Commodities markets`      |
+| Flow | Category chip | Test title |
+| --- | --- | --- |
+| 1.1 | Derived | `VERIFY Feed for Derived markets` |
+| 1.2 | Forex | `VERIFY Feed for Forex markets` |
+| 1.3 | Stocks & indices | `VERIFY Feed for Stocks & indices markets` |
+| 1.4 | Cryptocurrencies | `VERIFY Feed for Cryptocurrencies markets` |
+| 1.5 | Commodities | `VERIFY Feed for Commodities markets` |
 
 ```typescript
 await feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, 'Derived');
@@ -55,50 +55,50 @@ the market is skipped with no tick assertion.
 
 ## Section 3 — Key DOM Locators
 
-| UI element                   | Locator / class                                                                              |
-| ---------------------------- | -------------------------------------------------------------------------------------------- |
-| Picker (mobile)              | `[role="dialog"][aria-label="Market selection"]`                                             |
-| Picker (desktop)             | `.market-selection-desktop`                                                                  |
-| Search icon (mobile header)  | `marketSelectionPanel` → `getByRole('button', { name: 'Search' })`                           |
-| Search page (mobile)         | `.market-search`                                                                             |
-| Search input (mobile)        | `.market-search` → `getByPlaceholder('Search markets')`                                      |
-| Search input (desktop)       | `.market-selection-desktop__search` → `getByPlaceholder('Search by market name')`            |
-| Search results list          | `.market-search-results`                                                                     |
-| Search loading skeleton      | `.market-selection-list--loading`                                                            |
-| Search result row (mobile)   | `.market-search-results` → `.market-selection-row` filtered by `.market-selection-row__name` |
-| Search result row (desktop)  | `.market-search-results` → `.market-row-desktop` filtered by `.market-row-desktop__name`     |
-| Info button (mobile row)     | `.market-selection-row__action--info` — use `dispatchEvent('click')`                         |
-| Info button (desktop row)    | row → `getByRole('button', { name: 'Info' })`                                                |
-| Market Info screen           | `.market-info`                                                                               |
-| Market name on Info          | `.market-info__name`                                                                         |
-| Live price on Info           | `.market-info__price`                                                                        |
-| Search result row CLOSED tag | `.market-selection-row__content` → `.tag__color--error-fill` with text **CLOSED**            |
-| Closed tag on Market Info    | `.market-info__price-row` → `.tag__color--error-fill` with text **Closed**                   |
-| Back from Info               | `getByRole('button', { name: 'Back' })` on `.market-info`                                    |
+| UI element | Locator / class |
+| --- | --- |
+| Picker (mobile) | `[role="dialog"][aria-label="Market selection"]` |
+| Picker (desktop) | `.market-selection-desktop` |
+| Search icon (mobile header) | `marketSelectionPanel` → `getByRole('button', { name: 'Search' })` |
+| Search page (mobile) | `.market-search` |
+| Search input (mobile) | `.market-search` → `getByPlaceholder('Search markets')` |
+| Search input (desktop) | `.market-selection-desktop__search` → `getByPlaceholder('Search by market name')` |
+| Search results list | `.market-search-results` |
+| Search loading skeleton | `.market-selection-list--loading` |
+| Search result row (mobile) | `.market-search-results` → `.market-selection-row` filtered by `.market-selection-row__name` |
+| Search result row (desktop) | `.market-search-results` → `.market-row-desktop` filtered by `.market-row-desktop__name` |
+| Info button (mobile row) | `.market-selection-row__action--info` — use `dispatchEvent('click')` |
+| Info button (desktop row) | row → `getByRole('button', { name: 'Info' })` |
+| Market Info screen | `.market-info` |
+| Market name on Info | `.market-info__name` |
+| Live price on Info | `.market-info__price` |
+| Search result row CLOSED tag | `.market-selection-row__content` → `.tag__color--error-fill` with text **CLOSED** |
+| Closed tag on Market Info | `.market-info__price-row` → `.tag__color--error-fill` with text **Closed** |
+| Back from Info | `getByRole('button', { name: 'Back' })` on `.market-info` |
 
 ---
 
 ## Section 4 — POM Method Reference
 
-| What the step does                                           | Method                                                                               |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Full per-market flow (search → Info → assert; picker reused) | `feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market)`                |
-| One category: trade page → each market → close picker        | `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category)` |
-| Ensure picker + search ready (idempotent; safe on retry)     | `feedPage.openMarketSearchInPicker(marketSelectionPage)`                             |
-| Type query and return first row (CLOSED → skip Info)         | `feedPage.searchMarketFirstResultRow(marketSelectionPage, label)`                    |
-| Check CLOSED tag on a search row                             | `marketSelectionPage.isSearchResultRowClosed(row)`                                   |
-| Search, open Info, assert (when row is live)                 | `feedPage.searchMarketAndOpenInfo(marketSelectionPage, label)`                       |
-| Back to search between markets                               | `feedPage.returnFromMarketInfoForNextSearch(marketSelectionPage)`                    |
-| Assert live price ticks; skip closed session-gated           | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status, category)`   |
-| Resolve display label for viewport                           | `feedPage.resolveLabel(market)`                                                      |
-| Static array of all markets, tagged by category chip         | `FeedPage.MARKETS`                                                                   |
-| Markets for one chip                                         | `FeedPage.marketsIn(category)`                                                       |
-| Locator: Market Info root                                    | `marketSelectionPage.marketInfoScreen`                                               |
-| Locator: live price on Market Info                           | `marketSelectionPage.marketInfoScreen.locator('.market-info__price')`                |
-| Open search page / confirm input ready                       | `marketSelectionPage.openMarketSearch()`                                             |
-| Wait for first matching search row (past skeleton)           | `marketSelectionPage.waitForMarketSearchResultRow(market)`                           |
-| First row in cross-trade-type results                        | `marketSelectionPage.firstMarketSearchResultRow(market)`                             |
-| Open Info on a specific search row                           | `marketSelectionPage.openMarketInfoOnSearchRow(row)`                                 |
-| Close picker after the loop                                  | `marketSelectionPage.closeMarketSelectionPicker()`                                   |
-| Navigate to trade page (entry point)                         | `tradeParametersPage.gotoTradePage()`                                                |
-| Seed localStorage (suppress tours)                           | `TradeBasePage.seedLocalStorageOnOrigin(page)`                                       |
+| What the step does | Method |
+| --- | --- |
+| Full per-market flow (search → Info → assert; picker reused) | `feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market)` |
+| One category: trade page → each market → close picker | `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category)` |
+| Ensure picker + search ready (idempotent; safe on retry) | `feedPage.openMarketSearchInPicker(marketSelectionPage)` |
+| Type query and return first row (CLOSED → skip Info) | `feedPage.searchMarketFirstResultRow(marketSelectionPage, label)` |
+| Check CLOSED tag on a search row | `marketSelectionPage.isSearchResultRowClosed(row)` |
+| Search, open Info, assert (when row is live) | `feedPage.searchMarketAndOpenInfo(marketSelectionPage, label)` |
+| Back to search between markets | `feedPage.returnFromMarketInfoForNextSearch(marketSelectionPage)` |
+| Assert live price ticks; skip closed session-gated | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status, category)` |
+| Resolve display label for viewport | `feedPage.resolveLabel(market)` |
+| Static array of all markets, tagged by category chip | `FeedPage.MARKETS` |
+| Markets for one chip | `FeedPage.marketsIn(category)` |
+| Locator: Market Info root | `marketSelectionPage.marketInfoScreen` |
+| Locator: live price on Market Info | `marketSelectionPage.marketInfoScreen.locator('.market-info__price')` |
+| Open search page / confirm input ready | `marketSelectionPage.openMarketSearch()` |
+| Wait for first matching search row (past skeleton) | `marketSelectionPage.waitForMarketSearchResultRow(market)` |
+| First row in cross-trade-type results | `marketSelectionPage.firstMarketSearchResultRow(market)` |
+| Open Info on a specific search row | `marketSelectionPage.openMarketInfoOnSearchRow(row)` |
+| Close picker after the loop | `marketSelectionPage.closeMarketSelectionPicker()` |
+| Navigate to trade page (entry point) | `tradeParametersPage.gotoTradePage()` |
+| Seed localStorage (suppress tours) | `TradeBasePage.seedLocalStorageOnOrigin(page)` |

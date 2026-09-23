@@ -162,7 +162,7 @@ ENV_ENCRYPTION_KEY="your-key" ./playwright/e2e-tests-core/scripts/env-cipher.sh 
   run: ./playwright/e2e-tests-core/scripts/env-cipher.sh decrypt staging
 ```
 
-**CI sharding:** smoke and regression runs use **2** shards per platform (`--shard=1/2`, `--shard=2/2`), including preview runs. Single-spec runs stay at one shard. Each shard uploads a `blob-{platform}-{shard}-{run_attempt}` artifact; a **per-platform `report` job** merges blobs, publishes the TestDino GitHub summary, and uploads HTML. Test jobs set `TESTDINO_STREAM=1` and `TESTDINO_CI_RUN_ID={run_id}-{attempt}-{platform}` so all shards of a platform group into one live TestDino run. Slack: each report job **collects** one `_result-{platform}.json`; the **`notify` job** sends a single aggregated message (per-platform failure threads when multiple browsers ran). Local runs do not shard by default — pass `--shard=1/2` when experimenting.
+**CI sharding:** smoke and regression runs use **4** shards per platform (`--shard=1/4` … `--shard=4/4`), including preview runs. Single-spec runs stay at one shard. Each shard uploads a `blob-{platform}-{shard}-{run_attempt}` artifact; a **per-platform `report` job** merges blobs, publishes the TestDino GitHub summary, and uploads HTML. Test jobs set `TESTDINO_STREAM=1` and `TESTDINO_CI_RUN_ID={run_id}-{attempt}-{platform}` so all shards of a platform group into one live TestDino run. Slack: each report job **collects** one `_result-{platform}.json`; the **`notify` job** sends a single aggregated message (per-platform failure threads when multiple browsers ran). Local runs do not shard by default — pass `--shard=1/4` when experimenting.
 
 **Critical pitfalls:**
 
@@ -413,7 +413,7 @@ playwright/
 | Base URL                 | `BASE_URL` env var or `https://staging-dtrader.deriv.com`                                                                          |
 | PR preview (local)       | `TEST_ENV=staging BASE_URL=https://…pages.dev/ npx playwright test …` — staging credentials, preview frontend                      |
 | PR preview (CI)          | Playwright workflow `preview_url` input — decrypts `.env.staging`, sets `BASE_URL` override (not valid with `test_env=production`) |
-| CI sharding              | Default 2 shards/platform (smoke + regression) · Spec file: 1 — per-platform HTML in `playwright-report-{platform}-*`              |
+| CI sharding              | Default 4 shards/platform (smoke + regression) · Spec file: 1 — per-platform HTML in `playwright-report-{platform}-*`              |
 | Login flow               | Single-step OAuth via Deriv login page → redirect to app                                                                           |
 | Full login shortcut      | `loginPage.login()` — reads `TEST_EMAIL` / `TEST_PASSWORD`                                                                         |
 | Mobile detection in POM  | `(this.page.viewportSize()?.width ?? 1024) < 1024`                                                                                 |

@@ -6,9 +6,9 @@
 
 ## Section 1 — Coverage at a Glance
 
-| #      | Journey                                            | Desktop | Mobile | Notes |
-| ------ | -------------------------------------------------- | ------- | ------ | ----- |
-| Flow 1 | Trade form load — no delay_amount pageerror (#901) | ✅      | ✅     |       |
+| # | Journey | Desktop | Mobile | Notes |
+| --- | --- | --- | --- | --- |
+| Flow 1 | Trade form load — no delay_amount pageerror (#901) | ✅ | ✅ |  |
 
 ---
 
