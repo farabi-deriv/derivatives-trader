@@ -53,7 +53,7 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
-    workers: process.env.CI ? 4 : undefined,
+    workers: process.env.CI ? 3 : undefined,
 
     // CI test jobs (TESTDINO_STREAM=1): blob + live TestDino. Merge jobs: html/json only.
     reporter: process.env.CI
