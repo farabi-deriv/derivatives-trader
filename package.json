@@ -40,7 +40,7 @@
         "@deriv-com/eslint-config-deriv": "2.2.0",
         "@faker-js/faker": "^10.4.0",
         "@jest/globals": "^29.7.0",
-        "@playwright/test": "^1.52.0",
+        "@playwright/test": "^1.63.0",
         "@testdino/playwright": "^2.0.0",
         "@testing-library/jest-dom": "^6.5.0",
         "@testing-library/react": "^14.3.1",

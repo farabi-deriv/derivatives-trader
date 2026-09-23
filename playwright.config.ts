@@ -53,6 +53,8 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
+    // Retries run after the suite, one-by-one — avoids stampeding shared accounts / rate limits mid-run.
+    retryStrategy: 'isolated',
     workers: process.env.CI ? 3 : undefined,
 
     // CI test jobs (TESTDINO_STREAM=1): blob + live TestDino. Merge jobs: html/json only.
