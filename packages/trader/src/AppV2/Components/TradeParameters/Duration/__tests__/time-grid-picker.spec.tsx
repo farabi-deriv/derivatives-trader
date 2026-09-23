@@ -162,6 +162,26 @@ describe('TimeGridPicker', () => {
             const hour10 = screen.getAllByText('10')[0];
             expect(hour10).not.toHaveClass('time-grid-picker__item--disabled');
         });
+
+        it('[EGRID-003] disables/enables the same hours regardless of the real current date', () => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date('2030-01-01T00:00:00.000Z'));
+
+            const startTimes = [dayjs().hour(9).minute(0)];
+            const endTimes = [dayjs().hour(17).minute(0)];
+
+            render(<TimeGridPicker {...defaultProps} startTimes={startTimes} endTimes={endTimes} />);
+
+            const hour08 = screen.getAllByText('08')[0];
+            const hour10 = screen.getAllByText('10')[0];
+            const hour18 = screen.getAllByText('18')[0];
+
+            expect(hour08).toHaveClass('time-grid-picker__item--disabled');
+            expect(hour10).not.toHaveClass('time-grid-picker__item--disabled');
+            expect(hour18).toHaveClass('time-grid-picker__item--disabled');
+
+            jest.useRealTimers();
+        });
     });
 
     describe('Edge cases', () => {

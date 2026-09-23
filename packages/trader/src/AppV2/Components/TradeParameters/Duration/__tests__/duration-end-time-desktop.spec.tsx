@@ -101,7 +101,7 @@ describe('DurationEndTimeDesktop', () => {
         await userEvent.click(screen.getByText('pick-future-date'));
     };
 
-    it('[DCE-004] saves the full close time for a daily-only contract closing at end of day', async () => {
+    it('[DCE-004][EGRID-002] saves the full close time for a daily-only contract closing at end of day', async () => {
         mockDurationEndTimeDesktop();
 
         await pickFutureDate();
@@ -116,7 +116,7 @@ describe('DurationEndTimeDesktop', () => {
         });
     });
 
-    it('[DCE-004] keeps the displayed end time at full precision when the market closes before midnight', async () => {
+    it('[DCE-004][EGRID-002] keeps the displayed end time at full precision when the market closes before midnight', async () => {
         (
             jest.requireMock('Stores/Modules/Trading/Helpers/contract-type').ContractType.getTradingTimes as jest.Mock
         ).mockImplementationOnce(() => Promise.resolve({ open: ['00:00:00'], close: ['20:55:00'] }));
@@ -129,7 +129,7 @@ describe('DurationEndTimeDesktop', () => {
         await screen.findByDisplayValue('20:55:00 GMT');
     });
 
-    it('[DCE-004] characterizes the intraday same-day path: a grid-picked time still saves HH:mm plus seconds', async () => {
+    it('[DCE-004][EGRID-001] characterizes the intraday same-day path: a grid-picked time still saves HH:mm plus seconds', async () => {
         default_trade_store.modules.trade.duration_unit = 'm';
         default_trade_store.modules.trade.duration_units_list = [
             { value: 'm', text: 'minutes' },
