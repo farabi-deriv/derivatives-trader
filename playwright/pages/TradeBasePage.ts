@@ -161,6 +161,29 @@ export class TradeBasePage {
     }
 
     /**
+     * Mobile Menu → Settings → Theme row. Opens the theme radiogroup drawer (#1177).
+     * Source: menu.tsx `menu-page__item` containing "Theme"
+     */
+    get mobileMenuThemeItem(): Locator {
+        return this.page.locator('.menu-page__item').filter({ hasText: /^Theme$/ });
+    }
+
+    /** Mobile theme drawer — Source: menu.tsx `data-testid="dt_menu_theme_drawer"` */
+    get mobileThemeDrawer(): Locator {
+        return this.page.getByTestId('dt_menu_theme_drawer');
+    }
+
+    /** Mobile theme radiogroup — Source: menu.tsx `data-testid="dt_menu_theme_selection"` */
+    get mobileThemeRadiogroup(): Locator {
+        return this.page.getByTestId('dt_menu_theme_selection');
+    }
+
+    /** Theme radio option by visible label (`Light` / `Dark` / `System`). */
+    mobileThemeOption(label: 'Light' | 'Dark' | 'System'): Locator {
+        return this.mobileThemeRadiogroup.getByRole('radio', { name: label });
+    }
+
+    /**
      * Log out control — rendered differently per viewport:
      *  - Desktop: a real `button` in the sidebar account dropdown (role=button, name "Log out").
      *  - Mobile: the logout row on the menu page — a `div.header__menu-logout` (NOT a button role,
@@ -289,15 +312,23 @@ export class TradeBasePage {
     }
 
     /**
+     * Persist a theme preference before app init (`ui_store.theme_preference`).
+     * Use `'system'` when asserting OS follow / explicit lock (#1177).
+     */
+    static async seedThemePreference(page: Page, preference: 'light' | 'dark' | 'system'): Promise<void> {
+        await page.evaluate(pref => {
+            const stored = localStorage.getItem('ui_store');
+            const ui = stored ? JSON.parse(stored) : {};
+            ui.theme_preference = pref;
+            localStorage.setItem('ui_store', JSON.stringify(ui));
+        }, preference);
+    }
+
+    /**
      * Persist an explicit dark-theme preference before app init (issue #1036 empty-state icon contrast).
      */
     static async seedDarkThemePreference(page: Page): Promise<void> {
-        await page.evaluate(() => {
-            const stored = localStorage.getItem('ui_store');
-            const ui = stored ? JSON.parse(stored) : {};
-            ui.theme_preference = 'dark';
-            localStorage.setItem('ui_store', JSON.stringify(ui));
-        });
+        await TradeBasePage.seedThemePreference(page, 'dark');
     }
 
     /**
@@ -338,6 +369,88 @@ export class TradeBasePage {
             await this.sidebarReportsButton.click();
         }
         await NavigationUtils.waitForDerivApiSettled(this.page);
+    }
+
+    /**
+     * Mobile — open Menu → Theme drawer with Light / Dark / System radios (#1177).
+     */
+    async openMobileThemeDrawer(): Promise<void> {
+        await this.bottomNavMenu.click();
+        await this.page.waitForURL('**/menu');
+        await expect(this.mobileMenuThemeItem, 'Theme menu row should be visible').toBeVisible();
+        await this.mobileMenuThemeItem.click();
+        await expect(this.mobileThemeDrawer, 'Theme drawer should open').toHaveClass(/menu-page__theme-drawer--open/);
+        await expect(this.mobileThemeRadiogroup, 'Theme radiogroup should be visible').toBeVisible();
+        await expect(this.mobileThemeOption('Light'), 'Light option should be present').toBeVisible();
+        await expect(this.mobileThemeOption('Dark'), 'Dark option should be present').toBeVisible();
+        await expect(this.mobileThemeOption('System'), 'System option should be present').toBeVisible();
+    }
+
+    /**
+     * Mobile — pick a Theme radio and assert it stays selected (preference, not resolved theme).
+     */
+    async selectMobileThemePreference(label: 'Light' | 'Dark' | 'System'): Promise<void> {
+        await this.mobileThemeOption(label).click();
+        await expect(this.mobileThemeOption(label), `${label} should be the selected preference`).toHaveAttribute(
+            'aria-checked',
+            'true'
+        );
+    }
+
+    /** Resolved app theme on `<body>` — `theme--light` or `theme--dark` (from `ui.is_dark_mode_on`). */
+    async expectResolvedBodyTheme(mode: 'light' | 'dark'): Promise<void> {
+        const body = this.page.locator('body');
+        await expect(body, `body should resolve to theme--${mode}`).toHaveClass(new RegExp(`theme--${mode}`));
+    }
+
+    /**
+     * Desktop — sidebar theme toggle (`dt_sidebar_theme`). Records an explicit Light/Dark
+     * preference via `setDarkMode` (#1177); there is no System radio on desktop.
+     */
+    async clickSidebarThemeToggle(): Promise<void> {
+        await expect(this.sidebarThemeButton, 'Sidebar Theme button should be visible').toBeVisible();
+        await this.sidebarThemeButton.click();
+    }
+
+    /**
+     * Set theme preference via the viewport's Theme control (#1177).
+     * - Mobile: Menu → Theme drawer radios (opens the drawer if needed).
+     * - Desktop: sidebar Theme toggle until preference is Light/Dark. System has no desktop
+     *   control — requires `seedThemePreference(..., 'system')` before load (no-op here).
+     */
+    async setThemePreference(label: 'Light' | 'Dark' | 'System'): Promise<void> {
+        if (this.isMobile) {
+            if (!(await this.mobileThemeRadiogroup.isVisible())) {
+                await this.openMobileThemeDrawer();
+            }
+            await this.selectMobileThemePreference(label);
+            return;
+        }
+
+        if (label === 'System') {
+            return;
+        }
+
+        const target = label.toLowerCase() as 'light' | 'dark';
+        const readPreference = () =>
+            this.page.evaluate(() => {
+                try {
+                    const raw = localStorage.getItem('ui_store');
+                    return raw ? (JSON.parse(raw) as { theme_preference?: string }).theme_preference : undefined;
+                } catch {
+                    return undefined;
+                }
+            });
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+            if ((await readPreference()) === target) {
+                await this.expectResolvedBodyTheme(target);
+                return;
+            }
+            await this.clickSidebarThemeToggle();
+        }
+        await expect.poll(readPreference, `theme_preference should be ${target}`).toBe(target);
+        await this.expectResolvedBodyTheme(target);
     }
 
     /**

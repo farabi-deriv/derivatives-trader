@@ -48,6 +48,7 @@
 | Flow 17.2 | Insufficient balance stake hint + Buy enabled              | ✅      | ✅     |                                                                      |
 | Flow 18   | Invalid URL — unsupported market and trade type modals     | ✅      | ✅     | Covers regression for #895                                           |
 | Flow 19   | Manual trade param info icons reveal descriptions          | ✅      | ✅     | Covers regression for #995; Automate panel in trade-automate Flow 17 |
+| Flow 20   | System theme follows OS / locks after explicit choice      | ✅      | ✅     | Covers #1177 — mobile System radio; desktop sidebar toggle           |
 
 ---
 

@@ -970,3 +970,36 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 > **Desktop-only params:** Multiplier, Risk management, Growth rate, Take profit, Payout per point, Strike price — collapsed-row hover reveal via `TradeParameterPopover`.
 >
 > **Mobile-only extra:** Barrier on Higher/Lower / Touch/No Touch — description lives in the barrier editor sheet header, not the collapsed row.
+
+---
+
+## Flow 20 — System theme option follows OS
+
+> Covers feature for #1177.
+
+**Prerequisites:** Unauthenticated. Seed `theme_preference: 'system'` before load.
+**Spec:** `playwright/tests/trade/verify-system-theme-option.spec.ts`
+
+### Mobile — Theme drawer (Light / Dark / System)
+
+| #   | Step                       | Action                                        | Expected Result                                                | Platform |
+| --- | -------------------------- | --------------------------------------------- | -------------------------------------------------------------- | -------- |
+| 1   | Open Theme drawer          | Bottom nav Menu → Theme                       | Drawer shows Light, Dark, and System radios                    | Mobile   |
+| 2   | Select System              | Tap System                                    | System is `aria-checked=true` (preference, not resolved theme) | Mobile   |
+| 3   | OS dark                    | `page.emulateMedia({ colorScheme: 'dark' })`  | `body` has `theme--dark`; System stays selected                | Mobile   |
+| 4   | OS light                   | `page.emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light`                                      | Mobile   |
+| 5   | Lock Light against dark OS | Select Light → emulate dark OS                | `body` stays `theme--light`; Light stays selected              | Mobile   |
+| 6   | Lock Dark against light OS | Select Dark → emulate light OS                | `body` stays `theme--dark`; Dark stays selected                | Mobile   |
+
+### Desktop — sidebar Theme toggle (no System radio)
+
+| #   | Step                       | Action                                   | Expected Result             | Platform |
+| --- | -------------------------- | ---------------------------------------- | --------------------------- | -------- |
+| 1   | OS dark under System       | `emulateMedia({ colorScheme: 'dark' })`  | `body` has `theme--dark`    | Desktop  |
+| 2   | OS light under System      | `emulateMedia({ colorScheme: 'light' })` | `body` has `theme--light`   | Desktop  |
+| 3   | Lock Light against dark OS | Toggle to Light → emulate dark OS        | `body` stays `theme--light` | Desktop  |
+| 4   | Lock Dark against light OS | Toggle to Dark → emulate light OS        | `body` stays `theme--dark`  | Desktop  |
+
+> **POM:** `seedThemePreference` · `setThemePreference` (branches Menu radios vs sidebar toggle) · `expectResolvedBodyTheme`.
+>
+> Chart canvas theme is N/A for Playwright — covered by unit/manual for SmartCharts `settings.theme`.

@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-15
+Last updated: 2026-09-22
 
 ---
 
@@ -37,15 +37,15 @@ Each module section lists every documented flow with its current **status** and 
 | Module             | Total Flows | Documented | Automated |
 | ------------------ | ----------- | ---------- | --------- |
 | `auth`             | 5           | 5          | 5         |
-| `feed`             | 1           | 1          | 1         |
-| `market-selection` | 26          | 26         | 24        |
+| `feed`             | 5           | 5          | 5         |
+| `market-selection` | 26          | 26         | 25        |
 | `notifications`    | 9           | 4          | 4         |
 | `pageerrors`       | 1           | 1          | 1         |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
-| `trade`            | 40          | 40         | 40        |
+| `trade`            | 41          | 41         | 41        |
 | `trade-automate`   | 46          | 46         | 44        |
-| **Total**          | **147**     | **142**    | **138**   |
+| **Total**          | **152**     | **147**    | **144**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -99,6 +99,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 17.2 | P2       | Insufficient balance stake hint + Buy enabled              | authenticated, low balance   | `automated` |
 | Flow 18   | P1       | Invalid URL — unsupported market and trade type modals     | unauthenticated              | `automated` |
 | Flow 19   | P2       | Manual trade param info icons reveal descriptions          | authenticated                | `automated` |
+| Flow 20   | P2       | System theme follows OS / locks after explicit choice      | unauthenticated              | `automated` |
 
 ---
 
@@ -245,9 +246,13 @@ Each module section lists every documented flow with its current **status** and 
 
 **Flow docs:** `playwright/flows/feed/` · **Test folder:** `playwright/tests/feed/`
 
-| Flow         | Priority | Description                                                                                                                                 | User State      | Status      |
-| ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------- |
-| Flow 1.1–1.5 | P0       | One serial file, five category tests (Derived, Forex, Stocks & indices, Cryptocurrencies, Commodities); all markets on smoke and production | unauthenticated | `automated` |
+| Flow     | Priority | Description                       | User State      | Status      |
+| -------- | -------- | --------------------------------- | --------------- | ----------- |
+| Flow 1.1 | P0       | Feed for Derived markets          | unauthenticated | `automated` |
+| Flow 1.2 | P0       | Feed for Forex markets            | unauthenticated | `automated` |
+| Flow 1.3 | P0       | Feed for Stocks & indices markets | unauthenticated | `automated` |
+| Flow 1.4 | P0       | Feed for Cryptocurrencies markets | unauthenticated | `automated` |
+| Flow 1.5 | P0       | Feed for Commodities markets      | unauthenticated | `automated` |
 
 ---
 
@@ -281,7 +286,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 22 | P1       | Buy always targets the active tab's pair                                     | authenticated, funded | `automated`  |
 | Flow 23 | P0       | Tab icon reflects its own market                                             | unauthenticated       | `automated`  |
 | Flow 24 | P0       | Max tab limit enforced (4 mobile / 7 desktop)                                | unauthenticated       | `automated`  |
-| —       | —        | No trade parameter is tab-scoped except (symbol, contract_type) (G1)         | unauthenticated       | `documented` |
+| Flow 25 | P1       | Trade params (stake + duration) persist per tab across reload (#1186)        | unauthenticated       | `automated`  |
 | —       | P2       | Active tab's chevron cue marks it as the picker trigger (G2)                 | unauthenticated       | `documented` |
 
 ---
@@ -291,7 +296,7 @@ Each module section lists every documented flow with its current **status** and 
 | Priority | Module             | Key Flows to Implement First                                                                                                    |
 | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — Flows 16–17 automated (#916, #917, #995)                                     |
-| **Soon** | `market-selection` | G1 (tab-scoped params product gap) + G2 (active-tab chevron cue)                                                                |
+| **Soon** | `market-selection` | G2 (active-tab chevron cue) — Flow 25 (#1186 param persistence) automated                                                       |
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
 | **Done** | `feed`             | Flows 1.1–1.5 — one test per category chip, all markets on `@smoke` `@production`                                               |
 | **Done** | `positions`        | All 11 flows automated (former G1–G4 promoted to Flows 8–11)                                                                    |

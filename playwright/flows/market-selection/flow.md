@@ -286,16 +286,29 @@ Follows [Open Market Selection Steps](#open-market-selection-steps) step 1b.
 
 ---
 
+### Flow 25 — Trade params persist per tab across reload
+
+> Covers feature #1186. Replaces the former G1 backlog (which documented the _pre-#1186_ behaviour that params were **not** tab-scoped).
+
+**Prerequisites:** Trade page loaded. Two distinct always-open markets that support Rise/Fall.
+**Spec:** `playwright/tests/market-selection/verify-trade-tabs-param-persistence.spec.ts`
+
+| #   | Step                          | Action                                                                                | Expected Result                                                        | Platform |
+| --- | ----------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------- |
+| 1   | Set stake + duration on tab A | Volatility 100 Rise/Fall → `setStake('25.00')` → `selectDuration('Minutes', '5 min')` | Collapsed stake shows 25; duration shows `5 min` / `5 minutes`         | Both     |
+| 2   | Reload tab A                  | `verifyStakeAndDurationPersistAcrossReload`                                           | Tab A stake/duration restore from `tab_trade_params_v2`                | Both     |
+| 3   | Open tab B                    | Add Bull Market Index Rise/Fall                                                       | New tab does **not** inherit tab A's stake/duration                    | Both     |
+| 4   | Set stake + duration on tab B | `setStake('35.00')` → `selectDuration('Minutes', '10 min')` → reload                  | Tab B values persist; Bull Market remains the active tab               | Both     |
+| 5   | Switch back to tab A          | Activate Volatility 100 Rise/Fall                                                     | Tab A still shows 25 + `5 min` — tab B edits did **not** rewrite tab A | Both     |
+| 6   | Switch back to tab B          | Activate Bull Market Index Rise/Fall                                                  | Tab B still shows 35 + `10 min`                                        | Both     |
+
+> **POM:** `setStake` · `selectDuration` · `verifyStakeAndDurationPersistAcrossReload` (reads + sanity-checks + reload restore; returns committed labels) · `expectCommittedStakeAndDuration` (`differs: true` for sibling isolation) · `switchToMarketTab`.
+
+---
+
 ## Gap Flows
 
 > These are test cases for coverage gaps. The proposed spec file for each gap is in [`coverage.md`](./coverage.md).
-
-### G1 — No trade parameter is tab-scoped except (symbol, contract_type)
-
-| #   | Test case                                     | Steps                                                                                                       | Expected Result                                                                                                                                                                                                                                                         |
-| --- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Stake does not persist per tab                | On Tab A, set Stake to a non-default value. Switch to Tab B, then back to Tab A                             | Tab A's Stake has reverted to its (re-derived) default for that symbol/trade type — the manually-entered value was NOT remembered, because `TOpenMarket` only stores `{symbol, contract_type}`; Stake is a single global observable (`this.amount` in `trade-store.ts`) |
-| 2   | Same applies to Duration/Barrier/other params | On Tab A, change Duration (or Barrier, if applicable) from its default. Switch to Tab B, then back to Tab A | Any apparent "isolation" is coincidental — each symbol/trade-type pulls its own default from `contracts_for` on activation, not because the value is remembered per tab. This is systemic, not Stake-specific — do not scope a fix narrowly to Stake                    |
 
 ### G2 — Active tab's chevron cue marks it as the picker trigger
 
@@ -309,6 +322,5 @@ Follows [Open Market Selection Steps](#open-market-selection-steps) step 1b.
 | 6   | Divider sits between cue and P/L   | On desktop, read the active tab with a position running, then close/expire the position       | With a position: the tab contains `[data-testid="dt_market_tab_profit_separator"]` between `dt_market_tab_chevron` and the P/L amount, and the tab's text still contains no `•`. Without one: no separator element at all |
 
 > **Framing correction vs the original test plan:** the manual test run (`06-multiple-trade-tabs.md`,
-> TABS-03) described this narrowly as "Stake persistence bug." Source confirms it is broader: the
-> `TOpenMarket` record is `{symbol, contract_type}` only — no trade parameter is tab-scoped by
-> architecture. Any fix should be scoped to "make trade parameters tab-aware" generally, not just Stake.
+> TABS-03) originally framed param isolation as a "Stake persistence bug." #1186 shipped tab-scoped
+> params in `sessionStorage` (`tab_trade_params_v2`) — that journey is now **Flow 25**. G1 is removed.

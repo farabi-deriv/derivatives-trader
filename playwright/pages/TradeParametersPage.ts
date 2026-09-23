@@ -1201,6 +1201,90 @@ export class TradeParametersPage extends TradeBasePage {
             .toBe(expectedStake);
     }
 
+    /** Numeric stake currently shown on the collapsed stake field (strips currency symbols). */
+    async readCommittedStake(): Promise<number> {
+        return parseFloat((await this.stakeField.inputValue()).replace(/[^\d.]/g, ''));
+    }
+
+    /** Collapsed Duration field text (e.g. `5 min`, `10 ticks`). */
+    async readCommittedDuration(): Promise<string> {
+        return (await this.durationField.inputValue()).trim();
+    }
+
+    /**
+     * Assert the collapsed stake + duration against expected values.
+     *
+     * @param expectedStake - Numeric stake (e.g. 25)
+     * @param expectedDuration - Exact collapsed label for this viewport (e.g. `5 min` / `5 minutes`)
+     * @param context - Included in assertion messages (e.g. "before reload", "after switching back")
+     * @param options.differs - When true, assert the active tab does **not** match (sibling isolation)
+     * @param options.timeoutMs - Poll timeout for slow restorations after reload / tab switch
+     */
+    async expectCommittedStakeAndDuration(
+        expectedStake: number,
+        expectedDuration: string,
+        context: string,
+        options: { differs?: boolean; timeoutMs?: number } = {}
+    ): Promise<void> {
+        const { differs = false, timeoutMs = 15_000 } = options;
+
+        if (differs) {
+            await expect
+                .poll(async () => this.readCommittedStake(), {
+                    message: `Stake must differ ${context}`,
+                    timeout: timeoutMs,
+                })
+                .not.toBe(expectedStake);
+            await expect
+                .poll(async () => this.readCommittedDuration(), {
+                    message: `Duration must differ ${context}`,
+                    timeout: timeoutMs,
+                })
+                .not.toBe(expectedDuration);
+            return;
+        }
+
+        await expect
+            .poll(async () => this.readCommittedStake(), {
+                message: `Stake should be ${expectedStake} ${context}`,
+                timeout: timeoutMs,
+            })
+            .toBe(expectedStake);
+        await expect
+            .poll(async () => this.readCommittedDuration(), {
+                message: `Duration should be '${expectedDuration}' ${context}`,
+                timeout: timeoutMs,
+            })
+            .toBe(expectedDuration);
+    }
+
+    /**
+     * Flow 25 (#1186) — read the committed stake/duration, sanity-check them, reload, then assert
+     * both restore from `tab_trade_params_v2`. Returns the viewport's committed labels for later
+     * tab-isolation asserts (desktop `5 min` vs mobile `5 minutes`).
+     *
+     * @param expectedStake - Numeric stake after `setStake` (e.g. 25)
+     * @param expectedDurationPattern - Duration label pattern (e.g. `/^5\s+min(utes)?$/`)
+     */
+    async verifyStakeAndDurationPersistAcrossReload(
+        expectedStake: number,
+        expectedDurationPattern: RegExp
+    ): Promise<{ stake: number; duration: string }> {
+        const stake = await this.readCommittedStake();
+        const duration = await this.readCommittedDuration();
+        expect(stake, 'Committed stake should match the value set before reload').toBe(expectedStake);
+        expect(duration, 'Committed duration should match the value set before reload').toMatch(
+            expectedDurationPattern
+        );
+
+        await this.page.reload();
+        await NavigationUtils.waitForDerivApiSettled(this.page);
+        await this.expectCommittedStakeAndDuration(stake, duration, 'after reload from tab_trade_params_v2 (#1186)', {
+            timeoutMs: 20_000,
+        });
+        return { stake, duration };
+    }
+
     /**
      * Open the Stake custom input without committing a draft.
      * Desktop switches to the Custom tab; mobile uses the sheet field directly.
