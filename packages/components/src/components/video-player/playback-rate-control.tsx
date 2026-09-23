@@ -8,7 +8,6 @@ import Dropdown from '../dropdown';
 
 type TPlaybackRateControl = {
     onPlaybackRateChange: (new_value: number) => void;
-    is_mobile?: boolean;
     playback_rate: number;
     is_v2?: boolean;
     show_controls?: boolean;
@@ -16,7 +15,6 @@ type TPlaybackRateControl = {
 
 const PlaybackRateControl = ({
     onPlaybackRateChange,
-    is_mobile,
     playback_rate,
     is_v2 = false,
     show_controls = false,
@@ -64,7 +62,6 @@ const PlaybackRateControl = ({
                 no_border
                 onChange={changePlaybackRate}
                 value={`${playback_rate}`}
-                should_open_on_hover={!is_mobile}
                 should_scroll_to_selected
                 should_autohide={false}
                 should_auto_close_dropdown_list={!show_controls}

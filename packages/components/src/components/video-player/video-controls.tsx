@@ -82,7 +82,6 @@ const VideoControls = ({
                     <div className='controls__right--v2'>
                         <PlaybackRateControl
                             onPlaybackRateChange={onPlaybackRateChange}
-                            is_mobile={is_mobile}
                             playback_rate={playback_rate}
                             is_v2
                             show_controls={show_controls}
@@ -157,7 +156,6 @@ const VideoControls = ({
                     <div className='player__controls__bottom-bar'>
                         <PlaybackRateControl
                             onPlaybackRateChange={onPlaybackRateChange}
-                            is_mobile={is_mobile}
                             playback_rate={playback_rate}
                         />
                     </div>

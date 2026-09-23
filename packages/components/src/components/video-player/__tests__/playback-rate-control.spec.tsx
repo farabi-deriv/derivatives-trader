@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitForElementToBeRemoved } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import PlaybackRateControl from '../playback-rate-control';
@@ -20,7 +20,7 @@ describe('<PlaybackRateControl />', () => {
         expect(container).not.toBeEmptyDOMElement();
     });
 
-    it('should render all available options of playback rate if user clicked on default one', async () => {
+    it('[PBRC-002] should render all available options of playback rate if user clicked on default one', async () => {
         render(<PlaybackRateControl {...mocked_props} />);
 
         playback_rate_list.forEach(item =>
@@ -37,7 +37,17 @@ describe('<PlaybackRateControl />', () => {
         );
     });
 
-    it('should call onPlaybackRateChange if user chooses another option', async () => {
+    it('[PBRC-002] should close the options list when the control is clicked again', async () => {
+        render(<PlaybackRateControl {...mocked_props} />);
+
+        await userEvent.click(screen.getByText(default_selected_item));
+        expect(screen.getByText(playback_rate_list[0])).toBeInTheDocument();
+
+        await userEvent.click(screen.getAllByText(default_selected_item)[0]);
+        await waitForElementToBeRemoved(() => screen.queryByText(playback_rate_list[0]));
+    });
+
+    it('[PBRC-002] should call onPlaybackRateChange and close the list if user chooses another option', async () => {
         render(<PlaybackRateControl {...mocked_props} />);
 
         expect(mocked_props.onPlaybackRateChange).not.toBeCalled();
@@ -45,5 +55,25 @@ describe('<PlaybackRateControl />', () => {
         await userEvent.click(screen.getByText(playback_rate_list[0]));
 
         expect(mocked_props.onPlaybackRateChange).toBeCalled();
+        await waitForElementToBeRemoved(() => screen.queryByText(playback_rate_list[0]));
+    });
+
+    it('[PBRC-001] should not open the options list on hover', async () => {
+        render(<PlaybackRateControl {...mocked_props} />);
+
+        await userEvent.hover(screen.getByText(default_selected_item));
+
+        expect(screen.queryByText(playback_rate_list[0])).not.toBeInTheDocument();
+    });
+
+    it('[PBRC-001] should keep the options list open when the pointer leaves after opening via click', async () => {
+        render(<PlaybackRateControl {...mocked_props} />);
+
+        await userEvent.click(screen.getByText(default_selected_item));
+        expect(screen.getByText(playback_rate_list[0])).toBeInTheDocument();
+
+        await userEvent.unhover(screen.getAllByText(default_selected_item)[0]);
+
+        expect(screen.getByText(playback_rate_list[0])).toBeInTheDocument();
     });
 });
