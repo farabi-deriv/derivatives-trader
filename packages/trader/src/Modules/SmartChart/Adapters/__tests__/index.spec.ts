@@ -663,6 +663,88 @@ describe('SmartChart Adapters - Main Index', () => {
             });
         });
 
+        describe('unsubscribeAllQuotes', () => {
+            it('[CQS-002] tears down every quote stream via the shared ticks_history endpoint constant', () => {
+                expect(typeof adapter.unsubscribeAllQuotes).toBe('function');
+
+                adapter.unsubscribeAllQuotes();
+
+                expect(mockTransport.unsubscribeAll).toHaveBeenCalledWith('ticks_history');
+            });
+
+            it('[CQS-002] clears the subscriptions registry so a later teardown for the same key is a no-op', () => {
+                const request: TGetQuotesRequest = { symbol: 'R_100', granularity: 0 };
+                mockTransport.subscribe.mockReturnValue('R_100-1');
+
+                adapter.subscribeQuotes(request, jest.fn());
+                adapter.unsubscribeAllQuotes();
+                warnSpy.mockClear();
+
+                adapter.unsubscribeQuotes(request);
+
+                expect(warnSpy).toHaveBeenCalledWith('[Adapter] No active subscription found for:', 'R_100-0');
+            });
+        });
+
+        describe('subscribeQuotes supersede-on-subscribe (CQS-003)', () => {
+            it('[CQS-003] tears down the previously registered stream for the same symbol and granularity', () => {
+                const request: TGetQuotesRequest = { symbol: 'R_100', granularity: 0 };
+                mockTransport.subscribe.mockReturnValueOnce('R_100-1').mockReturnValueOnce('R_100-2');
+
+                adapter.subscribeQuotes(request, jest.fn());
+                adapter.subscribeQuotes(request, jest.fn());
+
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_100-1');
+            });
+
+            it('[CQS-003] leaves a different symbol/granularity stream untouched', () => {
+                mockTransport.subscribe.mockReturnValueOnce('R_100-1').mockReturnValueOnce('R_50-1');
+
+                adapter.subscribeQuotes({ symbol: 'R_100', granularity: 0 }, jest.fn());
+                adapter.subscribeQuotes({ symbol: 'R_50', granularity: 0 }, jest.fn());
+
+                expect(mockTransport.unsubscribe).not.toHaveBeenCalledWith('R_100-1');
+
+                // Both remain individually addressable for teardown.
+                adapter.unsubscribeQuotes({ symbol: 'R_100', granularity: 0 });
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_100-1');
+
+                adapter.unsubscribeQuotes({ symbol: 'R_50', granularity: 0 });
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_50-1');
+            });
+        });
+
+        describe('repeated symbol switching (CQS-005)', () => {
+            it('[CQS-005] leaves exactly one registered stream after three switches, unsubscribing each superseded symbol', () => {
+                // Mirrors the real flow: the chart forgets the old symbol and subscribes the
+                // new one on every switch (tested independently at the hook level as CQS-001).
+                mockTransport.subscribe
+                    .mockReturnValueOnce('R_100-1')
+                    .mockReturnValueOnce('R_50-1')
+                    .mockReturnValueOnce('R_25-1');
+
+                adapter.subscribeQuotes({ symbol: 'R_100', granularity: 0 }, jest.fn());
+
+                adapter.unsubscribeQuotes({ symbol: 'R_100', granularity: 0 });
+                adapter.subscribeQuotes({ symbol: 'R_50', granularity: 0 }, jest.fn());
+
+                adapter.unsubscribeQuotes({ symbol: 'R_50', granularity: 0 });
+                adapter.subscribeQuotes({ symbol: 'R_25', granularity: 0 }, jest.fn());
+
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_100-1');
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_50-1');
+                expect(mockTransport.unsubscribe).not.toHaveBeenCalledWith('R_25-1');
+
+                // Only the final symbol remains registered.
+                warnSpy.mockClear();
+                adapter.unsubscribeQuotes({ symbol: 'R_100', granularity: 0 });
+                expect(warnSpy).toHaveBeenCalledWith('[Adapter] No active subscription found for:', 'R_100-0');
+
+                adapter.unsubscribeQuotes({ symbol: 'R_25', granularity: 0 });
+                expect(mockTransport.unsubscribe).toHaveBeenCalledWith('R_25-1');
+            });
+        });
+
         describe('getChartData', () => {
             it('should fetch and transform chart reference data', async () => {
                 const mockActiveSymbols = [

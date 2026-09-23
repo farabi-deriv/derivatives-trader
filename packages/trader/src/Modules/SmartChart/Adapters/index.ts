@@ -62,6 +62,10 @@ class AdapterLogger implements ILogger {
     }
 }
 
+// The request key SmartCharts' ticks_history requests are built and torn down under.
+// Shared by subscribeQuotes and unsubscribeAllQuotes so the two cannot drift apart.
+const QUOTES_ENDPOINT = 'ticks_history';
+
 /**
  * Transformation utilities for converting between Deriv API and Champion formats
  */
@@ -283,9 +287,13 @@ export function buildSmartChartsChampionAdapter(
         subscribeQuotes(request: TGetQuotesRequest, callback: TSubscriptionCallback): TUnsubscribeFunction {
             const subscriptionKey = `${request.symbol}-${request.granularity}`;
 
+            // Supersede any stream already registered for this key so a re-subscribe that
+            // arrives without a preceding forget (reconnect, rapid switching) cannot strand it.
+            subscriptions.get(subscriptionKey)?.();
+
             // Build subscription request
             const apiRequest: any = {
-                ticks_history: request.symbol,
+                [QUOTES_ENDPOINT]: request.symbol,
                 subscribe: 1,
                 end: 'latest',
                 count: 1,
@@ -338,6 +346,14 @@ export function buildSmartChartsChampionAdapter(
             } else {
                 logger.warn('No active subscription found for:', subscriptionKey);
             }
+        },
+
+        /**
+         * Tear down every quote stream this adapter holds (e.g. no-symbol teardown, unmount).
+         */
+        unsubscribeAllQuotes(): void {
+            transport.unsubscribeAll(QUOTES_ENDPOINT);
+            subscriptions.clear();
         },
 
         /**

@@ -12,3 +12,5 @@
 The dead write-only `sell_info` that SMC-017 said to drop rather than reproduce **was** removed from both stores (and contract-store) under SMC-016 (task 9.4) — only the flow dedup is deferred.
 
 **Follow-up required:** before merging the trio, add test coverage for both sell/cancel flows (success, error, cancel; mobile vs desktop; on- vs off-trade-page notification gating; numeric vs raw `bid_price`), then extract a shared helper parameterised by (a) the position/state accessor (`positions[i].is_sell_requested` vs `is_sell_requested`), (b) the `bid_price` source + numeric validation, and (c) the notification-gate predicate — verifying the portfolio-specific `sell_notifications` de-dup, `addNotificationBannerCallback`, position-index lookups and mobile gating are unchanged, and the shared success path (`WS.sell`/`WS.cancelContract`, `clearAccumulatorBarriersData`, `contractSold`, the `ce_reports_form_v2 close_contract` analytics event) is preserved for both.
+
+**Tracked:** https://github.com/deriv-com/derivatives-trader/issues/1478

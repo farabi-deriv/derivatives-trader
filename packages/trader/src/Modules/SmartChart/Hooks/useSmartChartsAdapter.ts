@@ -398,17 +398,16 @@ export const useSmartChartsAdapter = (config: UseSmartChartsAdapterConfig = {}):
     const unsubscribeQuotes = React.useCallback<TUnsubscribeQuotes>(
         request => {
             if (smartChartsAdapter) {
-                // If we have request details, use the adapter's unsubscribe method
-                if (request?.symbol && typeof request.granularity !== 'undefined') {
-                    // Validate granularity with type guard
+                // SmartCharts' createGetQuotesRequest omits `granularity` when it is 0, so a
+                // teardown request with a symbol and no granularity means ticks.
+                if (request?.symbol) {
                     const validatedGranularity = isValidGranularity(request.granularity) ? request.granularity : 0;
                     smartChartsAdapter.unsubscribeQuotes({
                         symbol: request.symbol,
                         granularity: validatedGranularity,
                     });
                 } else {
-                    // Fallback: unsubscribe all via transport
-                    smartChartsAdapter.transport.unsubscribeAll('ticks');
+                    smartChartsAdapter.unsubscribeAllQuotes();
                 }
             }
         },
@@ -419,8 +418,8 @@ export const useSmartChartsAdapter = (config: UseSmartChartsAdapterConfig = {}):
     React.useEffect(() => {
         return () => {
             // Cleanup all subscriptions on unmount or when adapter changes
-            if (smartChartsAdapter?.transport) {
-                smartChartsAdapter.transport.unsubscribeAll('ticks');
+            if (smartChartsAdapter) {
+                smartChartsAdapter.unsubscribeAllQuotes();
             }
             // Cancel any pending trading_times retry
             if (retryTimeoutRef.current) {

@@ -49,3 +49,5 @@ revert unit:
    run `npm run baseline:update` and commit the regenerated `docs/baselines/*.json` in the same PR.
 
 Reference: derivatives-trader issue #1271 (C6), bug 6 / ABF-007, tasks §12.
+
+**Tracked:** https://github.com/deriv-com/derivatives-trader/issues/1479

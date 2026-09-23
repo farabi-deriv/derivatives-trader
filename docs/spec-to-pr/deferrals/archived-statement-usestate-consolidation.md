@@ -25,3 +25,5 @@ A future change should either:
 2. Fold `archived-statement.tsx` onto the existing `StatementStore` by adding an `archived`/`loginid` mode to the store, deleting the duplicated fetch/paginate/scroll logic entirely.
 
 Either path must preserve current archived-statement behavior (multi-account selection via `selected_loginid`/`account_options`, the end-of-today `date_to` seed, empty-state copy driven by `has_selected_date`) and keep statement rendering green (guard tests / Playwright reports flow). Scope: ~150 LOC in one container; no API change.
+
+**Tracked:** https://github.com/deriv-com/derivatives-trader/issues/1477

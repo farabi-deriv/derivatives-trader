@@ -8,11 +8,14 @@ const mockSubscribeQuotes = jest.fn();
 const mockUnsubscribeQuotes = jest.fn();
 const mockGetChartData = jest.fn();
 
+const mockUnsubscribeAllQuotes = jest.fn();
+
 jest.mock('../../Adapters', () => ({
     createSmartChartsChampionAdapter: jest.fn(() => ({
         getQuotes: mockGetQuotes,
         subscribeQuotes: mockSubscribeQuotes,
         unsubscribeQuotes: mockUnsubscribeQuotes,
+        unsubscribeAllQuotes: mockUnsubscribeAllQuotes,
         getChartData: mockGetChartData,
         transport: {
             unsubscribeAll: jest.fn(),
@@ -426,6 +429,73 @@ describe('useSmartChartsAdapter', () => {
             // Should NOT switch since already requesting candles
             expect(result.current.shouldUseCandlesOverride).toBe(false);
             expect(mockGetQuotes).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('unsubscribeQuotes', () => {
+        it('[CQS-001] resolves a teardown request with a symbol but no granularity to ticks (granularity 0)', async () => {
+            const { result } = renderHook(() => useSmartChartsAdapter({ activeSymbols: mockActiveSymbols }));
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            // Exactly what SmartCharts' createGetQuotesRequest sends for a tick chart: no `granularity` key.
+            act(() => {
+                result.current.unsubscribeQuotes({
+                    symbol: 'R_100',
+                    style: 'ticks',
+                    count: 1000,
+                    adjust_start_time: 1,
+                    subscribe: 1,
+                });
+            });
+
+            expect(mockUnsubscribeQuotes).toHaveBeenCalledWith({ symbol: 'R_100', granularity: 0 });
+            expect(mockUnsubscribeAllQuotes).not.toHaveBeenCalled();
+        });
+
+        it('[CQS-001] keeps the keyed teardown path unchanged for a candle chart request', async () => {
+            const { result } = renderHook(() => useSmartChartsAdapter({ activeSymbols: mockActiveSymbols }));
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            act(() => {
+                result.current.unsubscribeQuotes({ symbol: 'R_100', granularity: 60 });
+            });
+
+            expect(mockUnsubscribeQuotes).toHaveBeenCalledWith({ symbol: 'R_100', granularity: 60 });
+        });
+
+        it('[CQS-001] falls back to the adapter bulk teardown when the request names no symbol', async () => {
+            const { result } = renderHook(() => useSmartChartsAdapter({ activeSymbols: mockActiveSymbols }));
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            act(() => {
+                result.current.unsubscribeQuotes(undefined);
+            });
+
+            expect(mockUnsubscribeAllQuotes).toHaveBeenCalled();
+            expect(mockUnsubscribeQuotes).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('unmount cleanup', () => {
+        it('[CQS-002] calls the adapter bulk teardown on unmount', async () => {
+            const { result, unmount } = renderHook(() => useSmartChartsAdapter({ activeSymbols: mockActiveSymbols }));
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            unmount();
+
+            expect(mockUnsubscribeAllQuotes).toHaveBeenCalled();
         });
     });
 

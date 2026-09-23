@@ -94,6 +94,7 @@ export function createTransport(config: { debug?: boolean; timeout?: number } = 
     const { debug = false, timeout = 30000 } = config;
     const logger = new TransportLogger(debug);
     const subscriptionManager = new SubscriptionManager(debug);
+    let subscriptionCounter = 0;
 
     return {
         /**
@@ -127,7 +128,7 @@ export function createTransport(config: { debug?: boolean; timeout?: number } = 
          * Subscribe to streaming data
          */
         subscribe(request: any, callback: (response: any) => void): string {
-            const subscriptionKey = `${request.ticks_history || request.ticks || 'unknown'}-${Date.now()}`;
+            const subscriptionKey = `${request.ticks_history || request.ticks || 'unknown'}-${subscriptionCounter++}`;
 
             logger.info('Creating subscription', { subscriptionKey, request });
 

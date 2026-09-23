@@ -135,6 +135,29 @@ describe('SmartChart Adapters - Transport', () => {
             expect(consoleSpy).toHaveBeenCalledWith('[Transport] Error processing tick data', expect.any(Object));
         });
 
+        it('[CQS-004] gives two subscriptions created in the same millisecond different ids', () => {
+            const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+            try {
+                const mockCallback = jest.fn();
+                const mockSubscriber1 = { unsubscribe: jest.fn() };
+                const mockSubscriber2 = { unsubscribe: jest.fn() };
+                mockWS.subscribeTicksHistory.mockReturnValueOnce(mockSubscriber1).mockReturnValueOnce(mockSubscriber2);
+
+                const id1 = transport.subscribe({ ticks_history: 'EURUSD', subscribe: 1 }, mockCallback);
+                const id2 = transport.subscribe({ ticks_history: 'EURUSD', subscribe: 1 }, mockCallback);
+
+                expect(id1).not.toBe(id2);
+
+                transport.unsubscribe(id1);
+                transport.unsubscribe(id2);
+
+                expect(mockSubscriber1.unsubscribe).toHaveBeenCalledTimes(1);
+                expect(mockSubscriber2.unsubscribe).toHaveBeenCalledTimes(1);
+            } finally {
+                dateNowSpy.mockRestore();
+            }
+        });
+
         it('should use fallback subscription for non-ticks_history requests', () => {
             const mockCallback = jest.fn();
             const mockRequest = {
@@ -261,6 +284,21 @@ describe('SmartChart Adapters - Transport', () => {
 
             expect(mockSubscriber1.unsubscribe).toHaveBeenCalled();
             // Second subscription should not be unsubscribed as it's not ticks_history
+        });
+
+        it('[CQS-002] does not unsubscribe a ticks_history subscription when filtered by the wrong message type', () => {
+            // Characterization: pins the transport's exact-match filter (unchanged by this
+            // fix per design decision D5) — 'ticks' never matches a `ticks_history` request,
+            // which is exactly why callers must use the shared endpoint constant.
+            const mockCallback = jest.fn();
+            const mockSubscriber = { unsubscribe: jest.fn() };
+            mockWS.subscribeTicksHistory.mockReturnValue(mockSubscriber);
+
+            transport.subscribe({ ticks_history: 'R_100', subscribe: 1 }, mockCallback);
+
+            transport.unsubscribeAll('ticks');
+
+            expect(mockSubscriber.unsubscribe).not.toHaveBeenCalled();
         });
 
         it('should handle errors during bulk unsubscribe', () => {
