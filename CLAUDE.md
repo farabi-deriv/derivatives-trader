@@ -75,13 +75,12 @@ npm run clean                                # Clean node_modules (interactive)
 
 - Root store + modular stores pattern (not Redux)
 - All stores extend `BaseStore` (provides localStorage/sessionStorage auto-sync via mobx-persist-store)
-- RootStore contains: client, common, ui, modules, notifications, portfolio, active_symbols, contract_trade, contract_replay, traders_hub, gtm
+- RootStore contains: client, common, modules, ui, gtm, notifications, portfolio, contract_replay, contract_trade, chart_barrier_store
 - TradeStore (main trading state) lives in `packages/trader/src/Stores/Modules/Trading/trade-store.ts` (103KB)
 - Stores accessed via `const { client, trading } = useStore()` hook
 - Store lifecycle hooks: `onLogout()`, `onClientInit()`, `onNetworkStatusChange()`
 - Validation errors built into BaseStore: `validation_errors` observable + `validateProperty()` action
 - Stores persist UI state (theme, chart type, sidebar collapse) to localStorage. Last-used trade params are per-browser-tab: they live in sessionStorage keyed by (symbol, trade type) tab (`tab_trade_params_v2` / `tab_trade_params_automation_v2` via `AppV2/Utils/tab-trade-params-utils`), owned by TradeStore's own persistence reaction — never re-add a trade param to `local_storage_properties` (one owner per parameter)
-- Stores persist UI state (theme, chart type, sidebar collapse, last-used trade params) to localStorage
 - Theme resolution: `ui.theme_preference` (`'system' | 'light' | 'dark'`, default `'system'`) is the source of truth; `ui.is_dark_mode_on` is its resolved output — derived, never persisted — and stays the observable every consumer reads (charts, `ThemeProvider`, GTM, chart markers, ui-store's `changeTheme()` autorun — the sole theme DOM writer). Order: `?theme=` param → explicit `theme_preference` → `prefers-color-scheme`. The param is applied in `app.jsx`'s mount effect via `setDarkMode()` as an **explicit choice** — first priority, persisted, and shown as the selected option in the Theme menu (deliberate product decision: a deep link behaves exactly like tapping the switcher, so a parameterised launch overwrites a stored System preference by design; the mount effect runs after `initApp`'s async work, i.e. after the rehydrate timers, so the param lands last and wins). While the preference is `system`, a `matchMedia('(prefers-color-scheme: dark)')` `change` listener re-resolves it live at any viewport width. `setDarkMode()` records an explicit preference, so a system change no longer overrides a chosen theme. `theme_preference` is seeded by parsing `localStorage.ui_store` **synchronously** in the class-field initialiser (`readStoredThemePreference()`), including the legacy read of a bare `is_dark_mode_on` boolean as an explicit choice. Nothing theme-related may be deferred to after `BaseStore.retrieveFromStorage()`: it is a MobX `action`, so the local-storage reaction created alongside it writes `theme_preference` back before any timer queued behind it can read storage. `retrieveFromStorage()` assigns only keys declared in the `*_storage_properties` lists, so stale keys in an old snapshot (like the once-persisted `is_dark_mode_on`) cannot overwrite derived state
 - Provider nesting order: Router → StoreProvider → BreakpointProvider → APIProvider → TranslationProvider
 
@@ -163,6 +162,7 @@ Sass/ → src/sass/
 
 # Gotchas
 
+- Store growth (the rule that keeps the Workstream C cleanup from being undone): a new derived value is a `computed`, never an observable kept in step by a reaction — a reaction-maintained mirror is a second source of truth that goes stale the moment someone writes the input from a new path. A new field has exactly one writer; if a second place needs to set it, that place calls the owner's action rather than assigning the field
 - `useStore()` must be called inside StoreProvider; throws error otherwise
 - Observer HOC required for MobX reactivity: wrap components with `observer()` or they won't re-render on store changes
 - MobX enforce actions: `configure({ enforceActions: 'observed' })` is enabled
@@ -221,10 +221,9 @@ Sass/ → src/sass/
 - `modules`: ModulesStore (Trading, Markets, Positions, Reports)
 - `notifications`: NotificationStore (toast queue)
 - `portfolio`: PortfolioStore (open positions, balance)
-- `active_symbols`: ActiveSymbolsStore (market data)
 - `contract_trade`: ContractTradeStore (contract state)
 - `contract_replay`: ContractReplayStore (replay functionality)
-- `traders_hub`: TradersHubStore (hub/dashboard state)
+- `chart_barrier_store`: ChartBarrierStore (chart barrier state)
 - `gtm`: GTMStore (analytics tracking)
 
 ## BaseStore features

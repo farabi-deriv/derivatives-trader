@@ -121,18 +121,6 @@
     }
 }
 
-.account-verification-required-modal {
-    @include mobile {
-        &-text {
-            padding: 1.5rem;
-        }
-    }
-
-    &-button {
-        margin: 0;
-    }
-}
-
 .tablet-landscape {
     position: relative;
     padding: 0;

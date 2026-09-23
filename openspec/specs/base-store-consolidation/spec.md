@@ -1,8 +1,11 @@
 # base-store-consolidation Specification
 
 ## Purpose
+
 TBD - created by archiving change derivatives-trader-issues-1270. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [BSC-001] A single shared BaseStore lives in @deriv/stores
 
 The real `BaseStore` (storage sync + validation + lifecycle listeners) SHALL exist as exactly one implementation, owned by `@deriv/stores` at `packages/stores/src/base-store.ts` and exported from `packages/stores/src/index.ts`. Every store that currently extends a real `BaseStore` — core (`ClientStore`, `CommonStore`, `UIStore`, `NotificationStore`, `PortfolioStore`, `GTMStore`, `ContractStore`, `ContractTradeStore`, `ContractReplayStore`), reports (`ProfitTableStore`, `StatementStore`), and trader (`TradeStore`, `AutomationStore`, `PositionsStore`, `MarketsStore`) — SHALL extend that shared class. The two JS copies (`packages/core/src/Stores/base-store.js`, `packages/reports/src/Stores/base-store.js`) and the trader `packages/trader/src/Stores/base-store.ts` SHALL be removed once every subclass is repointed. The trader-local `getValidationRules` **type** coupling (`ReturnType<typeof getValidationRules>`) SHALL be replaced by a generic/structural validation-rules type so the shared base carries no trader dependency, while subclasses keep passing their rules via the constructor `validation_rules` option. `@deriv/stores` SHALL declare `@deriv/shared` as a dependency (it provides `isEmptyObject`, `isProduction`, `Validator`); no circular dependency is introduced. The pre-existing generic `BaseStore<T>` at `packages/stores/src/stores/BaseStore.ts` (used only by `FeatureFlagsStore`) is a different class and SHALL NOT be renamed, moved, or altered.
@@ -49,4 +52,3 @@ The consolidated `BaseStore.retrieveFromStorage` SHALL never call `localStorage.
 
 - **WHEN** `retrieveFromStorage` reads a stored snapshot containing a key not in the store's declared `*_storage_properties`
 - **THEN** that key is not assigned onto the store, and only declared keys are restored
-

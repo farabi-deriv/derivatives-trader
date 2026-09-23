@@ -27,17 +27,6 @@ describe('MarketsStore', () => {
         });
     });
 
-    it('[SMC-013] removes the dead favorites cluster and keeps favouriteMarkets', () => {
-        expect('favoriteIndicators' in mockedMarketsStore).toBe(false);
-        expect('favoriteSymbols' in mockedMarketsStore).toBe(false);
-        expect('setFavoriteIndicators' in mockedMarketsStore).toBe(false);
-        expect('setFavoriteSymbols' in mockedMarketsStore).toBe(false);
-        expect('removeFavoriteIndicator' in mockedMarketsStore).toBe(false);
-        expect('removeFavoriteSymbol' in mockedMarketsStore).toBe(false);
-        expect('syncLocalStorage' in mockedMarketsStore).toBe(false);
-        expect(typeof mockedMarketsStore.setFavouriteMarkets).toBe('function');
-    });
-
     it('persists favouriteMarkets to localStorage', () => {
         const markets = [{ symbol: 'frxEURUSD', trade_type: 'rise_fall' }];
         mockedMarketsStore.setFavouriteMarkets(markets);

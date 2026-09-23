@@ -43,10 +43,9 @@ export const getChartType = (start_time, expiry_time) => {
     return duration <= 1 ? 'line' : 'candles';
 };
 
-export const getChartGranularity = (start_time, expiry_time) =>
-    calculateGranularity(getExpiryTime(expiry_time) - start_time);
+const getChartGranularity = (start_time, expiry_time) => calculateGranularity(getExpiryTime(expiry_time) - start_time);
 
-export const calculateGranularity = duration =>
+const calculateGranularity = duration =>
     (hour_to_granularity_map.find(m => duration <= m[0] * 3600) || [null, 86400])[1];
 
 /**

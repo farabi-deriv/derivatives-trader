@@ -4,7 +4,6 @@ import { Button, Modal } from '@deriv/components';
 import { mapErrorMessage } from '@deriv/shared';
 import { useTranslations } from '@deriv-com/translations';
 
-import AccountVerificationRequiredModal from './account-verification-required-modal';
 import AuthorizationRequiredModal from './authorization-required-modal';
 import CompanyWideLimitExceededModal from './company-wide-limit-exceeded-modal';
 import { getTitle } from './constants';
@@ -59,8 +58,6 @@ const ServicesErrorModal = ({
             );
         case 'CompanyWideLimitExceeded':
             return <CompanyWideLimitExceededModal is_visible={is_visible} onConfirm={onConfirm} />;
-        case 'PleaseAuthenticate':
-            return <AccountVerificationRequiredModal is_visible={is_visible} onConfirm={onConfirm} />;
         default:
             return (
                 <Modal is_open={is_visible} small title={getTitle(type)} toggleModal={onConfirm}>

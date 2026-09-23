@@ -829,6 +829,66 @@ describe('isTicksContract', () => {
     });
 });
 
+/**
+ * DCR-056 records a settled decision: these four predicates are KEPT permanently and must not be
+ * removed by a later cleanup. They drive the contract-details layout for HISTORICAL positions of the
+ * filtered trade types (the strike-barrier row, the reset-time row, the tick and lookback rows), so
+ * every contract type of those trade types — not just the one member each existing case samples —
+ * must still be recognised.
+ */
+describe('[DCR-056] the historical-contract predicates recognise every filtered contract type', () => {
+    type TPredicateCoverage = {
+        predicate: 'isAsiansContract' | 'isLookBacksContract' | 'isTicksContract' | 'isResetContract';
+        matches: string[];
+    };
+
+    const predicate_coverage: TPredicateCoverage[] = [
+        {
+            predicate: 'isAsiansContract',
+            matches: [CONTRACT_TYPES.ASIAN.UP, CONTRACT_TYPES.ASIAN.DOWN],
+        },
+        {
+            predicate: 'isLookBacksContract',
+            matches: [CONTRACT_TYPES.LB_CALL, CONTRACT_TYPES.LB_PUT, CONTRACT_TYPES.LB_HIGH_LOW],
+        },
+        {
+            predicate: 'isTicksContract',
+            matches: [CONTRACT_TYPES.TICK_HIGH_LOW.HIGH, CONTRACT_TYPES.TICK_HIGH_LOW.LOW],
+        },
+        {
+            predicate: 'isResetContract',
+            matches: [CONTRACT_TYPES.RESET.CALL, CONTRACT_TYPES.RESET.PUT],
+        },
+    ];
+
+    it.each(predicate_coverage)(
+        '[DCR-056] $predicate still recognises its contract types',
+        ({ predicate, matches }: TPredicateCoverage) => {
+            const is_contract = ContractUtils[predicate] as (contract_type?: string) => boolean;
+
+            matches.forEach(contract_type => expect(is_contract(contract_type)).toBe(true));
+            // And still says no to a live trade type and to a missing one.
+            expect(is_contract(CONTRACT_TYPES.MULTIPLIER.UP)).toBe(false);
+            expect(is_contract('')).toBe(false);
+            expect(is_contract()).toBe(false);
+        }
+    );
+
+    it('[DCR-056] the four predicates are each other`s complement over the filtered types', () => {
+        // A position must light up exactly one of the four, so a later "simplification" that merged
+        // or dropped one would fail here rather than silently changing a details layout.
+        predicate_coverage.forEach(({ predicate, matches }) => {
+            matches.forEach(contract_type => {
+                const matching = predicate_coverage.filter(({ predicate: name }) =>
+                    (ContractUtils[name] as (contract_type?: string) => boolean)(contract_type)
+                );
+
+                expect(matching.map(({ predicate: name }) => name)).toEqual([predicate]);
+            });
+        });
+    });
+});
+
 describe('getCurrentTick', () => {
     const tickStreamWithFourTicks = [
         {

@@ -308,3 +308,53 @@ describe('getContractCategoriesConfig', () => {
         expect(getContractTypeDisplay(CONTRACT_TYPES.LB_CALL)).toBe('Close-Low');
     });
 });
+
+/**
+ * DCR-056 records a settled decision: the display names for the 10 filtered trade types are KEPT
+ * permanently and must not be removed by a later cleanup — a user who traded one of these before the
+ * filter still has the position in their statement, and it has to be named there.
+ */
+describe('[DCR-056] the filtered trade types keep their display names', () => {
+    // Every contract type a position of a filtered trade type can carry, with the name it must show.
+    const historical_contract_names: Array<[string, string]> = [
+        [CONTRACT_TYPES.CALL_PUT_SPREAD.CALL, 'Spread Up'],
+        [CONTRACT_TYPES.CALL_PUT_SPREAD.PUT, 'Spread Down'],
+        [CONTRACT_TYPES.RUN_HIGH_LOW.HIGH, 'Only Ups'],
+        [CONTRACT_TYPES.RUN_HIGH_LOW.LOW, 'Only Downs'],
+        [CONTRACT_TYPES.RESET.CALL, 'Reset Call'],
+        [CONTRACT_TYPES.RESET.PUT, 'Reset Put'],
+        [CONTRACT_TYPES.ASIAN.UP, 'Asian Up'],
+        [CONTRACT_TYPES.ASIAN.DOWN, 'Asian Down'],
+        [CONTRACT_TYPES.TICK_HIGH_LOW.HIGH, 'High Tick'],
+        [CONTRACT_TYPES.TICK_HIGH_LOW.LOW, 'Low Tick'],
+        [CONTRACT_TYPES.END.OUT, 'Ends Outside'],
+        [CONTRACT_TYPES.END.IN, 'Ends Between'],
+        [CONTRACT_TYPES.STAY.IN, 'Stays Between'],
+        [CONTRACT_TYPES.STAY.OUT, 'Goes Outside'],
+        [CONTRACT_TYPES.LB_CALL, 'Close-Low'],
+        [CONTRACT_TYPES.LB_PUT, 'High-Close'],
+        [CONTRACT_TYPES.LB_HIGH_LOW, 'High-Low'],
+    ];
+
+    it('[DCR-056] covers a contract type for every trade type the filter hides', () => {
+        // Guards the table below against silently drifting out of step with the filter list.
+        expect(unsupported_contract_types_list).toHaveLength(10);
+        expect(historical_contract_names).toHaveLength(17);
+    });
+
+    it.each(historical_contract_names)('[DCR-056] %s is still named "%s"', (contract_type: string, name: string) => {
+        expect(getContractTypeDisplay(contract_type)).toBe(name);
+    });
+
+    it('[DCR-056] every filtered contract type still has a config entry with a button position', () => {
+        historical_contract_names.forEach(([contract_type]) => {
+            const config = getContractConfig()[contract_type as TGetSupportedContractsKey] as {
+                position?: string;
+            };
+
+            expect(config).toBeDefined();
+            expect(['top', 'bottom']).toContain(config.position);
+            expect(getContractTypePosition(contract_type as TGetSupportedContractsKey)).toBe(config.position);
+        });
+    });
+});

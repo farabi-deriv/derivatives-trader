@@ -112,4 +112,69 @@ describe('CurrencyUtils', () => {
             expect(CurrencyUtils.isCryptocurrency('ZZZ')).toBe(false);
         });
     });
+
+    /**
+     * DCR-055 stripped the cashier-era `min_withdrawal` / `pa_min_withdrawal` / `pa_max_withdrawal`
+     * fields from every CryptoConfig entry. The file stays live, so what it still has to resolve is
+     * pinned here by value — display code, name and decimal places for every currency — rather than
+     * by self-consistency, which would follow a wrong edit.
+     */
+    describe('[DCR-055] the crypto currency config still resolves every display value', () => {
+        // [display_code, name, fractional_digits] as the config resolved them before the removal.
+        const expected_config: Record<string, [string, string, number]> = {
+            BTC: ['BTC', 'Bitcoin', 8],
+            BUSD: ['BUSD', 'Binance USD', 2],
+            DAI: ['DAI', 'Multi-Collateral DAI', 2],
+            EURS: ['EURS', 'STATIS Euro', 2],
+            IDK: ['IDK', 'IDK', 0],
+            PAX: ['PAX', 'Paxos Standard', 2],
+            TUSD: ['TUSD', 'True USD', 2],
+            USDC: ['USDC', 'USD Coin', 2],
+            USDK: ['USDK', 'USDK', 2],
+            eUSDT: ['eUSDT', 'Tether ERC20', 2],
+            tUSDT: ['tUSDT', 'Tether TRC20', 2],
+            BCH: ['BCH', 'Bitcoin Cash', 8],
+            ETH: ['ETH', 'Ether', 8],
+            ETC: ['ETC', 'Ether Classic', 8],
+            LTC: ['LTC', 'Litecoin', 8],
+            UST: ['USDT', 'Tether Omni', 2],
+            XRP: ['XRP', 'Ripple', 6],
+        };
+
+        it('[DCR-055] covers every currency the config declares, and no other', () => {
+            expect(Object.keys(CurrencyUtils.CryptoConfig.get()).sort()).toEqual(Object.keys(expected_config).sort());
+        });
+
+        it.each(Object.entries(expected_config))(
+            '[DCR-055] %s keeps its display code, name and decimal places',
+            (currency: string, [display_code, name, fractional_digits]: [string, string, number]) => {
+                const entry = CurrencyUtils.CryptoConfig.get()[currency];
+
+                expect(entry.display_code).toBe(display_code);
+                expect(entry.name).toBe(name);
+                expect(entry.fractional_digits).toBe(fractional_digits);
+
+                // The public readers of those three fields must resolve the same values.
+                expect(CurrencyUtils.getCurrencyDisplayCode(currency)).toBe(display_code);
+                expect(CurrencyUtils.getDecimalPlaces(currency)).toBe(fractional_digits);
+                expect(CurrencyUtils.calcDecimalPlaces(currency)).toBe(fractional_digits);
+                expect(CurrencyUtils.isCryptocurrency(currency)).toBe(true);
+            }
+        );
+
+        it('[DCR-055] still upper-cases a lower-case code, except the two Tether variants', () => {
+            expect(CurrencyUtils.getCurrencyDisplayCode('btc')).toBe('BTC');
+            expect(CurrencyUtils.getCurrencyDisplayCode('ust')).toBe('USDT');
+            expect(CurrencyUtils.getCurrencyDisplayCode('eUSDT')).toBe('eUSDT');
+            expect(CurrencyUtils.getCurrencyDisplayCode('tUSDT')).toBe('tUSDT');
+            // An unknown code is echoed back rather than resolved.
+            expect(CurrencyUtils.getCurrencyDisplayCode('ZZZ')).toBe('ZZZ');
+        });
+
+        it('[DCR-055] still formats crypto amounts to the configured precision', () => {
+            expect(CurrencyUtils.formatMoney('BTC', '0.005432116', true)).toBe('0.00543212');
+            expect(CurrencyUtils.formatMoney('XRP', '1.1234567', true)).toBe('1.123457');
+            expect(CurrencyUtils.formatMoney('IDK', '1234.5', true)).toBe('1,235');
+        });
+    });
 });

@@ -69,6 +69,7 @@ describe('mapErrorMessage', () => {
         );
     });
 
+    // Skipped for the same reason: the mapper's parameterised templates are commented out.
     it.skip('should substitute multiple parameters in error message', () => {
         const error = {
             message: 'Backend error message',
@@ -93,6 +94,7 @@ describe('mapErrorMessage', () => {
         expect(result).toBe('This contract has already expired.');
     });
 
+    // Skipped for the same reason: the mapper's parameterised templates are commented out.
     it.skip('should handle error message with parameters when code_args is undefined', () => {
         const error = {
             message: 'Backend error message',
@@ -105,6 +107,7 @@ describe('mapErrorMessage', () => {
         );
     });
 
+    // Skipped for the same reason: the mapper's parameterised templates are commented out.
     it.skip('should handle complex error messages with multiple parameter substitutions', () => {
         const error = {
             message: 'Backend error message',
@@ -164,6 +167,7 @@ describe('mapErrorMessage', () => {
         expect(result).toBe('This contract has already expired.');
     });
 
+    // Skipped for the same reason: the mapper's parameterised templates are commented out.
     it.skip('should preserve parameter order in substitution', () => {
         const error = {
             message: 'Backend error message',

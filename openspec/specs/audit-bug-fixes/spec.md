@@ -1,8 +1,11 @@
 # audit-bug-fixes Specification
 
 ## Purpose
+
 TBD - created by archiving change c6. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [ABF-001] Each fix is re-verified at HEAD and gated green; not-present reports are recorded
 
 Every fix in this change SHALL be re-verified against HEAD immediately before it is applied — the buggy code (or dead member, or duplicate file) SHALL be confirmed still present, and store members SHALL be grepped `\bmember\b` across all packages so a live consumer is never missed. After each grouped phase, `npm run bootstrap`, `npm run build:all`, `npm run test:jest`, `npm run check-imports` and `npm run knip:check` SHALL all pass. A reported bug that re-verification finds NOT present at HEAD SHALL NOT be coded; the discrepancy SHALL be recorded under `docs/spec-to-pr/findings/` instead.
@@ -156,4 +159,3 @@ Every package SHALL declare the dependencies its source and build actually impor
 
 - **WHEN** the affected `package.json` files are inspected after the change
 - **THEN** each imported package above is a declared dependency (no longer relying solely on workspace hoisting) and installs/builds remain green
-

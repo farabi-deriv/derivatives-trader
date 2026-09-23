@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change cut-main-thread-work-behind-the-market-selector-inp-regression. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Trade-type availability is determined by symbol count
 
 The set of trade types offered to a client SHALL be derived from the static trade-type list by removing any trade type for which the server returns no tradeable symbols. A trade type is available if and only if its server response contains at least one symbol. Availability SHALL be decided from symbol counts only; the availability lookup SHALL NOT sort or retain the symbol lists it inspects.
@@ -49,4 +51,3 @@ While the availability lookup has not yet resolved, the offered trade-type list 
 
 - **WHEN** the availability lookup has resolved but reports no available trade types
 - **THEN** the full, unfiltered trade-type list is returned rather than an empty list
-

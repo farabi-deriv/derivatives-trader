@@ -217,57 +217,32 @@ describe('PortfolioStore', () => {
         expect(observed).toEqual([0, 5, 7.5]);
     });
 
-    describe('[SMC-015] hover-barrier chain removal', () => {
-        it('[SMC-015] removes the hover-barrier chain but keeps chart barriers and live members', () => {
-            expect('onHoverPosition' in mockedPortfolioStore).toBe(false);
-            expect('hovered_position_id' in mockedPortfolioStore).toBe(false);
-            expect('updateTradeStore' in mockedPortfolioStore).toBe(false);
-            expect('setPurchaseSpotBarrier' in mockedPortfolioStore).toBe(false);
-            expect('updateLimitOrderBarriers' in mockedPortfolioStore).toBe(false);
-            expect('is_accumulator' in mockedPortfolioStore).toBe(false);
-            expect('is_turbos' in mockedPortfolioStore).toBe(false);
-            expect('main_barrier' in mockedPortfolioStore).toBe(false);
+    it('setContractType drives is_multiplier', () => {
+        mockedPortfolioStore.setContractType('multiplier');
 
-            // The KEEP surfaces the requirement names explicitly all survive and stay wired.
-            expect(Array.isArray(mockedPortfolioStore.barriers)).toBe(true);
-            expect(typeof mockedPortfolioStore.is_empty).toBe('boolean');
-            expect(typeof mockedPortfolioStore.is_multiplier).toBe('boolean');
-            expect(typeof mockedPortfolioStore.setContractType).toBe('function');
-            expect('contract_type' in mockedPortfolioStore).toBe(true);
-            expect('active_positions' in mockedPortfolioStore).toBe(true);
-            expect('open_accu_contract' in mockedPortfolioStore).toBe(true);
+        expect(mockedPortfolioStore.contract_type).toBe('multiplier');
+        expect(mockedPortfolioStore.is_multiplier).toBe(true);
+    });
 
-            // setContractType still drives is_multiplier — proof the kept members are functional, not vestigial.
-            mockedPortfolioStore.setContractType('multiplier');
-            expect(mockedPortfolioStore.contract_type).toBe('multiplier');
-            expect(mockedPortfolioStore.is_multiplier).toBe(true);
-        });
+    it('proposalOpenContractHandler updates the position and leaves the chart barriers intact', () => {
+        const contract_id = contracts[0].contract_id;
 
-        it('[SMC-015] proposalOpenContractHandler runs clean and keeps the chart-barriers array after the hover branch is gone', () => {
-            const contract_id = contracts[0].contract_id;
+        expect(() =>
+            mockedPortfolioStore.proposalOpenContractHandler({
+                proposal_open_contract: {
+                    contract_id,
+                    contract_type: 'MULTUP',
+                    shortcode: contracts[0].shortcode,
+                    bid_price: '10.50',
+                    profit: '0.50',
+                    barrier: '980.00',
+                    is_valid_to_sell: 1,
+                },
+            })
+        ).not.toThrow();
 
-            // The removed hover chain lived inside this handler (the `hovered_position_id === …`
-            // branch plus updateTradeStore/setPurchaseSpotBarrier/updateLimitOrderBarriers). Its
-            // removal must leave the handler working end-to-end without touching those members.
-            expect(() =>
-                mockedPortfolioStore.proposalOpenContractHandler({
-                    proposal_open_contract: {
-                        contract_id,
-                        contract_type: 'MULTUP',
-                        shortcode: contracts[0].shortcode,
-                        bid_price: '10.50',
-                        profit: '0.50',
-                        barrier: '980.00',
-                        is_valid_to_sell: 1,
-                    },
-                })
-            ).not.toThrow();
-
-            // Position still updates, and the chart-barriers array survives untouched.
-            expect(mockedPortfolioStore.positions_map[contract_id].profit_loss).toBe(0.5);
-            expect(Array.isArray(mockedPortfolioStore.barriers)).toBe(true);
-            expect(typeof mockedPortfolioStore.is_empty).toBe('boolean');
-            expect(Array.isArray(mockedPortfolioStore.active_positions)).toBe(true);
-        });
+        expect(mockedPortfolioStore.positions_map[contract_id].profit_loss).toBe(0.5);
+        expect(Array.isArray(mockedPortfolioStore.barriers)).toBe(true);
+        expect(Array.isArray(mockedPortfolioStore.active_positions)).toBe(true);
     });
 });

@@ -1,8 +1,11 @@
 # duration-time-wheel Specification
 
 ## Purpose
+
 TBD - created by archiving change duration-wheel-allows-scrolling-below. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [DTW-001] Time wheel columns never render below the currently reachable minimum
 
 The mobile Duration action sheet's merged time wheel (`DurationTimeWheel`) SHALL NOT render, on any visible column (hours, minutes, or seconds), a value that is unreachable given the contract's intraday minimum duration and the other visible columns' _currently selected_ values. A column's rendered floor SHALL be computed from: the seconds already contributed by columns coarser than it (at their current selection) subtracted from the intraday minimum, divided by the column's unit size, with any remainder still covered by finer columns' maximum capacity. The rendered ceiling SHALL remain bounded by the column's natural capacity and the intraday maximum, unchanged from prior behavior.
@@ -50,4 +53,3 @@ Each visible column's rendered option list SHALL be recomputed whenever any colu
 
 - **WHEN** a previously stored hour/minute/second selection is below the current contract's intraday minimum when the Time tab opens
 - **THEN** 300ms after the wheel stops moving, the selection snaps to the closest valid combination, exactly as before this change
-

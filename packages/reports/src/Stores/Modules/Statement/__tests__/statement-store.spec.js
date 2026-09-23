@@ -240,23 +240,4 @@ describe('StatementStore', () => {
 
         expect(network_disposer).toHaveBeenCalled();
     });
-
-    // Characterization guard: never went red; pins that the dead members are gone while the live
-    // statement surfaces survive.
-    it('[SMC-018] drops account_statistics/filtered_date_range and keeps the live statement members', () => {
-        expect('account_statistics' in statement_store).toBe(false);
-        expect('filtered_date_range' in statement_store).toBe(false);
-
-        [
-            'data',
-            'is_loading',
-            'has_loaded_all',
-            'date_from',
-            'date_to',
-            'error',
-            'action_type',
-            'client_loginid',
-        ].forEach(member => expect(member in statement_store).toBe(true));
-        expect(typeof statement_store.handleFilterChange).toBe('function');
-    });
 });

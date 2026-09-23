@@ -48,7 +48,6 @@ jobs:
     - name: Check TypeScript
       run: |
         npx tsc --project packages/api/tsconfig.json -noEmit &
-        npx tsc --project packages/api-v2/tsconfig.json -noEmit &
         npx tsc --project packages/utils/tsconfig.json -noEmit &
         npx tsc --project packages/stores/tsconfig.json -noEmit &
         wait
@@ -99,7 +98,7 @@ jobs:
             packages: "packages/core packages/reports"
             description: "Core & Reports"
           - group: 4
-            packages: "packages/api packages/api-v2 packages/shared packages/stores packages/utils packages/components"
+            packages: "packages/api packages/shared packages/stores packages/utils packages/components"
             description: "APIs, Utils & Components"
     steps:
     - name: Checkout

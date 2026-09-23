@@ -1,8 +1,11 @@
 # mobile-bridge-removal Specification
 
 ## Purpose
+
 TBD - created by archiving change c10-mobile-bridge-removal. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [MBR-001] The bridge hook, its detection and its types are removed
 
 The `useMobileBridge` hook (`packages/api/src/hooks/useMobileBridge.ts`), its spec, and its export line in `packages/api/src/hooks/index.ts` SHALL be deleted. The `DerivAppChannel`, `DerivAppChannelMessage` and `TradingConfigData` declarations and the `Window.DerivAppChannel?` member in `types/global.d.ts` SHALL be removed. No `is_mobile_app` query-parameter or sessionStorage read, and no reference to `window.DerivAppChannel`, SHALL remain in `packages/*/src`.
@@ -104,4 +107,3 @@ After the change, `npm run build:all`, `npm run test:jest` and `npm run check-im
 
 - **WHEN** `CLAUDE.md` is read after the change
 - **THEN** it contains no `useMobileBridge` guidance and no mobile-bridge hidden-features section presenting language/logout/support as native-app-controlled
-

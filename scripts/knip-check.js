@@ -145,8 +145,40 @@ function parseKnipResult(result) {
     return JSON.parse(stdout);
 }
 
+const KNIP_MISSING = 'knip is not installed in this workspace — run npm run bootstrap';
+
+/**
+ * Resolve the workspace-installed knip binary, so check and regeneration can never run a different
+ * major than the one the lockfile pins (a bare `npx knip` would fetch `latest` instead).
+ */
+function resolveKnipBin(resolveModule = require.resolve) {
+    let entry;
+    try {
+        entry = resolveModule('knip');
+    } catch {
+        throw new Error(KNIP_MISSING);
+    }
+
+    // knip's `exports` map hides package.json, so walk up from the resolved entry to read `bin`.
+    let dir = path.dirname(entry);
+    for (;;) {
+        const manifestPath = path.join(dir, 'package.json');
+        if (fs.existsSync(manifestPath)) {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            if (manifest.name === 'knip') {
+                const bin = typeof manifest.bin === 'string' ? manifest.bin : (manifest.bin || {}).knip;
+                if (!bin) throw new Error(KNIP_MISSING);
+                return path.join(dir, bin);
+            }
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) throw new Error(KNIP_MISSING);
+        dir = parent;
+    }
+}
+
 function runKnip() {
-    const result = spawnSync('npx', ['knip', '--reporter', 'json'], {
+    const result = spawnSync(process.execPath, [resolveKnipBin(), '--reporter', 'json'], {
         cwd: ROOT,
         encoding: 'utf8',
         maxBuffer: 64 * 1024 * 1024,
@@ -231,5 +263,6 @@ module.exports = {
     serializeBaseline,
     toRepoRelative,
     parseKnipResult,
+    resolveKnipBin,
     BASELINE_PATH,
 };

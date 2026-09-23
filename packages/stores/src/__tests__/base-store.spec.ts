@@ -29,20 +29,6 @@ describe('BaseStore (@deriv/stores)', () => {
         expect(new TestStore({ root_store: getRootStore() })).toBeInstanceOf(BaseStore);
     });
 
-    it('[BSC-002] drops the dead theme-listener machinery but keeps the live lifecycle listeners (characterization)', () => {
-        const store = new TestStore({ root_store: getRootStore() });
-
-        expect('onThemeChange' in store).toBe(false);
-        expect('disposeThemeChange' in store).toBe(false);
-        expect('themeChangeDisposer' in store).toBe(false);
-        expect('theme_change_listener' in store).toBe(false);
-
-        expect(typeof store.onLogout).toBe('function');
-        expect(typeof store.onClientInit).toBe('function');
-        expect(typeof store.onNetworkStatusChange).toBe('function');
-        expect(typeof store.onUnmount).toBe('function');
-    });
-
     it('[BSC-003] retrieveFromStorage never reads an undefined key when no store_name is set', () => {
         const getItemSpy = jest.spyOn(Storage.prototype, 'getItem');
         const store = new TestStore({ root_store: getRootStore() });

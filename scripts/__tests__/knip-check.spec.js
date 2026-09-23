@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const {
     normalizeFindings,
     newFindings,
@@ -5,6 +7,7 @@ const {
     serializeBaseline,
     toRepoRelative,
     parseKnipResult,
+    resolveKnipBin,
 } = require('../knip-check');
 
 const ROOT = '/repo';
@@ -101,6 +104,24 @@ describe('knip-check output parsing', () => {
     it('[CSN-003] propagates a spawn error verbatim', () => {
         const spawnError = new Error('spawn npx ENOENT');
         expect(() => parseKnipResult({ error: spawnError })).toThrow(spawnError);
+    });
+});
+
+describe('knip-check binary resolution', () => {
+    it('[CSN-009] resolveKnipBin returns the workspace-installed knip binary', () => {
+        const bin = resolveKnipBin();
+
+        expect(bin).toContain(`${path.sep}node_modules${path.sep}knip${path.sep}`);
+        expect(fs.existsSync(bin)).toBe(true);
+    });
+
+    it('[CSN-009] resolveKnipBin throws a named error when the pinned knip is absent', () => {
+        const absent = () => {
+            throw Object.assign(new Error("Cannot find module 'knip'"), { code: 'MODULE_NOT_FOUND' });
+        };
+
+        expect(() => resolveKnipBin(absent)).toThrow(/knip is not installed in this workspace/);
+        expect(() => resolveKnipBin(absent)).toThrow(/npm run bootstrap/);
     });
 });
 

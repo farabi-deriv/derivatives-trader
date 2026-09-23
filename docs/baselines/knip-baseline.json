@@ -263,7 +263,6 @@
         "unlisted packages/core/babel.config.json @babel/plugin-transform-private-methods",
         "unlisted packages/core/src/App/Components/Layout/Header/account-info.tsx @tanstack/react-query",
         "unlisted packages/reports/babel.config.json @babel/plugin-transform-private-methods",
-        "unlisted packages/reports/src/Components/Elements/Modals/ServicesErrorModal/__tests__/account-verification-required-modal.spec.tsx history",
         "unlisted packages/reports/src/Components/Elements/Modals/ServicesErrorModal/__tests__/insufficient-balance-modal.spec.tsx history",
         "unlisted packages/reports/src/Components/Routes/__tests__/binary-routes.spec.tsx history",
         "unlisted packages/reports/src/Containers/__tests__/reports.spec.tsx history",
@@ -299,12 +298,8 @@
         "unresolved .stylelintrc.js postcss-scss",
         "unresolved jest.config.js packages/*/jest.config.js",
         "unresolved packages/components/webpack.config.js css-loader",
-        "unresolved packages/core/src/Stores/__tests__/smc-016-cleanup.spec.ts ../Helpers/device",
         "unresolved packages/reports/jest.config.js packages/reports/src/Constants/index.js",
         "unresolved packages/trader/jest.config.js packages/trader/src/Constants/index.js",
-        "unresolved packages/trader/src/Stores/Modules/Trading/Helpers/__tests__/dead-helpers.spec.ts ../multiplier",
-        "unresolved packages/trader/src/Stores/Modules/Trading/Helpers/__tests__/dead-helpers.spec.ts ../preview-proposal",
-        "unresolved packages/trader/src/Stores/Modules/Trading/Helpers/__tests__/dead-helpers.spec.ts ../start-date",
         "unresolved postcss.config.js postcss-preset-env",
         "unresolved types/global.d.ts ./livechat"
     ]

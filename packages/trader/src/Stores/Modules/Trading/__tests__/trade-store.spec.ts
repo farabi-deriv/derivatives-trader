@@ -1,6 +1,4 @@
-import fs from 'fs';
 import { configure, reaction } from 'mobx';
-import path from 'path';
 
 import { TActiveSymbolsResponse } from '@deriv/api';
 import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
@@ -834,60 +832,15 @@ describe('TradeStore', () => {
             });
         });
 
-        describe('[SMC-012] removed dead trade-store members', () => {
-            it('no longer exposes the dead digit-view/digits-widget/synthetics/open-market members', () => {
-                expect('setMobileDigitView' in tradeStore).toBe(false);
-                expect('is_mobile_digit_view_selected' in tradeStore).toBe(false);
-                expect('setIsDigitsWidgetActive' in tradeStore).toBe(false);
-                expect('is_digits_widget_active' in tradeStore).toBe(false);
-                expect('is_synthetics_available' in tradeStore).toBe(false);
-                expect('is_synthetics_trading_market_available' in tradeStore).toBe(false);
-                expect('getFirstOpenMarket' in tradeStore).toBe(false);
-                expect('wsSubscribe' in tradeStore).toBe(false);
-                expect('wsForget' in tradeStore).toBe(false);
-                expect('wsForgetStream' in tradeStore).toBe(false);
-                expect('wsSendRequest' in tradeStore).toBe(false);
-            });
-
-            it('keeps the live WS/ServerTime/TickSpotData layer wired after the dead WS layer is gone', () => {
-                // TickSpotData member survives and round-trips (its type import was kept).
+        describe('WS/ServerTime/TickSpotData layer', () => {
+            it('round-trips tick data and forgets proposals through WS', () => {
                 const tick = { symbol: '1HZ100V', quote: 1234.56, epoch: 1708948799, pip_size: 2 };
                 tradeStore.setTickData(tick as never);
                 expect(tradeStore.tick_data).toEqual(tick);
 
-                // The kept `WS` import is still wired into the live proposal-forget path (the dead
-                // wsSubscribe/wsForget/wsSendRequest wrappers around it were what got removed).
                 (WS.forgetAll as jest.Mock).mockClear();
                 tradeStore.forgetAllProposal();
                 expect(WS.forgetAll).toHaveBeenCalledWith('proposal');
-            });
-
-            it('[SMC-012] drops g_subscribers_map + the WS-layer-only type imports from source, keeps ServerTime/WS/stream-response', () => {
-                // The module-private `g_subscribers_map` and the type imports the dead WS layer alone
-                // kept live cannot be probed on an instance, so the "no orphaned type import left
-                // dangling" clause is verified against the source itself.
-                const source = fs.readFileSync(path.join(__dirname, '../trade-store.ts'), 'utf8');
-
-                ['g_subscribers_map', 'wsSubscribe', 'wsForget', 'wsForgetStream', 'wsSendRequest'].forEach(symbol =>
-                    expect(source).not.toMatch(new RegExp(`\\b${symbol}\\b`))
-                );
-
-                // The type imports the WS wrappers alone kept live are gone (no dangling import).
-                [
-                    'TTicksResponse',
-                    'TActiveSymbolsRequest',
-                    'TServerTimeRequest',
-                    'TTicksHistoryRequest',
-                    'TTradingTimesRequest',
-                ].forEach(type => expect(source).not.toMatch(new RegExp(`\\b${type}\\b`)));
-
-                // The live layer the requirement says to KEEP is still imported/used.
-                expect(source).toMatch(/import ServerTime from '_common\/base\/server_time'/);
-                expect(source).toMatch(/\bTTicksStreamResponse\b/);
-                expect(source).toMatch(/\bWS\b/);
-
-                // ...and the orphaned `findFirstOpenMarket` import (kept alive only by getFirstOpenMarket) is gone.
-                expect(source).not.toMatch(/\bfindFirstOpenMarket\b/);
             });
         });
 
@@ -1066,12 +1019,6 @@ describe('TradeStore', () => {
 
                 tradeStore.contract_type = 'even_odd';
                 expect(tradeStore.show_digits_stats).toBe(true);
-            });
-        });
-
-        describe('is_dtrader_v2', () => {
-            it('[SMC-011] no longer exposes the collapsed is_dtrader_v2 gate', () => {
-                expect('is_dtrader_v2' in tradeStore).toBe(false);
             });
         });
     });

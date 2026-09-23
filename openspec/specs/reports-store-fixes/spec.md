@@ -1,8 +1,11 @@
 # reports-store-fixes Specification
 
 ## Purpose
+
 TBD - created by archiving change derivatives-trader-issues-1270. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [RSF-001] An argument-less statement filter reset restores all transactions
 
 `StatementStore.handleFilterChange` (`packages/reports/src/Stores/Modules/Statement/statement-store.js`) SHALL default its `filterValue` to the string `'all'`, not `{}`. `action_type` is a string observable (`'all' | 'buy' | 'sell' | 'deposit' | 'withdrawal'`, initialized to `'all'`); the public store type (`useReportsStores.tsx`) permits an argument-less call, so a default of `{}` sets `action_type` to an object and sends a malformed non-enum `action_type` on the `statement` WebSocket request, leaving the transactions table stuck/empty instead of showing all transactions.
@@ -30,4 +33,3 @@ In `packages/reports/src/Constants/data-table-constants.tsx`, the statement `ico
 
 - **WHEN** the profit-table and archived-statement tables render
 - **THEN** their icon `key={row_obj.transaction_id}` sites are untouched and still resolve to a defined value
-
