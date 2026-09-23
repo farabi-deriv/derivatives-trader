@@ -306,20 +306,38 @@ Follows [Open Market Selection Steps](#open-market-selection-steps) step 1b.
 
 ---
 
+### Flow 26 — Active tab's chevron cue marks it as the picker trigger
+
+**Prerequisites:** Two tabs open (any market + trade type). Unauthenticated — pure tab-strip mechanics.
+**Spec:** `playwright/tests/market-selection/verify-trade-tabs.spec.ts`
+
+> Promoted from G2 cases 1–4 on 2026-09-23 (automated in `verify-trade-tabs.spec.ts`). Cases 5–6
+> (locked strip, P/L divider) remain gap **G2** below — they need a running automation run / an
+> open position.
+
+| #   | Step                             | Action                                                              | Expected Result                                                                                                                                  | Platform |
+| --- | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | Active tab carries the cue       | Read the active tab (`[aria-current="true"]`)                       | It contains `dt_market_tab_chevron`, and the tab root has `aria-haspopup="dialog"` and an `aria-label` naming both the market and the trade type | Both     |
+| 2   | Inactive tabs lack the cue       | Read every non-`aria-current` tab                                   | None contains `dt_market_tab_chevron`; none has `aria-haspopup` or `aria-label` — their tap only activates them                                  | Both     |
+| 3   | The cue moves with activation    | Click an inactive tab to activate it                                | The chevron and affordance leave the previously-active tab and appear on the newly-active one                                                    | Both     |
+| 4   | Tapping the cue opens the picker | Click the active tab (the cue's tab — the cue itself is decorative) | The picker opens exactly as any tap on that tab does (Flow 2) — no duplicate action fires from the chevron                                       | Both     |
+
+---
+
 ## Gap Flows
 
 > These are test cases for coverage gaps. The proposed spec file for each gap is in [`coverage.md`](./coverage.md).
 
-### G2 — Active tab's chevron cue marks it as the picker trigger
+### G2 — Cue withheld on the locked strip + cue/P/L divider
 
-| #   | Test case                          | Steps                                                                                         | Expected Result                                                                                                                                                                                                           |
-| --- | ---------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Active tab carries the cue         | With 2+ tabs open, read the active tab (`[data-testid="dt_market_tab"][aria-current="true"]`) | It contains `[data-testid="dt_market_tab_chevron"]`, and the tab root has `aria-haspopup="dialog"` and an `aria-label` containing both the market name and the trade type                                                 |
-| 2   | Inactive tabs do not carry the cue | Read every tab that is not `aria-current="true"`                                              | None contains `dt_market_tab_chevron`; none has `aria-haspopup` or `aria-label` — their tap only activates them                                                                                                           |
-| 3   | The cue moves with the active tab  | Click an inactive tab to activate it                                                          | The chevron (and the popup affordance) leaves the previously-active tab and appears on the newly-active one                                                                                                               |
-| 4   | Tapping the cue opens the picker   | Click the chevron on the active tab                                                           | The picker opens exactly as clicking anywhere else on that tab does (Flow 2) — the chevron is decorative, so no second/duplicate action fires                                                                             |
-| 5   | Locked strip withholds the cue     | In the Automate view, start a run, then read the active (running) tab                         | It stays `aria-current="true"` with its highlight and live P/L, but contains no `dt_market_tab_chevron` and has no `aria-haspopup`/`aria-label` — its tap only raises the "locked until automation is stopped" snackbar   |
-| 6   | Divider sits between cue and P/L   | On desktop, read the active tab with a position running, then close/expire the position       | With a position: the tab contains `[data-testid="dt_market_tab_profit_separator"]` between `dt_market_tab_chevron` and the P/L amount, and the tab's text still contains no `•`. Without one: no separator element at all |
+> The old G2's cases 1–4 (active/inactive cue split, cue movement, tap-opens-picker) were promoted
+> to **Flow 26** and automated on 2026-09-23. What remains needs heavier setup: a running
+> automation run (case 1) and an open position (case 2).
+
+| #   | Test case                        | Steps                                                                                   | Expected Result                                                                                                                                                                                                           |
+| --- | -------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Locked strip withholds the cue   | In the Automate view, start a run, then read the active (running) tab                   | It stays `aria-current="true"` with its highlight and live P/L, but contains no `dt_market_tab_chevron` and has no `aria-haspopup`/`aria-label` — its tap only raises the "locked until automation is stopped" snackbar   |
+| 2   | Divider sits between cue and P/L | On desktop, read the active tab with a position running, then close/expire the position | With a position: the tab contains `[data-testid="dt_market_tab_profit_separator"]` between `dt_market_tab_chevron` and the P/L amount, and the tab's text still contains no `•`. Without one: no separator element at all |
 
 > **Framing correction vs the original test plan:** the manual test run (`06-multiple-trade-tabs.md`,
 > TABS-03) originally framed param isolation as a "Stake persistence bug." #1186 shipped tab-scoped

@@ -1,6 +1,6 @@
 /**
  * @name     Multiple trade tabs — core mechanics
- * @id       flow-14, flow-15, flow-16, flow-17, flow-18, flow-19, flow-20, flow-23
+ * @id       flow-14, flow-15, flow-16, flow-17, flow-18, flow-19, flow-20, flow-23, flow-26
  * @flow     playwright/flows/market-selection/flow.md#flow-14--switch-between-existing-tabs
  * @coverage playwright/flows/market-selection/coverage.md
  */
@@ -181,5 +181,84 @@ test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-select
                 'The active (expanded) tab should be in view on desktop'
             ).toBeInViewport();
         }
+    });
+
+    // Flow 26 — active-tab chevron cue. The cue is `aria-hidden` (decorative): the whole tab is the
+    // tap target, so the assertions read the cue's presence and the tab-root affordance
+    // (`aria-haspopup` / `aria-label`) that it marks. The `aria-label` overrides the tab's
+    // announced text, so tabs are located by market + trade type, never by accessible name.
+    test('VERIFY active tab chevron cue — marks the only tab whose tap opens the picker', async ({
+        tradeParametersPage,
+        marketSelectionPage,
+    }) => {
+        // Part 1 — the active tab (the seed default) carries the cue and its affordance.
+        const activeTab = tradeParametersPage.activeMarketTab;
+
+        await expect(
+            marketSelectionPage.activeMarketTabChevron,
+            'The active tab should carry the chevron cue'
+        ).toBeVisible();
+        await expect(activeTab, 'The active tab should advertise the picker via aria-haspopup').toHaveAttribute(
+            'aria-haspopup',
+            'dialog'
+        );
+        await expect(
+            activeTab,
+            'The active tab label should name the market and trade type it changes'
+        ).toHaveAttribute('aria-label', /^Change market and trade type: .+/);
+
+        // Part 2 — open a second tab: the seed-default first tab becomes inactive and must
+        // shed the cue and the affordance.
+        const firstTabText = (await activeTab.textContent()) ?? '';
+        await tradeParametersPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', {
+            openInNewTab: true,
+        });
+        await expect(marketSelectionPage.marketTabs, 'Two tabs should be open').toHaveCount(2);
+        const firstTab = marketSelectionPage.marketTabs.first();
+        await expect(
+            marketSelectionPage.inactiveMarketTabChevrons,
+            'No inactive tab should carry the chevron cue'
+        ).toHaveCount(0);
+        await expect(
+            firstTab,
+            'The inactive tab should not advertise the picker via aria-haspopup'
+        ).not.toHaveAttribute('aria-haspopup', 'dialog');
+        await expect(firstTab, 'The inactive tab should not carry a selector aria-label').not.toHaveAttribute(
+            'aria-label'
+        );
+        await expect(activeTab, 'The newly opened tab should be active').toContainText('Volatility 100 Index');
+
+        // Part 3 — activating the previously-active tab moves the cue and affordance back to it.
+        await firstTab.click();
+        await expect(activeTab, 'Switching back should restore the first tab').toHaveText(firstTabText);
+        await expect(
+            marketSelectionPage.activeMarketTabChevron,
+            'The cue should move back to the reactivated tab'
+        ).toBeVisible();
+        await expect(
+            marketSelectionPage.inactiveMarketTabChevrons,
+            'No inactive tab should carry the chevron cue after the switch'
+        ).toHaveCount(0);
+        await expect(
+            marketSelectionPage.marketTabChevron('Volatility 100 Index', 'Rise/Fall'),
+            'The previously active tab should not carry the chevron cue'
+        ).toHaveCount(0);
+        await expect(
+            marketSelectionPage.marketTab('Volatility 100 Index', 'Rise/Fall'),
+            'The previously active tab should not advertise the picker via aria-haspopup'
+        ).not.toHaveAttribute('aria-haspopup', 'dialog');
+
+        // Part 4 — tapping the active tab (the cue's tab) opens the picker; the cue is
+        // decorative, so this is a plain tab click, not a click on the chevron itself.
+        await activeTab.click();
+        await expect(
+            marketSelectionPage.marketSelectionPanel,
+            'Tapping the cue tab should open the market-selection picker'
+        ).toBeVisible();
+        await marketSelectionPage.closeMarketSelectionPicker();
+        await expect(
+            marketSelectionPage.marketSelectionPanel,
+            'The picker should close without replacing the tab'
+        ).not.toBeAttached();
     });
 });

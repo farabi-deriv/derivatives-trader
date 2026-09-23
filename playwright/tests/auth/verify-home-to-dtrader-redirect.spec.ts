@@ -8,6 +8,8 @@ import { HomePage } from '../../pages/HomePage';
 import { TradeBasePage } from '../../pages/TradeBasePage';
 
 test.describe('Home to DTrader redirect', { tag: ['@auth', '@smoke', '@desktop', '@mobile', '@production'] }, () => {
+    test.describe.configure({ mode: 'serial' });
+
     test.beforeAll(async () => {
         if (!process.env.TEST_EMAIL || !process.env.TEST_PASSWORD) {
             throw new Error('Missing required env vars: TEST_EMAIL and TEST_PASSWORD must be set in playwright/.env');

@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 ---
 
@@ -38,14 +38,14 @@ Each module section lists every documented flow with its current **status** and 
 | ------------------ | ----------- | ---------- | --------- |
 | `auth`             | 5           | 5          | 5         |
 | `feed`             | 5           | 5          | 5         |
-| `market-selection` | 26          | 26         | 25        |
+| `market-selection` | 27          | 27         | 26        |
 | `notifications`    | 9           | 4          | 4         |
 | `pageerrors`       | 1           | 1          | 1         |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
 | `trade`            | 41          | 41         | 41        |
 | `trade-automate`   | 46          | 46         | 44        |
-| **Total**          | **152**     | **147**    | **144**   |
+| **Total**          | **153**     | **148**    | **145**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -287,7 +287,8 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 23 | P0       | Tab icon reflects its own market                                             | unauthenticated       | `automated`  |
 | Flow 24 | P0       | Max tab limit enforced (4 mobile / 7 desktop)                                | unauthenticated       | `automated`  |
 | Flow 25 | P1       | Trade params (stake + duration) persist per tab across reload (#1186)        | unauthenticated       | `automated`  |
-| —       | P2       | Active tab's chevron cue marks it as the picker trigger (G2)                 | unauthenticated       | `documented` |
+| Flow 26 | P2       | Active tab's chevron cue marks it as the picker trigger                      | unauthenticated       | `automated`  |
+| —       | P2       | Cue withheld on locked strip + cue/P/L divider (G2)                          | authenticated         | `documented` |
 
 ---
 
@@ -296,7 +297,7 @@ Each module section lists every documented flow with its current **status** and 
 | Priority | Module             | Key Flows to Implement First                                                                                                    |
 | -------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | **Soon** | `trade-automate`   | Flow 4 (EU gating) · G2 (unsupported trade type) — Flows 16–17 automated (#916, #917, #995)                                     |
-| **Soon** | `market-selection` | G2 (active-tab chevron cue) — Flow 25 (#1186 param persistence) automated                                                       |
+| **Soon** | `market-selection` | G2 (locked-strip cue + P/L divider) — Flows 25–26 automated                                                                     |
 | **Done** | `notifications`    | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
 | **Done** | `feed`             | Flows 1.1–1.5 — one test per category chip, all markets on `@smoke` `@production`                                               |
 | **Done** | `positions`        | All 11 flows automated (former G1–G4 promoted to Flows 8–11)                                                                    |

@@ -9,19 +9,19 @@
 
 ## Section 1 — Journey Index
 
-| Journey ID       | Spec File                                                      | Tags                                                    |
-| ---------------- | -------------------------------------------------------------- | ------------------------------------------------------- |
-| Flow 1–6, 12, 13 | `market-selection/verify-market-browse-and-discovery.spec.ts`  | `@market-selection @desktop @mobile`                    |
-| Flow 7           | `market-selection/verify-market-info-screen.spec.ts`           | `@market-selection @desktop @mobile`                    |
-| Flow 8, 9        | `market-selection/verify-market-search.spec.ts`                | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 10          | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
-| Flow 11          | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
-| Flow 14–20, 23   | `market-selection/verify-trade-tabs.spec.ts`                   | `@market-selection @smoke @desktop @mobile`             |
-| Flow 21          | `market-selection/verify-trade-tabs-persistence.spec.ts`       | `@market-selection @desktop @mobile`                    |
-| Flow 22          | `market-selection/verify-trade-tabs-buy.spec.ts`               | `@market-selection @trade @regression @desktop @mobile` |
-| Flow 24          | `market-selection/verify-trade-tabs-max-limit.spec.ts`         | `@market-selection @smoke @production @desktop @mobile` |
-| Flow 25          | `market-selection/verify-trade-tabs-param-persistence.spec.ts` | `@market-selection @desktop @mobile`                    |
-| G2               | Not automated — see [`coverage.md`](./coverage.md)             | —                                                       |
+| Journey ID         | Spec File                                                      | Tags                                                    |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------- |
+| Flow 1–6, 12, 13   | `market-selection/verify-market-browse-and-discovery.spec.ts`  | `@market-selection @desktop @mobile`                    |
+| Flow 7             | `market-selection/verify-market-info-screen.spec.ts`           | `@market-selection @desktop @mobile`                    |
+| Flow 8, 9          | `market-selection/verify-market-search.spec.ts`                | `@market-selection @smoke @production @desktop @mobile` |
+| Flow 10            | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
+| Flow 11            | `market-selection/verify-market-favourites.spec.ts`            | `@market-selection @desktop @mobile`                    |
+| Flow 14–20, 23, 26 | `market-selection/verify-trade-tabs.spec.ts`                   | `@market-selection @smoke @desktop @mobile`             |
+| Flow 21            | `market-selection/verify-trade-tabs-persistence.spec.ts`       | `@market-selection @desktop @mobile`                    |
+| Flow 22            | `market-selection/verify-trade-tabs-buy.spec.ts`               | `@market-selection @trade @regression @desktop @mobile` |
+| Flow 24            | `market-selection/verify-trade-tabs-max-limit.spec.ts`         | `@market-selection @smoke @production @desktop @mobile` |
+| Flow 25            | `market-selection/verify-trade-tabs-param-persistence.spec.ts` | `@market-selection @desktop @mobile`                    |
+| G2                 | Not automated — see [`coverage.md`](./coverage.md)             | —                                                       |
 
 ---
 

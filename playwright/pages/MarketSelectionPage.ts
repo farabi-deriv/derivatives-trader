@@ -498,6 +498,47 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * The chevron cue on a market tab — rendered only where tapping that tab opens the
+     * market-selection picker (i.e. the active tab, while no automation run locks the strip).
+     * Decorative (`aria-hidden`): the whole tab remains the tap target, so the chevron only
+     * *marks* the affordance; clicking it is the same as clicking the tab.
+     * Source: market-tab.tsx `data-testid="dt_market_tab_chevron"` behind `opens_selector`
+     *
+     * @param market - Visible market name of the tab to inspect
+     * @param tradeType - Visible trade-type subtitle of the tab to inspect
+     */
+    marketTabChevron(market: string, tradeType: string): Locator {
+        return this.marketTab(market, tradeType).locator('[data-testid="dt_market_tab_chevron"]');
+    }
+
+    /**
+     * The chevron cue on whichever tab is currently active. The active tab's market name is
+     * not always known up-front (the app seeds a default), so this targets it by
+     * `aria-current` instead of by market + trade type.
+     * Source: market-tab.tsx `aria-current` / `data-testid="dt_market_tab_chevron"`
+     */
+    get activeMarketTabChevron(): Locator {
+        return this.page.locator(
+            '[data-testid="dt_market_tabs_list"] [data-testid="dt_market_tab"][aria-current="true"] ' +
+                '[data-testid="dt_market_tab_chevron"]'
+        );
+    }
+
+    /**
+     * Chevron cues rendered on inactive (non-picker-opening) tabs — always expected to be
+     * none. Companion to {@link marketTabChevron}: the cue must mark the active tab only.
+     * Inactive-but-disabled tabs are excluded — their strip behaviour differs.
+     * Source: market-tab.tsx `aria-current` / `aria-disabled` attributes
+     */
+    get inactiveMarketTabChevrons(): Locator {
+        return this.page.locator(
+            '[data-testid="dt_market_tabs_list"] [data-testid="dt_market_tab"]' +
+                ':not([aria-current="true"]):not([aria-disabled="true"]) ' +
+                '[data-testid="dt_market_tab_chevron"]'
+        );
+    }
+
+    /**
      * Remove ("×") button for a specific market tab — only rendered/tappable when the tab is
      * removable (more than one tab open, and not the last tradeable tab). On desktop it's
      * hidden until the tab is hovered; on the active tab it is shown by default.
