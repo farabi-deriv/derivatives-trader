@@ -81,14 +81,17 @@ await expect(tradeParametersPage.marketSelectionResultsList, 'List should reload
 ### Flow 5 — Asset-class category filter
 
 > Combined 2026-08-06 into the same test as Flows 3, 6, 4, 12 — see the note above.
+> Extended for #994 — after returning to Derived, assert curated submarket heading order.
 
 ```typescript
-await tradeParametersPage.marketCategoryChip('Forex').click();
+await marketSelectionPage.selectMarketCategory('Forex');
 // Confirmed live: Quill's Chip.Selectable exposes `data-state="selected"`, not `aria-selected`.
-await expect(tradeParametersPage.marketCategoryChip('Forex'), 'Forex chip should be selected').toHaveAttribute(
+await expect(marketSelectionPage.marketCategoryChip('Forex'), 'Forex chip should be selected').toHaveAttribute(
     'data-state',
     'selected'
 );
+await marketSelectionPage.selectMarketCategory('Derived');
+await marketSelectionPage.verifyDerivedSubmarketOrder(); // Volatility → Step → Jump → Crash/Boom → Daily reset
 ```
 
 ### Flow 6 — Time-window dropdown is always present

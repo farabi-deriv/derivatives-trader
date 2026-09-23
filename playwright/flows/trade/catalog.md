@@ -49,6 +49,7 @@
 | Flow 18    | `trade/verify-invalid-url-modal.spec.ts`                         | `@trade @desktop @mobile`                      |
 | Flow 19    | `trade/verify-trade-param-info-icon-hover.spec.ts`               | `@trade @desktop @mobile`                      |
 | Flow 20    | `trade/verify-system-theme-option.spec.ts`                       | `@trade @desktop @mobile`                      |
+| Flow 21    | `trade/over-under/verify-over-under-validations.spec.ts`         | `@trade @desktop @mobile`                      |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
@@ -1007,6 +1008,7 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 | Desktop sidebar theme toggle (Flow 20)               | `tradeParametersPage.clickSidebarThemeToggle()`                                                          |
 | Assert resolved body theme (Flow 20)                 | `tradeParametersPage.expectResolvedBodyTheme('dark')`                                                    |
 | Seed theme preference (Flow 20)                      | `TradeBasePage.seedThemePreference(page, 'system')`                                                      |
+| HL→OU proposal uses last_digit (Flow 21 / #1384)     | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })`                        |
 | Read committed stake (Flow 25 / market-selection)    | `tradeParametersPage.readCommittedStake()`                                                               |
 | Read committed duration (Flow 25 / market-selection) | `tradeParametersPage.readCommittedDuration()`                                                            |
 | Assert stake + duration (Flow 25)                    | `tradeParametersPage.expectCommittedStakeAndDuration()` — pass `{ differs: true }` for sibling isolation |

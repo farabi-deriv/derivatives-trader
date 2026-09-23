@@ -79,11 +79,12 @@ Follows [Open Market Selection Steps](#open-market-selection-steps) step 1b.
 
 ### Flow 5 — Asset-class category filter chips scope the list
 
-| #   | Step                        | Action                                                             | Expected Result                                                                                                         | Platform |
-| --- | --------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------- |
-| 1   | Open the picker             | Follow [Open Market Selection Steps](#open-market-selection-steps) | Picker opens with the first available category (e.g. "Derived") selected by default — no Featured chip exists           | Both     |
-| 2   | Select the "Forex" chip     | Click/tap the "Forex" category chip                                | List reloads to show only Forex markets (`symbol.market === 'forex'`); category chips row stays visible                 | Both     |
-| 3   | Select a different category | Click/tap another category chip (e.g. "Derived")                   | List reloads again to that category's markets — there is no "reset"/default chip to return to, every category is a peer | Both     |
+| #   | Step                         | Action                                                             | Expected Result                                                                                                         | Platform |
+| --- | ---------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Open the picker              | Follow [Open Market Selection Steps](#open-market-selection-steps) | Picker opens with the first available category (e.g. "Derived") selected by default — no Featured chip exists           | Both     |
+| 2   | Select the "Forex" chip      | Click/tap the "Forex" category chip                                | List reloads to show only Forex markets (`symbol.market === 'forex'`); category chips row stays visible                 | Both     |
+| 3   | Select a different category  | Click/tap another category chip (e.g. "Derived")                   | List reloads again to that category's markets — there is no "reset"/default chip to return to, every category is a peer | Both     |
+| 4   | Derived section order (#994) | With Derived selected, read `.market-selection-list__group-title`  | Curated headings appear in order: Volatility indices → Step indices → Jump indices → Crash/Boom → Daily reset indices   | Both     |
 
 > Available category chips: `Derived`, `Forex`, `Stocks & indices`, `Cryptocurrencies`, `Commodities` —
 > derived from `packages/trader/src/AppV2/Utils/market-selection-utils.ts`. `Featured` no longer exists

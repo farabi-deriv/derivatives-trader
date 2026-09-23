@@ -130,6 +130,7 @@ test.describe('Market Selection', { tag: ['@desktop', '@mobile', '@market-select
             marketSelectionPage.marketCategoryChip('Forex'),
             'Forex chip should no longer be selected'
         ).not.toHaveAttribute('data-state', 'selected');
+        await marketSelectionPage.verifyDerivedSubmarketOrder();
 
         // Part 3 — time-window dropdown is present by default and absent on Favourites (Flow 6).
         await expect(

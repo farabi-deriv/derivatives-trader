@@ -12,7 +12,7 @@
 | Flow 2  | Clicking the active tab replaces it instead of adding a new one       | ✅      | ✅     |                                                            |
 | Flow 3  | Trade-type navigation lists the same set on both platforms            | ✅      | ✅     |                                                            |
 | Flow 4  | Switching trade type reloads the list to only tradeable symbols       | ✅      | ✅     |                                                            |
-| Flow 5  | Asset-class category filter chips scope the list                      | ✅      | ✅     |                                                            |
+| Flow 5  | Asset-class category filter chips scope the list                      | ✅      | ✅     | Includes #994 Derived submarket order                      |
 | Flow 6  | Time-window dropdown is always present in the category list           | ✅      | ✅     |                                                            |
 | Flow 7  | Market Info screen (descriptions matrix, Trade-on, Favourite, Back)   | ✅      | ✅     | `verify-market-info-screen.spec.ts` — 75 symbols (#1029)   |
 | Flow 8  | Search by market name                                                 | ✅      | ✅     |                                                            |

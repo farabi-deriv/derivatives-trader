@@ -43,9 +43,9 @@ Each module section lists every documented flow with its current **status** and 
 | `pageerrors`       | 1           | 1          | 1         |
 | `positions`        | 11          | 11         | 11        |
 | `reports`          | 8           | 8          | 8         |
-| `trade`            | 41          | 41         | 41        |
+| `trade`            | 42          | 42         | 42        |
 | `trade-automate`   | 46          | 46         | 44        |
-| **Total**          | **153**     | **148**    | **145**   |
+| **Total**          | **154**     | **149**    | **146**   |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -100,6 +100,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 18   | P1       | Invalid URL — unsupported market and trade type modals     | unauthenticated              | `automated` |
 | Flow 19   | P2       | Manual trade param info icons reveal descriptions          | authenticated                | `automated` |
 | Flow 20   | P2       | System theme follows OS / locks after explicit choice      | unauthenticated              | `automated` |
+| Flow 21   | P1       | Higher/Lower → Over/Under proposal uses last_digit         | authenticated                | `automated` |
 
 ---
 

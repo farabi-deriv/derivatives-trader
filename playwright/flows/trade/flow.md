@@ -1003,3 +1003,20 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 > **POM:** `seedThemePreference` · `setThemePreference` (branches Menu radios vs sidebar toggle) · `expectResolvedBodyTheme`.
 >
 > Chart canvas theme is N/A for Playwright — covered by unit/manual for SmartCharts `settings.theme`.
+
+## Flow 21 — Higher/Lower → Over/Under proposal uses last_digit
+
+> Covers regression for #1384. Switching from Higher/Lower (price barrier) to Over/Under must not leave a stale `barrier` on the digit proposal — Buy must price with `last_digit` and stay enabled. No purchase.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_OVER_UNDER` / `TEST_EMAIL_OVER_UNDER_MOBILE`). Digits symbol (e.g. Volatility 10 Index).
+**Spec:** `playwright/tests/trade/over-under/verify-over-under-validations.spec.ts`
+**Unique params:** Barrier on Higher/Lower → digit on Over/Under
+
+| #   | Step                        | Action                                                       | Expected Result                                    | Platform |
+| --- | --------------------------- | ------------------------------------------------------------ | -------------------------------------------------- | -------- |
+| 1   | Seed Higher/Lower barrier   | `selectMarketAndTradeType(…, 'Higher/Lower')` + `setBarrier` | Relative price barrier committed                   | Both     |
+| 2   | Switch to Over/Under        | `selectMarketAndTradeType(…, 'Over/Under')`                  | Last digit prediction visible                      | Both     |
+| 3   | Select digit                | `selectDigit('7')`                                           | Digit 7 selected                                   | Both     |
+| 4   | Assert proposal + Buy ready | `verifyProposalAfterHigherLowerToOverUnder()`                | No barrier-range toast; Buy enabled; payout priced | Both     |
+
+> **POM:** `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder`.

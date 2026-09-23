@@ -602,6 +602,39 @@ export class MarketSelectionPage extends TradeBasePage {
     }
 
     /**
+     * Submarket group headings inside the open category list (e.g. "Volatility indices").
+     * Source: market-selection-list.tsx `.market-selection-list__group-title`
+     */
+    get marketListGroupTitles(): Locator {
+        return this.page.locator('.market-selection-list__group-title');
+    }
+
+    /**
+     * Flow 5 (#994) — Derived synthetic submarkets follow `DERIVED_SECTION_ORDER`.
+     * Asserts curated English default headings appear in relative order (uncurated sections ignored).
+     */
+    async verifyDerivedSubmarketOrder(): Promise<void> {
+        await this.selectMarketCategory('Derived');
+        await expect(
+            this.marketListGroupTitles.first(),
+            'Derived list should render at least one submarket group heading'
+        ).toBeVisible();
+
+        const titles = (await this.marketListGroupTitles.allTextContents()).map(text => text.trim().toLowerCase());
+        const expected = ['volatility indices', 'step indices', 'jump indices', 'crash/boom', 'daily reset indices'];
+
+        let lastIndex = -1;
+        for (const name of expected) {
+            const idx = titles.indexOf(name);
+            expect(idx, `Derived list should include "${name}" (#994)`).toBeGreaterThan(-1);
+            expect(idx, `"${name}" should follow the previous curated Derived section (#994)`).toBeGreaterThan(
+                lastIndex
+            );
+            lastIndex = idx;
+        }
+    }
+
+    /**
      * Select a trade type inside the market-selection picker's navigation (mobile tab strip
      * or desktop sidebar). The picker must already be open. Unlike
      * `TradeParametersPage.selectMarketAndTradeType()`, this only switches which trade type is

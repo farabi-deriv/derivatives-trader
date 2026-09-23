@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { TradeDigitsPage } from './TradeDigitsPage';
 
 /**
@@ -75,5 +76,36 @@ export class TradeOverUnderPage extends TradeDigitsPage {
             position: 'bottom',
             ...params,
         });
+    }
+
+    /**
+     * Flow 21 (#1384) — switching Higher/Lower → Over/Under must not leave a stale price barrier
+     * on the digit proposal. Seeds a relative barrier on Higher/Lower, switches to Over/Under,
+     * picks a digit, and asserts Buy is enabled and prices (no "Barrier is not an integer…" toast).
+     */
+    async verifyProposalAfterHigherLowerToOverUnder(params: { market: string; digit: string }): Promise<void> {
+        const { market, digit } = params;
+
+        await this.selectMarketAndTradeType(market, 'Higher/Lower');
+        await this.setBarrier('1.00', 'Above spot');
+
+        await this.selectMarketAndTradeType(market, 'Over/Under');
+        await expect(
+            this.lastDigitPredictionParam,
+            'Last digit prediction should be visible after switching to Over/Under'
+        ).toBeVisible();
+        await this.selectDigit(digit);
+
+        await expect(
+            this.page.getByText(/Barrier is not an integer in range of 0 to 9/i),
+            'Stale Higher/Lower barrier must not fail the digit proposal (#1384)'
+        ).toHaveCount(0);
+        await expect(this.purchaseButton, 'Buy should be enabled after Higher/Lower → Over/Under (#1384)').toBeEnabled({
+            timeout: 45_000,
+        });
+        await expect(
+            this.purchaseButtonPayout,
+            'Buy should show a priced payout after Higher/Lower → Over/Under (#1384)'
+        ).toHaveText(/^\D*[\d,]+\.\d+$/, { timeout: 45_000 });
     }
 }
