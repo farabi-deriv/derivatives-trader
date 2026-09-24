@@ -40,7 +40,7 @@
 | Flow 11.1 | Vanillas — buy Call → close contract | ✅ | ✅ |  |
 | Flow 11.2 | Vanillas — buy Put → close contract | ✅ | ✅ |  |
 | Flow 12 | Market closed → purchase hidden, countdown + recovery | ✅ | ✅ |  |
-| Flow 13 | Insufficient balance → inline-validation gate (post-#1398) | ✅ | ✅ |  |
+| Flow 13 | Insufficient balance → inline-validation gate (post-#1398) | ✅ | ✅ | Collapsed stake stays neutral (#1397) |
 | Flow 14 | Manual Trading negative validation matrix | ✅ | ✅ |  |
 | Flow 15 | Market closed → Buy hidden, params disabled, countdown | ✅ | ✅ | Skips when no CLOSED market at runtime |
 | Flow 16 | Unauthenticated purchase → login prompt sheet | ✅ | ✅ |  |

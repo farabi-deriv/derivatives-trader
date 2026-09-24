@@ -484,9 +484,9 @@ await tradeAutomatePage.runOverUnderAndVerify({
 | 8 | Profit threshold zero | Re-open **Profit threshold**, enter `0`, **Save** | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value | Both |
 | 9 | Loss threshold empty | Open **Loss threshold**, clear field | Desktop: **Save** disabled; Mobile: **Save** → positive-amount error; dismiss restores prior value | Both |
 | 10 | Loss threshold zero | Re-open **Loss threshold**, enter `0`, **Save** | Same positive-amount error; Desktop: **Save** disabled; dismiss restores prior value | Both |
-| 11 | Stake multiplier empty | Open **Stake multiplier** Custom, clear field | **Save** disabled; dismiss restores prior multiplier | Both |
-| 12 | Stake multiplier zero | Re-open **Stake multiplier** Custom, enter `0`, **Save** | **"Multiplier must be at least …"**; **Save** disabled; dismiss restores prior multiplier | Both |
-| 13 | Stake multiplier above max | Custom enter `11`, **Save** | **"Multiplier cannot exceed 10"**; **Save** disabled; dismiss restores prior multiplier | Both |
+| 11 | Stake multiplier open + empty | Open **Stake multiplier** Custom (valid draft) then clear field | On open: range hint **"The value must be greater than 1 and no more than 10."** (#1369); empty: **Save** disabled; dismiss restores prior multiplier | Both |
+| 12 | Stake multiplier zero | Re-open **Stake multiplier** Custom, enter `0`, **Save** | Same range sentence as error; **Save** disabled; dismiss restores prior multiplier | Both |
+| 13 | Stake multiplier above max | Custom enter `11`, **Save** | Same range sentence as error; **Save** disabled; dismiss restores prior multiplier | Both |
 | 14 | Max. stake empty | Open **Max. stake**, enable toggle, clear amount field | **Save** disabled; dismiss restores `-` | Both |
 | 15 | Max. stake zero | Re-open, enable toggle, enter `0`, **Save** | **"Please enter a valid amount greater than 0"**; Desktop: **Save** disabled; dismiss restores `-` | Both |
 | 16 | Max. stake below initial | Enable toggle, enter `0.5` (initial stake `1`), **Save** | **"Max. stake must be equal or greater than 1"**; Desktop: **Save** disabled; dismiss restores `-` | Both |
@@ -497,7 +497,7 @@ await tradeAutomatePage.runOverUnderAndVerify({
 | # | Step | Action | Expected Result | Platform |
 | --- | --- | --- | --- | --- |
 | 1 | Switch strategy | Same baseline as 15.1 → `selectStrategy({ strategy: "D'Alembert", stakeIncrement: 2 })` | **Stake increment** field visible (`2 unit`); multiplier field replaced | Both |
-| 2 | Stake increment empty | Open **Stake increment** Custom, clear field | **Save** disabled; dismiss restores prior increment (`2 unit`) | Both |
+| 2 | Stake increment open + empty | Open **Stake increment** Custom (valid draft) then clear field | On open: **"Minimum 1"** hint (#1369); empty: **Save** disabled; dismiss restores prior increment (`2 unit`) | Both |
 | 3 | Stake increment zero | Re-open **Stake increment** Custom, enter `0`, **Save** | **"Increment must be at least 1"**; **Save** disabled; dismiss restores prior increment | Both |
 | 4 | Panel stays idle | `verifyAutomatePanelIdleAfterParamValidation()` | **Run** visible and enabled; no active run | Both |
 

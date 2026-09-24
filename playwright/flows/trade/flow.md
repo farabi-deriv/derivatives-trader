@@ -811,7 +811,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 2 | Enter unaffordable stake | Fill the generated amount in the stake editor | Balance-aware guidance uses the current account balance | Both |
 | 3 | Verify Save gate | Observe Stake Save | Save is disabled while the balance hint shows; draft cannot commit through UI | Both |
 | 4 | Commit unaffordable stake | Seed active tab `tab_trade_params_v2` amount + reload | Committed charge exceeds balance on the trade page | Both |
-| 5 | Verify Buy ready | Observe Buy and payout | Buy **enabled**; payout quoted (not `-`); no insufficient-balance popup yet | Both |
+| 5 | Verify Buy ready | Observe Buy, payout, and collapsed Stake | Buy **enabled**; payout quoted (not `-`); collapsed Stake stays **neutral** (no Quill fill-error — #1397); no insufficient-balance popup yet | Both |
 | 6 | Verify no submission | Inspect outbound buy count (Buy not clicked) | No buy request is sent | Both |
 
 ## Flow 14 — Manual Trading negative validation matrix · `verify-manual-trade-negative-validation.spec.ts`
@@ -920,7 +920,7 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 | --- | --- | --- | --- | --- |
 | 1 | Navigate to trade page | Same setup as Flow 17.1 with low-balance accounts | Trade page loaded; balance visible | Both |
 | 2 | Commit stake above balance | Seed active tab `tab_trade_params_v2` amount (`balance + 1`) + reload — **both viewports** | Committed charge exceeds header balance; Save cannot commit an unaffordable draft through the UI | Both |
-| 3 | Verify Buy enabled | Observe `buyButton` | Buy **enabled**; payout quoted (not `-`) | Both |
+| 3 | Verify Buy enabled | Observe `buyButton` + collapsed Stake | Buy **enabled**; payout quoted (not `-`); collapsed Stake stays **neutral** (#1397) | Both |
 | 4 | Verify no popup yet | Observe purchase area | No insufficient-balance popup before Buy is clicked | Both |
 | 5 | Draft stake above balance | Open stake editor → **Custom** (desktop) → enter unaffordable amount | Balance hint (`Balance is empty…` or `You only have … left. Try a lower stake.`); **Save disabled** | Both |
 

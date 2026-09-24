@@ -845,7 +845,7 @@ await tradeValidationPage.verifyRiskManagementRuntimeOptions();
 
 > **Fixture:** `tradeValidationPage` from `playwright/fixtures/fixtures.ts`
 > **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Digits, Multiplier, and Deal Cancellation.
-> **Buy-state coverage:** hidden for closed markets; Buy **enabled** with quoted payout when stake exceeds balance (insufficient-balance inform-don't-disable); insufficient-balance **popup** on Buy click for zero-balance server path; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
+> **Buy-state coverage:** hidden for closed markets; Buy **enabled** with quoted payout when stake exceeds balance (insufficient-balance inform-don't-disable); collapsed Stake stays **neutral** for a stake-field shortfall (#1397); insufficient-balance **popup** on Buy click for zero-balance server path; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
 
 ---
 
@@ -931,7 +931,7 @@ test.describe('Insufficient balance popup on Buy click', () => {
 
 #### Flow 17.2 — Stake editor hint + Buy enabled
 
-> **POM:** `verifyInsufficientBalanceClientGate()` — seeds `tab_trade_params_v2` + reload on **both** viewports (`commitUnaffordableStakeForGate()`), asserts Buy enabled + quoted payout, balance hint in editor, no popup before Buy.
+> **POM:** `verifyInsufficientBalanceClientGate()` — seeds `tab_trade_params_v2` + reload on **both** viewports (`commitUnaffordableStakeForGate()`), asserts Buy enabled + quoted payout, collapsed Stake neutral (#1397), balance hint in editor, no popup before Buy.
 
 ```typescript
 test.describe('Stake editor hint', () => {

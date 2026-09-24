@@ -493,6 +493,18 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
+     * Quill fill-error wrapper on the collapsed Stake control.
+     * Source: TradeParameterPopover / TextField — `.quill-input__wrapper__variant--fill--error`
+     * (issue #1397 / PR #1398). The class is the only observable signal for the errored state.
+     */
+    get collapsedStakeErrorFill(): Locator {
+        return this.page
+            .locator('.trade-params__option')
+            .filter({ has: this.page.getByLabel('Stake') })
+            .locator('.quill-input__wrapper__variant--fill--error');
+    }
+
+    /**
      * Trade-parameter row that hosts the hover-revealed info icon (manual + automate).
      * Source: TradeParameterPopover — `.trade-params__field-with-info` (issue #995).
      *
@@ -1983,7 +1995,8 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
-     * Flow 17 — unaffordable stake: Buy stays enabled, payout quoted, no sheet until Buy is pressed.
+     * Flow 13 / 17 — unaffordable stake: Buy stays enabled, payout quoted, collapsed stake stays
+     * neutral (#1397), no sheet until Buy is pressed.
      */
     async verifyInsufficientBalanceBuyReady(): Promise<void> {
         await expect(this.buyButton, 'Buy should stay enabled when the committed stake exceeds balance').toBeEnabled({
@@ -1992,6 +2005,10 @@ export class TradeParametersPage extends TradeBasePage {
         await expect(this.purchaseButtonPayout, 'Payout should be quoted rather than withheld as "-"').toHaveText(
             /^\D*[\d,]+\.\d+$/
         );
+        await expect(
+            this.collapsedStakeErrorFill,
+            'Collapsed stake should stay neutral for a stake-field shortfall (#1397)'
+        ).toHaveCount(0);
         await expect(
             this.serviceErrorDesktopModal,
             'Insufficient balance should not open a desktop modal before Buy is clicked'

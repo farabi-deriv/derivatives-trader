@@ -96,6 +96,9 @@ export class TradeAutomatePage extends TradeParametersPage {
     /** Source: StakeMultiplier — Martingale multiplier out-of-range (hint + validation share this copy). */
     private static readonly STAKE_MULTIPLIER_RANGE_ERROR = /The value must be greater than \d+ and no more than \d+\./;
 
+    /** Source: StakeMultiplier desktop/mobile — D'Alembert increment range hint (#1369 / PR #1382). */
+    private static readonly STAKE_INCREMENT_RANGE_HINT = 'Minimum 1';
+
     /** Source: StakeMultiplier — D'Alembert custom increment below minimum (1). */
     private static readonly STAKE_INCREMENT_MIN_ERROR = 'Increment must be at least 1';
 
@@ -2314,7 +2317,7 @@ export class TradeAutomatePage extends TradeParametersPage {
         }
     }
 
-    /** Flow 15 — Martingale stake multiplier custom value rejects empty, zero, exclusive lower bound, and above max (`StakeMultiplier`). */
+    /** Flow 15 — Martingale stake multiplier: range hint on open (#1369), then rejects empty / out-of-range drafts. */
     async verifyStakeMultiplierRejectsInvalidAmount(): Promise<void> {
         const priorValue = (await this.stakeMultiplierField.inputValue()).trim();
         const sheet = this.automationInputSheet('Stake multiplier');
@@ -2324,12 +2327,18 @@ export class TradeAutomatePage extends TradeParametersPage {
             : this.page.locator('.automation-popover:visible .message__container__text');
         const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
 
-        // Empty draft — Save gated while the field is empty (both viewports).
+        // Range hint under the Custom input (desktop was missing it pre-#1382).
         await this.stakeMultiplierField.click();
         if (!this.isMobile) {
             await this.automationPopoverCustomTab.click();
             await expect(input, 'Stake multiplier input should be visible').toBeVisible();
         }
+        await expect(
+            validationMessage,
+            'Stake multiplier should show the Martingale range hint on open (#1369)'
+        ).toHaveText(TradeAutomatePage.STAKE_MULTIPLIER_RANGE_ERROR);
+
+        // Empty draft — Save gated while the field is empty (both viewports).
         await this.fillAutomationDraft(input, '');
         await expect(saveButton, 'Stake multiplier Save should stay disabled while the draft is empty').toBeDisabled();
         await this.dismissAutomationSheet(sheet, 'Stake multiplier');
@@ -2396,7 +2405,7 @@ export class TradeAutomatePage extends TradeParametersPage {
         );
     }
 
-    /** Flow 15 — D'Alembert stake increment custom value rejects empty and zero (`StakeMultiplier`). */
+    /** Flow 15 — D'Alembert stake increment: Minimum 1 hint on open (#1369), then rejects empty / zero drafts. */
     async verifyStakeIncrementRejectsInvalidAmount(): Promise<void> {
         const priorValue = (await this.stakeIncrementField.inputValue()).trim();
         const sheet = this.automationInputSheet('Stake increment');
@@ -2406,12 +2415,18 @@ export class TradeAutomatePage extends TradeParametersPage {
             : this.page.locator('.automation-popover:visible .message__container__text');
         const saveButton = this.isMobile ? this.actionSheetSaveButton(sheet) : this.automationPopoverSaveButton;
 
-        // Empty draft — Save gated while the field is empty (both viewports).
+        // Range hint under the Custom input (parity with mobile — #1369 / PR #1382).
         await this.stakeIncrementField.click();
         if (!this.isMobile) {
             await this.automationPopoverCustomTab.click();
             await expect(input, 'Stake increment input should be visible').toBeVisible();
         }
+        await expect(
+            validationMessage,
+            'Stake increment should show the Minimum 1 range hint on open (#1369)'
+        ).toHaveText(TradeAutomatePage.STAKE_INCREMENT_RANGE_HINT);
+
+        // Empty draft — Save gated while the field is empty (both viewports).
         await this.fillAutomationDraft(input, '');
         await expect(saveButton, 'Stake increment Save should stay disabled while the draft is empty').toBeDisabled();
         await this.dismissAutomationSheet(sheet, 'Stake increment');

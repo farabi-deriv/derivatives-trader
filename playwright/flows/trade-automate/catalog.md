@@ -560,8 +560,8 @@ test.describe('Automate — parameter info icon', { tag: ['@automate', '@desktop
 | `verifyProfitThresholdAutoStop()` | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop) |
 | `verifyInitialStakeRejectsInvalidAmount()` | Flow 15 — stake below min · empty · invalid format (`1.`) · max payout (reads **Max payout** from stake details) · above balance; prior value restored on dismiss each time |
 | `verifyAutomationThresholdsRejectInvalidAmount()` | Flow 15 — profit and loss threshold editors block empty · zero |
-| `verifyStakeMultiplierRejectsInvalidAmount()` | Flow 15 — Martingale multiplier Custom tab blocks empty · zero · values above 10 |
-| `verifyStakeIncrementRejectsInvalidAmount()` | Flow 15 — D'Alembert increment Custom tab blocks empty · zero |
+| `verifyStakeMultiplierRejectsInvalidAmount()` | Flow 15 — Martingale range hint on Custom open (#1369); blocks empty · zero · exclusive min `1` · values above 10 |
+| `verifyStakeIncrementRejectsInvalidAmount()` | Flow 15 — D'Alembert **Minimum 1** hint on Custom open (#1369); blocks empty · zero |
 | `verifyMaxStakeRejectsInvalidAmount()` | Flow 15 — Max. stake toggle on blocks empty · zero · cap below initial stake `1` |
 | `verifyAutomatePanelIdleAfterParamValidation()` | Flow 15 — Run visible/enabled; no active run after rejected drafts |
 | `verifyAutomateMarketCompatibility()` | Flow 16 — manual → Automate symbol/trade-type compatibility (#916, #917) |
