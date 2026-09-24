@@ -449,7 +449,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x200')` | Multiplier field shows `x200` | Both |
 | 5 | Set stake | `setStake('5.40')` | Stake field shows `5.40` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
 | 9 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
@@ -476,7 +476,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x300')` | Multiplier field shows `x300` | Both |
 | 5 | Set stake | `setStake('5.88')` | Stake field shows `5.88` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 8 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake | Both |
 | 9 | Verify open position in Reports | `verifyOpenPositionsInReportsForMultipliers(currency, stake, multiplier)` | Multiplier, currency, stake, contract cost, contract value all correct | Both |
@@ -499,7 +499,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 > **Implementation notes:**
 >
 > - TP input on mobile requires `pressSequentially` + `Tab` press to blur, then a 1500ms wait for the API response before clicking Save. The "acceptable range" hint can render from stale store state and is not a reliable guard alone — `is_api_response_tp_received_ref` must be `true` (set by API response) or `onSave()` returns early.
-> - Commission is shown on the trade panel and the Stake sheet alongside Stop out and Stop out level, but pre-buy capture is still `readStopOut()` only (Stop out amount + assert Stop out level present). Commission is captured from the open contract details page and asserted on the closed page.
+> - Commission is shown on the trade panel and the Stake sheet alongside Stop out and Stop out level; `readStopOut()` asserts all three rows are non-empty (#1413). Pre-buy capture still stores only the numeric Stop out amount. Commission for buy/sell assertions is captured from the open contract details page.
 > - Open positions card on mobile renders TP as `"30.01"` (no `+` prefix); desktop renders `"+30.01"`.
 
 | # | Step | Action | Expected Result | Platform |
@@ -509,7 +509,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x160')` | Multiplier field shows `x160` | Both |
 | 5 | Set stake | `setStake('10.00')` | Stake field shows `10.00` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Set risk management (TP) | `setRiskManagement({ takeProfit: '30.01' })` — opens panel, toggles TP on, types value, Tab, wait, Save | TP of `30.01` applied; risk management closes | Both |
 | 8 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `30.01` (mobile) / `+30.01` (desktop) | Both |
@@ -535,7 +535,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x400')` | Multiplier field shows `x400` | Both |
 | 5 | Set stake | `setStake('11.11')` | Stake field shows `11.11` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Set risk management (TP) | `setRiskManagement({ takeProfit: '21.32' })` | TP of `21.32` applied | Both |
 | 8 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; TP shown as `21.32` (mobile) / `+21.32` (desktop) | Both |
@@ -569,7 +569,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Up direction | `clickUpDownOption('Up')` | "Up" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x200')` | Multiplier field shows `x200` | Both |
 | 5 | Set stake | `setStake('25.05')` | Stake field shows `25.05` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Set risk management (SL) | `setRiskManagement({ stopLoss: '21.10' })` — opens panel, toggles SL on, types value, Tab, wait, Save | SL of `21.10` applied; risk management closes | Both |
 | 8 | Buy Up contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-21.10 ` (mobile) / `-21.10` (desktop) | Both |
@@ -598,7 +598,7 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 3 | Select Down direction | `clickUpDownOption('Down')` | "Down" segment selected | Both |
 | 4 | Set multiplier value | `setMultiplier('x600')` | Multiplier field shows `x600` | Both |
 | 5 | Set stake | `setStake('25.00')` | Stake field shows `25.00` | Both |
-| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` present | Numeric `stopOut` captured; Stop out level row visible (value not captured) | Both |
+| 6 | Capture pre-buy values | `readStopOut()` — `stopOutValue` + assert `stopOutLevelValue` + `commissionValue` present | Numeric `stopOut` captured; Stop out level + Commission rows visible (values not captured — #1413) | Both |
 | 7 | Set risk management (SL) | `setRiskManagement({ stopLoss: '23.01' })` | SL of `23.01` applied | Both |
 | 8 | Buy Down contract | `clickMultipliersBuy()` | Contract purchased; buy date captured | Both |
 | 9 | Verify open position in Positions | `verifyOpenPositionsVisible()` + `verifyBalanceAfterContractPurchase()` + `verifyContractCardDetails()` | Card visible; balance reduced by stake; SL shown as `-23.01 ` (mobile) / `-23.01` (desktop) | Both |

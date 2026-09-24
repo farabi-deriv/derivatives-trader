@@ -543,6 +543,27 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 ---
 
+### Flow 18 — Automate params disabled when market closed
+
+> Covers regression for #1426. While the selected market is closed, Automate Strategy parameters and Risk management must be non-interactive (same as manual trade params). The automation-lock overlay must not appear — it is reserved for an active run lock.
+
+**Prerequisites:** Funded real (staging test) account with Automation enabled (`TEST_EMAIL_AUTOMATE` / `TEST_EMAIL_AUTOMATE_MOBILE`).
+**Spec:** `playwright/tests/trade-automate/verify-automate-closed-market.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Open Trade | `gotoTradePage()` | Trade page loaded | Both |
+| 2 | Select a CLOSED market | `selectClosedMarketFromPicker()` | First session-gated **CLOSED** row committed (skip when none closed) | Both |
+| 3 | Open Automate | `goToAutomatedTrading()` | Strategy parameters panel; same closed market retained | Both |
+| 4 | Assert closed banner | Observe reopen intro + countdown | `ClosedMarketMessage` intro + `HH:MM:SS` timer | Both |
+| 5 | Assert Strategy params disabled | Observe Strategy, Stake multiplier/increment, Max. stake, Initial stake, Duration (if present) | All disabled | Both |
+| 6 | Assert Risk management disabled | Observe Profit / Loss threshold | Both disabled | Both |
+| 7 | Assert Run hidden + no lock overlay | Observe Run + `.trade-params__lock-overlay` | Run not visible (reopen banner occupies the slot); lock overlay count `0` | Both |
+
+> **POM:** `verifyClosedMarketAutomateParamsDisabled(tradeType)`.
+
+---
+
 ## Gap Flows
 
 > Remaining coverage gaps. The proposed spec file for each gap is in [`coverage.md`](./coverage.md).

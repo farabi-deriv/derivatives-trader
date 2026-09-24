@@ -2514,6 +2514,67 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
+     * Flow 18 — closed market on Automate (#1426 / PR #1428): Strategy parameters and Risk management
+     * are disabled like manual trade params. The automation-lock overlay must not appear (that overlay
+     * is reserved for an active run lock, not market closure).
+     *
+     * @param tradeType - Trade type returned by `selectClosedMarketFromPicker` (e.g. Rise/Fall).
+     */
+    async verifyClosedMarketAutomateParamsDisabled(tradeType: string): Promise<void> {
+        await expect(
+            this.closedMarketReopenIntro,
+            'Closed market should show the reopen intro while trading_times loads'
+        ).toBeVisible({ timeout: 45_000 });
+        await expect(this.closedMarketCountdown, 'Closed market countdown timer should render').toHaveText(
+            /^\d{2}:\d{2}:\d{2}$/
+        );
+
+        await expect(this.strategyParametersHeader, 'Strategy parameters should remain visible').toBeVisible();
+        await expect(
+            this.strategyField,
+            `Strategy should be disabled when ${tradeType} market is closed`
+        ).toBeDisabled();
+        if (await this.stakeMultiplierField.isVisible().catch(() => false)) {
+            await expect(
+                this.stakeMultiplierField,
+                'Stake multiplier should be disabled when the market is closed'
+            ).toBeDisabled();
+        } else if (await this.stakeIncrementField.isVisible().catch(() => false)) {
+            await expect(
+                this.stakeIncrementField,
+                'Stake increment should be disabled when the market is closed'
+            ).toBeDisabled();
+        }
+        await expect(this.maxStakeField, 'Max. stake should be disabled when the market is closed').toBeDisabled();
+
+        await expect(this.riskManagementHeader, 'Risk management should remain visible').toBeVisible();
+        await expect(
+            this.profitThresholdField,
+            'Profit threshold should be disabled when the market is closed'
+        ).toBeDisabled();
+        await expect(
+            this.lossThresholdField,
+            'Loss threshold should be disabled when the market is closed'
+        ).toBeDisabled();
+
+        await expect(
+            this.initialStakeField,
+            'Initial stake should be disabled when the market is closed'
+        ).toBeDisabled();
+        if (await this.durationField.isVisible().catch(() => false)) {
+            await expect(this.durationField, 'Duration should be disabled when the market is closed').toBeDisabled();
+        }
+
+        // Same stance as manual Buy: Run is not rendered while the market is closed — the reopen
+        // banner occupies the purchase/actions slot.
+        await expect(this.runButton, 'Run should be hidden when the market is closed').not.toBeVisible();
+        await expect(
+            this.page.locator('.trade-params__lock-overlay'),
+            'Automation-lock overlay must not show for market closure (#1426)'
+        ).toHaveCount(0);
+    }
+
+    /**
      * Select a market in Automate and assert multiplier-only vs automatable handling.
      * Flow 16 — issues #916 (Range Break / multiplier-only snackbar) and #917 (Crash/Boom + Accumulators).
      */

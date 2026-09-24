@@ -123,6 +123,27 @@ export class TradeMultipliersPage extends TradeParametersPage {
     }
 
     /**
+     * Commission value — viewport-aware (#1413 / PR #1443).
+     * - Desktop: trade-page `.multipliers-information__row` (`formatAmountWithSymbol`, e.g. `$0.15`).
+     * - Mobile: Stake action sheet `.stake-content__details-row` while the sheet is open.
+     * Buy/sell assertions still capture Commission from contract details (API); this locator only
+     * proves the trade-parameter surface shows the row beside Stop out / Stop out level.
+     */
+    get commissionValue(): Locator {
+        return this.isMobile
+            ? this.page
+                  .locator('.stake-content__details-row')
+                  .filter({ has: this.page.getByText('Commission', { exact: true }) })
+                  .locator('p')
+                  .last()
+            : this.page
+                  .locator('.multipliers-information__row')
+                  .filter({ has: this.page.getByText('Commission', { exact: true }) })
+                  .locator('p')
+                  .last();
+    }
+
+    /**
      * Risk management field (read-only TextField that opens the risk management panel).
      * Desktop: TradeParameterPopover; Mobile: ActionSheet.
      * Source: risk-management.tsx + risk-management-desktop.tsx
@@ -643,10 +664,8 @@ export class TradeMultipliersPage extends TradeParametersPage {
      * response, which can lag under load; `not.toBeEmpty()` auto-retries, so a generous budget is used
      * instead of the default window.
      *
-     * The "Stop out level" row is asserted to be present here but its value is not captured — it is
-     * not asserted on the closed contract details page. Commission is now shown on the trade panel
-     * too, but the buy/sell assertions still read it from the contract details page, which renders it
-     * from the API.
+     * The "Stop out level" and "Commission" rows are asserted present (#1413) but their values are
+     * not captured here — closed-contract Commission still comes from the open details API copy.
      */
     private async readStopOut(): Promise<{ stopOut: string }> {
         if (this.isMobile) {
@@ -654,14 +673,17 @@ export class TradeMultipliersPage extends TradeParametersPage {
             await expect(this.stakeContainer, 'Stake action sheet should open').toBeVisible();
         }
 
-        // Stop out and Stop out level are populated from the proposal response, which can lag under
-        // load. not.toBeEmpty() auto-retries, so give it a generous budget instead of the default window.
+        // Stop out / Stop out level / Commission are populated from the proposal response
         await expect(this.stopOutValue, 'Stop out value should be visible and non-empty').not.toBeEmpty({
             timeout: 15_000,
         });
         await expect(this.stopOutLevelValue, 'Stop out level should be visible and non-empty').not.toBeEmpty({
             timeout: 15_000,
         });
+        await expect(
+            this.commissionValue,
+            'Commission should be visible beside Stop out / Stop out level (#1413)'
+        ).not.toBeEmpty();
         // Trade params render `$20.00`; closed mobile Order Details still uses Money (`-20.00 USD`).
         // Keep the numeric amount so `toContainText` matches either surface.
         const stopOut = (await this.stopOutValue.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '');

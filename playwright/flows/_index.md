@@ -44,8 +44,8 @@ Each module section lists every documented flow with its current **status** and 
 | `positions` | 11 | 11 | 11 |
 | `reports` | 8 | 8 | 8 |
 | `trade` | 42 | 42 | 42 |
-| `trade-automate` | 46 | 46 | 44 |
-| **Total** | **154** | **149** | **146** |
+| `trade-automate` | 47 | 47 | 45 |
+| **Total** | **155** | **150** | **147** |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -180,7 +180,7 @@ Each module section lists every documented flow with its current **status** and 
 
 ## Module: `trade-automate` — Automated Trading
 
-**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flows 14–17 panel specs)
+**Flow docs:** `playwright/flows/trade-automate/` · **Test folder:** `playwright/tests/trade-automate/` (panel specs at root · dual-outcome lifecycles split as `verify-{outcome}-{strategy}.spec.ts` · Accumulators one file per strategy · Flows 14–18 panel specs)
 
 | Flow | Priority | Description | User State | Status |
 | --- | --- | --- | --- | --- |
@@ -229,6 +229,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 15 | P1 | Invalid trade/automation param validation — `verify-trade-param-validation.spec.ts` | authenticated, funded real/staging (non-EU) | `automated` |
 | Flow 16 | P1 | Manual-to-Automate market compatibility (#916, #917) | authenticated, funded real/staging (non-EU) | `automated` |
 | Flow 17 | P2 | Automate param info icons reveal descriptions (#995) | authenticated, funded real/staging (non-EU) | `automated` |
+| Flow 18 | P1 | Automate params disabled when market closed (#1426) | authenticated, funded real/staging (non-EU), closed market | `automated` |
 | — | P2 | Validation / unsupported-contract-type error (G2) | authenticated, funded real/staging (non-EU) | `documented` |
 
 ---

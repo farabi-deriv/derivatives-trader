@@ -487,7 +487,7 @@ test.describe('Trade — Multipliers', { tag: ['@desktop', '@mobile', '@trade'] 
 > **Flow 9.1** = `VERIFY Buy "Up" Multipliers Contract and Close (without TP/SL)` · **Flow 9.2** = `VERIFY Buy "Down" Multipliers Contract and Close (without TP/SL)`
 >
 > Both tests delegate to `buyUpAndVerify` / `buyDownAndVerify` on `TradeMultipliersPage`, which implement the full 17-step chain: configure → buy → positions → reports (open) → contract details (open, captures `buyId` + `entrySpot`) → close → closed positions tab → contract details (closed, asserts commission, Stop out level as `-N.NN USD` containing the numeric pre-buy `stopOut`, entry/exit details) → balance → reports (closed trade table + statement).
-> Commission and stop out are captured pre-buy from the info panel and asserted exactly in the closed contract details.
+> Commission and stop out are shown on the trade panel (`readStopOut()` asserts Stop out, Stop out level, and Commission rows — #1413). Closed-contract Commission is captured from open contract details and asserted exactly.
 > Mobile entry/exit detail dates render as `DD Mon YYYY`; the helper derives this format internally from the ISO `buyDate`.
 >
 > **Env vars:** `TEST_EMAIL_MULTIPLIERS` (desktop) / `TEST_EMAIL_MULTIPLIERS_MOBILE` (mobile) — dedicated funded accounts.

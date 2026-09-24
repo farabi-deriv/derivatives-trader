@@ -25,7 +25,7 @@
 | Flow 7.2 | Even/Odd — buy Odd → expiry | ✅ | ✅ |  |
 | Flow 8.1 | Accumulators without TP — buy → close | ✅ | ✅ |  |
 | Flow 8.2 | Accumulators with TP — buy → verify TP set → close | ✅ | ✅ |  |
-| Flow 9.1 | Multipliers no TP/SL — buy Up → close | ✅ | ✅ |  |
+| Flow 9.1 | Multipliers no TP/SL — buy Up → close | ✅ | ✅ | Commission + Stop out level on trade panel (#1413) |
 | Flow 9.2 | Multipliers no TP/SL — buy Down → close | ✅ | ✅ |  |
 | Flow 9.3 | Multipliers with TP — buy Up → close | ✅ | ✅ |  |
 | Flow 9.4 | Multipliers with TP — buy Down → close | ✅ | ✅ |  |

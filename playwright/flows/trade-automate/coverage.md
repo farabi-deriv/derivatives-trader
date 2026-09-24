@@ -57,6 +57,7 @@
 | Flow 15 | Invalid trade/automation param validation (min/max/zero) | ✅ | ✅ | Stake multiplier/increment range hint on open (#1369) |
 | Flow 16 | Manual-to-Automate market compatibility | ✅ | ✅ |  |
 | Flow 17 | Automate param info icons reveal descriptions | ✅ | ✅ |  |
+| Flow 18 | Automate params disabled when market closed (#1426) | ✅ | ✅ |  |
 | G2 | Unsupported-contract-type error on Run | ❌ | ❌ |  |
 
 ---

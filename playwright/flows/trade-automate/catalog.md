@@ -56,9 +56,10 @@
 | Flow 15 | `trade-automate/verify-trade-param-validation.spec.ts` | `@automate @desktop @mobile` |
 | Flow 16 | `trade-automate/verify-automate-market-compatibility.spec.ts` | `@automate @desktop @mobile` |
 | Flow 17 | `trade-automate/verify-automate-param-info-icon-hover.spec.ts` | `@automate @desktop @mobile` |
+| Flow 18 | `trade-automate/verify-automate-closed-market.spec.ts` | `@automate @desktop @mobile` |
 | G2 | `trade-automate/verify-validation.spec.ts` | `@automate @desktop @mobile` |
 
-> **Env vars (Flows 16–17):** `TEST_EMAIL_AUTOMATE` (desktop) / `TEST_EMAIL_AUTOMATE_MOBILE` (mobile) — funded real staging account with Automation enabled (non-EU).
+> **Env vars (Flows 16–18):** `TEST_EMAIL_AUTOMATE` (desktop) / `TEST_EMAIL_AUTOMATE_MOBILE` (mobile) — funded real staging account with Automation enabled (non-EU).
 
 ---
 
@@ -566,6 +567,7 @@ test.describe('Automate — parameter info icon', { tag: ['@automate', '@desktop
 | `verifyAutomatePanelIdleAfterParamValidation()` | Flow 15 — Run visible/enabled; no active run after rejected drafts |
 | `verifyAutomateMarketCompatibility()` | Flow 16 — manual → Automate symbol/trade-type compatibility (#916, #917) |
 | `verifyAutomateParamInfoIconOnDesktop()` | Flow 17 — desktop hover-reveal + tooltip for automation-panel params |
+| `verifyClosedMarketAutomateParamsDisabled()` | Flow 18 — Strategy + Risk management disabled on closed market; no lock overlay (#1426) |
 | `verifyTradeParamInfoIconOnDesktop()` | Flow 17 — inherited from `TradeParametersPage` — Accumulators trade-form params |
 | `verifyTradeParamInfoIconsInMobileEditor()` | Flow 17 — inherited from `TradeParametersPage` — mobile editor header info icons |
 
