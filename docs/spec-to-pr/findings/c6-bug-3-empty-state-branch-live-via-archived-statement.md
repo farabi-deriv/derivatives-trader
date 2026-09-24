@@ -26,4 +26,4 @@ Net effect matches ABF-004 ("no change to what users see") for every consumer; t
 
 ## Follow-up
 
-The archived-statement rewrite is already tracked in `docs/spec-to-pr/deferrals/archived-statement-usestate-consolidation.md`; once that container migrates onto the store, the guarded arm and the `has_selected_date` pass-through can be revisited for full removal.
+The archived-statement rewrite is already tracked in #1477; once that container migrates onto the store, the guarded arm and the `has_selected_date` pass-through can be revisited for full removal.
