@@ -2,7 +2,7 @@
 
 > Source of truth: `packages/trader/src/AppV2/Components/MarketSelection/` · `market-info-screen.tsx`
 > · `market-search-results.tsx`
-> Last updated: 2026-09-21
+> Last updated: 2026-09-24
 
 ---
 
@@ -10,33 +10,65 @@
 
 | Journey ID | Spec File | Tags |
 | --- | --- | --- |
-| Flow 1.1–1.5 | `feed/verify-markets-streaming.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+| Flow 1.1–1.2 | `feed/verify-feed-derived.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+| Flow 2.1–2.2 | `feed/verify-feed-forex.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+| Flow 3 | `feed/verify-feed-stocks.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+| Flow 4 | `feed/verify-feed-crypto.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+| Flow 5 | `feed/verify-feed-commodities.spec.ts` | `@feed @smoke @desktop @mobile @production` |
+
+All five specs share Playwright lock `feed-market-info` so Market Info walks never overlap across files / workers / projects in one run.
 
 ---
 
 ## Section 2 — Flow Details
 
-### Flows 1.1–1.5 — one test per category chip (serial)
+### Flows 1–5 — category walks (one locked spec per chip family)
 
-Search stays cross-trade-type. The category chip is the **test boundary**, not the navigation: a chip only lists symbols the selected trade type offers. All five tests live in one file with `test.describe.configure({ mode: 'serial' })` so category walks do not launch in parallel and stampede staging's rate limit. They still carry `@smoke` and `@production`, so production checks every market in `FeedPage.MARKETS`.
+Search stays cross-trade-type. The category chip is the **test boundary**, not the navigation. Tests carry `@smoke` and `@production`, so production checks every market in `FeedPage.MARKETS`.
 
-Each test calls `FeedPage.marketsIn(category)`:
+**Concurrency:** `lock: 'feed-market-info'` on each describe (Playwright 1.63+). Only one feed walk runs at a time in a single Playwright process; a failure does not cascade-skip other categories. Locks do **not** sync across separate CI jobs/shards.
 
-| Flow | Category chip | Test title |
+**File cut:**
+
+| Spec | Flows | Markets |
 | --- | --- | --- |
-| 1.1 | Derived | `VERIFY Feed for Derived markets` |
-| 1.2 | Forex | `VERIFY Feed for Forex markets` |
-| 1.3 | Stocks & indices | `VERIFY Feed for Stocks & indices markets` |
-| 1.4 | Cryptocurrencies | `VERIFY Feed for Cryptocurrencies markets` |
-| 1.5 | Commodities | `VERIFY Feed for Commodities markets` |
+| `verify-feed-derived.spec.ts` | 1.1–1.2 | Derived synthetics + baskets |
+| `verify-feed-forex.spec.ts` | 2.1–2.2 | Forex major + minor pairs |
+| `verify-feed-stocks.spec.ts` | 3 | Stocks & indices |
+| `verify-feed-crypto.spec.ts` | 4 | Cryptocurrencies |
+| `verify-feed-commodities.spec.ts` | 5 | Commodities |
+
+Large chips are also split into shorter tests:
+
+- **Derived** → synthetics vs baskets
+- **Forex** → major vs minor pairs
+
+Each test calls `FeedPage.marketsIn(category, filter?)`:
+
+| Flow | Category chip | Filter | Test title | Spec |
+| --- | --- | --- | --- | --- |
+| 1.1 | Derived | `{ derivedGroup: 'synthetics' }` | `VERIFY Feed for Derived - Synthetics markets` | derived |
+| 1.2 | Derived | `{ derivedGroup: 'baskets' }` | `VERIFY Feed for Derived - Basket markets` | derived |
+| 2.1 | Forex | `{ forexGroup: 'major' }` | `VERIFY Feed for Forex - Major pairs` | forex |
+| 2.2 | Forex | `{ forexGroup: 'minor' }` | `VERIFY Feed for Forex - Minor pairs` | forex |
+| 3 | Stocks & indices | — | `VERIFY Feed for Stocks & indices markets` | stocks |
+| 4 | Cryptocurrencies | — | `VERIFY Feed for Cryptocurrencies markets` | crypto |
+| 5 | Commodities | — | `VERIFY Feed for Commodities markets` | commodities |
 
 ```typescript
-await feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, 'Derived');
+await feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, 'Derived', {
+    derivedGroup: 'synthetics',
+});
+await feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, 'Forex', {
+    forexGroup: 'major',
+});
 ```
 
-One attempt per market, paced at 800ms. If staging shows the rate-limit page, the walk refreshes and retries that symbol once. Any other failure closes the picker before the next symbol so a stuck Market Info screen does not make every later market wait on **Add market**.
+One attempt per market, paced at **3s** (`paceFeedMarketInfoLookup` / `FEED_MARKET_INFO_LOOKUP_PACE_MS`). If staging shows the rate-limit page, the walk refreshes and retries that symbol once. Any other failure closes the picker before the next symbol so a stuck Market Info screen does not make every later market wait on **Add market**.
 
-**Market data:** `FeedPage.MARKETS` — each entry is `{ label, category, status }`. `category` matches a picker chip (`Derived`, `Forex`, `Stocks & indices`, `Cryptocurrencies`, `Commodities`). `status` is `'open'` (24/7 synthetics) or `'session_gated'` (forex, indices, commodities, crypto, baskets). Optional `mobileLabel` remains on the type for viewport overrides but is unused by current entries.
+**Market data:** `FeedPage.MARKETS` — each entry is `{ label, category, status, derivedGroup?, forexGroup? }`. `category` matches a picker chip. `derivedGroup` is `'synthetics' | 'baskets'` on Derived rows; `forexGroup` is `'major' | 'minor'` on Forex rows. `status` is `'open'` (24/7 synthetics) or `'session_gated'` (forex, indices, commodities, crypto, baskets). Optional `mobileLabel` remains on the type for viewport overrides but is unused by current entries.
+
+**Tick wait:** **15s** default; **45s** for Forex, Stocks & indices, and Commodities (`slowTickCategories` in `verifyMarketInfoFeedState`).
 
 **Why Market Info, not the trade form:** The redesign removed the DOM-visible live spot price from the
 trade page (chart is `<canvas>` only). Market Info exposes `.market-info__price`, which updates from
@@ -83,7 +115,7 @@ the market is skipped with no tick assertion.
 | What the step does | Method |
 | --- | --- |
 | Full per-market flow (search → Info → assert; picker reused) | `feedPage.verifyMarketFeedViaInfoScreen(marketSelectionPage, market)` |
-| One category: trade page → each market → close picker | `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category)` |
+| One category (optional subset filter): trade page → each market → close picker | `feedPage.verifyCategoryMarkets(marketSelectionPage, tradeParametersPage, category, filter?)` |
 | Ensure picker + search ready (idempotent; safe on retry) | `feedPage.openMarketSearchInPicker(marketSelectionPage)` |
 | Type query and return first row (CLOSED → skip Info) | `feedPage.searchMarketFirstResultRow(marketSelectionPage, label)` |
 | Check CLOSED tag on a search row | `marketSelectionPage.isSearchResultRowClosed(row)` |
@@ -92,7 +124,8 @@ the market is skipped with no tick assertion.
 | Assert live price ticks; skip closed session-gated | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status, category)` |
 | Resolve display label for viewport | `feedPage.resolveLabel(market)` |
 | Static array of all markets, tagged by category chip | `FeedPage.MARKETS` |
-| Markets for one chip | `FeedPage.marketsIn(category)` |
+| Markets for one chip (optional Derived / Forex subset) | `FeedPage.marketsIn(category, filter?)` |
+| 3s pause between feed Market Info lookups | `marketSelectionPage.paceFeedMarketInfoLookup()` |
 | Locator: Market Info root | `marketSelectionPage.marketInfoScreen` |
 | Locator: live price on Market Info | `marketSelectionPage.marketInfoScreen.locator('.market-info__price')` |
 | Open search page / confirm input ready | `marketSelectionPage.openMarketSearch()` |

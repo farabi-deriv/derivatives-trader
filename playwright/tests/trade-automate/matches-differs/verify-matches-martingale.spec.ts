@@ -44,7 +44,7 @@ test.describe('Trade Automate — Matches/Differs', { tag: ['@automate', '@marti
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Matches',
-            durationTicks: '10 ticks',
+            durationTicks: '9 ticks',
             digit: '1',
             stake: '3',
             automation: {
@@ -63,7 +63,7 @@ test.describe('Trade Automate — Matches/Differs', { tag: ['@automate', '@marti
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Matches',
-            durationTicks: '9 ticks',
+            durationTicks: '8 ticks',
             digit: '2',
             stake: '4',
             automation: {

@@ -42,7 +42,7 @@ test.describe('Trade Automate — Even/Odd', { tag: ['@automate', '@dalembert', 
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Odd',
-            durationTicks: '10 ticks',
+            durationTicks: '8 ticks',
             stake: '2',
             automation: {
                 strategy: "D'Alembert",

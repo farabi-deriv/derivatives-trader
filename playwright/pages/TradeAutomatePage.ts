@@ -559,6 +559,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         return popup.locator('button.quill-modal__close-icon');
     }
 
+    /**
+     * Portaled Quill Tooltip body (react-tiny-popover). Used by the desktop strategy-info
+     * icon beside Strategies overview. Source: automation-guide-content.tsx + automation-guide.scss.
+     */
+    get automationGuideStrategyInfoTooltip(): Locator {
+        return this.page.locator('.react-tiny-popover-container .tooltip-content');
+    }
+
     /** Growth rate field trigger — Accumulators only. Source: growth-rate.tsx. */
     get growthRateField(): Locator {
         return this.page.getByLabel('Growth rate').first();
@@ -738,11 +746,19 @@ export class TradeAutomatePage extends TradeParametersPage {
             await strategyInfoSheet.getByRole('button', { name: 'Close', exact: true }).click();
             await expect(strategyInfoSheet, 'Strategy overview sheet should close after Close').not.toBeVisible();
         } else {
-            await infoIcon.hover();
+            // Quill Tooltip portals to body; a one-shot hover can miss mouseenter inside the
+            // modal (layout shift → mouseleave). Re-hover while asserting the portal.
+            await expect(async () => {
+                await infoIcon.hover();
+                await expect(
+                    this.automationGuideStrategyInfoTooltip,
+                    'Strategy info tooltip should be visible'
+                ).toBeVisible({ timeout: 2_000 });
+            }).toPass();
             await expect(
-                this.page.getByText(TradeAutomatePage.AUTOMATE_GUIDE_STRATEGY_INFO_TEXT),
+                this.automationGuideStrategyInfoTooltip,
                 'Strategy info tooltip should explain what strategies are'
-            ).toBeVisible();
+            ).toHaveText(TradeAutomatePage.AUTOMATE_GUIDE_STRATEGY_INFO_TEXT);
         }
     }
 
@@ -1566,8 +1582,9 @@ export class TradeAutomatePage extends TradeParametersPage {
      * `verifyAutomationOpenPositionVisible`), open contract details verification, and Run hidden.
      *
      * Tick-duration lifecycles call `verifyAutomateRunningControls()` then
-     * `verifyAutomateSequentialContractPurchase()` before open-position details so the stats line
-     * is still at `Contracts: 1` when sequencing is asserted.
+     * `verifyAutomateSequentialContractPurchase()` before open-position details so sequencing
+     * is observed while the run is still active (short tick durations may already show
+     * `Contracts` ≥ 2 by then — the sequential helper allows that).
      *
      * @param market - Market name from the spec, as shown on the Positions contract card
      * @param stake - Initial stake from the spec (formatted to two decimals on the card)
@@ -1621,11 +1638,12 @@ export class TradeAutomatePage extends TradeParametersPage {
 
     /**
      * Verify the bot purchases contracts one at a time: exactly one open position while each
-     * contract is live, the first settles (open count → 0), then exactly one open again once at
+     * contract is live, that open settles (open count → 0), then exactly one open again once at
      * least a second contract has been purchased (`Contracts >= 2`; the cumulative counter may
-     * read 3+ on fast tick types before the poll observes the re-open).
+     * already read 2–3+ on short tick durations before this helper starts — do not require
+     * `Contracts === 1` up front).
      *
-     * Call after `verifyAutomateBotIsRunning()` while the run is still active. Used for
+     * Call after `verifyAutomateRunningControls()` while the run is still active. Used for
      * tick-duration trade types where contracts expire on a predictable schedule. On mobile,
      * re-navigates to Automate before each stats read — Positions is a separate bottom-nav
      * route that unmounts `.automate-mobile__run-button`.
@@ -1638,7 +1656,10 @@ export class TradeAutomatePage extends TradeParametersPage {
 
         await expect(async () => {
             await this.goToAutomatedTrading();
-            expect(await this.getAutomationContractsCount()).toBe(1);
+            expect(
+                await this.getAutomationContractsCount(),
+                'At least one contract should be purchased while the bot is running'
+            ).toBeGreaterThanOrEqual(1);
             await this.positionsPage.verifyExactlyOneOpenPosition();
         }).toPass({ timeout: 30_000 });
 
@@ -1658,10 +1679,7 @@ export class TradeAutomatePage extends TradeParametersPage {
             )
             .toBe(0);
 
-        expect(
-            maxOpenCountSeen,
-            `Automation should never hold more than one open contract at a time (max badge count seen: ${maxOpenCountSeen})`
-        ).toBeLessThanOrEqual(1);
+        expect(maxOpenCountSeen, `Max open count seen: ${maxOpenCountSeen}`).toBeLessThanOrEqual(1);
 
         let contractsAtSecondOpen: number | null = null;
         await expect

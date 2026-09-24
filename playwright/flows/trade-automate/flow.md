@@ -186,7 +186,7 @@
 | 2 | Switch account | `switchToAccountType(accountType)` | Active account matches `accountType` | Both |
 | 3 | Select Rise/Fall | `selectMarketAndTradeType(market, 'Rise/Fall', { mode: 'automate' })` | Rise/Fall trade form + Run visible | Both |
 | 4 | Select outcome | `selectTradeTypeOption(tradeType, 'top' \ | 'bottom')` | Purchase button colour matches Rise/Fall tab | Both |
-| 5 | Guide popup | `openAndVerifyAutomateGuide('Rise/Fall')` | Guide verified; dismiss (desktop **X**, mobile **Got it**) | Both |
+| 5 | Guide popup | `openAndVerifyAutomateGuide('Rise/Fall')` | Title + trade-type copy; **Strategies overview**; strategy-info icon (`More info about strategies`); **desktop:** hover → portaled `.tooltip-content` (`automationGuideStrategyInfoTooltip`, re-hover via `toPass`); **mobile:** tap → Strategy overview ActionSheet → Close; Martingale / D'Alembert chips + params + warning; dismiss (desktop **X**, mobile **Got it**) | Both |
 | 6 | Panel defaults | `verifyAutomationPanelFieldsVisible()` | Strategy params + risk management fields + Run visible | Both |
 | 7 | Set duration | `selectDuration(durationUnit, durationValue)` | Duration field reflects value | Both |
 | 8 | Set stake | `setStake(stake)` | Initial stake saved | Both |

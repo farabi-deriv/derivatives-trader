@@ -63,7 +63,7 @@ test.describe('Trade Automate — Matches/Differs', { tag: ['@automate', '@dalem
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Differs',
-            durationTicks: '10 ticks',
+            durationTicks: '8 ticks',
             digit: '4',
             stake: '5',
             automation: {

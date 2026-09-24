@@ -249,11 +249,13 @@ Each module section lists every documented flow with its current **status** and 
 
 | Flow | Priority | Description | User State | Status |
 | --- | --- | --- | --- | --- |
-| Flow 1.1 | P0 | Feed for Derived markets | unauthenticated | `automated` |
-| Flow 1.2 | P0 | Feed for Forex markets | unauthenticated | `automated` |
-| Flow 1.3 | P0 | Feed for Stocks & indices markets | unauthenticated | `automated` |
-| Flow 1.4 | P0 | Feed for Cryptocurrencies markets | unauthenticated | `automated` |
-| Flow 1.5 | P0 | Feed for Commodities markets | unauthenticated | `automated` |
+| Flow 1.1 | P0 | Feed for Derived - Synthetics markets | unauthenticated | `automated` |
+| Flow 1.2 | P0 | Feed for Derived - Basket markets | unauthenticated | `automated` |
+| Flow 2.1 | P0 | Feed for Forex - Major pairs | unauthenticated | `automated` |
+| Flow 2.2 | P0 | Feed for Forex - Minor pairs | unauthenticated | `automated` |
+| Flow 3 | P0 | Feed for Stocks & indices markets | unauthenticated | `automated` |
+| Flow 4 | P0 | Feed for Cryptocurrencies markets | unauthenticated | `automated` |
+| Flow 5 | P0 | Feed for Commodities markets | unauthenticated | `automated` |
 
 ---
 
@@ -300,7 +302,7 @@ Each module section lists every documented flow with its current **status** and 
 | **Soon** | `trade-automate` | Flow 4 (EU gating) · G2 (unsupported trade type) — Flows 16–17 automated (#916, #917, #995) |
 | **Soon** | `market-selection` | G2 (locked-strip cue + P/L divider) — Flows 25–26 automated |
 | **Done** | `notifications` | All live surfaces automated: Flows 1–2 (trade banners) + G1/G2. Flows 3–7 N/A — notification-centre surface removed (TRAH-6133) |
-| **Done** | `feed` | Flows 1.1–1.5 — one test per category chip, all markets on `@smoke` `@production` |
+| **Done** | `feed` | Flows 1–5 — locked specs per category chip, all markets on `@smoke` `@production` |
 | **Done** | `positions` | All 11 flows automated (former G1–G4 promoted to Flows 8–11) |
 | **Done** | `reports` | Flows 1–8 automated; G1/G2 have specs (Section 2) but remain `documented` in Section 1 glance |
 | **Done** | `trade` | All Section 1 flows automated; Flow 15 skips when no CLOSED market at runtime |

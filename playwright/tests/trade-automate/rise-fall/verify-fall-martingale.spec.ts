@@ -43,7 +43,7 @@ test.describe('Trade Automate — Rise/Fall', { tag: ['@automate', '@martingale'
             market: 'Volatility 100 Index',
             tradeType: 'Fall',
             durationUnit: 'Ticks',
-            durationValue: '10 ticks',
+            durationValue: '8 ticks',
             stake: '6',
             automation: {
                 strategy: 'Martingale',
@@ -62,7 +62,7 @@ test.describe('Trade Automate — Rise/Fall', { tag: ['@automate', '@martingale'
             market: 'Volatility 100 Index',
             tradeType: 'Fall',
             durationUnit: 'Ticks',
-            durationValue: '10 ticks',
+            durationValue: '9 ticks',
             stake: '9',
             automation: {
                 strategy: 'Martingale',

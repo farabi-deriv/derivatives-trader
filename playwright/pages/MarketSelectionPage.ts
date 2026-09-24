@@ -34,7 +34,7 @@ export class MarketSelectionPage extends TradeBasePage {
      * Longer gap for feed walks (search → Info → live-tick poll). Heavier than the description
      * matrix, so staging needs more breathing room between symbols.
      */
-    private static readonly FEED_MARKET_INFO_LOOKUP_PACE_MS = 2_000;
+    private static readonly FEED_MARKET_INFO_LOOKUP_PACE_MS = 3_000;
 
     /**
      * Max number of tabs that can be open simultaneously — 4 on mobile, 7 on desktop, both

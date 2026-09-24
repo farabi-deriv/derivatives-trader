@@ -42,7 +42,7 @@ test.describe('Trade Automate — Over/Under', { tag: ['@automate', '@martingale
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Over',
-            durationTicks: '10 ticks',
+            durationTicks: '9 ticks',
             digit: '3',
             stake: '1',
             automation: {
@@ -61,7 +61,7 @@ test.describe('Trade Automate — Over/Under', { tag: ['@automate', '@martingale
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Over',
-            durationTicks: '10 ticks',
+            durationTicks: '8 ticks',
             digit: '4',
             stake: '1',
             automation: {

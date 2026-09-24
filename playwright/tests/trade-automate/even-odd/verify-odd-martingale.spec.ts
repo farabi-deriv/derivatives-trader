@@ -45,7 +45,7 @@ test.describe(
                 accountType: 'demo',
                 market: 'Volatility 10 Index',
                 tradeType: 'Odd',
-                durationTicks: '10 ticks',
+                durationTicks: '9 ticks',
                 stake: '1',
                 automation: {
                     strategy: 'Martingale',
@@ -63,7 +63,7 @@ test.describe(
                 accountType: 'real',
                 market: 'Volatility 10 Index',
                 tradeType: 'Odd',
-                durationTicks: '9 ticks',
+                durationTicks: '8 ticks',
                 stake: '4',
                 automation: {
                     strategy: 'Martingale',

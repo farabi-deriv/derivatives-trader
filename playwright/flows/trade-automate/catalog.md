@@ -575,7 +575,10 @@ test.describe('Automate — parameter info icon', { tag: ['@automate', '@desktop
 | --- | --- | --- |
 | `verifyPanelDefaultState()` | public | Flows 2–3 (panel/control specs) — fields visible + Run **enabled** |
 | `verifyAutomationPanelFieldsVisible()` | private | Flows 5–13 lifecycle — fields visible after guide closes (Run visible only; enabled checked later via `startAutomateRun`) |
-| `openAndVerifyAutomateGuide(tradeType)` | public | Flows 5–13 — full guide popup flow before configuring params |
+| `openAndVerifyAutomateGuide(tradeType)` | public | Flows 5–13 — open guide → `verifyAutomateGuidePopupContent` → dismiss (desktop **X**, mobile **Got it**) |
+| `verifyAutomateGuidePopupContent(popup, guideTitle)` | private | Trade-type description, Strategies overview, strategy-info icon, Martingale/D'Alembert chips + params + warning (`automation-guide-config.ts`) |
+| `verifyAutomateGuideStrategyInfo(content)` | private | Strategy-info icon: desktop hover → `automationGuideStrategyInfoTooltip`; mobile ActionSheet **Strategy overview** → Close |
+| `automationGuideStrategyInfoTooltip` | getter | Portaled Quill tooltip — `.react-tiny-popover-container .tooltip-content` (desktop strategy-info copy) |
 
 Supported trade types are defined in `automation-guide-config.ts` and gated at runtime by strategy `supported_contract_types` via `useAutomationSupportedTradeTypes.ts`. Non-automatable markets (Crypto, Crash/Boom) are excluded — use Volatility indices only.
 
@@ -626,6 +629,7 @@ The Automation panel and run controls (`automation-panel.tsx`, `automation-actio
 - **Panel headers:** `getByText('Strategy parameters')`, `getByText('Risk management')`
 - **Strategy default:** Martingale (`DEFAULT_AUTOMATION_CONFIG.strategy = 'martingale'`); options include Martingale and D'Alembert
 - **Default panel fields (`verifyPanelDefaultState` / `verifyAutomationPanelFieldsVisible`):** Strategy field (= Martingale), Stake multiplier, Profit threshold, Loss threshold, Max. stake, Run button
+- **Automation guide (`openAndVerifyAutomateGuide`):** trigger `Automate {trade type}`; desktop Modal (`.automation-guide__modal`) / mobile ActionSheet (`.automation-guide__sheet-content`). Strategy-info icon `.automation-guide-content__info-icon` (`aria-label="More info about strategies"`) — **desktop:** Quill `Tooltip` portals to `automationGuideStrategyInfoTooltip` (assert via `toPass` + re-hover; do not use a one-shot `page.getByText`); **mobile:** ActionSheet `.automation-guide__strategy-info` with heading **Strategy overview**. Copy from `AUTOMATE_GUIDE_STRATEGY_INFO_TEXT` / `automation-guide-content.tsx`. Dismiss: desktop **X** (`.quill-modal__close-icon`), mobile **Got it**
 
 ### Entry point is viewport-specific — `goToAutomatedTrading()` branches on `isMobile`
 

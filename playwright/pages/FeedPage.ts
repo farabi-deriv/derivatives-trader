@@ -8,12 +8,34 @@ export type MarketStatus = 'open' | 'session_gated';
 /** Picker category chip. Source: market-category-chips.tsx `CATEGORY_LABELS`. */
 export type MarketCategory = 'Derived' | 'Forex' | 'Stocks & indices' | 'Cryptocurrencies' | 'Commodities';
 
+/**
+ * Derived chip subsets — synthetics (24/7) vs baskets (session-gated).
+ * Used to split the large Derived feed walk into shorter serial tests.
+ */
+export type DerivedGroup = 'synthetics' | 'baskets';
+
+/**
+ * Forex chip subsets — major vs minor pairs.
+ * Used to split the large Forex feed walk into shorter serial tests.
+ */
+export type ForexGroup = 'major' | 'minor';
+
+/** Optional subset filter for {@link FeedPage.marketsIn} / {@link FeedPage.verifyCategoryMarkets}. */
+export type MarketGroupFilter = {
+    derivedGroup?: DerivedGroup;
+    forexGroup?: ForexGroup;
+};
+
 export interface Market {
     label: string;
     /** Override used on mobile when the action sheet renders a different name than SmartCharts. */
     mobileLabel?: string;
     category: MarketCategory;
     status: MarketStatus;
+    /** Only for `category: 'Derived'` — which Derived subset this symbol belongs to. */
+    derivedGroup?: DerivedGroup;
+    /** Only for `category: 'Forex'` — major vs minor pair. */
+    forexGroup?: ForexGroup;
 }
 
 /**
@@ -38,38 +60,38 @@ export class FeedPage extends TradeBasePage {
 
     static readonly MARKETS: Market[] = [
         // ── Volatility indices (1s) — 24/7 ────────────────────────────────────
-        { label: 'Volatility 100 (1s) Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 10 (1s) Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 25 (1s) Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 50 (1s) Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 75 (1s) Index', category: 'Derived', status: 'open' },
+        { label: 'Volatility 100 (1s) Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 10 (1s) Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 25 (1s) Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 50 (1s) Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 75 (1s) Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
         // ── Volatility indices — 24/7 ──────────────────────────────────────────
-        { label: 'Volatility 10 Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 25 Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 50 Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 75 Index', category: 'Derived', status: 'open' },
-        { label: 'Volatility 100 Index', category: 'Derived', status: 'open' },
+        { label: 'Volatility 10 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 25 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 50 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 75 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Volatility 100 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
         // ── Jump indices — 24/7 ────────────────────────────────────────────────
-        { label: 'Jump 10 Index', category: 'Derived', status: 'open' },
-        { label: 'Jump 25 Index', category: 'Derived', status: 'open' },
-        { label: 'Jump 50 Index', category: 'Derived', status: 'open' },
-        { label: 'Jump 75 Index', category: 'Derived', status: 'open' },
-        { label: 'Jump 100 Index', category: 'Derived', status: 'open' },
+        { label: 'Jump 10 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Jump 25 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Jump 50 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Jump 75 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Jump 100 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
         // ── Step indices — 24/7 ────────────────────────────────────────────────
-        { label: 'Step 100 Index', category: 'Derived', status: 'open' },
-        { label: 'Step 200 Index', category: 'Derived', status: 'open' },
-        { label: 'Step 300 Index', category: 'Derived', status: 'open' },
-        { label: 'Step 400 Index', category: 'Derived', status: 'open' },
-        { label: 'Step 500 Index', category: 'Derived', status: 'open' },
+        { label: 'Step 100 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Step 200 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Step 300 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Step 400 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Step 500 Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
         // ── Daily reset indices — 24/7 ─────────────────────────────────────────
-        { label: 'Bear Market Index', category: 'Derived', status: 'open' },
-        { label: 'Bull Market Index', category: 'Derived', status: 'open' },
+        { label: 'Bear Market Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
+        { label: 'Bull Market Index', category: 'Derived', derivedGroup: 'synthetics', status: 'open' },
         // ── Basket indices — weekday-only (closed on weekends) ─────────────────
-        { label: 'Gold Basket', category: 'Derived', status: 'session_gated' },
-        { label: 'AUD Basket', category: 'Derived', status: 'session_gated' },
-        { label: 'EUR Basket', category: 'Derived', status: 'session_gated' },
-        { label: 'GBP Basket', category: 'Derived', status: 'session_gated' },
-        { label: 'USD Basket', category: 'Derived', status: 'session_gated' },
+        { label: 'Gold Basket', category: 'Derived', derivedGroup: 'baskets', status: 'session_gated' },
+        { label: 'AUD Basket', category: 'Derived', derivedGroup: 'baskets', status: 'session_gated' },
+        { label: 'EUR Basket', category: 'Derived', derivedGroup: 'baskets', status: 'session_gated' },
+        { label: 'GBP Basket', category: 'Derived', derivedGroup: 'baskets', status: 'session_gated' },
+        { label: 'USD Basket', category: 'Derived', derivedGroup: 'baskets', status: 'session_gated' },
         // ── Stock indices — session-gated (exchange hours only) ────────────────
         { label: 'Wall Street 30', category: 'Stocks & indices', status: 'session_gated' },
         { label: 'US Tech 100', category: 'Stocks & indices', status: 'session_gated' },
@@ -87,32 +109,32 @@ export class FeedPage extends TradeBasePage {
         { label: 'BTC/USD', category: 'Cryptocurrencies', status: 'session_gated' },
         { label: 'ETH/USD', category: 'Cryptocurrencies', status: 'session_gated' },
         // ── Forex major — weekday-only ─────────────────────────────────────────
-        { label: 'AUD/JPY', category: 'Forex', status: 'session_gated' },
-        { label: 'AUD/USD', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/AUD', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/CAD', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/CHF', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/GBP', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/JPY', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/USD', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/AUD', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/JPY', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/USD', category: 'Forex', status: 'session_gated' },
-        { label: 'USD/CAD', category: 'Forex', status: 'session_gated' },
-        { label: 'USD/CHF', category: 'Forex', status: 'session_gated' },
-        { label: 'USD/JPY', category: 'Forex', status: 'session_gated' },
+        { label: 'AUD/JPY', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'AUD/USD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/AUD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/CAD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/CHF', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/GBP', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/JPY', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'EUR/USD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'GBP/AUD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'GBP/JPY', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'GBP/USD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'USD/CAD', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'USD/CHF', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
+        { label: 'USD/JPY', category: 'Forex', forexGroup: 'major', status: 'session_gated' },
         // ── Forex minor — weekday-only ─────────────────────────────────────────
-        { label: 'AUD/CAD', category: 'Forex', status: 'session_gated' },
-        { label: 'AUD/CHF', category: 'Forex', status: 'session_gated' },
-        { label: 'AUD/NZD', category: 'Forex', status: 'session_gated' },
-        { label: 'EUR/NZD', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/CAD', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/CHF', category: 'Forex', status: 'session_gated' },
-        { label: 'GBP/NZD', category: 'Forex', status: 'session_gated' },
-        { label: 'NZD/JPY', category: 'Forex', status: 'session_gated' },
-        { label: 'NZD/USD', category: 'Forex', status: 'session_gated' },
-        { label: 'USD/MXN', category: 'Forex', status: 'session_gated' },
-        { label: 'USD/PLN', category: 'Forex', status: 'session_gated' },
+        { label: 'AUD/CAD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'AUD/CHF', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'AUD/NZD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'EUR/NZD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'GBP/CAD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'GBP/CHF', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'GBP/NZD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'NZD/JPY', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'NZD/USD', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'USD/MXN', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
+        { label: 'USD/PLN', category: 'Forex', forexGroup: 'minor', status: 'session_gated' },
         // ── Commodities — session-gated ────────────────────────────────────────
         { label: 'Silver/USD', category: 'Commodities', status: 'session_gated' },
         { label: 'Gold/USD', category: 'Commodities', status: 'session_gated' },
@@ -120,11 +142,25 @@ export class FeedPage extends TradeBasePage {
         { label: 'Platinum/USD', category: 'Commodities', status: 'session_gated' },
     ];
 
-    /** Markets for one picker category chip. Throws when the category has no entries. */
-    static marketsIn(category: MarketCategory): Market[] {
-        const markets = FeedPage.MARKETS.filter(market => market.category === category);
+    /**
+     * Markets for one picker category chip.
+     * Pass `filter.derivedGroup` / `filter.forexGroup` to walk a subset alone.
+     * Throws when the filter matches nothing.
+     */
+    static marketsIn(category: MarketCategory, filter?: MarketGroupFilter): Market[] {
+        const markets = FeedPage.MARKETS.filter(market => {
+            if (market.category !== category) return false;
+            if (filter?.derivedGroup != null && market.derivedGroup !== filter.derivedGroup) return false;
+            if (filter?.forexGroup != null && market.forexGroup !== filter.forexGroup) return false;
+            return true;
+        });
         if (markets.length === 0) {
-            throw new Error(`No markets configured for category "${category}"`);
+            const parts = [
+                filter?.derivedGroup != null ? `derivedGroup=${filter.derivedGroup}` : null,
+                filter?.forexGroup != null ? `forexGroup=${filter.forexGroup}` : null,
+            ].filter(Boolean);
+            const groupSuffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+            throw new Error(`No markets configured for category "${category}"${groupSuffix}`);
         }
         return markets;
     }
@@ -229,16 +265,18 @@ export class FeedPage extends TradeBasePage {
      * is refreshed once before that symbol is retried. Any other failure closes the picker so the
      * next symbol does not inherit a stuck search or Market Info screen.
      * Session-gated markets that are CLOSED skip inside {@link verifyMarketFeedViaInfoScreen}.
+     * Pass `filter` to run Derived (synthetics/baskets) or Forex (major/minor) as a shorter serial chunk.
      */
     async verifyCategoryMarkets(
         marketSelectionPage: MarketSelectionPage,
         tradeParametersPage: TradeParametersPage,
-        category: MarketCategory
+        category: MarketCategory,
+        filter?: MarketGroupFilter
     ): Promise<void> {
         await TradeBasePage.seedLocalStorageOnOrigin(this.page);
         await tradeParametersPage.gotoTradePage();
 
-        for (const market of FeedPage.marketsIn(category)) {
+        for (const market of FeedPage.marketsIn(category, filter)) {
             const label = this.resolveLabel(market);
             let failure: unknown = null;
 
@@ -323,7 +361,7 @@ export class FeedPage extends TradeBasePage {
     ): Promise<void> {
         const marketInfoPrice = this.marketInfoPrice(marketSelectionPage);
         const marketInfoClosedTag = this.marketInfoClosedTag(marketSelectionPage);
-        const slowTickCategories: MarketCategory[] = ['Forex', 'Stocks & indices'];
+        const slowTickCategories: MarketCategory[] = ['Forex', 'Stocks & indices', 'Commodities'];
         const tickTimeoutMs = slowTickCategories.includes(category) ? 45_000 : 15_000;
 
         await expect

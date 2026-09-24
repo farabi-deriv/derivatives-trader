@@ -42,7 +42,7 @@ test.describe('Trade Automate — Over/Under', { tag: ['@automate', '@dalembert'
             accountType: 'demo',
             market: 'Volatility 10 Index',
             tradeType: 'Under',
-            durationTicks: '10 ticks',
+            durationTicks: '8 ticks',
             digit: '1',
             stake: '2',
             automation: {
@@ -61,7 +61,7 @@ test.describe('Trade Automate — Over/Under', { tag: ['@automate', '@dalembert'
             accountType: 'real',
             market: 'Volatility 10 Index',
             tradeType: 'Under',
-            durationTicks: '10 ticks',
+            durationTicks: '9 ticks',
             digit: '8',
             stake: '2',
             automation: {

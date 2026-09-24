@@ -57,7 +57,7 @@ test.describe(
                 accountType: 'demo',
                 market: 'Volatility 10 Index',
                 tradeType: 'Over',
-                durationTicks: '10 ticks',
+                durationTicks: '8 ticks',
                 digit: '2',
                 stake: '2',
                 automation: {
@@ -77,7 +77,7 @@ test.describe(
                 accountType: 'real',
                 market: 'Volatility 10 Index',
                 tradeType: 'Over',
-                durationTicks: '10 ticks',
+                durationTicks: '9 ticks',
                 digit: '1',
                 stake: isProduction ? '0.35' : '2',
                 automation: {
