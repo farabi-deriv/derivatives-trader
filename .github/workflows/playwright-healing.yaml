@@ -2,9 +2,10 @@ name: Playwright Tests Healing
 run-name: ${{ github.event_name == 'workflow_dispatch' && format('Playwright Healing | lookback {0}h | counters {1} | create_pr {2}', inputs.lookback_hours || '24', inputs.run_counters || 'auto', inputs.create_pr) || 'Daily Playwright Auto Healing' }}
 
 on:
-  schedule:
-    # Runs at 5:30 AM MYT.
-    - cron: "30 21 * * *"
+  # Daily schedule disabled temporarily — trigger via workflow_dispatch while testing healer rule updates.
+  # schedule:
+  #   # Runs at 5:30 AM MYT.
+  #   - cron: "30 21 * * *"
   workflow_dispatch:
     inputs:
       lookback_hours:

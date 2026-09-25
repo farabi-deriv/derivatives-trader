@@ -27,16 +27,16 @@ If the user **pastes** numbers or URLs from the `/agent` dashboard page, use tho
 
 ## Rubric
 
-Read `skills/fix-testdino-test-case/SKILL.md` standing rules + Phase 4 STOP rules (screenshot required, `src/` hard intent, closed-unmerged same/similar fix → STOP). Judge the **healer PR** against those rules — that is what it should have obeyed.
+Read `skills/fix-testdino-test-case/SKILL.md` standing rules + Phase 4 STOP rules (screenshot required, `src/` hard intent, closed-unmerged **same error + same on-screen DOM** → STOP). Same spec/POM with a different control in the shot is not a duplicate. Judge the **healer PR** against those rules — that is what it should have obeyed.
 
 ## Buckets (exactly one per PR)
 
-| Bucket                | When                                                                                                                                            |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `should_not_open`     | Failure not a valid obsolete-test (flake, infra, screenshot contradicts, env mismatch, product bug). Healer should have written `no-change.md`. |
-| `wrong_patch`         | Failure valid; diff is the wrong change (bad locator, weakened assert, wrong viewport, ignored screenshot).                                     |
-| `duplicate_rule_miss` | Earlier healer PR for same/similar title or same files was already **closed unmerged** (or still open). Skill says STOP; this PR still opened.  |
-| `unneeded_other`      | Known issue match, already fixed on main, duplicate of a **merged** human/healer PR, etc.                                                       |
+| Bucket                | When                                                                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `should_not_open`     | Failure not a valid obsolete-test (flake, infra, screenshot contradicts, env mismatch, product bug). Healer should have written `no-change.md`.                                                                               |
+| `wrong_patch`         | Failure valid; diff is the wrong change (bad locator, weakened assert, wrong viewport, ignored screenshot).                                                                                                                   |
+| `duplicate_rule_miss` | Earlier healer PR with the **same error and same on-screen DOM** was already **closed unmerged** (or still open). Skill says STOP; this PR still opened. Same files with a different control in this shot is not this bucket. |
+| `unneeded_other`      | Known issue match, already fixed on main, duplicate of a **merged** human/healer PR, etc.                                                                                                                                     |
 
 Every closed PR gets a bucket, including one-offs. Do not skip n=1. If there is no suitable bucket, you may invent one yourself.
 
@@ -99,7 +99,7 @@ Then, in order from the **Evidence stack**:
 
 If the heal log and TestDino are both missing, say **evidence: PR-only** in `why` — still bucket from diff + comments; do not invent screenshot findings.
 
-3. **Pick the bucket.** Prefer `duplicate_rule_miss` when a **prior closed-unmerged** healer PR shares the failure title (or same POM hunk) and this PR is not a materially different approach.
+3. **Pick the bucket.** Prefer `duplicate_rule_miss` when a **prior closed-unmerged** healer PR has the **same error and same on-screen DOM** and this PR is not a materially different approach. Same POM hunk with a different control in this shot is not this bucket.
 
 4. **Output** one table, then counts by bucket. Do not file a healer-agent PR.
 
@@ -123,6 +123,6 @@ Same `why` on many PRs → one healer change. `duplicate_rule_miss` → the clos
 
 ## Examples
 
-- Coin-picker closed 3× with the same title after earlier closes → `duplicate_rule_miss` (+ `should_not_open` when screenshot/heal log shows rate-unavailable / Deposit paused). Lever: enforce prior closed-unmerged search before `pr-body.md`.
+- Coin-picker closed 3× with the same title after earlier closes → `duplicate_rule_miss` (+ `should_not_open` when screenshot/heal log shows rate-unavailable / Deposit paused). Lever: enforce prior closed-unmerged search before `pr-body.md`. Same POM with a **different** on-screen control (e.g. `dialog "Market selection"` vs `.quill-action-sheet--root`) is not this bucket.
 - CFDs nav failure; heal log claims entitlement fix but TestDino/shot shows **Something went wrong** / skeleton nav → `should_not_open` (infra). Lever: screenshot gate before edit; do not strip shared `login()` asserts from a body-only story.
 - One-off wrong locator on a unique title → still label it `wrong_patch`. Do not drop it.

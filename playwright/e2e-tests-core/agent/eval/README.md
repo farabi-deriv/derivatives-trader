@@ -182,11 +182,21 @@ Five STOPs to one fix is deliberate: the expensive mistake is a healer that patc
 
 Source: `agent/prompts/fix-testdino-ui-change.md` and `skills/fix-testdino-test-case/SKILL.md`.
 
-**Covered:** infra STOP, backend-outage STOP, polarity flip, assertion widening, duplicate-closed-PR STOP, `path:`-only search, shared-POM scope, viewport branch, verified fix, artifact one-of, `get_testcase_details`, screenshot inspect, `gh pr list`.
+**Covered:** infra STOP, backend-outage STOP, polarity flip, assertion widening, duplicate-closed-PR STOP (`dup-coin-picker-3259`: same failure title on closed-unmerged #3009/#3187 — still STOP), `path:`-only search, shared-POM scope, viewport branch, verified fix, artifact one-of, `get_testcase_details`, screenshot inspect, `gh pr list`.
 
-**Not covered:** known-issue, env mismatch, flake later-pass STOP, Turnstile, open/merged Playwright PR STOP, wait band-aid / not-a-UI-change STOP, cannot-verify STOP, `.env` as a scenario (universal check only), `src/` edit trap.
+**Not covered:** known-issue, env mismatch, flake later-pass STOP, Turnstile, open/merged Playwright PR STOP, wait band-aid / not-a-UI-change STOP, cannot-verify STOP, `.env` as a scenario (universal check only), `src/` edit trap, HELPER TIMING ship, AMBIGUOUS_IDENTITY continue-to-artifacts, closed-unmerged **different DOM** proceed.
 
-Growth: when a reviewer asks "why did it …?", add a golden under `cases/` and a row here. Prefer real fixtures over live MCP.
+**Planned goldens** (do not add until `build-case.mjs` has real fixtures — incomplete `case.json` without screenshot/`error-context`/MCP/`gh` stubs is forbidden):
+
+| Planned id                      | Source                                                   | Expected artifact      | Rule                                                                                                                                                 |
+| ------------------------------- | -------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `helper-timing-wheelpicker`     | home-app #3695 / #3782 (jobs 104323644346, 106521587834) | `pr-body`              | Shared helper, correct UI on screen, retry/chunked pointer; assertion unchanged; no `waitForTimeout`                                                 |
+| `ambiguous-identity-continue`   | home-app #3727 (job 105146891534)                        | not auto `no-change`   | `debug_testcase` 409 / `AMBIGUOUS_IDENTITY` → Phase 3, not STOP                                                                                      |
+| `closed-unmerged-different-dom` | home-app #3696 vs closed #3253 (job 104157921456)        | `pr-body` (or proceed) | Same POM as a closed healer PR, **different** on-screen control (`dialog "Market selection"` vs `.quill-action-sheet--root`) is not a duplicate STOP |
+
+JSON/WAF/overlay/perf/backend STOPs stay STOPs and are not planned as ship goldens.
+
+Growth: when a reviewer asks "why did it …?", add a golden under `cases/` and a row here. Prefer real fixtures over live MCP. Never check in a case that cannot replay.
 
 ## Building a case from a PR
 
