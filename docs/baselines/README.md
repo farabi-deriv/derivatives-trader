@@ -31,6 +31,11 @@ pinned via `package-lock.json` for reproducibility).
   gating them would flake. The ">5% growth → escalate" judgement on those is left to the human or
   agent reading the report.
 
+Bundle measurements are production builds only: each package's `build:analyze` script pins
+`NODE_ENV=production` (webpack's minify/devtool switch keys on it via `IS_RELEASE`, not on
+`--mode`), because a dev-mode eval-source-map build inflates byte counts ~4–8× and is not
+comparable to a committed baseline.
+
 The blocking direction includes **shrinkage**, which is not a bug — it is the expected result of a
 deletion PR. The failure is not "you removed something", it is "you removed something and did not
 bank it". Regenerate, commit, and the check passes with a baseline diff that shows a reviewer exactly

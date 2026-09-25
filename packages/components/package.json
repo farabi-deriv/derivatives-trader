@@ -11,7 +11,7 @@
         "start": "rimraf lib && npm run test && npm run serve",
         "serve": "rimraf lib && cross-env BUILD_MODE='serve' webpack --mode=production --progress --watch",
         "build": "rimraf lib && webpack --mode=production --progress",
-        "build:analyze": "rimraf lib && cross-env ANALYZE_BUNDLE=true webpack --mode=production --progress",
+        "build:analyze": "rimraf lib && cross-env NODE_ENV=production ANALYZE_BUNDLE=true webpack --mode=production --progress",
         "analyze:bundle": "npm run build:analyze && echo \"Bundle analysis complete! Check bundle-report.html and bundle-stats.json\"",
         "test": "echo \"No tests specified\"",
         "test:eslint": "eslint \"./src/**/*.?(js|jsx)\""
