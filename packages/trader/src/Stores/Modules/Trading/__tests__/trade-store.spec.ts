@@ -1034,6 +1034,16 @@ describe('TradeStore', () => {
                 await new Promise(resolve => realSetTimeout(resolve, 0));
             }
         };
+        // Same rounds under fake timers, where the resolver's macrotask hop and mobx's `when`
+        // timeouts only move when advanced; `advance_ms` blows a bounded wait without waiting it out.
+        const flushFakeTimers = async (advance_ms = 0) => {
+            const { setTimeout: realSetTimeout } = jest.requireActual<typeof import('timers')>('timers');
+            for (let i = 0; i < 10; i++) {
+                jest.advanceTimersByTime(advance_ms);
+                // eslint-disable-next-line no-await-in-loop -- rounds must run sequentially by design
+                await new Promise(resolve => realSetTimeout(resolve, 0));
+            }
+        };
 
         // URL params are read when the resolver starts (store construction) — each test sets the URL
         // and any session-restored state FIRST, then builds its own store.
@@ -1065,8 +1075,15 @@ describe('TradeStore', () => {
                 categories: [{ value: TRADE_TYPES.MULTIPLIER, text: 'Multipliers' }],
             },
         } as unknown as TradeStore['contract_types_list_v2'];
+        const accumulator_only_list = {
+            Accumulators: {
+                name: 'Accumulators',
+                categories: [{ value: TRADE_TYPES.ACCUMULATOR, text: 'Accumulators' }],
+            },
+        } as unknown as TradeStore['contract_types_list_v2'];
 
         afterEach(() => {
+            jest.useRealTimers();
             window.history.pushState({}, '', '/');
             (findSymbolForTradeType as jest.Mock).mockResolvedValue('');
             // The resolver persists symbol/contract_type via the store's session sync; clear it so a
@@ -1082,7 +1099,7 @@ describe('TradeStore', () => {
             setUrl(`?symbol=1HZ100V&trade_type=${TRADE_TYPES.RISE_FALL}`);
             const { store, onChangeSpy } = buildStore();
             feedSymbols(store, ['1HZ100V', 'BOOM1000']);
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
 
             await flushPromises();
 
@@ -1094,6 +1111,103 @@ describe('TradeStore', () => {
             });
             expect(store.url_trade_type).toBe(TRADE_TYPES.RISE_FALL);
             expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+        });
+
+        // A new browser tab inherits the opener's sessionStorage, so the store is restored to the
+        // OUTGOING market and its contracts_for can settle before the deep-linked symbol's does.
+        const seedInheritedCrashAccumulatorSession = () =>
+            sessionStorage.setItem(
+                'trade_store',
+                JSON.stringify({ symbol: 'CRASH500', contract_type: TRADE_TYPES.ACCUMULATOR })
+            );
+        const applyOnChangeWrites = (store: TradeStore, onChangeSpy: jest.SpyInstance) =>
+            onChangeSpy.mockImplementation(async ({ target }) => {
+                (store as unknown as Record<string, unknown>)[target.name as string] = target.value;
+            });
+
+        it('[DLM-003] honours a deep link to a NON-default symbol when the inherited session left another market’s contract list in the store', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?symbol=1HZ25V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            seedInheritedCrashAccumulatorSession();
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['CRASH500', '1HZ25V', '1HZ100V']);
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+
+            await flushPromises();
+
+            // The deep-linked market answers only now — the resolver must have waited for it.
+            store.setContractTypesListV2(rise_fall_list, '1HZ25V');
+
+            await flushPromises();
+
+            expect(onChangeSpy).not.toHaveBeenCalledWith({ target: { name: 'symbol', value: '1HZ100V' } });
+            expect(store.symbol).toBe('1HZ25V');
+            expect(store.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+        });
+
+        it('[DLM-002] honours a deep link to the DEFAULT symbol without the URL-unavailable modal', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?symbol=1HZ100V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            seedInheritedCrashAccumulatorSession();
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['CRASH500', '1HZ100V', '1HZ25V']);
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+
+            await flushPromises();
+
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
+
+            await flushPromises();
+
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+            expect(store.symbol).toBe('1HZ100V');
+            expect(store.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+        });
+
+        it('[DLM-002] ignores a later list stamped for another market that lands before the resolver reads', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?symbol=1HZ25V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            seedInheritedCrashAccumulatorSession();
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['CRASH500', '1HZ25V', '1HZ100V']);
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+
+            await flushPromises();
+
+            // The deep-linked market answers, then a late outgoing-market response restamps the list
+            // before the resolver's continuation runs.
+            store.setContractTypesListV2(rise_fall_list, '1HZ25V');
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+
+            await flushPromises();
+
+            expect(onChangeSpy).not.toHaveBeenCalledWith({ target: { name: 'symbol', value: '1HZ100V' } });
+            expect(store.symbol).toBe('1HZ25V');
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+        });
+
+        it('[DLM-005] keeps the deep-linked symbol and shows no modal when its contract list never arrives', async () => {
+            jest.useFakeTimers();
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?symbol=1HZ25V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            seedInheritedCrashAccumulatorSession();
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['CRASH500', '1HZ25V', '1HZ100V']);
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+
+            await flushFakeTimers();
+            await flushFakeTimers(30000); // blow the bounded selection wait
+
+            expect(onChangeSpy).not.toHaveBeenCalledWith({ target: { name: 'symbol', value: '1HZ100V' } });
+            expect(store.symbol).toBe('1HZ25V');
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+            // Phase 3 still ran: the deep-linked pair is on the strip.
+            expect(store.open_markets).toEqual([{ symbol: '1HZ25V', contract_type: TRADE_TYPES.ACCUMULATOR }]);
         });
 
         it('falls back to the default symbol when nothing valid is restored or in the URL', async () => {
@@ -1120,15 +1234,16 @@ describe('TradeStore', () => {
         it('shows the URL-unavailable modal for an unknown/invalid trade type', async () => {
             setUrl('?trade_type=not_a_real_trade_type');
             const { store } = buildStore();
+            store.symbol = '1HZ100V';
             feedSymbols(store, ['1HZ100V']);
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
 
             await flushPromises();
 
             expect(mockRootStore.ui.toggleUrlUnavailableModal).toHaveBeenCalledWith(true, 'trade_type');
         });
 
-        it('switches to a compatible symbol and applies the URL trade type once the new market offers it', async () => {
+        it('[DLM-004] switches to a compatible symbol and applies the URL trade type once the new market offers it', async () => {
             // e.g. arriving from Deriv Home with trade_type=rise_fall while the last-used market was
             // Boom 1000 (Multipliers only). The URL trade type wins: switch to a market that offers it,
             // then apply the trade type once the new market's list has loaded.
@@ -1138,7 +1253,7 @@ describe('TradeStore', () => {
             const { store, onChangeSpy } = buildStore();
             feedSymbols(store, ['BOOM1000', '1HZ100V']);
             // Current market (Boom 1000) offers only Multipliers.
-            store.contract_types_list_v2 = multipliers_only_list;
+            store.setContractTypesListV2(multipliers_only_list, 'BOOM1000');
 
             await flushPromises();
 
@@ -1154,7 +1269,7 @@ describe('TradeStore', () => {
             expect(store.is_reconciling_url_trade_type).toBe(true);
 
             // Simulate useContractsFor loading the new market's list (which offers Rise/Fall).
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
 
             await flushPromises();
 
@@ -1166,20 +1281,71 @@ describe('TradeStore', () => {
             expect(store.is_reconciling_url_trade_type).toBe(false);
         });
 
+        it('[DLM-004] shows the modal when the switched-to symbol’s own list arrives without the trade type', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?trade_type=${TRADE_TYPES.RISE_FALL}`);
+            sessionStorage.setItem('trade_store', JSON.stringify({ symbol: 'BOOM1000' }));
+            const { store, onChangeSpy } = buildStore();
+            feedSymbols(store, ['BOOM1000', '1HZ100V']);
+            store.setContractTypesListV2(multipliers_only_list, 'BOOM1000');
+
+            await flushPromises();
+
+            expect(onChangeSpy).toHaveBeenCalledWith({ target: { name: 'symbol', value: '1HZ100V' } });
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+
+            // The switched-to market answers, and its own list doesn't offer Rise/Fall either.
+            store.setContractTypesListV2(multipliers_only_list, '1HZ100V');
+
+            await flushPromises();
+
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).toHaveBeenCalledWith(true, 'trade_type');
+            expect(onChangeSpy).not.toHaveBeenCalledWith({
+                target: { name: 'contract_type', value: TRADE_TYPES.RISE_FALL },
+            });
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+        });
+
+        it('[DLM-004] ignores a later list stamped for another market that lands after the switched-to symbol answers', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            setUrl(`?trade_type=${TRADE_TYPES.RISE_FALL}`);
+            sessionStorage.setItem('trade_store', JSON.stringify({ symbol: 'BOOM1000' }));
+            const { store, onChangeSpy } = buildStore();
+            feedSymbols(store, ['BOOM1000', '1HZ100V']);
+            store.setContractTypesListV2(multipliers_only_list, 'BOOM1000');
+
+            await flushPromises();
+
+            expect(onChangeSpy).toHaveBeenCalledWith({ target: { name: 'symbol', value: '1HZ100V' } });
+
+            // The switched-to market answers, then a late outgoing-market response restamps the list
+            // before the reconcile's continuation runs.
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
+            store.setContractTypesListV2(multipliers_only_list, 'BOOM1000');
+
+            await flushPromises();
+
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+            expect(onChangeSpy).not.toHaveBeenCalledWith({
+                target: { name: 'contract_type', value: TRADE_TYPES.RISE_FALL },
+            });
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+        });
+
         it('shows the URL-unavailable modal when no open market offers the requested trade type', async () => {
             (findSymbolForTradeType as jest.Mock).mockResolvedValue('');
             setUrl(`?trade_type=${TRADE_TYPES.MATCH_DIFF}`);
             sessionStorage.setItem('trade_store', JSON.stringify({ symbol: '1HZ100V' }));
             const { store } = buildStore();
             feedSymbols(store, ['1HZ100V']);
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
 
             await flushPromises();
 
             expect(mockRootStore.ui.toggleUrlUnavailableModal).toHaveBeenCalledWith(true, 'trade_type');
         });
 
-        it('fails fast to the modal when the compatible symbol is already current but its V2 list lacks the type', async () => {
+        it('[DLM-004] fails fast to the modal when the compatible symbol is already current but its V2 list lacks the type', async () => {
             // The search (raw contracts_for) resolves to the current symbol, but its processed V2 list
             // doesn't expose the trade type (e.g. native-app/region filtering). No symbol change means
             // nothing will refetch, so we must not wait out the timeout — show the modal immediately.
@@ -1188,7 +1354,7 @@ describe('TradeStore', () => {
             sessionStorage.setItem('trade_store', JSON.stringify({ symbol: '1HZ100V' }));
             const { store, onChangeSpy } = buildStore();
             feedSymbols(store, ['1HZ100V']);
-            store.contract_types_list_v2 = multipliers_only_list;
+            store.setContractTypesListV2(multipliers_only_list, '1HZ100V');
 
             await flushPromises();
 
@@ -1256,12 +1422,15 @@ describe('TradeStore', () => {
                 (store as unknown as Record<string, unknown>)[target.name] = target.value;
             });
             feedSymbols(store, ['1HZ25V', 'R_50']);
-            store.contract_types_list_v2 = {
-                Vanillas: {
-                    name: 'Vanillas',
-                    categories: [{ value: TRADE_TYPES.VANILLA.CALL, text: 'Vanillas' }],
-                },
-            } as unknown as TradeStore['contract_types_list_v2'];
+            store.setContractTypesListV2(
+                {
+                    Vanillas: {
+                        name: 'Vanillas',
+                        categories: [{ value: TRADE_TYPES.VANILLA.CALL, text: 'Vanillas' }],
+                    },
+                } as unknown as TradeStore['contract_types_list_v2'],
+                '1HZ25V'
+            );
 
             await flushPromises();
 
@@ -1281,7 +1450,7 @@ describe('TradeStore', () => {
             setUrl('?symbol=1HZ100V&trade_type=not_a_real_trade_type');
             const { store } = buildStore();
             feedSymbols(store, ['1HZ100V']);
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
 
             await flushPromises();
 
@@ -1328,7 +1497,7 @@ describe('TradeStore', () => {
                 (store as unknown as Record<string, unknown>)[target.name as string] = target.value;
             });
             feedSymbols(store, ['1HZ100V', 'RDBULL']);
-            store.contract_types_list_v2 = rise_fall_list;
+            store.setContractTypesListV2(rise_fall_list, 'RDBULL');
 
             await flushPromises();
 

@@ -298,6 +298,8 @@ type TTabTradeParamKeysExistOnStore = TAssertTabTradeParamKeysExistOnStore<TUnkn
  * without a bound the wait never settles and is_purchase_pending strands the Buy button spinning.
  */
 const PROPOSAL_WAIT_TIMEOUT = 10000;
+/** How long the initial (symbol, trade type) resolution may wait on active_symbols / contracts_for. */
+const SELECTION_WAIT_TIMEOUT = 30000;
 /** mobx rejects a timed-out `when` with this message. */
 const WHEN_TIMEOUT = 'WHEN_TIMEOUT';
 
@@ -403,6 +405,8 @@ export default class TradeStore extends BaseStore<TRootStore> {
     // rendered in the automation view (desktop uses `is_automation_tab` instead).
     is_automation_page = false;
     contract_types_list_v2: TContractTypesList = {};
+    // The market this list describes; a list stamped with another market answers for nothing.
+    contract_types_list_v2_symbol = '';
 
     // Amount
     amount = 2;
@@ -645,6 +649,7 @@ export default class TradeStore extends BaseStore<TRootStore> {
             contract_type: observable,
             contract_types_list: observable.ref, // Object - use ref
             contract_types_list_v2: observable.ref, // Object - use ref
+            contract_types_list_v2_symbol: observable,
             currency: observable,
             default_stake: observable,
             digit_stats: observable,
@@ -3581,8 +3586,9 @@ export default class TradeStore extends BaseStore<TRootStore> {
         this.has_symbols_for_v2 = !!active_symbols.length;
     }
 
-    setContractTypesListV2(contract_types_list: TContractTypesList) {
+    setContractTypesListV2(contract_types_list: TContractTypesList, response_symbol: string) {
         this.contract_types_list_v2 = contract_types_list;
+        this.contract_types_list_v2_symbol = response_symbol;
     }
 
     /**
@@ -3846,9 +3852,13 @@ export default class TradeStore extends BaseStore<TRootStore> {
             });
         }
         if (url_trade_type && is_deep_link) {
-            await when(() => !isEmptyObject(this.contract_types_list_v2));
+            const has_own_list = await this.hasContractTypesFor(this.symbol);
             if (this.selection_seq !== epoch) return;
-            if (this.isTradeTypeOfferedInV2List(url_trade_type)) {
+            // Re-read the stamp: a later list can land between the wait resolving and this read.
+            if (!has_own_list || this.contract_types_list_v2_symbol !== this.symbol) {
+                // The deep-linked symbol stands; resolveContractTypeAvailability owns the type when
+                // the response lands. Never decide availability on another market's list.
+            } else if (this.isTradeTypeOfferedInV2List(url_trade_type)) {
                 // Record the URL landing atomically with the type so consumers (e.g. automation
                 // fallbacks) can tell a URL landing from manual navigation.
                 runInAction(() => {
@@ -3968,14 +3978,13 @@ export default class TradeStore extends BaseStore<TRootStore> {
         // stale market + wrong trade type.
         this.is_reconciling_url_trade_type = true;
         // Timeout guards so a market list / active_symbols that never settle (API failure, native-app
-        // trade-type filtering) can't leave this awaiting forever. On timeout `when` rejects and the
-        // catch leaves the current state as-is — useContractsFor still keeps the UI consistent.
-        const WAIT_TIMEOUT = 30000;
+        // trade-type filtering) can't leave this awaiting forever — either bound leaves the current
+        // state as-is, and useContractsFor still keeps the UI consistent.
         try {
             // The market list (contract_types_list_v2) can arrive from useContractsFor before
             // active_symbols land in the store from useActiveSymbols. Wait for the symbols so the
             // search has candidates — otherwise it would find nothing and wrongly show the modal.
-            await when(() => this.active_symbols.length > 0, { timeout: WAIT_TIMEOUT });
+            await when(() => this.active_symbols.length > 0, { timeout: SELECTION_WAIT_TIMEOUT });
             const compatible_symbol = await findSymbolForTradeType(this.active_symbols, trade_type);
             // Superseded by a newer selection (e.g. the user already picked a market while we waited)
             // — honour the user's choice and drop the URL intent silently (no modal, no writes).
@@ -3990,21 +3999,24 @@ export default class TradeStore extends BaseStore<TRootStore> {
             });
             if (compatible_symbol !== this.symbol) {
                 await this.onChange({ target: { name: 'symbol', value: compatible_symbol } });
-                // useContractsFor refetches for the new market asynchronously and, on that run, defaults
-                // the trade type to the market's first available one. Wait until its list is populated and
-                // offers the requested trade type, then apply it last so default-selection can't override it.
-                await when(() => this.isTradeTypeOfferedInV2List(trade_type), { timeout: WAIT_TIMEOUT });
-            } else if (!this.isTradeTypeOfferedInV2List(trade_type)) {
-                // The compatible market is already the current one, but its processed V2 list doesn't
-                // expose the trade type (e.g. native-app/region filtering that the raw contracts_for the
-                // search relies on doesn't apply). Nothing will refetch to change that, so fail fast to the
-                // modal instead of waiting out the timeout — consistent with the "no available market" path.
-                this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
-                return;
             }
+            // Judge the compatible market against ITS OWN list: when the symbol just changed,
+            // useContractsFor's refetch also defaults the trade type to the market's first available
+            // one, so applying the requested type last stops default-selection overriding it; when the
+            // market was already current its list is already stamped, so this settles on the first
+            // evaluation and the "nothing will refetch" case still fails fast to the modal.
+            const has_own_list = await this.hasContractTypesFor(compatible_symbol);
             // Same supersession check after the waits above: never overwrite a user selection that
             // started while the reconcile was pending.
             if (this.selection_seq !== epoch) return;
+            // A list that never arrived, or was restamped by a later response before this read,
+            // supports no claim about the market: keep the symbol and let
+            // resolveContractTypeAvailability settle the type if the response lands later.
+            if (!has_own_list || this.contract_types_list_v2_symbol !== compatible_symbol) return;
+            if (!this.isTradeTypeOfferedInV2List(trade_type)) {
+                this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
+                return;
+            }
             if (this.contract_type !== trade_type) {
                 await this.onChange({ target: { name: 'contract_type', value: trade_type } });
             }
@@ -4019,6 +4031,19 @@ export default class TradeStore extends BaseStore<TRootStore> {
             runInAction(() => {
                 this.is_reconciling_url_trade_type = false;
             });
+        }
+    }
+
+    /** Resolves true once the store's processed V2 list is the one built from `symbol`'s own response. */
+    private async hasContractTypesFor(symbol: string) {
+        try {
+            await when(
+                () => this.contract_types_list_v2_symbol === symbol && !isEmptyObject(this.contract_types_list_v2),
+                { timeout: SELECTION_WAIT_TIMEOUT }
+            );
+            return true;
+        } catch {
+            return false;
         }
     }
 

@@ -78,7 +78,7 @@ describe('useContractsFor', () => {
         jest.clearAllMocks();
     });
 
-    it('should fetch and set contract types for the company successfully', async () => {
+    it('[DLM-001] should fetch and set contract types for the company successfully, stamped with the response symbol', async () => {
         (useQuery as jest.Mock).mockReturnValue({
             data: {
                 contracts_for: {
@@ -100,10 +100,13 @@ describe('useContractsFor', () => {
                 category_1: { categories: [{ value: 'type_1', text: 'Type 1' }] },
                 category_2: { categories: [{ value: 'type_2', text: 'Type 2' }] },
             });
-            expect(mocked_store.modules.trade.setContractTypesListV2).toHaveBeenCalledWith({
-                category_1: { categories: [{ value: 'type_1', text: 'Type 1' }] },
-                category_2: { categories: [{ value: 'type_2', text: 'Type 2' }] },
-            });
+            expect(mocked_store.modules.trade.setContractTypesListV2).toHaveBeenCalledWith(
+                {
+                    category_1: { categories: [{ value: 'type_1', text: 'Type 1' }] },
+                    category_2: { categories: [{ value: 'type_2', text: 'Type 2' }] },
+                },
+                'R_50'
+            );
         });
     });
 

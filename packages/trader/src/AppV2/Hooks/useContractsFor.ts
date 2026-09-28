@@ -171,7 +171,7 @@ const useContractsFor = () => {
                     available_contract_types[type].config = config;
                 });
 
-                setContractTypesListV2(available_categories);
+                setContractTypesListV2(available_categories, symbol);
                 setContractTypesList(available_categories);
                 setAvailableContractTypes(available_contract_types);
 

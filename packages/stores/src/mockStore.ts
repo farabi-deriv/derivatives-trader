@@ -257,6 +257,7 @@ const mock = (): TStores & { is_mock: boolean } => {
                 contract_type: '',
                 contract_types_list: {},
                 contract_types_list_v2: {},
+                contract_types_list_v2_symbol: '',
                 currency: '',
                 duration: 0,
                 duration_min_max: {},
