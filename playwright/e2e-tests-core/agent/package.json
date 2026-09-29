@@ -11,7 +11,7 @@
     "testdino-mcp": "1.0.10"
   },
   "overrides": {
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.7",
     "@hono/node-server": "2.0.12",
     "body-parser": "2.3.0",
     "hono": "4.13.7",

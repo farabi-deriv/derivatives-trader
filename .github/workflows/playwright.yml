@@ -1,12 +1,15 @@
 name: Playwright Tests
 
-run-name: "Playwright | ${{ (github.event.schedule == '45 1 * * *' && 'production') || ((github.event.inputs.preview_url || inputs.preview_url) != '' && 'preview') || github.event.inputs.test_env || inputs.test_env || 'staging' }} | ${{ (github.event.schedule == '30 1 * * *' && 'smoke') || (github.event.schedule == '45 1 * * *' && 'smoke') || github.event.inputs.test_suite || inputs.test_suite || (github.event_name == 'schedule' && 'regression') || 'smoke' }} | ${{ ((github.event.schedule == '30 1 * * *' || github.event.schedule == '45 1 * * *') && 'chromium-mobile') || github.event.inputs.platform || inputs.platform || 'all' }}"
+run-name: "Playwright | ${{ (github.event.schedule == '45 1 * * *' && 'production') || ((github.event.inputs.preview_url || inputs.preview_url) != '' && 'preview') || github.event.inputs.test_env || inputs.test_env || 'staging' }} | ${{ (github.event.schedule == '30 1 * * *' && 'smoke') || (github.event.schedule == '45 1 * * *' && 'smoke') || github.event.inputs.test_suite || inputs.test_suite || (github.event_name == 'schedule' && 'regression') || 'smoke' }} | ${{ ((github.event.schedule == '30 1 * * *' || github.event.schedule == '45 1 * * *') && 'chromium-mobile') || (github.event.schedule == '0 22 * * 0,1,3,4' && 'chromium-all') || (github.event.schedule == '0 22 * * 2' && 'all') || github.event.inputs.platform || inputs.platform || 'all' }}"
 
 on:
   schedule:
-    - cron: '0 22 * * 0-4'   # 06:00AM MYT Mon–Fri — staging regression (all 5 browsers Wed MYT; chromium×2 other days)
-    - cron: '30 1 * * *'     # 09:30AM MYT — staging smoke (chromium-mobile)
-    - cron: '45 1 * * *'     # 09:45AM MYT — production smoke (chromium-mobile)
+    # 06:00AM MYT Mon–Fri staging regression. Split so run-name matches the matrix
+    # (github.event.schedule has no day-of-week helper). Tue UTC 22:00 = Wed MYT.
+    - cron: '0 22 * * 0,1,3,4' # Mon/Tue/Thu/Fri MYT — chromium desktop + mobile
+    - cron: '0 22 * * 2'       # Wed MYT — all 5 browsers
+    - cron: '30 1 * * *'       # 09:30AM MYT — staging smoke (chromium-mobile)
+    - cron: '45 1 * * *'       # 09:45AM MYT — production smoke (chromium-mobile)
   workflow_call:
     inputs:
       test_env:
@@ -146,9 +149,9 @@ jobs:
         if: ${{ github.event_name == 'schedule' }}
         run: |
           case "${{ github.event.schedule }}" in
-            "0 22 * * 0-4")  ENV="staging"    SUITE="regression" ;;
-            "30 1 * * *")    ENV="staging"    SUITE="smoke" ;;
-            "45 1 * * *")    ENV="production" SUITE="smoke" ;;
+            "0 22 * * 0,1,3,4"|"0 22 * * 2") ENV="staging" SUITE="regression" ;;
+            "30 1 * * *")                    ENV="staging" SUITE="smoke" ;;
+            "45 1 * * *")                    ENV="production" SUITE="smoke" ;;
             *)
               echo "::error::No mapping for schedule '${{ github.event.schedule }}'"
               exit 1
@@ -189,15 +192,12 @@ jobs:
           # Staging smoke (30 1) and production smoke (45 1) run chromium-mobile only.
           if [ "$SCHEDULE" = "30 1 * * *" ] || [ "$SCHEDULE" = "45 1 * * *" ]; then
             MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.platform == "chromium-mobile")]')
-          elif [ "$SCHEDULE" = "0 22 * * 0-4" ]; then
-            # Daily staging regression — all 5 browsers on Wednesday (MYT) only.
-            # 22:00 UTC run matches Tuesday UTC (day 2) → Wed MYT.
-            DAY_OF_WEEK=$(date -u +%u)
-            if [ "$DAY_OF_WEEK" -eq 2 ]; then
-              MATRIX="$ALL"
-            else
-              MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.browser == "chromium")]')
-            fi
+          elif [ "$SCHEDULE" = "0 22 * * 0,1,3,4" ]; then
+            # Mon/Tue/Thu/Fri MYT — chromium desktop + mobile
+            MATRIX=$(echo "$ALL" | jq -c '[.[] | select(.browser == "chromium")]')
+          elif [ "$SCHEDULE" = "0 22 * * 2" ]; then
+            # Wed MYT (Tue UTC 22:00) — all 5 browsers
+            MATRIX="$ALL"
           elif [ "$SELECTED" = "all" ]; then
             MATRIX="$ALL"
           elif [ "$SELECTED" = "chromium-all" ]; then

@@ -63,7 +63,7 @@
 | 2 | Loop the category | `FeedPage.marketsIn(category, filter?)` for this flow's chip / subset | — | Both |
 | 2a | Ensure picker + search ready | `verifyMarketFeedViaInfoScreen` → idempotent `openMarketSearchInPicker()` (opens once; no-op on retry) | Picker open; search input ready (see [Shared Step Pattern](#search--market-info--back-picker-stays-open)) | Both |
 | 2b | Search → skip or Info | `searchMarketFirstResultRow` → `isSearchResultRowClosed` skip, else `openMarketInfoOnSearchRow` | CLOSED in list: skip without Info. Live row: Market Info opens with correct `.market-info__name` | Both |
-| 2c | Assert feed on Market Info | `verifyMarketInfoFeedState(label, market.status, market.category)` | Live price ticks (45 s for Forex, Stocks & indices, Commodities; 15 s otherwise), or session-gated **Closed** tag on Info skipped | Both |
+| 2c | Assert feed on Market Info | `verifyMarketInfoFeedState(label, market.status)` | Live numeric price ticks (45 s initial load for all; then 45 s tick-wait for session-gated / 15 s for always-open), or session-gated **Closed** tag on Info skipped | Both |
 | 2d | Back (finally block) | `returnFromMarketInfoForNextSearch` — only when Info was opened (not on search-list CLOSED skip) | Back to search; input ready for next market's `fill()` | Both |
 | 2e | Pace before next market | `paceFeedMarketInfoLookup()` (3s) | Breathing room for staging API / WebSocket rate limits | Both |
 | 3 | Close picker after last market | `marketSelectionPage.closeMarketSelectionPicker()` after the loop | Picker dismisses; trade page restored | Both |

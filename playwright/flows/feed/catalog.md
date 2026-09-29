@@ -68,7 +68,7 @@ One attempt per market, paced at **3s** (`paceFeedMarketInfoLookup` / `FEED_MARK
 
 **Market data:** `FeedPage.MARKETS` — each entry is `{ label, category, status, derivedGroup?, forexGroup? }`. `category` matches a picker chip. `derivedGroup` is `'synthetics' | 'baskets'` on Derived rows; `forexGroup` is `'major' | 'minor'` on Forex rows. `status` is `'open'` (24/7 synthetics) or `'session_gated'` (forex, indices, commodities, crypto, baskets). Optional `mobileLabel` remains on the type for viewport overrides but is unused by current entries.
 
-**Tick wait:** **15s** default; **45s** for Forex, Stocks & indices, and Commodities (`slowTickCategories` in `verifyMarketInfoFeedState`).
+**Tick wait:** **15s** for always-open markets (`status: 'open'`); **45s** for session-gated markets (forex, stocks & indices, commodities, crypto, baskets) — driven by `status`, not category, in `verifyMarketInfoFeedState`. Initial numeric-price/closed load uses **45s** for every market.
 
 **Why Market Info, not the trade form:** The redesign removed the DOM-visible live spot price from the
 trade page (chart is `<canvas>` only). Market Info exposes `.market-info__price`, which updates from
@@ -121,7 +121,7 @@ the market is skipped with no tick assertion.
 | Check CLOSED tag on a search row | `marketSelectionPage.isSearchResultRowClosed(row)` |
 | Search, open Info, assert (when row is live) | `feedPage.searchMarketAndOpenInfo(marketSelectionPage, label)` |
 | Back to search between markets | `feedPage.returnFromMarketInfoForNextSearch(marketSelectionPage)` |
-| Assert live price ticks; skip closed session-gated | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status, category)` |
+| Assert live price ticks; skip closed session-gated | `feedPage.verifyMarketInfoFeedState(marketSelectionPage, label, status)` |
 | Resolve display label for viewport | `feedPage.resolveLabel(market)` |
 | Static array of all markets, tagged by category chip | `FeedPage.MARKETS` |
 | Markets for one chip (optional Derived / Forex subset) | `FeedPage.marketsIn(category, filter?)` |

@@ -1203,13 +1203,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
         await this.verifyAutomateRunningControls(tradeType);
-        await this.verifyAutomateSequentialContractPurchase();
+        // Open details while the first contract is still live — before sequential waits for settle.
         await this.verifyAutomateOpenPositionAndContractDetails({
             market,
             stake,
             tradeType,
             maxStake: automation.maxStake,
         });
+        await this.verifyAutomateSequentialContractPurchase();
         await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
@@ -1338,13 +1339,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
         await this.verifyAutomateRunningControls(tradeType);
-        await this.verifyAutomateSequentialContractPurchase();
+        // Open details while the first contract is still live — before sequential waits for settle.
         await this.verifyAutomateOpenPositionAndContractDetails({
             market,
             stake,
             tradeType,
             maxStake: automation.maxStake,
         });
+        await this.verifyAutomateSequentialContractPurchase();
         await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
@@ -1399,13 +1401,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
         await this.verifyAutomateRunningControls(tradeType);
-        await this.verifyAutomateSequentialContractPurchase();
+        // Open details while the first contract is still live — before sequential waits for settle.
         await this.verifyAutomateOpenPositionAndContractDetails({
             market,
             stake,
             tradeType,
             maxStake: automation.maxStake,
         });
+        await this.verifyAutomateSequentialContractPurchase();
         await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
@@ -1457,13 +1460,14 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.setLossThreshold(automation.lossThreshold);
         await this.startAutomateRun();
         await this.verifyAutomateRunningControls(tradeType);
-        await this.verifyAutomateSequentialContractPurchase();
+        // Open details while the first contract is still live — before sequential waits for settle.
         await this.verifyAutomateOpenPositionAndContractDetails({
             market,
             stake,
             tradeType,
             maxStake: automation.maxStake,
         });
+        await this.verifyAutomateSequentialContractPurchase();
         await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
         await this.stopAutomateRun();
         await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
@@ -1584,10 +1588,10 @@ export class TradeAutomatePage extends TradeParametersPage {
      * an automation open position in Positions (exactly one — see
      * `verifyAutomationOpenPositionVisible`), open contract details verification, and Run hidden.
      *
-     * Tick-duration lifecycles call `verifyAutomateRunningControls()` then
-     * `verifyAutomateSequentialContractPurchase()` before open-position details so sequencing
-     * is observed while the run is still active (short tick durations may already show
-     * `Contracts` ≥ 2 by then — the sequential helper allows that).
+     * Tick-duration lifecycles call `verifyAutomateRunningControls()` then open-position
+     * details, then `verifyAutomateSequentialContractPurchase()` — details must run while the
+     * first contract is still live; sequential waits for settle and would burn that window on
+     * short tick durations under CI latency.
      *
      * @param market - Market name from the spec, as shown on the Positions contract card
      * @param stake - Initial stake from the spec (formatted to two decimals on the card)
@@ -1652,7 +1656,9 @@ export class TradeAutomatePage extends TradeParametersPage {
      * are sampled together without re-entering Automate each tick. Mobile samples the bottom-nav
      * badge only in the hot loop (Positions is a separate route that unmounts Automate).
      *
-     * Call after `verifyAutomateRunningControls()` while the run is still active.
+     * Call after open-position details (tick types) or after `verifyAutomateRunningControls()`
+     * while the run is still active — details need a live contract; sequential burns the settle
+     * window on short ticks under CI latency.
      */
     async verifyAutomateSequentialContractPurchase({ timeout = 120_000 }: { timeout?: number } = {}): Promise<void> {
         await this.goToAutomatedTrading();

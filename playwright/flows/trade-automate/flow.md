@@ -22,8 +22,8 @@
 | --- | --- |
 | `startAutomateRun()` | Click **Run** (waits for enabled first) |
 | `verifyAutomateBotIsRunning()` | Full running check: controls + open position + contract details (panel specs, post-resume) |
-| `verifyAutomateRunningControls()` | Fast running check only — Status, Pause/Stop, stats line, params disabled (private; tick lifecycles before sequential) |
-| `verifyAutomateSequentialContractPurchase()` | Tick types only: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). **Run immediately after** `verifyAutomateRunningControls()`, before open-position details |
+| `verifyAutomateRunningControls()` | Fast running check only — Status, Pause/Stop, stats line, params disabled (private; tick lifecycles before open details) |
+| `verifyAutomateSequentialContractPurchase()` | Tick types only: one open at a time (dual-sample badge ± Open tab); no required open → 0 gap; reach **`Contracts >= 2`** with exactly one open. **Run after** open-position details (details need a live contract) |
 | `verifyPauseAndResumeWhileRunning()` | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–13 lifecycles) |
 | `stopAutomateRun()` | Click **Stop** and verify idle state (Run visible, Running status gone) |
 | `stopAutomateRunIfActive()` | `afterEach` cleanup — stop only if Stop is visible |
@@ -31,7 +31,7 @@
 | `verifyLossThresholdAutoStop()` | Flow 2.1 — loss snackbar, idle controls hidden, params re-enabled (no manual Stop) |
 | `verifyProfitThresholdAutoStop()` | Flow 2.2 — profit snackbar, idle controls hidden, params re-enabled (no manual Stop) |
 
-> **Tick lifecycle order:** `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` → open-position/contract-details (via `verifyAutomateOpenPositionAndContractDetails()`) → `verifyPauseAndResumeWhileRunning()`. Sequential must run while `Contracts: 1` for the first phase — not after the slow open-details retry loop.
+> **Tick lifecycle order:** `verifyAutomateRunningControls()` → open-position/contract-details (via `verifyAutomateOpenPositionAndContractDetails()`) → `verifyAutomateSequentialContractPurchase()` → `verifyPauseAndResumeWhileRunning()`. Open details while the first contract is still live; sequential does not require an open → 0 gap (tick bots often re-buy faster than a navigation poll can observe it).
 
 > **One open at a time:** `verifyAutomationOpenPositionVisible()` requires exactly one open contract. **Open** stake may be strategy-adjusted (≥ initial, ≤ max. stake); **closed** tab still matches initial stake. Multi-contract sequencing is asserted via `verifyAutomateSequentialContractPurchase()` on tick types only.
 
@@ -158,7 +158,7 @@
 3. `selectTradeTypeOption(tradeType, position)` — dual-outcome flows only
 4. `openAndVerifyAutomateGuide('<Category>')` → `verifyAutomationPanelFieldsVisible()`
 5. Trade-form params → automation panel setters
-6. `startAutomateRun()` → `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` (tick-duration only) → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`
+6. `startAutomateRun()` → `verifyAutomateRunningControls()` → open-position details → `verifyAutomateSequentialContractPurchase()` (tick-duration only) → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`
 
 > **Accumulators (Flow 6):** skip `verifyAutomateSequentialContractPurchase()`; call `verifyPauseAndResumeWhileRunning()` after the first contract is running.
 
@@ -191,7 +191,7 @@
 | 7 | Set duration | `selectDuration(durationUnit, durationValue)` | Duration field reflects value | Both |
 | 8 | Set stake | `setStake(stake)` | Initial stake saved | Both |
 | 9 | Automation panel | `selectStrategy`, `setStakeMultiplier`, `setMaxStake`, `setProfitThreshold`, `setLossThreshold` | All automation params saved | Both |
-| 10 | Run lifecycle | `startAutomateRun()` → running controls → `verifyAutomateSequentialContractPurchase()` → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; sequential purchase; **Pause → Resume → Running**; Stop returns idle **Run**; closed position matches initial stake | Both |
+| 10 | Run lifecycle | `startAutomateRun()` → running controls → open-position details → `verifyAutomateSequentialContractPurchase()` → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → closed contract verified | **Status: Running**; open details while first contract is live; sequential purchase; **Pause → Resume → Running**; Stop returns idle **Run**; closed position matches initial stake | Both |
 
 **Inline params (Flow 5.1 — Rise demo):**
 

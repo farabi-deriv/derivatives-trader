@@ -336,8 +336,8 @@ await this.setProfitThreshold(automation.profitThreshold);
 await this.setLossThreshold(automation.lossThreshold);
 await this.startAutomateRun();
 await this.verifyAutomateRunningControls(tradeType);
-await this.verifyAutomateSequentialContractPurchase();
 await this.verifyAutomateOpenPositionAndContractDetails({ market, stake, tradeType, maxStake: automation.maxStake });
+await this.verifyAutomateSequentialContractPurchase();
 await this.verifyPauseAndResumeWhileRunning({ market, stake, tradeType, maxStake: automation.maxStake });
 await this.stopAutomateRun();
 await this.verifyAutomateStoppedWithClosedContract({ market, stake, tradeType });
@@ -436,7 +436,7 @@ test("VERIFY automated trade run - D'Alembert - Over (Demo)", async ({ tradeAuto
 
 > **Flows 5–9** = Martingale lifecycles · **Flows 10–13** = D'Alembert lifecycles (same trade-type order: Rise/Fall → Accumulators under Flow 6 → Matches/Differs → Over/Under → Even/Odd)
 
-Each `run*AndVerify()`: `startAutomateRun()` → `verifyAutomateRunningControls()` → `verifyAutomateSequentialContractPurchase()` (tick types) or skip (Accumulators) → open-position details → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`.
+Each `run*AndVerify()`: `startAutomateRun()` → `verifyAutomateRunningControls()` → open-position details → `verifyAutomateSequentialContractPurchase()` (tick types) or skip sequential (Accumulators; details after running controls) → `verifyPauseAndResumeWhileRunning()` → `stopAutomateRun()` → `verifyAutomateStoppedWithClosedContract()`.
 
 ### Flow 15 — verify-trade-param-validation.spec.ts
 
@@ -551,8 +551,8 @@ test.describe('Automate — parameter info icon', { tag: ['@automate', '@desktop
 | --- | --- |
 | `startAutomateRun()` | Click **Run** (asserts visible + enabled first) |
 | `verifyAutomateBotIsRunning()` | Full running check: controls + exactly one open position + contract details; tolerates **Starting…** |
-| `verifyAutomateRunningControls()` | Fast running check only (private; tick lifecycles before sequential purchase) |
-| `verifyAutomateSequentialContractPurchase()` | Tick types: one open at a time; first settles (open → 0); then one open with **`Contracts >= 2`** (may read 3+ on fast ticks). Run right after running controls, before open-position details |
+| `verifyAutomateRunningControls()` | Fast running check only (private; tick lifecycles before open-position details) |
+| `verifyAutomateSequentialContractPurchase()` | Tick types: one open at a time (dual-sample badge ± Open tab); no required open → 0 gap; reach **`Contracts >= 2`** with exactly one open. Run after open-position details |
 | `verifyPauseAndResumeWhileRunning()` | Flow 1 — Pause → full paused UI → Resume → Running (embedded in Flows 5–13 lifecycles) |
 | `stopAutomateRun()` | Click **Stop** + verify idle (Run visible, Running status gone) — replaces separate stop + verify |
 | `stopAutomateRunIfActive()` | `afterEach` cleanup when Stop may or may not be present |
@@ -625,7 +625,7 @@ The Automation panel and run controls (`automation-panel.tsx`, `automation-actio
 - **Starting:** Run button label becomes `Starting...` and is disabled
 - **Status:** `automationActionsStatusLine.getByText('Status: Running')` / `'Status: Paused'`
 - **Stats:** `automationActionsStatus.getByText(/Contracts:\s*\d+\s*\|\s*P\/L:/)`
-- **Sequential purchase (`verifyAutomateSequentialContractPurchase`):** tick types only. Call immediately after `verifyAutomateRunningControls()`. Assert `Contracts: 1` + one open → first settles (open → 0) → one open again with **`Contracts >= 2`** (counter is cumulative; fast ticks may show 3+ on first re-open). Never more than one open at a time. Then open-position details, then pause/resume.
+- **Sequential purchase (`verifyAutomateSequentialContractPurchase`):** tick types only. Call **after** open-position details (details need a live contract). Assert at least one purchased + one open → hot loop never exceeds one open (badge ± Open tab) → **`Contracts >= 2`** with exactly one open (no required open → 0 gap; counter is cumulative). Then pause/resume.
 - **Pause / Resume:** `automationRunActions.getByRole('button', { name: 'Pause' })` / `{ name: 'Resume' }`
 - **Stop:** `automationRunActions.getByRole('button', { name: 'Stop' })` — class `.automation-actions__run-stop`
 - **Panel headers:** `getByText('Strategy parameters')`, `getByText('Risk management')`

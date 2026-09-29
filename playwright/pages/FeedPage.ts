@@ -342,7 +342,7 @@ export class FeedPage extends TradeBasePage {
         ).toHaveText(label);
 
         try {
-            await this.verifyMarketInfoFeedState(marketSelectionPage, label, market.status, market.category);
+            await this.verifyMarketInfoFeedState(marketSelectionPage, label, market.status);
         } finally {
             await this.returnFromMarketInfoForNextSearch(marketSelectionPage);
         }
@@ -351,30 +351,39 @@ export class FeedPage extends TradeBasePage {
     /**
      * Assert the Market Info screen shows a live ticking price.
      * Session-gated markets that are closed at runtime are skipped — proceed to the next market.
-     * Forex and Stocks & indices ticks are slower than synthetics, so they get a longer poll window.
+     * Session-gated underlyings (forex, stocks, commodities, crypto, baskets) tick slower than
+     * 24/7 synthetics, so they get a longer poll window. Product renders `–` in `.market-info__price`
+     * while quote/history are still null (`formatPrice`) — wait for a numeric price, not just visibility.
      */
     async verifyMarketInfoFeedState(
         marketSelectionPage: MarketSelectionPage,
         label: string,
-        status: MarketStatus,
-        category: MarketCategory
+        status: MarketStatus
     ): Promise<void> {
         const marketInfoPrice = this.marketInfoPrice(marketSelectionPage);
         const marketInfoClosedTag = this.marketInfoClosedTag(marketSelectionPage);
-        const slowTickCategories: MarketCategory[] = ['Forex', 'Stocks & indices', 'Commodities'];
-        const tickTimeoutMs = slowTickCategories.includes(category) ? 45_000 : 15_000;
+        // Initial load: keep the config-wide expect budget (45s) so synthetics are not tightened
+        // vs pre-change. Tick-wait below stays status-based (15s open / 45s session_gated).
+        const initialLoadTimeoutMs = 45_000;
+        const tickTimeoutMs = status === 'open' ? 15_000 : 45_000;
 
         await expect
             .poll(
                 async () => {
                     await marketSelectionPage.assertNotRateLimited(label);
-                    const priceVisible = await marketInfoPrice.isVisible().catch(() => false);
                     const closedVisible = await marketInfoClosedTag.isVisible().catch(() => false);
-                    return priceVisible || closedVisible;
+                    if (closedVisible) return 'closed';
+                    const text = ((await marketInfoPrice.textContent()) ?? '').trim();
+                    // `–` means latest_price is still null — not a usable feed quote yet.
+                    if (/[\d.,]+/.test(text)) return 'price';
+                    return 'pending';
                 },
-                { message: `[${label}] Market Info should finish loading price or closed state` }
+                {
+                    message: `[${label}] Market Info should finish loading a numeric price or closed state`,
+                    timeout: initialLoadTimeoutMs,
+                }
             )
-            .toBe(true);
+            .not.toBe('pending');
 
         const isClosed = await marketInfoClosedTag.isVisible().catch(() => false);
 
