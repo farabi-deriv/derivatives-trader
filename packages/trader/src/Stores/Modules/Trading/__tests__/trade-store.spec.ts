@@ -1,4 +1,4 @@
-import { configure, reaction } from 'mobx';
+import { configure, reaction, runInAction } from 'mobx';
 
 import { TActiveSymbolsResponse } from '@deriv/api';
 import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
@@ -1208,6 +1208,91 @@ describe('TradeStore', () => {
             expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
             // Phase 3 still ran: the deep-linked pair is on the strip.
             expect(store.open_markets).toEqual([{ symbol: '1HZ25V', contract_type: TRADE_TYPES.ACCUMULATOR }]);
+        });
+
+        it('[DLM-006] keeps the loader up and the URL untouched while the inherited market answers before the deep link resolves', async () => {
+            setUrl(`?symbol=1HZ100V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            seedInheritedCrashAccumulatorSession();
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+
+            // BaseStore's deferred restore lands the inherited pair; active_symbols have not arrived.
+            await flushPromises();
+            expect(store.symbol).toBe('CRASH500');
+            expect(store.is_reconciling_url_trade_type).toBe(true);
+
+            // The inherited market's contracts_for answers first — as it does in production.
+            store.setContractTypesListV2(accumulator_only_list, 'CRASH500');
+            store.resolveContractTypeAvailability('CRASH500', [TRADE_TYPES.ACCUMULATOR]);
+            await flushPromises();
+
+            const params_mid_resolve = new URLSearchParams(window.location.search);
+            expect(params_mid_resolve.get('symbol')).toBe('1HZ100V');
+            expect(params_mid_resolve.get('trade_type')).toBe(TRADE_TYPES.RISE_FALL);
+            expect(store.is_reconciling_url_trade_type).toBe(true);
+
+            feedSymbols(store, ['CRASH500', '1HZ100V']);
+            await flushPromises();
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
+            await flushPromises();
+
+            expect(store.symbol).toBe('1HZ100V');
+            expect(store.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+            const params_settled = new URLSearchParams(window.location.search);
+            expect(params_settled.get('symbol')).toBe('1HZ100V');
+            expect(params_settled.get('trade_type')).toBe(TRADE_TYPES.RISE_FALL);
+            expect(mockRootStore.ui.toggleUrlUnavailableModal).not.toHaveBeenCalled();
+        });
+
+        it('does not hold the loader for a deep link into a fresh tab with nothing to restore', async () => {
+            setUrl(`?symbol=1HZ100V&trade_type=${TRADE_TYPES.RISE_FALL}`);
+            const { store } = buildStore();
+
+            await flushPromises();
+
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+        });
+
+        it('lets the nested reconcile own the loader on a fresh tab whose default market lacks the URL trade type', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ25V');
+            setUrl(`?trade_type=${TRADE_TYPES.RISE_FALL}`);
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['1HZ100V', '1HZ25V']);
+            // The default pick (1HZ100V) answers without Rise/Fall, so phase 2 hands off to the reconcile.
+            store.setContractTypesListV2(multipliers_only_list, '1HZ100V');
+
+            await flushPromises();
+
+            // Nothing was restored, so the resolver never held the loader: this hold is the reconcile's own.
+            expect(store.symbol).toBe('1HZ25V');
+            expect(store.is_reconciling_url_trade_type).toBe(true);
+
+            store.setContractTypesListV2(rise_fall_list, '1HZ25V');
+            await flushPromises();
+
+            expect(store.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+        });
+
+        it('leaves the loader to the resolver already holding it when the reconcile runs nested', async () => {
+            (findSymbolForTradeType as jest.Mock).mockResolvedValue('1HZ100V');
+            const { store, onChangeSpy } = buildStore();
+            applyOnChangeWrites(store, onChangeSpy);
+            feedSymbols(store, ['1HZ100V']);
+            store.setContractTypesListV2(rise_fall_list, '1HZ100V');
+            await flushPromises();
+            expect(store.is_reconciling_url_trade_type).toBe(false);
+
+            runInAction(() => {
+                store.is_reconciling_url_trade_type = true;
+            });
+            await store.reconcileUrlTradeTypeWithSymbol(TRADE_TYPES.RISE_FALL);
+
+            // The reconcile ran to completion, yet the hold it found in place is still up.
+            expect(store.contract_type).toBe(TRADE_TYPES.RISE_FALL);
+            expect(store.is_reconciling_url_trade_type).toBe(true);
         });
 
         it('falls back to the default symbol when nothing valid is restored or in the URL', async () => {

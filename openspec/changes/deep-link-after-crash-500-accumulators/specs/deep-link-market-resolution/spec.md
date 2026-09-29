@@ -84,3 +84,22 @@ When the resolved symbol's contract-type list does not arrive within the bounded
 
 - **WHEN** the reconcile has switched to a compatible symbol and that symbol's own recorded list never arrives within the wait
 - **THEN** the store is left as-is with no modal, and the in-progress reconcile flag is released so the page is not held on a loader
+
+### Requirement: [DLM-006] A deep link resolving over a restored session never shows or stamps the restored pair
+
+When a deep link is opened in a browser tab whose inherited session restores another (symbol, trade type) pair, the initial-market resolver SHALL keep the trade page's full-screen loader up from the moment it starts until the deep link has resolved (or degraded), and SHALL defer the ordinary trade-type availability resolution for that whole window. The restored pair SHALL NOT be rendered as the selected market and trade type, and SHALL NOT be written into the URL, even when its own `contracts_for` response settles first. The hold SHALL end on every exit path of the resolver, including a timeout or a thrown error. A deep link into a tab with nothing to restore SHALL NOT hold the loader.
+
+#### Scenario: The inherited market answers before the deep link resolves
+
+- **WHEN** a deep link `?symbol=1HZ100V&trade_type=rise_fall` is opened in a tab whose session restored `CRASH500` + `accumulator`, and the `CRASH500` `contracts_for` response settles before `active_symbols` arrive
+- **THEN** the loader stays up, the URL still reads `symbol=1HZ100V&trade_type=rise_fall`, and no `CRASH500` + `accumulator` pair is stamped into it
+
+#### Scenario: The deep link settles
+
+- **WHEN** `active_symbols` arrive and the `1HZ100V` list offers `rise_fall`
+- **THEN** the loaded pair is `1HZ100V` + `rise_fall`, the URL names that pair, the loader is released, and no URL-unavailable modal is opened
+
+#### Scenario: Fresh tab with nothing to restore
+
+- **WHEN** a deep link is opened in a tab whose session holds no stored pair
+- **THEN** the resolver does not hold the loader beyond the existing reconcile behaviour

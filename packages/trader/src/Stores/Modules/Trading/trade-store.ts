@@ -568,9 +568,10 @@ export default class TradeStore extends BaseStore<TRootStore> {
     // Trade type applied from the URL's trade_type param, recorded only when the market offers it.
     // Set atomically with contract_type so consumers can tell a URL landing from manual navigation.
     url_trade_type: string | null = null;
-    // True while reconcileUrlTradeTypeWithSymbol is switching the market to honour a URL trade type
-    // the persisted market didn't offer. Keeps the trade page's full-screen loader up so the user
-    // doesn't briefly see the stale market + wrong trade type before the switch completes.
+    // True while a URL pair is being honoured over the store's provisional one: a deep link
+    // resolving over a restored session, or reconcileUrlTradeTypeWithSymbol switching markets for
+    // a URL trade type. Keeps the trade page's full-screen loader up and defers
+    // resolveContractTypeAvailability, so the provisional pair is never shown or stamped into the URL.
     is_reconciling_url_trade_type = false;
 
     initial_barriers?: { barrier_1: string; barrier_2: string };
@@ -3797,7 +3798,6 @@ export default class TradeStore extends BaseStore<TRootStore> {
         const search_params = new URLSearchParams(window.location.search);
         const url_symbol = search_params.get('symbol');
         const url_trade_type = search_params.get('trade_type');
-        const epoch = ++this.selection_seq;
 
         // Only a genuine deep link may create a NEW tab, switch markets for a URL trade type, or
         // show the URL-unavailable modal; a restore CONVERGES to the tab strip instead of trusting
@@ -3806,6 +3806,42 @@ export default class TradeStore extends BaseStore<TRootStore> {
         const is_deep_link =
             (!!url_symbol && url_symbol !== stored_session.symbol) ||
             (!!url_trade_type && url_trade_type !== stored_session.contract_type);
+
+        // A deep link into a tab that restores another session holds that session's pair until the
+        // link resolves: keep the loader up and the availability resolver deferred meanwhile, so the
+        // inherited pair is never shown or stamped into the URL.
+        const holds_loader = is_deep_link && !!(stored_session.symbol || stored_session.contract_type);
+        await this.withLoaderHold(holds_loader, () =>
+            this.resolveInitialMarketBody(url_symbol, url_trade_type, is_deep_link)
+        );
+    }
+
+    /** Runs `body` under the URL-reconcile loader when asked, taking the flag only if nobody holds it and releasing only what it took. */
+    private async withLoaderHold<T>(should_hold: boolean, body: () => Promise<T>): Promise<T> {
+        const owns_loader = should_hold && !this.is_reconciling_url_trade_type;
+        if (owns_loader) {
+            runInAction(() => {
+                this.is_reconciling_url_trade_type = true;
+            });
+        }
+        try {
+            return await body();
+        } finally {
+            if (owns_loader) {
+                runInAction(() => {
+                    this.is_reconciling_url_trade_type = false;
+                });
+            }
+        }
+    }
+
+    /** The resolver's phases; split out so the loader hold above releases on every exit path. */
+    private async resolveInitialMarketBody(
+        url_symbol: string | null,
+        url_trade_type: string | null,
+        is_deep_link: boolean
+    ) {
+        const epoch = ++this.selection_seq;
 
         // BaseStore applies the sessionStorage restore (symbol/contract_type) one macrotask after
         // construction (see the setTimeout in its constructor). Wait it out so the resolver always
@@ -3931,7 +3967,9 @@ export default class TradeStore extends BaseStore<TRootStore> {
             // would sit pending, gating every per-tab save for the rest of the load, until a
             // refetch consumed it as a mid-session reset. Settle it now when nothing is in
             // flight; when a response IS coming, its own consumer wins (the consume is atomic).
-            if (!this.is_awaiting_contracts_for && !this.is_selecting_market && !this.is_reconciling_url_trade_type) {
+            // The loader flag is not consulted: the nested reconcile has returned, so here it can
+            // only be this resolver's own hold.
+            if (!this.is_awaiting_contracts_for && !this.is_selecting_market) {
                 await this.applyPendingTabParams().catch(() => this.clearPendingTabParams());
             }
         }
@@ -3973,65 +4011,64 @@ export default class TradeStore extends BaseStore<TRootStore> {
         // When called from resolveInitialMarket it continues the resolver's own epoch instead of
         // starting a new one (the reconcile IS the URL intent, not a competing selection).
         const epoch = existing_epoch ?? ++this.selection_seq;
-        // Set synchronously (before the first await) so it is observed in the same render that
-        // useContractsFor unblocks the page loader — keeps the loader up instead of flashing the
-        // stale market + wrong trade type.
-        this.is_reconciling_url_trade_type = true;
-        // Timeout guards so a market list / active_symbols that never settle (API failure, native-app
-        // trade-type filtering) can't leave this awaiting forever — either bound leaves the current
-        // state as-is, and useContractsFor still keeps the UI consistent.
-        try {
-            // The market list (contract_types_list_v2) can arrive from useContractsFor before
-            // active_symbols land in the store from useActiveSymbols. Wait for the symbols so the
-            // search has candidates — otherwise it would find nothing and wrongly show the modal.
-            await when(() => this.active_symbols.length > 0, { timeout: SELECTION_WAIT_TIMEOUT });
-            const compatible_symbol = await findSymbolForTradeType(this.active_symbols, trade_type);
-            // Superseded by a newer selection (e.g. the user already picked a market while we waited)
-            // — honour the user's choice and drop the URL intent silently (no modal, no writes).
-            if (this.selection_seq !== epoch) return;
-            if (!compatible_symbol) {
-                this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
-                return;
+        // The hold is taken synchronously (before the first await) so it is observed in the same
+        // render that useContractsFor unblocks the page loader — keeps the loader up instead of
+        // flashing the stale market + wrong trade type. Left to its current holder when
+        // resolveInitialMarket already raised it for the whole deep-link resolution.
+        await this.withLoaderHold(true, async () => {
+            // Timeout guards so a market list / active_symbols that never settle (API failure,
+            // native-app trade-type filtering) can't leave this awaiting forever — either bound
+            // leaves the current state as-is, and useContractsFor still keeps the UI consistent.
+            try {
+                // The market list (contract_types_list_v2) can arrive from useContractsFor before
+                // active_symbols land in the store from useActiveSymbols. Wait for the symbols so the
+                // search has candidates — otherwise it would find nothing and wrongly show the modal.
+                await when(() => this.active_symbols.length > 0, { timeout: SELECTION_WAIT_TIMEOUT });
+                const compatible_symbol = await findSymbolForTradeType(this.active_symbols, trade_type);
+                // Superseded by a newer selection (e.g. the user already picked a market while we
+                // waited) — honour the user's choice and drop the URL intent silently (no modal, no writes).
+                if (this.selection_seq !== epoch) return;
+                if (!compatible_symbol) {
+                    this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
+                    return;
+                }
+                // Mark this as a URL landing so downstream fallbacks (e.g. automation) honour the intent.
+                runInAction(() => {
+                    this.url_trade_type = trade_type;
+                });
+                if (compatible_symbol !== this.symbol) {
+                    await this.onChange({ target: { name: 'symbol', value: compatible_symbol } });
+                }
+                // Judge the compatible market against ITS OWN list: when the symbol just changed,
+                // useContractsFor's refetch also defaults the trade type to the market's first
+                // available one, so applying the requested type last stops default-selection
+                // overriding it; when the market was already current its list is already stamped, so
+                // this settles on the first evaluation and the "nothing will refetch" case still
+                // fails fast to the modal.
+                const has_own_list = await this.hasContractTypesFor(compatible_symbol);
+                // Same supersession check after the waits above: never overwrite a user selection
+                // that started while the reconcile was pending.
+                if (this.selection_seq !== epoch) return;
+                // A list that never arrived, or was restamped by a later response before this read,
+                // supports no claim about the market: keep the symbol and let
+                // resolveContractTypeAvailability settle the type if the response lands later.
+                if (!has_own_list || this.contract_types_list_v2_symbol !== compatible_symbol) return;
+                if (!this.isTradeTypeOfferedInV2List(trade_type)) {
+                    this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
+                    return;
+                }
+                if (this.contract_type !== trade_type) {
+                    await this.onChange({ target: { name: 'contract_type', value: trade_type } });
+                }
+                if (this.selection_seq === epoch) this.syncTradeURLParams();
+            } catch (error) {
+                // active_symbols/market list didn't settle in time (when timeout), or a switch failed
+                // — leave the current state untouched rather than surfacing an error. Logged so a
+                // timeout is distinguishable from a genuine programming error during local testing/QA.
+                // eslint-disable-next-line no-console
+                console.error('[reconcileUrlTradeTypeWithSymbol] failed:', error);
             }
-            // Mark this as a URL landing so downstream fallbacks (e.g. automation) honour the intent.
-            runInAction(() => {
-                this.url_trade_type = trade_type;
-            });
-            if (compatible_symbol !== this.symbol) {
-                await this.onChange({ target: { name: 'symbol', value: compatible_symbol } });
-            }
-            // Judge the compatible market against ITS OWN list: when the symbol just changed,
-            // useContractsFor's refetch also defaults the trade type to the market's first available
-            // one, so applying the requested type last stops default-selection overriding it; when the
-            // market was already current its list is already stamped, so this settles on the first
-            // evaluation and the "nothing will refetch" case still fails fast to the modal.
-            const has_own_list = await this.hasContractTypesFor(compatible_symbol);
-            // Same supersession check after the waits above: never overwrite a user selection that
-            // started while the reconcile was pending.
-            if (this.selection_seq !== epoch) return;
-            // A list that never arrived, or was restamped by a later response before this read,
-            // supports no claim about the market: keep the symbol and let
-            // resolveContractTypeAvailability settle the type if the response lands later.
-            if (!has_own_list || this.contract_types_list_v2_symbol !== compatible_symbol) return;
-            if (!this.isTradeTypeOfferedInV2List(trade_type)) {
-                this.root_store.ui.toggleUrlUnavailableModal(true, 'trade_type');
-                return;
-            }
-            if (this.contract_type !== trade_type) {
-                await this.onChange({ target: { name: 'contract_type', value: trade_type } });
-            }
-            if (this.selection_seq === epoch) this.syncTradeURLParams();
-        } catch (error) {
-            // active_symbols/market list didn't settle in time (when timeout), or a switch failed — leave
-            // the current state untouched rather than surfacing an error. Logged so a timeout is
-            // distinguishable from a genuine programming error during local testing/QA.
-            // eslint-disable-next-line no-console
-            console.error('[reconcileUrlTradeTypeWithSymbol] failed:', error);
-        } finally {
-            runInAction(() => {
-                this.is_reconciling_url_trade_type = false;
-            });
-        }
+        });
     }
 
     /** Resolves true once the store's processed V2 list is the one built from `symbol`'s own response. */
