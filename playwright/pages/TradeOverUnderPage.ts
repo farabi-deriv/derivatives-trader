@@ -79,7 +79,7 @@ export class TradeOverUnderPage extends TradeDigitsPage {
     }
 
     /**
-     * Flow 21 (#1384) — switching Higher/Lower → Over/Under must not leave a stale price barrier
+     * Flow 6.4 (#1384) — switching Higher/Lower → Over/Under must not leave a stale price barrier
      * on the digit proposal. Seeds a relative barrier on Higher/Lower, switches to Over/Under,
      * picks a digit, and asserts Buy is enabled and prices (no "Barrier is not an integer…" toast).
      */

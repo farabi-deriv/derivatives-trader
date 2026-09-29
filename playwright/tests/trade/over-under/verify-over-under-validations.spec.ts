@@ -1,11 +1,11 @@
 /**
  * @name     Over/Under — validations (no purchase)
- * @id       flow-21
- * @flow     playwright/flows/trade/flow.md#flow-21--higherlower--overunder-proposal-uses-last_digit
+ * @id       flow-6.3, flow-6.4
+ * @flow     playwright/flows/trade/flow.md#flow-63--overunder-digit-duration-and-stake-validation
  * @coverage playwright/flows/trade/coverage.md
  *
  * Shared-account Over/Under checks that do not buy a contract. Park future OU validation
- * cases here (proposal, digit gating, trade-type switch side effects, etc.).
+ * cases here as they are split out of `verify-manual-trade-negative-validation.spec.ts`.
  */
 import { test } from '../../../fixtures/fixtures';
 import { TradeBasePage } from '../../../pages/TradeBasePage';
@@ -27,7 +27,18 @@ test.describe('Trade — Over/Under', { tag: ['@desktop', '@mobile', '@trade'] }
     });
 
     /**
-     * Flow 21 / issue #1384 — Higher/Lower seeds a price barrier; switching to Over/Under must
+     * Flow 6.3 — Over/Under trade-param validation (split from Flow 14): digit subtype
+     * boundaries, then ticks-only Duration, then Stake. Select once — no `*ForConfiguration` re-select.
+     */
+    test('VERIFY Over/Under Digit, Duration, and Stake validation', async ({ tradeValidationPage }) => {
+        await tradeValidationPage.selectMarketAndTradeType('Volatility 10 Index', 'Over/Under');
+        await tradeValidationPage.verifyLastDigitPredictionChoiceAvailability();
+        await tradeValidationPage.verifyDurationGuardrails('Over/Under');
+        await tradeValidationPage.verifyStakeGuardrails('Over/Under');
+    });
+
+    /**
+     * Flow 6.4 / issue #1384 — Higher/Lower seeds a price barrier; switching to Over/Under must
      * send the selected digit instead, or Buy never prices ("Barrier is not an integer…").
      */
     test('VERIFY Over/Under proposal prices after switching from Higher/Lower', async ({ tradeOverUnderPage }) => {

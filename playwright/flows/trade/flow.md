@@ -309,6 +309,22 @@
 
 Identical chain to Flow 5.1 with `clickMatchesDiffersOption('Differs')` (purchase button turns red) — buy Differs → open details → settle in place → verify the closed contract in Positions, contract details, balance, and Reports.
 
+### Flow 5.3 — Matches/Differs digit, Duration, and Stake validation
+
+> Split from Flow 14. Single no-purchase journey: digit choices for Matches and Differs, ticks-only Duration, then Stake runtime limits.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_MATCHES_DIFFERS` / `TEST_EMAIL_MATCHES_DIFFERS_MOBILE`). Digits symbol (e.g. Volatility 10 Index).
+**Spec:** `playwright/tests/trade/matches-differs/verify-matches-differs-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Matches/Differs | `selectMarketAndTradeType('Volatility 10 Index', 'Matches/Differs')` | Last digit prediction visible | Both |
+| 2 | Digit choices | `verifyMatchesDiffersDigitChoiceAvailability()` | Digits 0–9 listed; Matches and Differs keep 0 and 9 enabled | Both |
+| 3 | Duration | `verifyDurationGuardrails('Matches/Differs')` → `verifyBuyButtonRemainsEnabled()` | No unit tabs; desktop **6** quick-pick chips (values within **1–10 ticks**, not fixed); mobile wheel 1–10; desktop Custom: draft min−1 / max+1 → `Please enter a duration between {{min}} to {{max}} ticks.` + Save disabled; rejected drafts leave Buy unchanged | Both |
+| 4 | Stake | `verifyStakeGuardrails('Matches/Differs')` → `verifyBuyButtonRemainsEnabled()` → `dismissStakeEditor()` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Matrix specs still use `*ForConfiguration`.
+
 ---
 
 ## Over/Under
@@ -343,6 +359,39 @@ Identical chain to Flow 5.1 with `clickMatchesDiffersOption('Differs')` (purchas
 
 Identical chain to Flow 6.1 with `selectPredictionOption('Under', 'bottom')` (purchase button turns red) — buy Under → open details → settle in place → verify the closed contract in Positions, contract details, balance, and Reports.
 
+### Flow 6.3 — Over/Under digit, Duration, and Stake validation
+
+> Split from Flow 14. Single no-purchase journey: digit subtype boundaries, ticks-only Duration, then Stake runtime limits.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_OVER_UNDER` / `TEST_EMAIL_OVER_UNDER_MOBILE`). Digits symbol (e.g. Volatility 10 Index).
+**Spec:** `playwright/tests/trade/over-under/verify-over-under-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Over/Under | `selectMarketAndTradeType('Volatility 10 Index', 'Over/Under')` | Last digit prediction visible | Both |
+| 2 | Digit boundaries | `verifyLastDigitPredictionChoiceAvailability()` | Digits 0–9 listed; Over disables 9; Under disables 0 | Both |
+| 3 | Duration | `verifyDurationGuardrails('Over/Under')` → `verifyBuyButtonRemainsEnabled()` | No unit tabs; desktop **6** quick-pick chips (values within **1–10 ticks**, not fixed); mobile wheel 1–10; desktop Custom: draft min−1 / max+1 → `Please enter a duration between {{min}} to {{max}} ticks.` + Save disabled; rejected drafts leave Buy unchanged | Both |
+| 4 | Stake | `verifyStakeGuardrails('Over/Under')` → `verifyBuyButtonRemainsEnabled()` → `dismissStakeEditor()` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Matrix specs still use `*ForConfiguration`.
+
+### Flow 6.4 — Higher/Lower → Over/Under proposal uses last_digit
+
+> Covers regression for #1384. Switching from Higher/Lower (price barrier) to Over/Under must not leave a stale `barrier` on the digit proposal — Buy must price with `last_digit` and stay enabled. No purchase.
+
+**Prerequisites:** Same Over/Under shared account as Flow 6.3.
+**Spec:** `playwright/tests/trade/over-under/verify-over-under-validations.spec.ts`
+**Unique params:** Barrier on Higher/Lower → digit on Over/Under
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Seed Higher/Lower barrier | `selectMarketAndTradeType(…, 'Higher/Lower')` + `setBarrier` | Relative price barrier committed | Both |
+| 2 | Switch to Over/Under | `selectMarketAndTradeType(…, 'Over/Under')` | Last digit prediction visible | Both |
+| 3 | Select digit | `selectDigit('7')` | Digit 7 selected | Both |
+| 4 | Assert proposal + Buy ready | `verifyProposalAfterHigherLowerToOverUnder()` | No barrier-range toast; Buy enabled; payout priced | Both |
+
+> **POM:** `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder`.
+
 ---
 
 ## Even/Odd
@@ -375,6 +424,21 @@ Identical chain to Flow 6.1 with `selectPredictionOption('Under', 'bottom')` (pu
 **Spec:** `playwright/tests/trade/even-odd/verify-odd.spec.ts` — `VERIFY Buy "Odd" Contract (Demo Account)` / `(Real Account)`
 
 Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purchase button turns red) — buy Odd → open details → settle in place → verify the closed contract in Positions, contract details, balance, and Reports.
+
+### Flow 7.3 — Even/Odd Duration and Stake validation
+
+> Split from Flow 14. Single no-purchase journey: ticks-only Duration, then Stake runtime limits. Even/Odd has **no** last-digit prediction.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_EVEN_ODD` / `TEST_EMAIL_EVEN_ODD_MOBILE`). Digits symbol (e.g. Volatility 10 Index).
+**Spec:** `playwright/tests/trade/even-odd/verify-even-odd-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Even/Odd | `selectMarketAndTradeType('Volatility 10 Index', 'Even/Odd')` | Chip selected; last digit prediction **not** visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Even/Odd')` → `verifyBuyButtonRemainsEnabled()` | No unit tabs; desktop **6** quick-pick chips (values within **1–10 ticks**, not fixed); mobile wheel 1–10; desktop Custom: draft min−1 / max+1 → `Please enter a duration between {{min}} to {{max}} ticks.` + Save disabled; rejected drafts leave Buy unchanged | Both |
+| 3 | Stake | `verifyStakeGuardrails('Even/Odd')` → `verifyBuyButtonRemainsEnabled()` → `dismissStakeEditor()` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Matrix specs still use `*ForConfiguration`.
 
 ---
 
@@ -824,13 +888,16 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 2 | Validate Stake filtering | Type letters, symbols, and excessive precision | Invalid characters are rejected and precision is bounded | Both |
 | 3 | Validate Duration | Read desktop range or mobile wheel options | Out-of-range values are blocked; mobile options are bounded | Both |
 | 4 | Validate Barrier | Enter zero and empty drafts | Validation appears, Save is disabled, committed value remains | Both |
-| 5 | Validate Digits | Inspect Over/Under choices | Digits 0–9 are represented with subtype availability | Both |
-| 6 | Validate Multipliers risk | Read multiplier, TP/SL ranges, and DC choices | Values come from the active configuration | Both |
-| 7 | Validate market families | Inspect all live asset categories | Every major family has a representative | Both |
-| 8 | Validate stale values | Switch symbols/types after setting parameters | Retained values belong to the new runtime ranges/options | Both |
-| 9 | Validate duplicate purchase | Double-click Accumulators Buy | Exactly one buy request is sent | Both |
-| 10 | Validate Accumulator recovery | Settle the Accumulator | Buy returns enabled | Both |
-| 11 | Validate Turbos lifecycle | Buy and close a Turbos contract | Open position closes and Buy recovers | Both |
+| 5 | Validate Multipliers risk | Read multiplier, TP/SL ranges, and DC choices | Values come from the active configuration | Both |
+| 6 | Validate market families | Inspect all live asset categories | Every major family has a representative | Both |
+| 7 | Validate stale values | Switch symbols/types after setting parameters | Retained values belong to the new runtime ranges/options | Both |
+| 8 | Validate duplicate purchase | Double-click Accumulators Buy | Exactly one buy request is sent | Both |
+| 9 | Validate Accumulator recovery | Settle the Accumulator | Buy returns enabled | Both |
+| 10 | Validate Turbos lifecycle | Buy and close a Turbos contract | Open position closes and Buy recovers | Both |
+
+> **Matches/Differs** digit / duration / stake validation moved to Flow **5.3** (`verify-matches-differs-validations.spec.ts`).
+> **Over/Under** digit / duration / stake validation moved to Flow **6.3** (`verify-over-under-validations.spec.ts`).
+> **Even/Odd** duration / stake validation moved to Flow **7.3** (`verify-even-odd-validations.spec.ts`) — no digit prediction on this type.
 
 > The current market picker does not expose Asians, Ends Between/Outside, or Stays Between/Goes Outside. Server-only open-position-cap setup is also unavailable with current account tooling; these states are not reported as passing by this flow.
 
@@ -1005,20 +1072,3 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 > **POM:** `seedThemePreference` · `setThemePreference` (branches Menu radios vs sidebar toggle) · `expectResolvedBodyTheme`.
 >
 > Chart canvas theme is N/A for Playwright — covered by unit/manual for SmartCharts `settings.theme`.
-
-## Flow 21 — Higher/Lower → Over/Under proposal uses last_digit
-
-> Covers regression for #1384. Switching from Higher/Lower (price barrier) to Over/Under must not leave a stale `barrier` on the digit proposal — Buy must price with `last_digit` and stay enabled. No purchase.
-
-**Prerequisites:** Authenticated (`TEST_EMAIL_OVER_UNDER` / `TEST_EMAIL_OVER_UNDER_MOBILE`). Digits symbol (e.g. Volatility 10 Index).
-**Spec:** `playwright/tests/trade/over-under/verify-over-under-validations.spec.ts`
-**Unique params:** Barrier on Higher/Lower → digit on Over/Under
-
-| # | Step | Action | Expected Result | Platform |
-| --- | --- | --- | --- | --- |
-| 1 | Seed Higher/Lower barrier | `selectMarketAndTradeType(…, 'Higher/Lower')` + `setBarrier` | Relative price barrier committed | Both |
-| 2 | Switch to Over/Under | `selectMarketAndTradeType(…, 'Over/Under')` | Last digit prediction visible | Both |
-| 3 | Select digit | `selectDigit('7')` | Digit 7 selected | Both |
-| 4 | Assert proposal + Buy ready | `verifyProposalAfterHigherLowerToOverUnder()` | No barrier-range toast; Buy enabled; payout priced | Both |
-
-> **POM:** `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder`.

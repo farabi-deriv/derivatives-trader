@@ -26,7 +26,7 @@ export type PurchaseControlState = {
  * @example
  * ```typescript
  * await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall');
- * await tradeValidationPage.verifyStakeRuntimeBoundaries();
+ * await tradeValidationPage.verifyStakeGuardrails('Over/Under');
  * ```
  */
 export class TradeValidationPage extends TradeParametersPage {
@@ -139,12 +139,12 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Over/Under outcome tab.
+     * Digit-contract outcome tab (Matches/Differs or Over/Under).
      *
-     * @param outcome - Digit boundary subtype.
+     * @param outcome - Outcome label on the segmented control.
      * @returns Matching outcome tab.
      */
-    digitOutcomeTab(outcome: 'Over' | 'Under'): Locator {
+    digitOutcomeTab(outcome: 'Matches' | 'Differs' | 'Over' | 'Under'): Locator {
         return this.page.locator('.trade-params__option').getByRole('button', { name: outcome, exact: true });
     }
 
@@ -270,6 +270,20 @@ export class TradeValidationPage extends TradeParametersPage {
         return this.stakeValidationMessage.filter({ hasText: /Balance is empty|You only have/ });
     }
 
+    /** Stake details block (Max payout / Payout rows) inside the open Custom editor. */
+    private get stakeDetailsRoot(): Locator {
+        return this.isMobile
+            ? this.stakeContainer.locator('.stake-content__details')
+            : this.stakePopover.locator('.stake-input-desktop__details .stake-content__details');
+    }
+
+    /** A stake-details row by its label (e.g. Max payout, Stop out). */
+    private stakeDetailsRow(label: 'Max payout' | 'Payout' | 'Stop out' | 'Stop out level' | 'Commission'): Locator {
+        const labelLocator =
+            label === 'Payout' ? this.page.getByText(/^Payout(\s|\(|$)/) : this.page.getByText(label, { exact: true });
+        return this.stakeDetailsRoot.locator('.stake-content__details-row').filter({ has: labelLocator });
+    }
+
     // ============================================
     // ACTIONS
     // ============================================
@@ -284,48 +298,164 @@ export class TradeValidationPage extends TradeParametersPage {
      */
     async openStakeEditor(): Promise<ValidationRange> {
         await this.openStakeCustomInput();
+        return this.verifyStakeCustomBoundaries();
+    }
 
-        if ((await this.stakeValidationMessage.count()) > 0) {
-            const neutralMessage = (await this.stakeValidationMessage.innerText()).trim();
-            if (/between|range/i.test(neutralMessage) && /\d/.test(neutralMessage)) {
-                return this.readRange(this.stakeValidationMessage);
+    /**
+     * Custom Stake drafts (editor already open; desktop switches to Custom when needed).
+     * Branches by trade type so new families can plug in without new top-level helpers:
+     * - Accumulators / Turbos / Vanillas → neutral `Range: $min to $max` (empty details)
+     * - Multipliers → same Range, plus Stop out / Stop out level / Commission rows
+     * - Digits / Rise/Fall / Higher/Lower / Touch/No Touch → min error + max-payout error
+     * - Default ({@link openStakeEditor}) → min error, then Max payout when shown, else excessive probe
+     *
+     * @param tradeType - Active trade type when known; omit for generic discovery.
+     */
+    private async verifyStakeCustomBoundaries(tradeType?: string): Promise<ValidationRange> {
+        if (!this.isMobile && !(await this.stakePopoverInput.isVisible().catch(() => false))) {
+            await this.stakeManualInputToggle.click();
+        }
+        await expect(this.stakePopoverInput, 'Stake custom input should be visible').toBeVisible();
+
+        switch (tradeType) {
+            case 'Accumulators':
+            case 'Turbos':
+            case 'Vanillas':
+            case 'Multipliers': {
+                await expect(
+                    this.stakeValidationMessage,
+                    `${tradeType} Custom should show a neutral Range: min to max hint`
+                ).toContainText(/Range:\s*\$?[\d,]+\.?\d*\s+to\s+\$?[\d,]+\.?\d*/i, { timeout: 20_000 });
+                await expect(
+                    this.stakeDetailsRow('Max payout'),
+                    `${tradeType} Custom must not show Max payout`
+                ).toHaveCount(0);
+                await expect(
+                    this.stakeDetailsRow('Payout'),
+                    `${tradeType} Custom must not show a Payout row`
+                ).toHaveCount(0);
+
+                if (tradeType === 'Multipliers') {
+                    await expect(
+                        this.stakeDetailsRow('Stop out'),
+                        'Multipliers Custom should show Stop out'
+                    ).toBeVisible({ timeout: 20_000 });
+                    await expect(
+                        this.stakeDetailsRow('Stop out level'),
+                        'Multipliers Custom should show Stop out level'
+                    ).toBeVisible();
+                    await expect(
+                        this.stakeDetailsRow('Commission'),
+                        'Multipliers Custom should show Commission'
+                    ).toBeVisible();
+                }
+
+                const range = await this.readRange(this.stakeValidationMessage);
+
+                await this.fillStakeCustomDraft(this.formatRangeValue(range.belowMinimum, range.precision));
+                await expect(
+                    this.stakeValidationMessage,
+                    `Stake below minimum (${range.belowMinimum}) should show the minimum-stake error`
+                ).toHaveText(TradeParametersPage.STAKE_MIN_AMOUNT_ERROR, { timeout: 20_000 });
+                await expect(this.stakeSaveButton, 'Save must stay disabled for a below-minimum stake').toBeDisabled();
+
+                await this.fillStakeCustomDraft(this.formatRangeValue(range.aboveMaximum, range.precision));
+                await expect(
+                    this.stakeValidationMessage,
+                    `Stake above maximum (${range.aboveMaximum}) should show an upper stake guardrail`
+                ).toContainText(new RegExp(String(range.maximum).replace('.', '\\.')), { timeout: 20_000 });
+                await expect(this.stakeSaveButton, 'Save must stay disabled for an above-maximum stake').toBeDisabled();
+
+                await this.fillAcceptedMinimumStake(range.minimum, range.precision);
+                await expect(
+                    this.stakeValidationMessage,
+                    `An in-range ${tradeType} stake should restore the neutral Range hint`
+                ).toContainText(/Range:/i);
+                await expect(
+                    this.stakeSaveButton,
+                    `Save must be enabled for an in-range ${tradeType} stake`
+                ).toBeEnabled();
+                return range;
+            }
+            case 'Over/Under':
+            case 'Matches/Differs':
+            case 'Even/Odd':
+            case 'Rise/Fall':
+            case 'Higher/Lower':
+            case 'Touch/No Touch':
+            default: {
+                await this.fillStakeCustomDraft('0');
+                await expect(this.stakeValidationMessage, 'Zero stake should show the minimum-stake error').toHaveText(
+                    TradeParametersPage.STAKE_MIN_AMOUNT_ERROR,
+                    { timeout: 20_000 }
+                );
+                await expect(this.stakeSaveButton, 'Save must stay disabled for a below-minimum stake').toBeDisabled();
+
+                const { amount: minimum, raw: rawMinimum } = this.parseFirstAmount(
+                    await this.stakeValidationMessage.innerText()
+                );
+                const precision = this.decimalPlaces(rawMinimum);
+
+                await this.fillAcceptedMinimumStake(minimum, precision);
+
+                const maxPayoutRow = this.stakeDetailsRow('Max payout');
+                let maximum = Number.MAX_SAFE_INTEGER;
+
+                if ((await maxPayoutRow.count()) > 0 && (await maxPayoutRow.isVisible())) {
+                    const maxPayout = await this.readStakeDetailsAmount('Max payout');
+                    const aboveMaxPayout = this.formatRangeValue(Math.floor(maxPayout) + 1, precision);
+
+                    await this.fillStakeCustomDraft(aboveMaxPayout);
+                    await expect(
+                        this.stakeValidationMessage,
+                        `Stake ${aboveMaxPayout} (above max payout ${maxPayout}) should show the payout-limits error`
+                    ).toHaveText(TradeParametersPage.STAKE_MAX_PAYOUT_ERROR, { timeout: 20_000 });
+                    await expect(
+                        this.stakeSaveButton,
+                        'Save must stay disabled when payout exceeds the maximum'
+                    ).toBeDisabled();
+                    maximum = maxPayout;
+                } else {
+                    await this.fillStakeCustomDraft('9999999999', true);
+                    await expect(
+                        this.stakeValidationMessage,
+                        'An excessive stake should expose an upper guardrail'
+                    ).toContainText(/\d/, { timeout: 20_000 });
+                    await expect(
+                        this.stakeSaveButton,
+                        'An excessive stake rejected by stake or payout limits must not be saved'
+                    ).toBeDisabled();
+                    const upperError = (await this.stakeValidationMessage.innerText()).trim();
+                    expect(upperError, 'Upper rejection should name a stake or payout guardrail').toMatch(
+                        /stake|payout|range|maximum|between|at most/i
+                    );
+                    const upperNumbers = [...upperError.matchAll(/[\d,]+(?:\.\d+)?/g)].map(match =>
+                        Number(match[0].replace(/,/g, ''))
+                    );
+                    const exposesStakeCeiling = /stake|between|range|maximum/i.test(upperError);
+                    const stakeCeiling = upperNumbers.find(value => Number.isFinite(value) && value >= minimum);
+                    maximum =
+                        exposesStakeCeiling && stakeCeiling !== undefined ? stakeCeiling : Number.MAX_SAFE_INTEGER;
+                }
+
+                await this.fillAcceptedMinimumStake(minimum, precision);
+                return this.createRange(minimum, maximum, precision);
             }
         }
+    }
 
-        await this.fillStakeCustomDraft('0');
-        await expect(this.stakeValidationMessage, 'A zero stake should expose the active minimum').toContainText(/\d/);
-        await expect(this.stakeSaveButton, 'A stake below the active minimum must not be saved').toBeDisabled();
-        const minimumError = await this.stakeValidationMessage.innerText();
-        const minimumMatch = minimumError.match(/[\d,]+(?:\.\d+)?/);
-        if (!minimumMatch) throw new Error(`Expected a numeric minimum stake, received: "${minimumError}"`);
-        const rawMinimum = minimumMatch[0].replace(/,/g, '');
-        const minimum = Number(rawMinimum);
-        expect(Number.isFinite(minimum) && minimum > 0, 'Active configuration should return a positive minimum').toBe(
-            true
-        );
-
-        await this.fillStakeCustomDraft('9999999999', true);
-        await expect(this.stakeValidationMessage, 'An excessive stake should expose an upper guardrail').toContainText(
-            /\d/
-        );
-        await expect(
-            this.stakeSaveButton,
-            'An excessive stake rejected by stake or payout limits must not be saved'
-        ).toBeDisabled();
-        const upperError = (await this.stakeValidationMessage.innerText()).trim();
-        expect(upperError, 'Upper rejection should name a stake or payout guardrail').toMatch(
-            /stake|payout|range|maximum|between|at most/i
-        );
-        const upperNumbers = [...upperError.matchAll(/[\d,]+(?:\.\d+)?/g)].map(match =>
-            Number(match[0].replace(/,/g, ''))
-        );
-        const exposesStakeCeiling = /stake|between|range|maximum/i.test(upperError);
-        const stakeCeiling = upperNumbers.find(value => Number.isFinite(value) && value >= minimum);
-        const maximum = exposesStakeCeiling && stakeCeiling !== undefined ? stakeCeiling : Number.MAX_SAFE_INTEGER;
-
-        const precision = this.decimalPlaces(rawMinimum);
-        await this.fillAcceptedMinimumStake(minimum, precision);
-        return this.createRange(minimum, maximum, precision);
+    /** Parses a currency amount from a stake-details row (e.g. Max payout → 1000 from "$1,000.00"). */
+    private async readStakeDetailsAmount(label: 'Max payout' | 'Payout'): Promise<number> {
+        const row = this.stakeDetailsRow(label);
+        await expect(row.locator('p').last(), `${label} value should load in stake details`).not.toHaveText('-', {
+            timeout: 20_000,
+        });
+        const text = await row.locator('p').last().innerText();
+        const amount = parseFloat(text.replace(/,/g, '').replace(/[^\d.]/g, ''));
+        if (!Number.isFinite(amount)) {
+            throw new Error(`Could not parse ${label} from stake details text "${text}"`);
+        }
+        return amount;
     }
 
     /**
@@ -780,20 +910,43 @@ export class TradeValidationPage extends TradeParametersPage {
     // ============================================
 
     /**
-     * Verify Stake guardrails using errors returned for the active configuration.
+     * Stake validation for the **already selected** trade type.
+     * Opens Stake → 6 quick picks → {@link verifyStakeCustomBoundaries}(tradeType) (Custom branches
+     * by family: max-payout, Range, or Range + Multipliers details).
      *
-     * Payout-based contracts do not render a neutral maximum-stake range. Their first upper
-     * rejection may be maximum stake or maximum payout, so the test verifies the actual returned
-     * guardrail rather than imposing one universal error.
-     *
-     * @returns Promise resolved after lower and upper guardrails are asserted.
+     * @param tradeType - Active trade type label (e.g. `'Over/Under'`, `'Accumulators'`).
      */
-    async verifyStakeRuntimeBoundaries(): Promise<void> {
+    async verifyStakeGuardrails(tradeType: string): Promise<void> {
         const committedStake = await this.stakeField.inputValue();
-        await this.openStakeEditor();
+
+        await this.stakeField.click();
+        await this.verifyStakeQuickPicks();
+        await this.verifyStakeCustomBoundaries(tradeType);
+        await this.verifyBuyButtonRemainsEnabled();
+
         await expect(this.stakeField, 'Rejected stake drafts must not replace the committed stake').toHaveValue(
             committedStake
         );
+    }
+
+    /**
+     * Stake quick picks: exactly 6 chips whose amounts may differ by trade type but must each
+     * parse as a positive stake. Desktop uses the Quick picks tab; mobile shows chips on the sheet.
+     */
+    private async verifyStakeQuickPicks(): Promise<void> {
+        const stakeEditor = this.isMobile ? this.stakeContainer : this.stakePopover;
+        const chips = stakeEditor.locator('.value-chips__chip');
+        await expect(chips.first(), 'Stake quick picks should show chips').toBeVisible();
+        await expect(chips, 'Stake should expose exactly 6 quick-pick chips').toHaveCount(6);
+
+        for (let index = 0; index < 6; index += 1) {
+            const label = (await chips.nth(index).innerText()).trim();
+            const amount = Number(label.replace(/[^\d.]/g, ''));
+            expect(
+                Number.isFinite(amount) && amount > 0,
+                `Stake quick-pick chip should be a positive amount, got "${label}"`
+            ).toBe(true);
+        }
     }
 
     /**
@@ -824,13 +977,13 @@ export class TradeValidationPage extends TradeParametersPage {
         if (verifyParams) {
             await this.verifyParamsForTradeType(tradeType, 'manual', verifyAllowEquals);
         }
-        await this.verifyStakeRuntimeBoundaries();
+        await this.verifyStakeGuardrails(tradeType);
         if ((await this.waitForOpenOrClosedMarket()) === 'closed') {
             await this.dismissStakeEditor().catch(() => {});
             await this.verifyClosedMarketTradeFormDisabled();
             return;
         }
-        await this.verifyCommittedBuyUnaffectedByRejectedDraft();
+        await this.verifyBuyButtonRemainsEnabled();
         await this.dismissStakeEditor();
     }
 
@@ -857,8 +1010,8 @@ export class TradeValidationPage extends TradeParametersPage {
         if (verifyParams) {
             await this.verifyParamsForTradeType(tradeType, 'manual', verifyAllowEquals);
         }
-        await this.verifyAllDurationGuardrails(`${market} / ${tradeType}`);
-        await this.verifyCommittedBuyUnaffectedByRejectedDraft();
+        await this.verifyDurationGuardrails(tradeType);
+        await this.verifyBuyButtonRemainsEnabled();
     }
 
     /**
@@ -909,11 +1062,9 @@ export class TradeValidationPage extends TradeParametersPage {
 
         await this.fillStakeCustomDraft('0');
         await expect(this.stakeValidationMessage, 'Zero stake should expose the active minimum').toContainText(/\d/);
-        const minimumError = await this.stakeValidationMessage.innerText();
-        const minimumMatch = minimumError.match(/[\d,]+(?:\.\d+)?/);
-        if (!minimumMatch) throw new Error(`Expected a numeric minimum stake, received: "${minimumError}"`);
-        const rawMinimum = minimumMatch[0].replace(/,/g, '');
-        const minimum = Number(rawMinimum);
+        const { amount: minimum, raw: rawMinimum } = this.parseFirstAmount(
+            await this.stakeValidationMessage.innerText()
+        );
         const precision = this.decimalPlaces(rawMinimum);
         const increment = 10 ** -precision;
         const unaffordable = Math.max(minimum, Number((balance + increment).toFixed(precision)));
@@ -967,16 +1118,11 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify every duration guardrail offered by the active market/trade-type configuration.
-     *
-     * Desktop validates each offered free-form unit plus constrained end-date choices. Mobile has
-     * bounded wheels, so it verifies only options supplied by the active configuration can be used.
-     * Unsupported units are absent rather than forced into configurations that do not offer them.
-     *
-     * @param configuration - Market/trade-type label included in assertion diagnostics.
-     * @returns Promise resolved after every offered duration mode is checked.
+     * Validate every duration unit the active editor offers.
+     * Prefer {@link verifyDurationGuardrails} from specs (branches by trade type; digits assert
+     * ticks-only there instead of calling this).
      */
-    async verifyAllDurationGuardrails(configuration = 'Active configuration'): Promise<void> {
+    async verifyAllDurationGuardrails(): Promise<void> {
         const committedDuration = await this.durationField.inputValue();
         const editor = this.isMobile ? this.durationContainer : this.durationPopover;
         await this.durationField.click();
@@ -1024,7 +1170,7 @@ export class TradeValidationPage extends TradeParametersPage {
                     testedModes += 1;
                 }
                 if ((await this.durationUnitTab('Hours').count()) > 0) {
-                    await this.verifyDesktopHoursGuardrails(configuration);
+                    await this.verifyDesktopHoursGuardrails();
                     testedModes += 1;
                 }
             }
@@ -1067,11 +1213,8 @@ export class TradeValidationPage extends TradeParametersPage {
 
     /**
      * Verify the desktop Hours editor rejects invalid hours/minutes combinations.
-     *
-     * @param _configuration - Market/trade-type label reserved for future diagnostics.
-     * @returns Promise resolved after compound duration guardrails are checked.
      */
-    async verifyDesktopHoursGuardrails(_configuration: string): Promise<void> {
+    async verifyDesktopHoursGuardrails(): Promise<void> {
         await this.openDurationUnit('Hours');
         await this.durationManualInputToggle.click();
         await expect(this.durationHoursRange, 'Hours editor should expose its supported range').toContainText(/\d/);
@@ -1120,15 +1263,131 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify contracts designed without duration do not render a stale Duration field.
-     *
-     * @returns Promise resolved after Duration absence is asserted.
+     * Duration validation for the **already selected** trade type.
+     * - Digits → no unit tab selector; ticks quick picks + desktop Custom out-of-range
+     * - Accumulators / Multipliers → Duration hidden
+     * - Everything else → {@link verifyAllDurationGuardrails}
+     */
+    async verifyDurationGuardrails(tradeType: string): Promise<void> {
+        switch (tradeType) {
+            case 'Over/Under':
+            case 'Matches/Differs':
+            case 'Even/Odd': {
+                await this.durationField.click();
+                await this.verifyDurationForTicksQuickPicks();
+                await this.verifyDurationForTicksCustomOutOfRange();
+                await this.dismissDurationEditors();
+                await this.verifyBuyButtonRemainsEnabled();
+                return;
+            }
+            case 'Accumulators':
+            case 'Multipliers':
+                await this.verifyDurationUnavailable();
+                return;
+            default:
+                await this.verifyAllDurationGuardrails();
+        }
+    }
+
+    /**
+     * Verify contracts designed without duration do not show a Duration field.
      */
     async verifyDurationUnavailable(): Promise<void> {
+        await expect(this.durationField, 'Duration field should not be visible.').toBeHidden();
+    }
+
+    /**
+     * Digit ticks Duration: no unit tab selector; desktop exposes exactly 6 quick-pick chips whose
+     * values may vary but must each be within 1–10 ticks; mobile wheel options stay within 1–10
+     * and include both endpoints.
+     */
+    private async verifyDurationForTicksQuickPicks(): Promise<void> {
+        const durationEditor = this.isMobile ? this.durationContainer : this.durationPopover;
         await expect(
-            this.durationField,
-            'A trade type without duration support should not render a Duration field'
-        ).toHaveCount(0);
+            durationEditor.locator(this.isMobile ? '.horizontal-tab-selector' : '.vertical-tab-selector'),
+            'Digit Duration must not show Ticks/Seconds/Minutes/Hours/End time unit tabs'
+        ).toBeHidden();
+
+        const parseTicksLabel = (label: string): number => {
+            const match = label.trim().match(/^(\d+)\s*ticks?$/i);
+            expect(match, `Duration option should be a ticks label, got "${label}"`).toBeTruthy();
+            return Number(match![1]);
+        };
+
+        if (this.isMobile) {
+            const labels = (await this.durationWheelOptions.allTextContents())
+                .map(value => value.trim())
+                .filter(Boolean);
+            expect(labels.length, 'Mobile ticks wheel should expose duration options').toBeGreaterThan(0);
+            const ticks = labels.map(parseTicksLabel);
+            expect(Math.min(...ticks), 'Mobile ticks wheel should start at 1 tick').toBe(1);
+            expect(Math.max(...ticks), 'Mobile ticks wheel should end at 10 ticks').toBe(10);
+            for (const tick of ticks) {
+                expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeGreaterThanOrEqual(1);
+                expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeLessThanOrEqual(10);
+            }
+            return;
+        }
+
+        const chips = this.durationPopover.locator('.value-chips__chip');
+        await expect(chips.first(), 'Desktop Duration quick picks should show chips').toBeVisible();
+        await expect(chips, 'Desktop Duration should expose exactly 6 quick-pick chips').toHaveCount(6);
+
+        const ticks: number[] = [];
+        for (let index = 0; index < 6; index += 1) {
+            ticks.push(parseTicksLabel((await chips.nth(index).innerText()).trim()));
+        }
+        for (const tick of ticks) {
+            expect(tick, `Quick-pick chip ${tick} ticks should be between 1 and 10`).toBeGreaterThanOrEqual(1);
+            expect(tick, `Quick-pick chip ${tick} ticks should be between 1 and 10`).toBeLessThanOrEqual(10);
+        }
+    }
+
+    /**
+     * Desktop Custom ticks input: read `Range: min - max ticks`, draft min−1 and max+1 (error + Save
+     * disabled), then a valid in-range value so the error clears and Save re-enables.
+     * Mobile ticks-only has no free-form Custom field — skipped (wheel already bounds options).
+     */
+    private async verifyDurationForTicksCustomOutOfRange(): Promise<void> {
+        if (this.isMobile) {
+            return;
+        }
+
+        await this.durationManualInputToggle.click();
+        await expect(
+            this.durationMessage,
+            'Custom ticks should show a neutral Range: min - max ticks hint'
+        ).toContainText(/Range:\s*\d+\s*-\s*\d+\s*ticks/i);
+
+        const range = await this.readRange(this.durationMessage);
+        const expectedError = `Please enter a duration between ${range.minimum} to ${range.maximum} ticks.`;
+        const expectedRangeHint = `Range: ${range.minimum} - ${range.maximum} ticks`;
+
+        await this.fillDurationDraft(String(range.belowMinimum));
+        await expect(
+            this.durationMessage,
+            `Ticks below minimum (${range.belowMinimum}) should show the between-range error`
+        ).toHaveText(expectedError);
+        await expect(
+            this.durationSaveButton,
+            'Save must stay disabled for ticks below the Custom range'
+        ).toBeDisabled();
+
+        await this.fillDurationDraft(String(range.aboveMaximum));
+        await expect(
+            this.durationMessage,
+            `Ticks above maximum (${range.aboveMaximum}) should show the between-range error`
+        ).toHaveText(expectedError);
+        await expect(
+            this.durationSaveButton,
+            'Save must stay disabled for ticks above the Custom range'
+        ).toBeDisabled();
+
+        await this.fillDurationDraft(String(range.minimum));
+        await expect(this.durationMessage, 'A valid ticks draft should restore the neutral Range hint').toHaveText(
+            expectedRangeHint
+        );
+        await expect(this.durationSaveButton, 'Save must be enabled for an in-range ticks draft').toBeEnabled();
     }
 
     /**
@@ -1251,12 +1510,9 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify digit availability comes from the active subtype and disabled choices cannot commit.
-     *
-     * @returns Promise resolved after assertions.
+     * Assert digit selector lists exactly 0–9.
      */
-    async verifyDigitChoiceAvailability(): Promise<void> {
-        await this.digitOutcomeTab('Over').click();
+    private async assertDigitChoicesZeroThroughNine(): Promise<void> {
         await this.openDigitSelector();
         const labels = (await this.digitChoices.allTextContents()).map(value => value.trim());
         expect(labels, 'Digit selector should expose exactly digits 0 through 9').toEqual([
@@ -1271,18 +1527,55 @@ export class TradeValidationPage extends TradeParametersPage {
             '8',
             '9',
         ]);
+    }
+
+    /**
+     * Close the mobile digit prediction sheet so Duration/Stake editors are not blocked.
+     */
+    private async dismissDigitPredictionSheetIfMobile(): Promise<void> {
+        if (!this.isMobile) return;
+        await this.actionSheetCloseButton(this.digitPredictionSheet).click();
+        await expect(
+            this.digitPredictionSheet,
+            'Digit prediction sheet should close before Duration/Stake validation'
+        ).not.toBeVisible();
+    }
+
+    /**
+     * Matches/Differs digit choices — digits 0–9 listed and enabled for both Matches and Differs.
+     */
+    async verifyMatchesDiffersDigitChoiceAvailability(): Promise<void> {
+        await this.digitOutcomeTab('Matches').click();
+        await this.assertDigitChoicesZeroThroughNine();
+        for (const digit of ['0', '9'] as const) {
+            await expect(this.digitChoice(digit), `Matches must keep digit ${digit} enabled`).toBeEnabled();
+        }
+
+        await this.dismissDigitPredictionSheetIfMobile();
+        await this.digitOutcomeTab('Differs').click();
+        if (this.isMobile) await this.openDigitSelector();
+        for (const digit of ['0', '9'] as const) {
+            await expect(this.digitChoice(digit), `Differs must keep digit ${digit} enabled`).toBeEnabled();
+        }
+        await this.dismissDigitPredictionSheetIfMobile();
+    }
+
+    /**
+     * Verify last-digit prediction choices for the active Over/Under subtype — digits 0–9 listed,
+     * and boundary digits disabled (Over: 9, Under: 0).
+     *
+     * @returns Promise resolved after assertions.
+     */
+    async verifyLastDigitPredictionChoiceAvailability(): Promise<void> {
+        await this.digitOutcomeTab('Over').click();
+        await this.assertDigitChoicesZeroThroughNine();
         await expect(this.digitChoice('9'), 'Over must disable digit 9 because no higher digit exists').toBeDisabled();
 
-        if (this.isMobile) {
-            await this.actionSheetCloseButton(this.digitPredictionSheet).click();
-            await expect(
-                this.digitPredictionSheet,
-                'Over digit sheet should close before switching subtype'
-            ).not.toBeVisible();
-        }
+        await this.dismissDigitPredictionSheetIfMobile();
         await this.digitOutcomeTab('Under').click();
         if (this.isMobile) await this.openDigitSelector();
         await expect(this.digitChoice('0'), 'Under must disable digit 0 because no lower digit exists').toBeDisabled();
+        await this.dismissDigitPredictionSheetIfMobile();
     }
 
     /**
@@ -1329,11 +1622,11 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify a rejected editor draft leaves the valid committed proposal purchasable.
+     * Assert the Buy button stays enabled (also visible and not loading) after a rejected draft.
      *
      * @returns Promise resolved after Buy state assertions.
      */
-    async verifyCommittedBuyUnaffectedByRejectedDraft(): Promise<void> {
+    async verifyBuyButtonRemainsEnabled(): Promise<void> {
         await expect(
             this.buyControl,
             'Buy should remain visible because the invalid draft was not committed'
@@ -1390,6 +1683,15 @@ export class TradeValidationPage extends TradeParametersPage {
             Number(value.replace(/,/g, ''))
         );
         expect(displayedNumbers, description).toContain(expected);
+    }
+
+    /** First numeric amount in a message (e.g. min stake from a validation error). */
+    private parseFirstAmount(text: string): { amount: number; raw: string } {
+        const raw = text.replace(/,/g, '').match(/\d+(?:\.\d+)?/)?.[0];
+        expect(raw, `Expected a numeric amount in "${text}"`).toBeTruthy();
+        const amount = Number(raw);
+        expect(amount, `Expected a positive amount in "${text}"`).toBeGreaterThan(0);
+        return { amount, raw: raw! };
     }
 
     private decimalPlaces(value: string): number {

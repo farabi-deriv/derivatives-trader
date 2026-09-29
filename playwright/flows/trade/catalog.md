@@ -20,10 +20,14 @@
 | Flow 4.2 | `trade/touch-no-touch/verify-no-touch.spec.ts` | `@trade @desktop @mobile` |
 | Flow 5.1 | `trade/matches-differs/verify-matches.spec.ts` | `@trade @smoke @desktop @mobile` |
 | Flow 5.2 | `trade/matches-differs/verify-differs.spec.ts` | `@trade @smoke @desktop @mobile` |
+| Flow 5.3 | `trade/matches-differs/verify-matches-differs-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 6.1 | `trade/over-under/verify-over.spec.ts` | `@trade @desktop @mobile` |
 | Flow 6.2 | `trade/over-under/verify-under.spec.ts` | `@trade @desktop @mobile` |
+| Flow 6.3 | `trade/over-under/verify-over-under-validations.spec.ts` | `@trade @desktop @mobile` |
+| Flow 6.4 | `trade/over-under/verify-over-under-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 7.1 | `trade/even-odd/verify-even.spec.ts` | `@trade @desktop @mobile` |
 | Flow 7.2 | `trade/even-odd/verify-odd.spec.ts` | `@trade @desktop @mobile` |
+| Flow 7.3 | `trade/even-odd/verify-even-odd-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 8.1 | `trade/accumulators/verify-accumulators-no-tp.spec.ts` | `@trade @desktop @mobile` |
 | Flow 8.2 | `trade/accumulators/verify-accumulators-with-tp.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.1 | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts` | `@trade @desktop @mobile` |
@@ -49,7 +53,6 @@
 | Flow 18 | `trade/verify-invalid-url-modal.spec.ts` | `@trade @desktop @mobile` |
 | Flow 19 | `trade/verify-trade-param-info-icon-hover.spec.ts` | `@trade @desktop @mobile` |
 | Flow 20 | `trade/verify-system-theme-option.spec.ts` | `@trade @desktop @mobile` |
-| Flow 21 | `trade/over-under/verify-over-under-validations.spec.ts` | `@trade @desktop @mobile` |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
@@ -299,6 +302,20 @@ test('VERIFY Buy "Differs" Contract (Demo Account)', async ({ tradeMatchesDiffer
 > `verifyBalanceAfterContractClose` → Reports `verifyClosedContractInReports` (Trade table + Statement).
 > **Flow 5.1** = `VERIFY Buy "Matches" Contract` · **Flow 5.2** = `VERIFY Buy "Differs" Contract`
 
+### Flow 5.3 — Matches/Differs digit, Duration, and Stake validation
+
+```typescript
+// verify-matches-differs-validations.spec.ts — Flow 5.3
+test('VERIFY Matches/Differs Digit, Duration, and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 10 Index', 'Matches/Differs');
+    await tradeValidationPage.verifyMatchesDiffersDigitChoiceAvailability();
+    await tradeValidationPage.verifyDurationGuardrails('Matches/Differs');
+    await tradeValidationPage.verifyStakeGuardrails('Matches/Differs');
+});
+```
+
+> **POM:** `verifyMatchesDiffersDigitChoiceAvailability` → `verifyDurationGuardrails` → `verifyStakeGuardrails` after one select.
+
 ---
 
 ### Flow 6.1 / 6.2 — Over/Under: buy → settle in place → verify closed
@@ -376,6 +393,19 @@ test('VERIFY Buy "Odd" Contract (Demo Account)', async ({ tradeEvenOddPage }) =>
 > `buyEvenAndVerify` / `buyOddAndVerify` run the same chain as `buyMatchesAndVerify` (see Flow 5.1/5.2)
 > minus the digit selection, differing in the outcome tab (`Even`/`Odd`) and audit Target text (`Even` / `Odd`).
 > **Flow 7.1** = `VERIFY Buy "Even" Contract` · **Flow 7.2** = `VERIFY Buy "Odd" Contract`
+
+### Flow 7.3 — Even/Odd Duration and Stake validation
+
+```typescript
+// verify-even-odd-validations.spec.ts — Flow 7.3
+test('VERIFY Even/Odd Duration and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 10 Index', 'Even/Odd');
+    await tradeValidationPage.verifyDurationGuardrails('Even/Odd');
+    await tradeValidationPage.verifyStakeGuardrails('Even/Odd');
+});
+```
+
+> **POM:** `verifyDurationGuardrails` → `verifyStakeGuardrails` after one select. No digit prediction on Even/Odd.
 
 ---
 
@@ -834,17 +864,20 @@ expect(tradeValidationPage.getTrackedBuyRequestCount(), 'Client-side balance val
 ```typescript
 for (const configuration of stakeCapabilityMatrix) {
     await tradeValidationPage.selectMarketAndTradeType(configuration.market, configuration.tradeType);
-    await tradeValidationPage.verifyStakeRuntimeBoundaries();
-    await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+    await tradeValidationPage.verifyStakeGuardrails(configuration.tradeType);
+    await tradeValidationPage.verifyBuyButtonRemainsEnabled();
 }
 await tradeValidationPage.verifyDurationRuntimeBoundaries('Seconds');
 await tradeValidationPage.verifyBarrierRequiredAndZeroValidation();
-await tradeValidationPage.verifyDigitChoiceAvailability();
 await tradeValidationPage.verifyRiskManagementRuntimeOptions();
 ```
 
+> **Matches/Differs split:** Flow **5.3** in `verify-matches-differs-validations.spec.ts` (digits + duration + stake).
+> **Over/Under split:** Flow **6.3** in `verify-over-under-validations.spec.ts` (digits + duration + stake).
+> **Even/Odd split:** Flow **7.3** in `verify-even-odd-validations.spec.ts` (duration + stake; no digit prediction).
+>
 > **Fixture:** `tradeValidationPage` from `playwright/fixtures/fixtures.ts`
-> **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Digits, Multiplier, and Deal Cancellation.
+> **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Multiplier, and Deal Cancellation.
 > **Buy-state coverage:** hidden for closed markets; Buy **enabled** with quoted payout when stake exceeds balance (insufficient-balance inform-don't-disable); collapsed Stake stays **neutral** for a stake-field shortfall (#1397); insufficient-balance **popup** on Buy click for zero-balance server path; exactly one outbound Buy for an Accumulators double-click; enabled again after settlement.
 
 ---
@@ -984,11 +1017,12 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 
 | Purpose | Page Object method |
 | --- | --- |
-| Parse and validate current Stake limits | `tradeValidationPage.verifyStakeRuntimeBoundaries()` |
+| Parse and validate current Stake limits | `tradeValidationPage.verifyStakeGuardrails(tradeType)` — 6 chips + Custom via `verifyStakeCustomBoundaries(tradeType)` (max-payout / Range / Multipliers details) |
 | Verify Stake input filtering | `tradeValidationPage.verifyStakeInputSanitization()` |
 | Validate current Duration limits/options | `tradeValidationPage.verifyDurationRuntimeBoundaries()` |
 | Validate required/zero Barrier | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()` |
-| Read current Digits availability | `tradeValidationPage.verifyDigitChoiceAvailability()` |
+| Read Over/Under Digits availability | `tradeValidationPage.verifyLastDigitPredictionChoiceAvailability()` |
+| Read Matches/Differs Digits availability | `tradeValidationPage.verifyMatchesDiffersDigitChoiceAvailability()` |
 | Read Multipliers TP/SL/DC options | `tradeValidationPage.verifyRiskManagementRuntimeOptions()` |
 | Discover markets in an asset category | `tradeValidationPage.readMarketsForCategory()` |
 | Select current closed market | `tradeValidationPage.selectFirstClosedMarket()` |
@@ -1008,7 +1042,11 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 | Desktop sidebar theme toggle (Flow 20) | `tradeParametersPage.clickSidebarThemeToggle()` |
 | Assert resolved body theme (Flow 20) | `tradeParametersPage.expectResolvedBodyTheme('dark')` |
 | Seed theme preference (Flow 20) | `TradeBasePage.seedThemePreference(page, 'system')` |
-| HL→OU proposal uses last_digit (Flow 21 / #1384) | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })` |
+| OU digit + Duration + Stake validation (Flow 6.3) | `selectMarketAndTradeType` → `verifyLastDigitPredictionChoiceAvailability` → `verifyDurationGuardrails('Over/Under')` → `verifyStakeGuardrails('Over/Under')` |
+| MD digit + Duration + Stake validation (Flow 5.3) | `selectMarketAndTradeType` → `verifyMatchesDiffersDigitChoiceAvailability` → `verifyDurationGuardrails('Matches/Differs')` → `verifyStakeGuardrails('Matches/Differs')` |
+| EO Duration + Stake validation (Flow 7.3) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Even/Odd')` → `verifyStakeGuardrails('Even/Odd')` |
+| HL→OU proposal uses last_digit (Flow 6.4 / #1384) | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })` |
+| Duration by trade type (already selected) | `tradeValidationPage.verifyDurationGuardrails(tradeType)` — digits → ticks-only quick picks + desktop Custom min−1/max+1 (`Please enter a duration between {{min}} to {{max}} ticks.` + Save disabled); Accu/Multipliers → absent; else all offered units |
 | Read committed stake (Flow 25 / market-selection) | `tradeParametersPage.readCommittedStake()` |
 | Read committed duration (Flow 25 / market-selection) | `tradeParametersPage.readCommittedDuration()` |
 | Assert stake + duration (Flow 25) | `tradeParametersPage.expectCommittedStakeAndDuration()` — pass `{ differs: true }` for sibling isolation |

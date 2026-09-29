@@ -70,10 +70,15 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 4.2 | P2 | Touch/No Touch — buy No Touch → close | authenticated, funded | `automated` |
 | Flow 5.1 | P0 | Matches/Differs — buy Matches → expiry | authenticated, funded | `automated` |
 | Flow 5.2 | P0 | Matches/Differs — buy Differs → expiry | authenticated, funded | `automated` |
+| Flow 5.3 | P1 | Matches/Differs digit, Duration, and Stake validation | authenticated | `automated` |
 | Flow 6.1 | P2 | Over/Under — buy Over → expiry | authenticated, funded | `automated` |
 | Flow 6.2 | P2 | Over/Under — buy Under → expiry | authenticated, funded | `automated` |
+| Flow 6.3 | P1 | Over/Under digit, Duration, and Stake validation | authenticated | `automated` |
+| Flow 6.4 | P1 | Higher/Lower → Over/Under proposal uses last_digit | authenticated | `automated` |
 | Flow 7.1 | P2 | Even/Odd — buy Even → expiry | authenticated, funded | `automated` |
 | Flow 7.2 | P2 | Even/Odd — buy Odd → expiry | authenticated, funded | `automated` |
+| Flow 7.3 | P1 | Even/Odd Duration and Stake validation | authenticated | `automated` |
+| Flow 8.1 | P0 | Accumulators without TP — buy → close | authenticated, funded | `automated` |
 | Flow 8.1 | P0 | Accumulators without TP — buy → close | authenticated, funded | `automated` |
 | Flow 8.2 | P0 | Accumulators with TP — buy → verify TP set → close | authenticated, funded | `automated` |
 | Flow 9.1 | P0 | Multipliers no TP/SL — buy Up → close | authenticated, funded | `automated` |
@@ -100,7 +105,6 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 18 | P1 | Invalid URL — unsupported market and trade type modals | unauthenticated | `automated` |
 | Flow 19 | P2 | Manual trade param info icons reveal descriptions | authenticated | `automated` |
 | Flow 20 | P2 | System theme follows OS / locks after explicit choice | unauthenticated | `automated` |
-| Flow 21 | P1 | Higher/Lower → Over/Under proposal uses last_digit | authenticated | `automated` |
 
 ---
 

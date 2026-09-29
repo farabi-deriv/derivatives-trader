@@ -5,18 +5,10 @@
 
 export type MarketCategory = 'Derived' | 'Forex' | 'Stocks & indices' | 'Commodities' | 'Cryptocurrencies';
 
-export type StakeTradeType =
-    | 'Accumulators'
-    | 'Higher/Lower'
-    | 'Touch/No Touch'
-    | 'Matches/Differs'
-    | 'Over/Under'
-    | 'Even/Odd'
-    | 'Multipliers'
-    | 'Turbos'
-    | 'Vanillas';
+export type StakeTradeType = 'Accumulators' | 'Higher/Lower' | 'Touch/No Touch' | 'Multipliers' | 'Turbos' | 'Vanillas';
 
-export type DurationTradeType = 'Higher/Lower' | 'Touch/No Touch' | 'Over/Under' | 'Turbos' | 'Vanillas';
+/** Matches/Differs → Flow 5.3; Over/Under → Flow 6.3; Even/Odd → Flow 7.3. */
+export type DurationTradeType = 'Higher/Lower' | 'Touch/No Touch' | 'Turbos' | 'Vanillas';
 
 /** One representative market per category for Rise/Fall-capable families. */
 export const STAKE_MARKET_CATEGORIES: ReadonlyArray<{
@@ -40,9 +32,9 @@ export const STAKE_TRADE_TYPE_CAPABILITIES: ReadonlyArray<{
     { market: 'Volatility 100 Index', tradeType: 'Accumulators', verifyParams: false },
     { market: 'Volatility 100 (1s) Index', tradeType: 'Higher/Lower' },
     { market: 'Volatility 10 (1s) Index', tradeType: 'Touch/No Touch' },
-    { market: 'Volatility 10 Index', tradeType: 'Matches/Differs' },
-    { market: 'Volatility 10 Index', tradeType: 'Over/Under' },
-    { market: 'Volatility 10 Index', tradeType: 'Even/Odd' },
+    // Matches/Differs stake+duration → Flow 5.3 (`verify-matches-differs-validations.spec.ts`)
+    // Over/Under stake+duration → Flow 6.3 (`verify-over-under-validations.spec.ts`)
+    // Even/Odd stake+duration → Flow 7.3 (`verify-even-odd-validations.spec.ts`)
     { market: 'Volatility 25 (1s) Index', tradeType: 'Multipliers' },
     { market: 'Volatility 100 (1s) Index', tradeType: 'Turbos' },
     { market: 'Volatility 100 Index', tradeType: 'Vanillas' },
@@ -54,7 +46,6 @@ export const DURATION_TRADE_TYPE_CAPABILITIES: ReadonlyArray<{
 }> = [
     { market: 'Volatility 100 (1s) Index', tradeType: 'Higher/Lower' },
     { market: 'Volatility 10 (1s) Index', tradeType: 'Touch/No Touch' },
-    { market: 'Volatility 10 Index', tradeType: 'Over/Under' },
     { market: 'Volatility 100 (1s) Index', tradeType: 'Turbos' },
     { market: 'Volatility 100 Index', tradeType: 'Vanillas' },
 ];

@@ -19,10 +19,14 @@
 | Flow 4.2 | Touch/No Touch — buy No Touch → close | ✅ | ✅ |  |
 | Flow 5.1 | Matches/Differs — buy Matches → expiry | ✅ | ✅ |  |
 | Flow 5.2 | Matches/Differs — buy Differs → expiry | ✅ | ✅ |  |
+| Flow 5.3 | Matches/Differs digit, Duration, and Stake validation | ✅ | ✅ | |
 | Flow 6.1 | Over/Under — buy Over → expiry | ✅ | ✅ |  |
 | Flow 6.2 | Over/Under — buy Under → expiry | ✅ | ✅ |  |
+| Flow 6.3 | Over/Under digit, Duration, and Stake validation | ✅ | ✅ | |
+| Flow 6.4 | Higher/Lower → Over/Under proposal uses last_digit | ✅ | ✅ | Covers #1384 |
 | Flow 7.1 | Even/Odd — buy Even → expiry | ✅ | ✅ |  |
 | Flow 7.2 | Even/Odd — buy Odd → expiry | ✅ | ✅ |  |
+| Flow 7.3 | Even/Odd Duration and Stake validation | ✅ | ✅ | No digit prediction; split from Flow 14 |
 | Flow 8.1 | Accumulators without TP — buy → close | ✅ | ✅ |  |
 | Flow 8.2 | Accumulators with TP — buy → verify TP set → close | ✅ | ✅ |  |
 | Flow 9.1 | Multipliers no TP/SL — buy Up → close | ✅ | ✅ | Commission + Stop out level on trade panel (#1413) |
@@ -49,7 +53,6 @@
 | Flow 18 | Invalid URL — unsupported market and trade type modals | ✅ | ✅ | Covers regression for #895 |
 | Flow 19 | Manual trade param info icons reveal descriptions | ✅ | ✅ | Covers regression for #995; Automate panel in trade-automate Flow 17 |
 | Flow 20 | System theme follows OS / locks after explicit choice | ✅ | ✅ | Covers #1177 — mobile System radio; desktop sidebar toggle |
-| Flow 21 | Higher/Lower → Over/Under proposal uses last_digit | ✅ | ✅ | Covers #1384 — shared account; no purchase |
 
 ---
 

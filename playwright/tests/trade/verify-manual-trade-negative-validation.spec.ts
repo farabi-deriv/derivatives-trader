@@ -78,7 +78,7 @@ test.describe(
             await test.step('Shared Stake input filtering and precision', async () => {
                 await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall');
                 await tradeValidationPage.verifyStakeInputSanitization();
-                await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+                await tradeValidationPage.verifyBuyButtonRemainsEnabled();
             });
         });
 
@@ -130,12 +130,7 @@ test.describe(
         }) => {
             await tradeValidationPage.selectMarketAndTradeType('Volatility 75 Index', 'Higher/Lower');
             await tradeValidationPage.verifyBarrierRequiredAndZeroValidation();
-            await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
-        });
-
-        test('VERIFY Digits expose only the active subtype prediction boundaries', async ({ tradeValidationPage }) => {
-            await tradeValidationPage.selectMarketAndTradeType('Volatility 10 Index', 'Over/Under');
-            await tradeValidationPage.verifyDigitChoiceAvailability();
+            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
         });
 
         test('VERIFY Multipliers Risk management enforces TP, SL, and Deal Cancellation options', async ({
@@ -151,7 +146,7 @@ test.describe(
 
             await tradeValidationPage.dismissOpenParameterEditor();
             await tradeValidationPage.verifyMultipliersRiskManagementGuardrails();
-            await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
             await tradeValidationPage.dismissOpenParameterEditor();
 
             const cancellationOptions = await tradeValidationPage.readDealCancellationOptions();
@@ -175,13 +170,13 @@ test.describe(
                 verifyParams: false,
             });
             await tradeValidationPage.verifyStandaloneTakeProfitGuardrails();
-            await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
         });
 
         test('VERIFY Turbos standalone Take profit enforces its runtime range', async ({ tradeValidationPage }) => {
             await tradeValidationPage.selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos');
             await tradeValidationPage.verifyStandaloneTakeProfitGuardrails();
-            await tradeValidationPage.verifyCommittedBuyUnaffectedByRejectedDraft();
+            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
         });
 
         test('VERIFY Rise/Fall has no Take profit or Risk management controls', async ({ tradeValidationPage }) => {

@@ -14,12 +14,14 @@ let accountPassword: string = undefined!;
 test.describe('Trade — Matches/Differs', { tag: ['@desktop', '@mobile', '@trade', '@smoke'] }, () => {
     test.describe.configure({ mode: 'serial' });
 
-    test.beforeAll(async () => {
+    test.beforeAll(async ({}, testInfo) => {
+        const isMobile = testInfo.project.name.includes('mobile');
+        const backupEmailVar = isMobile ? 'TEST_EMAIL_MATCHES_DIFFERS_MOBILE' : 'TEST_EMAIL_MATCHES_DIFFERS';
         const account = await createAccountV2viaJS('real', {
             currency: 'USD',
             trading: true,
             password: process.env.TEST_PASSWORD_MATCHES_DIFFERS,
-            backupAccount: process.env.TEST_EMAIL_MATCHES_DIFFERS,
+            backupAccount: process.env[backupEmailVar],
         });
         accountEmail = account.email;
         accountPassword = account.password;
