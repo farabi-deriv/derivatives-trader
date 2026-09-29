@@ -974,6 +974,60 @@ export class PositionsPage extends TradeBasePage {
     }
 
     /**
+     * Ensure the desktop Positions flyout is open on the Open tab without leaving the trade view.
+     * No-op on mobile (Positions is a separate route that unmounts Automate).
+     */
+    async ensureDesktopPositionsFlyoutOpen(): Promise<void> {
+        if (this.isMobile) {
+            return;
+        }
+        if (!(await this.positionsFlyout.isVisible().catch(() => false))) {
+            await this.sidebarPositionsButton.click();
+        }
+        await expect(this.positionsFlyout, 'Positions flyout should be open for open-tab sampling').toBeVisible();
+        if ((await this.positionsOpenTab.getAttribute('aria-selected')) !== 'true') {
+            await this.positionsOpenTab.click();
+        }
+        await expect(this.positionsOpenTab, 'Open tab should be selected for open-tab sampling').toHaveAttribute(
+            'aria-selected',
+            'true'
+        );
+    }
+
+    /**
+     * Peek Open-tab card count when Positions is already visible; returns null when it is not.
+     * Does not navigate — safe for high-frequency dual sampling alongside the badge.
+     */
+    async peekOpenTabContractCountIfVisible(): Promise<number | null> {
+        if (this.isMobile) {
+            const openPanel = this.page.getByRole('tabpanel', { name: 'Open' });
+            if (!(await openPanel.isVisible().catch(() => false))) {
+                return null;
+            }
+            return openPanel.getByTestId('dt_contract_card').count();
+        }
+        if (!(await this.positionsFlyout.isVisible().catch(() => false))) {
+            return null;
+        }
+        if ((await this.positionsOpenTab.getAttribute('aria-selected')) !== 'true') {
+            return null;
+        }
+        return this.openTabContractCards.count();
+    }
+
+    /**
+     * Dual-source open-position count for automation sequencing checks.
+     * Badge is always read; Open-tab cards are included when that view is already visible.
+     * `open` is the max of available sources so a lagging badge cannot hide a second card.
+     */
+    async getOpenPositionsCountDual(): Promise<{ badge: number; openTab: number | null; open: number }> {
+        const badge = await this.getOpenPositionsCount();
+        const openTab = await this.peekOpenTabContractCountIfVisible();
+        const open = openTab === null ? badge : Math.max(badge, openTab);
+        return { badge, openTab, open };
+    }
+
+    /**
      * Assert automation holds exactly one open contract — badge and Open-tab card count both read 1.
      */
     async verifyExactlyOneOpenPosition(): Promise<void> {

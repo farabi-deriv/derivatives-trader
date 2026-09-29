@@ -1640,16 +1640,19 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Verify the bot purchases contracts one at a time: exactly one open position while each
-     * contract is live, that open settles (open count → 0), then exactly one open again once at
-     * least a second contract has been purchased (`Contracts >= 2`; the cumulative counter may
-     * already read 2–3+ on short tick durations before this helper starts — do not require
-     * `Contracts === 1` up front).
+     * Verify the bot purchases contracts one at a time while running.
      *
-     * Call after `verifyAutomateRunningControls()` while the run is still active. Used for
-     * tick-duration trade types where contracts expire on a predictable schedule. On mobile,
-     * re-navigates to Automate before each stats read — Positions is a separate bottom-nav
-     * route that unmounts `.automate-mobile__run-button`.
+     * Pass conditions (no required empty-gap snapshot — tick bots often re-buy faster than a
+     * navigation poll can observe open → 0):
+     * 1. At least one contract purchased with exactly one open (badge + Open tab).
+     * 2. Hot loop: dual-source open count (badge always; Open-tab cards when visible) never
+     *    exceeds 1; Automate `Contracts >= 2` while exactly one is open.
+     *
+     * Desktop keeps the Positions flyout open during the hot loop so badge and Open-tab cards
+     * are sampled together without re-entering Automate each tick. Mobile samples the bottom-nav
+     * badge only in the hot loop (Positions is a separate route that unmounts Automate).
+     *
+     * Call after `verifyAutomateRunningControls()` while the run is still active.
      */
     async verifyAutomateSequentialContractPurchase({ timeout = 120_000 }: { timeout?: number } = {}): Promise<void> {
         await this.goToAutomatedTrading();
@@ -1666,36 +1669,31 @@ export class TradeAutomatePage extends TradeParametersPage {
             await this.positionsPage.verifyExactlyOneOpenPosition();
         }).toPass({ timeout: 30_000 });
 
+        // Return to Automate for Contracts/stats; on desktop keep Positions flyout open for dual sampling.
+        await this.goToAutomatedTrading();
+        await this.positionsPage.ensureDesktopPositionsFlyoutOpen();
+
         let maxOpenCountSeen = 0;
-        await expect
-            .poll(
-                async () => {
-                    await this.goToAutomatedTrading();
-                    const openCount = await this.positionsPage.getOpenPositionsCount();
-                    maxOpenCountSeen = Math.max(maxOpenCountSeen, openCount);
-                    return openCount;
-                },
-                {
-                    message: 'First contract should close or expire (no open positions) before the bot purchases again',
-                    timeout,
-                }
-            )
-            .toBe(0);
-
-        expect(maxOpenCountSeen, `Max open count seen: ${maxOpenCountSeen}`).toBeLessThanOrEqual(1);
-
         let contractsAtSecondOpen: number | null = null;
         await expect
             .poll(
                 async () => {
-                    await this.goToAutomatedTrading();
                     await expect(
                         this.statusRunning,
-                        'Bot should still be running while waiting for the second purchase'
+                        'Bot should still be running while verifying sequential purchases'
                     ).toHaveText('Status: Running');
-                    const openCount = await this.positionsPage.getOpenPositionsCount();
+
+                    const { badge, openTab, open } = await this.positionsPage.getOpenPositionsCountDual();
+                    maxOpenCountSeen = Math.max(maxOpenCountSeen, open);
+
+                    if (open > 1) {
+                        throw new Error(
+                            `Automation held more than one open position at once (badge=${badge}, openTab=${openTab ?? 'n/a'})`
+                        );
+                    }
+
                     const count = await this.getAutomationContractsCount();
-                    if (openCount === 1 && count >= 2) {
+                    if (open === 1 && count >= 2) {
                         contractsAtSecondOpen =
                             contractsAtSecondOpen === null ? count : Math.min(contractsAtSecondOpen, count);
                         return true;
@@ -1704,17 +1702,18 @@ export class TradeAutomatePage extends TradeParametersPage {
                 },
                 {
                     message:
-                        'A second contract should open (Contracts >= 2 with exactly one open position) while the bot is still running',
-                    timeout: 60_000,
-                    intervals: [250],
+                        'Bot should reach Contracts >= 2 with exactly one open position (badge ± Open tab), never more than one open',
+                    timeout,
+                    intervals: [50, 100, 100],
                 }
             )
             .toBe(true);
 
+        expect(maxOpenCountSeen, `Max open count seen: ${maxOpenCountSeen}`).toBeLessThanOrEqual(1);
         await this.positionsPage.verifyExactlyOneOpenPosition();
         expect(
             contractsAtSecondOpen,
-            `At least two contracts should be purchased before the poll ends (first re-open seen at Contracts: ${contractsAtSecondOpen})`
+            `At least two contracts should be purchased before the poll ends (first dual-open sample at Contracts: ${contractsAtSecondOpen})`
         ).toBeGreaterThanOrEqual(2);
 
         await this.goToAutomatedTrading();
