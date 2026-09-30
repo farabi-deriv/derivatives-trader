@@ -476,7 +476,7 @@ await tradeAutomatePage.runOverUnderAndVerify({
 | --- | --- | --- | --- | --- |
 | 1 | Configure valid baseline | `goToAutomatedTrading()` → Rise/Fall automate → `verifyPanelDefaultState()` → stake `1` → 10 ticks | Martingale defaults; panel ready with valid committed params | Both |
 | 2 | Initial stake below minimum | Open **Stake** Custom, enter `0.01` (below market min, e.g. `0.35`) | **"Please enter a stake amount that's at least …"**; **Save** disabled; dismiss restores prior stake | Both |
-| 3 | Initial stake empty | Re-open **Stake** Custom, clear field, **Save** (desktop) | Desktop: **"Amount is a required field."**; Mobile: **Save** disabled; dismiss restores prior stake | Both |
+| 3 | Initial stake empty | Re-open **Stake** Custom, clear field | **"Amount is a required field."**; **Save** disabled; dismiss restores prior stake | Both |
 | 4 | Initial stake invalid format | Re-open **Stake** Custom, enter `1.` (trailing decimal) | **"Should be a valid number."**; **Save** disabled; dismiss restores prior stake | Both |
 | 5 | Initial stake above max payout | Re-open **Stake** Custom → read **Max payout** from details → draft until **Payout** row errors | **Payout** row `.error`; proposal min/max payout message; **Save** disabled; dismiss restores prior stake | Both |
 | 6 | Initial stake above balance | Enter `{balance + 0.01}` (computed from header balance) | **"You only have {balance} {currency} left. Try a lower stake."**; Mobile: **Save** disabled; dismiss restores prior stake | Both |

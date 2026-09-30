@@ -1,8 +1,11 @@
 # chart-quote-subscriptions Specification
 
 ## Purpose
+
 TBD - created by archiving change tick-subscriptions-not-forgotten-switching. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: [CQS-001] A quote-stream teardown request with no granularity resolves to ticks
 
 `unsubscribeQuotes` in `useSmartChartsAdapter` SHALL treat a teardown request that carries a `symbol` but no `granularity` as granularity `0` (ticks) and take the keyed teardown path (`adapter.unsubscribeQuotes({ symbol, granularity })`). SmartCharts' `createGetQuotesRequest` omits `granularity` whenever it is falsy, so a tick chart — the default — always forgets through this path. The no-symbol fallback SHALL remain reserved for requests that name no symbol at all.
@@ -75,4 +78,3 @@ After the chart switches from one symbol to another, the app SHALL hold no live 
 - **WHEN** the chart switches symbol three times in a row on a tick (granularity `0`) chart
 - **THEN** after the last switch exactly one quote stream is registered, for the newest symbol
 - **AND** each superseded symbol's WebSocket subscription was unsubscribed
-

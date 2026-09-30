@@ -266,7 +266,7 @@ const StakeInput = observer(
         ) => {
             const proposal = data?.proposal;
 
-            // In case if the value is empty we are showing custom error text from FE (in onSave function)
+            // In case if the value is empty we are showing custom error text from FE (`required_stake_error`)
             if (proposal_request_values.amount === '') {
                 dispatch({ type: 'SET_STAKE_ERROR', payload: '' });
                 return;
@@ -561,13 +561,7 @@ const StakeInput = observer(
                 balance_hint
             )
                 return;
-            if (displayAmount === '') {
-                dispatch({
-                    type: 'SET_FE_STAKE_ERROR',
-                    payload: localize('Amount is a required field.'),
-                });
-                return;
-            }
+            if (displayAmount === '') return;
             // Setting new stake value to the store and send it in streaming proposal
             onChange({ target: { name: 'amount', value: displayAmount } });
             const preset_value = preset_source.current;
@@ -598,9 +592,14 @@ const StakeInput = observer(
                   })
                 : null;
 
+        // Read from `displayAmount`, not the debounced `proposal_request_values.amount`, or a
+        // just-typed digit is flagged as missing for the 300 ms the debounce is pending.
+        const required_stake_error = displayAmount === '' ? localize('Amount is a required field.') : '';
+
         const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
                 const isSaveDisabled =
+                    !!required_stake_error ||
                     is_loading_proposal ||
                     !!fe_stake_error ||
                     !!(should_show_stake_error && stake_error) ||
@@ -622,7 +621,7 @@ const StakeInput = observer(
         // while the drafted stake still equals the committed store value (dismiss = discard). The
         // balance hint also gates Save — an unaffordable stake shouldn't be committable from here.
         const is_save_disabled =
-            !displayAmount ||
+            !!required_stake_error ||
             is_validating ||
             !!fe_stake_error ||
             !!(should_show_stake_error && stake_error) ||
@@ -659,6 +658,7 @@ const StakeInput = observer(
                         label={localize('Stake ({{currency}})', { currency: currency_symbol })}
                         maxLength={state.max_length}
                         message={
+                            required_stake_error ||
                             fe_stake_error ||
                             (should_show_stake_error && stake_error) ||
                             balance_hint ||
@@ -671,7 +671,10 @@ const StakeInput = observer(
                         onKeyDown={handleKeyDown}
                         regex={/[^0-9.,]/g}
                         status={
-                            fe_stake_error || (should_show_stake_error && stake_error) || balance_hint
+                            required_stake_error ||
+                            fe_stake_error ||
+                            (should_show_stake_error && stake_error) ||
+                            balance_hint
                                 ? 'error'
                                 : 'neutral'
                         }

@@ -228,7 +228,7 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
     ) => {
         const proposal = data?.proposal;
 
-        // In case if the value is empty we are showing custom error text from FE (in onSave function)
+        // In case if the value is empty we are showing custom error text from FE (`required_stake_error`)
         if (proposal_request_values.amount === '') {
             dispatch({ type: 'SET_STAKE_ERROR', payload: '' });
             return;
@@ -422,23 +422,25 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
               })
             : null;
 
+    // No proposal error can describe an empty amount — the request is withheld while the amount is
+    // empty and `handleProposalResponse` clears `stake_error` in that state — so it is derived here.
+    // A separator-terminated value leaves `amount` at '' with the format error set, and that error
+    // describes what is actually in the field, so it keeps the slot.
+    const required_stake_error =
+        !fe_stake_error && String(proposal_request_values.amount ?? '') === ''
+            ? localize('Amount is a required field.')
+            : '';
+
+    const is_save_disabled =
+        !!required_stake_error ||
+        is_loading_proposal ||
+        !!fe_stake_error ||
+        !!(should_show_stake_error && stake_error) ||
+        !!balance_hint;
+
     const onSave = () => {
         // Prevent from saving if user clicks before we get theAPI response or if we get an error in response or the field is empty
-        if (
-            is_fetching_1 ||
-            (should_send_multiple_proposals && is_fetching_2) ||
-            (should_show_stake_error && stake_error) ||
-            fe_stake_error ||
-            balance_hint
-        )
-            return;
-        if (proposal_request_values.amount === '') {
-            dispatch({
-                type: 'SET_FE_STAKE_ERROR',
-                payload: localize('Amount is a required field.'),
-            });
-            return;
-        }
+        if (is_save_disabled) return;
         // Setting new stake value to the store and send it in streaming proposal
         onChange({ target: { name: 'amount', value: proposal_request_values.amount } });
         if (is_turbos && proposal_request_values.payout_per_point) {
@@ -453,12 +455,8 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            const isSaveDisabled =
-                is_loading_proposal || !!fe_stake_error || !!(should_show_stake_error && stake_error) || !!balance_hint;
-            if (!isSaveDisabled) {
-                onSave();
-            }
+        if (e.key === 'Enter' && !is_save_disabled) {
+            onSave();
         }
     };
 
@@ -481,10 +479,16 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
                 regex={/[^0-9.,]/g}
                 maxLength={state.max_length}
                 message={
-                    fe_stake_error || (should_show_stake_error && stake_error) || balance_hint || getInputMessage()
+                    required_stake_error ||
+                    fe_stake_error ||
+                    (should_show_stake_error && stake_error) ||
+                    balance_hint ||
+                    getInputMessage()
                 }
                 status={
-                    fe_stake_error || (should_show_stake_error && stake_error) || balance_hint ? 'error' : 'neutral'
+                    required_stake_error || fe_stake_error || (should_show_stake_error && stake_error) || balance_hint
+                        ? 'error'
+                        : 'neutral'
                 }
                 noStatusIcon
                 data-testid='dt_stake_input_desktop'
@@ -506,12 +510,7 @@ const StakeInput = observer(({ onClose, is_open }: TStakeInput) => {
                     variant='primary'
                     color='black-white'
                     onClick={onSave}
-                    disabled={
-                        is_loading_proposal ||
-                        !!fe_stake_error ||
-                        !!(should_show_stake_error && stake_error) ||
-                        !!balance_hint
-                    }
+                    disabled={is_save_disabled}
                     className='stake-input-desktop__save-button'
                     label={localize('Save')}
                 />

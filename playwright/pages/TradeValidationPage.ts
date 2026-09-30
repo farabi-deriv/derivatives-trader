@@ -1023,22 +1023,11 @@ export class TradeValidationPage extends TradeParametersPage {
         await this.openStakeCustomInput();
         await this.fillStakeCustomDraft('abc!@#', true);
         await expect(this.stakePopoverInput, 'Stake should reject letters and special characters').toHaveValue('');
-        if (this.isMobile) {
-            await expect(this.stakeSaveButton, 'Mobile must disable Save for an empty stake').toBeDisabled();
-        } else {
-            await expect(
-                this.stakeSaveButton,
-                'Desktop allows Save to surface required validation for an empty stake'
-            ).toBeEnabled();
-            await this.stakeSaveButton.click();
-            await expect(this.stakeValidationMessage, 'Desktop empty Stake should show required validation').toHaveText(
-                TradeParametersPage.STAKE_REQUIRED_ERROR
-            );
-            await expect(
-                this.stakeSaveButton,
-                'Desktop must block Save after required validation appears'
-            ).toBeDisabled();
-        }
+        await expect(
+            this.stakeValidationMessage,
+            'Empty Stake should show required validation without a Save press'
+        ).toHaveText(TradeParametersPage.STAKE_REQUIRED_ERROR);
+        await expect(this.stakeSaveButton, 'Save must be disabled for an empty stake').toBeDisabled();
 
         await this.fillStakeCustomDraft('1.23456789', true);
         const accepted = await this.stakePopoverInput.inputValue();

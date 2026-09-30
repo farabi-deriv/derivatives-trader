@@ -681,7 +681,7 @@ export class TradeParametersPage extends TradeBasePage {
     /** Source: stake-input proposal validation — stake below market minimum. */
     static readonly STAKE_MIN_AMOUNT_ERROR = /Please enter a stake amount that(?:'s| is) at least [\d.]+/;
 
-    /** Source: stake-input onSave — empty custom stake draft. */
+    /** Source: stake-input required_stake_error — empty custom stake draft. */
     static readonly STAKE_REQUIRED_ERROR = 'Amount is a required field.';
 
     /** Source: stake-input onInputChange — trailing decimal/comma separator. */

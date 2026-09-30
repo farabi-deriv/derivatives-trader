@@ -2165,21 +2165,13 @@ export class TradeAutomatePage extends TradeParametersPage {
         await this.dismissStakeEditor();
         await this.assertInitialStakeUnchanged(priorValue);
 
-        // Empty draft — desktop: Save-click FE error; mobile: Save gated while empty.
+        // Empty draft — the required-field error shows inline and Save is gated on both platforms.
         await this.openStakeCustomInput();
         await this.fillStakeCustomDraft('');
-        if (this.isMobile) {
-            await expect(
-                this.stakeSaveButton,
-                'Stake Save should stay disabled while the draft is empty'
-            ).toBeDisabled();
-        } else {
-            await expect(this.stakeSaveButton, 'Stake Save should enable after clearing the draft').toBeEnabled();
-            await this.stakeSaveButton.click();
-            await expect(this.stakeValidationMessage, 'Stake editor should show required-field error').toHaveText(
-                TradeParametersPage.STAKE_REQUIRED_ERROR
-            );
-        }
+        await expect(this.stakeValidationMessage, 'Stake editor should show required-field error').toHaveText(
+            TradeParametersPage.STAKE_REQUIRED_ERROR
+        );
+        await expect(this.stakeSaveButton, 'Stake Save should stay disabled while the draft is empty').toBeDisabled();
         await this.dismissStakeEditor();
         await this.assertInitialStakeUnchanged(priorValue);
 

@@ -471,6 +471,35 @@ describe('StakeInput', () => {
         expect(registerHeaderActions.mock.calls.at(-1)[0].is_save_disabled).toBe(true);
     });
 
+    describe('[SRA] empty stake amount', () => {
+        it('[SRA-001] shows the required-field message the moment the field is cleared', async () => {
+            const user = userEvent.setup();
+            renderStakeInput();
+
+            await user.clear(screen.getByDisplayValue('10'));
+
+            expect(screen.getByText('Amount is a required field.')).toBeInTheDocument();
+            // The error state is a class only — quill exposes no role/testid/aria for it.
+            // eslint-disable-next-line testing-library/no-node-access
+            expect(document.querySelector('[class*="status--error"]')).toBeInTheDocument();
+            expect(screen.queryByText('Range $0.35 - $50,000.00')).not.toBeInTheDocument();
+        });
+
+        it('[SRA-003] clears the required-field message as soon as a value is typed back, before the debounce settles', async () => {
+            const user = userEvent.setup();
+            renderStakeInput();
+
+            const input = screen.getByDisplayValue('10');
+            await user.clear(input);
+            await user.type(input, '4');
+
+            // `displayAmount` is live; `proposal_request_values.amount` still lags behind the 300 ms
+            // debounce here, so reading that instead would keep the message up over a filled field.
+            expect(screen.queryByText('Amount is a required field.')).not.toBeInTheDocument();
+            expect(screen.getByText('Range $0.35 - $50,000.00')).toBeInTheDocument();
+        });
+    });
+
     describe('Balance-aware hint', () => {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { useProposal } = require('AppV2/Hooks/useProposal');
@@ -722,6 +751,69 @@ describe('StakeInputDesktop', () => {
         // Typing '4' appends a second decimal digit — this must NOT be blocked
         await user.type(stake_input, '4');
         expect(stake_input).toHaveValue('5.34');
+    });
+
+    describe('[SRA] empty stake amount', () => {
+        it('[SRA-001] [SRA-002] shows the required-field message and disables Save the moment the field is cleared', async () => {
+            const user = userEvent.setup();
+            renderStakeInputDesktop();
+
+            await user.clear(screen.getByDisplayValue('10'));
+
+            expect(screen.getByText('Amount is a required field.')).toBeInTheDocument();
+            // The error state is a class only — quill exposes no role/testid/aria for it.
+            // eslint-disable-next-line testing-library/no-node-access
+            expect(document.querySelector('[class*="status--error"]')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+        });
+
+        it('[SRA-001] shows the range helper, not the requirement, on mount with a committed stake', () => {
+            renderStakeInputDesktop();
+
+            expect(screen.queryByText('Amount is a required field.')).not.toBeInTheDocument();
+            expect(screen.getByText('Range: $0.35 to $50,000.00')).toBeInTheDocument();
+        });
+
+        it('[SRA-001] keeps the format error for a separator-terminated value set in one shot', async () => {
+            const user = userEvent.setup();
+            renderStakeInputDesktop();
+
+            // A one-shot fill (paste, or Playwright's `fill`) leaves the committed amount at ''
+            // while the format error is set, so the two states coexist on desktop.
+            const input = screen.getByDisplayValue('10');
+            await user.clear(input);
+            await user.paste('1.');
+
+            expect(screen.getByText('Should be a valid number.')).toBeInTheDocument();
+            expect(screen.queryByText('Amount is a required field.')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+        });
+
+        it('[SRA-002] does not commit an empty amount when Enter is pressed in the input', async () => {
+            const user = userEvent.setup();
+            renderStakeInputDesktop();
+
+            const input = screen.getByDisplayValue('10');
+            await user.clear(input);
+            await user.keyboard('{Enter}');
+
+            expect(default_mock_store.modules.trade.onChange).not.toHaveBeenCalledWith(
+                expect.objectContaining({ target: expect.objectContaining({ name: 'amount' }) })
+            );
+        });
+
+        it('[SRA-003] clears the required-field message and restores the range helper once a value is typed back', async () => {
+            const user = userEvent.setup();
+            renderStakeInputDesktop();
+
+            const input = screen.getByDisplayValue('10');
+            await user.clear(input);
+            await user.type(input, '4');
+
+            expect(screen.queryByText('Amount is a required field.')).not.toBeInTheDocument();
+            expect(screen.getByText('Range: $0.35 to $50,000.00')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+        });
     });
 
     describe('Balance-aware hint', () => {
