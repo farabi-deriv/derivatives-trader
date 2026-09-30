@@ -14,10 +14,13 @@
 | Flow 2.2 | `trade/rise-fall/verify-fall.spec.ts` | `@trade @smoke @desktop @mobile` |
 | Flow 2.3 | `trade/rise-fall/verify-rise-allow-equals.spec.ts` | `@trade @desktop @mobile` |
 | Flow 2.4 | `trade/rise-fall/verify-fall-allow-equals.spec.ts` | `@trade @desktop @mobile` |
+| Flow 2.5 | `trade/rise-fall/verify-rise-fall-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 3.1 | `trade/higher-lower/verify-higher.spec.ts` | `@trade @desktop @mobile` |
 | Flow 3.2 | `trade/higher-lower/verify-lower.spec.ts` | `@trade @desktop @mobile` |
+| Flow 3.3 | `trade/higher-lower/verify-higher-lower-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 4.1 | `trade/touch-no-touch/verify-touch.spec.ts` | `@trade @desktop @mobile` |
 | Flow 4.2 | `trade/touch-no-touch/verify-no-touch.spec.ts` | `@trade @desktop @mobile` |
+| Flow 4.3 | `trade/touch-no-touch/verify-touch-no-touch-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 5.1 | `trade/matches-differs/verify-matches.spec.ts` | `@trade @smoke @desktop @mobile` |
 | Flow 5.2 | `trade/matches-differs/verify-differs.spec.ts` | `@trade @smoke @desktop @mobile` |
 | Flow 5.3 | `trade/matches-differs/verify-matches-differs-validations.spec.ts` | `@trade @desktop @mobile` |
@@ -30,6 +33,7 @@
 | Flow 7.3 | `trade/even-odd/verify-even-odd-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 8.1 | `trade/accumulators/verify-accumulators-no-tp.spec.ts` | `@trade @desktop @mobile` |
 | Flow 8.2 | `trade/accumulators/verify-accumulators-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 8.3 | `trade/accumulators/verify-accumulators-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.1 | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.2 | `trade/multipliers/verify-multipliers-no-tpsl.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.3 | `trade/multipliers/verify-multipliers-with-tp.spec.ts` | `@trade @desktop @mobile` |
@@ -38,12 +42,15 @@
 | Flow 9.6 | `trade/multipliers/verify-multipliers-with-sl.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.7 | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile` |
 | Flow 9.8 | `trade/multipliers/verify-multipliers-deal-cancellation.spec.ts` | `@trade @desktop @mobile` |
+| Flow 9.9 | `trade/multipliers/verify-multipliers-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 10.1 | `trade/turbos/verify-turbos-up.spec.ts` | `@trade @desktop @mobile` |
 | Flow 10.2 | `trade/turbos/verify-turbos-down.spec.ts` | `@trade @desktop @mobile` |
 | Flow 10.3 | `trade/turbos/verify-turbos-up-with-tp.spec.ts` | `@trade @desktop @mobile` |
 | Flow 10.4 | `trade/turbos/verify-turbos-down-with-tp.spec.ts` | `@trade @desktop @mobile` |
+| Flow 10.5 | `trade/turbos/verify-turbos-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 11.1 | `trade/vanillas/verify-vanillas-call.spec.ts` | `@trade @desktop @mobile` |
 | Flow 11.2 | `trade/vanillas/verify-vanillas-put.spec.ts` | `@trade @desktop @mobile` |
+| Flow 11.3 | `trade/vanillas/verify-vanillas-validations.spec.ts` | `@trade @desktop @mobile` |
 | Flow 12 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
 | Flow 13 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
 | Flow 14 | `trade/verify-manual-trade-negative-validation.spec.ts` | `@trade @regression @staging @desktop @mobile` |
@@ -182,6 +189,21 @@ test('VERIFY Buy "Fall" Contract with Allow Equals Enabled (Demo Account)', asyn
 > **No `@production` test:** unlike Flow 2.1, none of these run against production — `beforeAll` always creates a fresh account
 > **Flow 2.3** = `VERIFY Buy "Rise" Contract with Allow Equals Enabled` · **Flow 2.4** = `VERIFY Buy "Fall" Contract with Allow Equals Enabled`
 
+### Flow 2.5 — Rise/Fall Duration and Stake validation
+
+```typescript
+// verify-rise-fall-validations.spec.ts — Flow 2.5
+test('VERIFY Rise/Fall Duration and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', {
+        verifyAllowEquals: false,
+    });
+    await tradeValidationPage.verifyDurationGuardrails('Rise/Fall');
+    await tradeValidationPage.verifyStakeGuardrails('Rise/Fall');
+});
+```
+
+> **POM:** `verifyDurationGuardrails` → desktop chips/Custom + mobile Ticks/Time/End time wheels → `verifyStakeGuardrails` after one select. Cross-market Rise/Fall sweeps stay in Flow 14.
+
 ---
 
 ### Flow 3.1 / 3.2 — Higher/Lower: buy → close → verify
@@ -220,6 +242,20 @@ test('VERIFY Buy "Lower" Contract and Close (Demo Account)', async ({ tradeHighe
 
 > **Flow 3.1** = `VERIFY Buy "Higher" Contract and Close` · **Flow 3.2** = `VERIFY Buy "Lower" Contract and Close`
 
+### Flow 3.3 — Higher/Lower Barrier, Duration and Stake validation
+
+```typescript
+// verify-higher-lower-validations.spec.ts — Flow 3.3
+test('VERIFY Higher/Lower Barrier, Duration and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Higher/Lower');
+    await tradeValidationPage.verifyDurationGuardrails('Higher/Lower');
+    await tradeValidationPage.verifyBarrierGuardrails();
+    await tradeValidationPage.verifyStakeGuardrails('Higher/Lower');
+});
+```
+
+> **POM:** `verifyDurationGuardrails` → `verifyBarrierGuardrails` → `verifyStakeGuardrails` after one select. Split from Flow 14.
+
 ---
 
 ### Flow 4.1 / 4.2 — Touch/No Touch: buy → close → verify
@@ -257,6 +293,20 @@ test('VERIFY Buy "No Touch" Contract and Close (Demo Account)', async ({ tradeTo
 ```
 
 > **Flow 4.1** = `VERIFY Buy "Touch" Contract and Close` · **Flow 4.2** = `VERIFY Buy "No Touch" Contract and Close`
+
+### Flow 4.3 — Touch/No Touch Barrier, Duration and Stake validation
+
+```typescript
+// verify-touch-no-touch-validations.spec.ts — Flow 4.3
+test('VERIFY Touch/No Touch Barrier, Duration and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Touch/No Touch');
+    await tradeValidationPage.verifyBarrierGuardrails();
+    await tradeValidationPage.verifyDurationGuardrails('Touch/No Touch');
+    await tradeValidationPage.verifyStakeGuardrails('Touch/No Touch');
+});
+```
+
+> **POM:** `verifyBarrierGuardrails` → `verifyDurationGuardrails` → `verifyStakeGuardrails` after one select. Split from Flow 14.
 
 ---
 
@@ -460,6 +510,23 @@ test.describe('Trade — Accumulators (without Take Profit)', { tag: ['@desktop'
 > **Close button:** the trade-page purchase button becomes "Close [amount] [currency]" while an
 > accumulator is open (`.purchase-button--single`); it reverts to "Buy" on any auto-close.
 > **Flow 8.1** = `VERIFY Buy Accumulators Contract Without Take Profit and Close` · **Flow 8.2** = `VERIFY Buy Accumulators Contract With Take Profit and Close`
+
+### Flow 8.3 — Accumulators Growth rate, Stake, and Take profit validation
+
+```typescript
+// verify-accumulators-validations.spec.ts — Flow 8.3
+test('VERIFY Accumulators Growth rate, Stake, and Take profit validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Accumulators', {
+        verifyParams: false,
+    });
+    await tradeValidationPage.verifyGrowthRateGuardrails();
+    await tradeValidationPage.verifyStakeGuardrails('Accumulators');
+    await tradeValidationPage.verifyTakeProfitGuardrails();
+    await tradeValidationPage.verifyBuyButtonRemainsEnabled();
+});
+```
+
+> **POM:** Growth rate options → Stake Range → standalone Take profit. Duplicate-Buy / settle recovery stays in Flow 14.
 
 ---
 
@@ -727,6 +794,24 @@ test.describe('Trade — Multipliers with Deal Cancellation', { tag: ['@trade', 
 >
 > **Flow 9.7** = `VERIFY Buy "Up" Multipliers Contract With Deal Cancellation and Cancel` · **Flow 9.8** = `VERIFY Buy "Down" Multipliers Contract With Deal Cancellation and Cancel` — each as `(Demo Account)` / `(Real Account)`
 
+### Flow 9.9 — Multipliers Multiplier, Stake, and Risk management validation
+
+```typescript
+// verify-multipliers-validations.spec.ts — Flow 9.9
+test('VERIFY Multipliers Multiplier, Stake, and Risk management validation', async ({
+    tradeValidationPage,
+}) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers');
+    await tradeValidationPage.verifyDurationGuardrails('Multipliers');
+    await tradeValidationPage.verifyMultiplierGuardrails();
+    await tradeValidationPage.verifyStakeGuardrails('Multipliers');
+    await tradeValidationPage.verifyMultipliersRiskManagementGuardrails();
+    await tradeValidationPage.verifyBuyButtonRemainsEnabled();
+});
+```
+
+> **POM:** Duration absent → Multiplier list → Stake Range → Risk management (TP/SL + Deal Cancellation). Split from Flow 14.
+
 ---
 
 ### Flow 10.1 / 10.2 / 10.3 / 10.4 — Turbos: buy → verify open → close early → verify closed
@@ -794,6 +879,24 @@ test('VERIFY Buy "Down" Turbos Contract With Take Profit (Demo Account)', async 
 > **Turbos buttons are "Up" / "Down"** (card label "Turbos Up" / "Turbos Down"). Source: `CONTRACT_TYPES.TURBOS.LONG → name 'Up'`, `SHORT → 'Down'`.
 > **Flow 10.1/10.2** = `VERIFY Buy "Up"/"Down" Turbos Contract` · **Flow 10.3/10.4** = `... With Take Profit`
 
+### Flow 10.5 — Turbos Duration, Payout per point, Stake, and Take profit validation
+
+```typescript
+// verify-turbos-validations.spec.ts — Flow 10.5
+test('VERIFY Turbos Duration, Payout per point, Stake, and Take profit validation', async ({
+    tradeValidationPage,
+}) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos');
+    await tradeValidationPage.verifyDurationGuardrails('Turbos');
+    await tradeValidationPage.verifyPayoutPerPointGuardrails();
+    await tradeValidationPage.verifyStakeGuardrails('Turbos');
+    await tradeValidationPage.verifyTakeProfitGuardrails();
+    await tradeValidationPage.verifyBuyButtonRemainsEnabled();
+});
+```
+
+> **POM:** `verifyDurationGuardrails` → `verifyPayoutPerPointGuardrails` → `verifyStakeGuardrails` → `verifyTakeProfitGuardrails` after one select. Split from Flow 14. No Barrier editor (info panel under Payout per point on mobile).
+
 ---
 
 ### Flow 11.1 / 11.2 — Vanillas: buy → close contract
@@ -839,6 +942,21 @@ test('VERIFY Buy "Put" Vanillas Contract (Demo Account)', async ({ tradeVanillas
 > **Vanillas have NO take profit parameter** — confirmed from `getTradeParams()` in `trade-params-utils.tsx`. Do not add TP assertions for Vanillas.
 > **Flow 11.1** = `VERIFY Buy "Call" Vanillas Contract` · **Flow 11.2** = `VERIFY Buy "Put" Vanillas Contract`
 
+### Flow 11.3 — Vanillas Duration, Strike, and Stake validation
+
+```typescript
+// verify-vanillas-validations.spec.ts — Flow 11.3
+test('VERIFY Vanillas Duration, Strike, and Stake validation', async ({ tradeValidationPage }) => {
+    await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Vanillas');
+    await tradeValidationPage.verifyDurationGuardrails('Vanillas');
+    await tradeValidationPage.verifyStrikePriceGuardrails();
+    await tradeValidationPage.verifyStakeGuardrails('Vanillas');
+    await tradeValidationPage.verifyBuyButtonRemainsEnabled();
+});
+```
+
+> **POM:** `verifyDurationGuardrails` → `verifyStrikePriceGuardrails` → `verifyStakeGuardrails` after one select. Split from Flow 14. No Take profit. Payout per point is info-only (not Turbos selectable PPP).
+
 ---
 
 ### Flow 12 — Market closed: purchase button hidden, countdown visible
@@ -868,13 +986,19 @@ for (const configuration of stakeCapabilityMatrix) {
     await tradeValidationPage.verifyBuyButtonRemainsEnabled();
 }
 await tradeValidationPage.verifyDurationRuntimeBoundaries('Seconds');
-await tradeValidationPage.verifyBarrierRequiredAndZeroValidation();
 await tradeValidationPage.verifyRiskManagementRuntimeOptions();
 ```
 
+> **Rise/Fall split:** Flow **2.5** in `verify-rise-fall-validations.spec.ts` (duration + stake on Vol 100; cross-market sweeps stay in Flow 14).
+> **Higher/Lower split:** Flow **3.3** in `verify-higher-lower-validations.spec.ts` (barrier + duration + stake on Vol 100).
+> **Touch/No Touch split:** Flow **4.3** in `verify-touch-no-touch-validations.spec.ts` (barrier + duration + stake on Vol 100).
 > **Matches/Differs split:** Flow **5.3** in `verify-matches-differs-validations.spec.ts` (digits + duration + stake).
 > **Over/Under split:** Flow **6.3** in `verify-over-under-validations.spec.ts` (digits + duration + stake).
 > **Even/Odd split:** Flow **7.3** in `verify-even-odd-validations.spec.ts` (duration + stake; no digit prediction).
+> **Accumulators split:** Flow **8.3** in `verify-accumulators-validations.spec.ts` (Growth rate + stake + Take profit).
+> **Multipliers split:** Flow **9.9** in `verify-multipliers-validations.spec.ts` (Multiplier + stake + Risk management on Vol 25 (1s)).
+> **Turbos split:** Flow **10.5** in `verify-turbos-validations.spec.ts` (duration + payout per point + stake + Take profit on Vol 100 (1s)).
+> **Vanillas split:** Flow **11.3** in `verify-vanillas-validations.spec.ts` (duration + strike + stake on Vol 100).
 >
 > **Fixture:** `tradeValidationPage` from `playwright/fixtures/fixtures.ts`
 > **Runtime limit source:** visible Stake, Duration, TP, and SL range messages; rendered option lists for mobile Duration, Multiplier, and Deal Cancellation.
@@ -1020,7 +1144,7 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 | Parse and validate current Stake limits | `tradeValidationPage.verifyStakeGuardrails(tradeType)` — 6 chips + Custom via `verifyStakeCustomBoundaries(tradeType)` (max-payout / Range / Multipliers details) |
 | Verify Stake input filtering | `tradeValidationPage.verifyStakeInputSanitization()` |
 | Validate current Duration limits/options | `tradeValidationPage.verifyDurationRuntimeBoundaries()` |
-| Validate required/zero Barrier | `tradeValidationPage.verifyBarrierRequiredAndZeroValidation()` |
+| Validate Barrier guardrails | `tradeValidationPage.verifyBarrierGuardrails()` — Above/Below spot; `0` / empty / `123456` (too far) rejected |
 | Read Over/Under Digits availability | `tradeValidationPage.verifyLastDigitPredictionChoiceAvailability()` |
 | Read Matches/Differs Digits availability | `tradeValidationPage.verifyMatchesDiffersDigitChoiceAvailability()` |
 | Read Multipliers TP/SL/DC options | `tradeValidationPage.verifyRiskManagementRuntimeOptions()` |
@@ -1043,10 +1167,17 @@ test.describe('Trade — parameter info icon', { tag: ['@desktop', '@mobile', '@
 | Assert resolved body theme (Flow 20) | `tradeParametersPage.expectResolvedBodyTheme('dark')` |
 | Seed theme preference (Flow 20) | `TradeBasePage.seedThemePreference(page, 'system')` |
 | OU digit + Duration + Stake validation (Flow 6.3) | `selectMarketAndTradeType` → `verifyLastDigitPredictionChoiceAvailability` → `verifyDurationGuardrails('Over/Under')` → `verifyStakeGuardrails('Over/Under')` |
+| RF Duration + Stake validation (Flow 2.5) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Rise/Fall')` → `verifyStakeGuardrails('Rise/Fall')` |
+| TNT Barrier + Duration + Stake validation (Flow 4.3) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Touch/No Touch')` → `verifyBarrierGuardrails` → `verifyStakeGuardrails('Touch/No Touch')` |
+| HL Barrier + Duration + Stake validation (Flow 3.3) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Higher/Lower')` → `verifyBarrierGuardrails` → `verifyStakeGuardrails('Higher/Lower')` |
 | MD digit + Duration + Stake validation (Flow 5.3) | `selectMarketAndTradeType` → `verifyMatchesDiffersDigitChoiceAvailability` → `verifyDurationGuardrails('Matches/Differs')` → `verifyStakeGuardrails('Matches/Differs')` |
 | EO Duration + Stake validation (Flow 7.3) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Even/Odd')` → `verifyStakeGuardrails('Even/Odd')` |
+| Accumulators Growth rate + Stake + TP validation (Flow 8.3) | `selectMarketAndTradeType` → `verifyGrowthRateGuardrails` → `verifyStakeGuardrails('Accumulators')` → `verifyTakeProfitGuardrails` |
+| Multipliers Multiplier + Stake + RM validation (Flow 9.9) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Multipliers')` → `verifyMultiplierGuardrails` → `verifyStakeGuardrails('Multipliers')` → `verifyMultipliersRiskManagementGuardrails` |
+| Turbos Duration + PPP + Stake + TP validation (Flow 10.5) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Turbos')` → `verifyPayoutPerPointGuardrails` → `verifyStakeGuardrails('Turbos')` → `verifyTakeProfitGuardrails` |
+| Vanillas Duration + Strike + Stake validation (Flow 11.3) | `selectMarketAndTradeType` → `verifyDurationGuardrails('Vanillas')` → `verifyStrikePriceGuardrails` → `verifyStakeGuardrails('Vanillas')` |
 | HL→OU proposal uses last_digit (Flow 6.4 / #1384) | `tradeOverUnderPage.verifyProposalAfterHigherLowerToOverUnder({ market, digit })` |
-| Duration by trade type (already selected) | `tradeValidationPage.verifyDurationGuardrails(tradeType)` — digits → ticks-only quick picks + desktop Custom min−1/max+1 (`Please enter a duration between {{min}} to {{max}} ticks.` + Save disabled); Accu/Multipliers → absent; else all offered units |
+| Duration by trade type (already selected) | `tradeValidationPage.verifyDurationGuardrails(tradeType)` — digits → ticks-only quick picks + desktop Custom min−1/max+1; Accu/Multipliers → absent; else `verifyAllDurationGuardrails` (desktop chips/Custom; mobile Ticks/Time/End time) |
 | Read committed stake (Flow 25 / market-selection) | `tradeParametersPage.readCommittedStake()` |
 | Read committed duration (Flow 25 / market-selection) | `tradeParametersPage.readCommittedDuration()` |
 | Assert stake + duration (Flow 25) | `tradeParametersPage.expectCommittedStakeAndDuration()` — pass `{ differs: true }` for sibling isolation |
@@ -1140,7 +1271,7 @@ Flow 17.1 (`verify-insufficient-balance.spec.ts`) covers the zero-balance popup 
 
 ### Multipliers Risk Management panel — TP/SL and Deal Cancellation are mutually exclusive
 
-When Deal Cancellation is active, TP and SL toggles are disabled. Source: `risk-management-content.tsx` copy: "Take profit and/or stop loss are not available while deal cancellation is active."
+TP/SL and Deal Cancellation cannot be committed together. Saving DC while TP/SL are active turns them off (snackbar: `TP and SL have been turned off.`); saving TP and/or SL while DC is active turns DC off (snackbar: `DC has been turned off.`). Info copy: "Take profit and/or stop loss are not available while deal cancellation is active." Covered by Flow 9.9.
 
 ### `dt_acc_info` is in core Header, not AppV2
 

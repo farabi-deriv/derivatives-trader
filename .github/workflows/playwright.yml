@@ -227,22 +227,18 @@ jobs:
           echo "report_platforms=$(echo "$MATRIX" | jq -c '[.[].platform] | unique')" >> "$GITHUB_OUTPUT"
           echo "::notice::Shard total: ${SHARD_TOTAL} ($(echo "$EXPANDED" | jq 'length') matrix jobs)"
 
-          # Shared test account: sharded runs allow up to 4 concurrent jobs; non-sharded cap at 2.
+          # Concurrency: only the full 5-browser matrix is capped (shared-account pressure).
+          # Single-platform and chromium-all / webkit-all set max-parallel to the job count so
+          # desktop + mobile shards can run together (GHA has no way to omit the key).
           MATRIX_COUNT=$(echo "$EXPANDED" | jq 'length')
-          if [ "$SHARD_TOTAL" -gt 1 ]; then
-            if [ "$MATRIX_COUNT" -le 4 ]; then
-              MAX_PARALLEL="$MATRIX_COUNT"
-            else
-              MAX_PARALLEL=4
-            fi
-          elif [ "$MATRIX_COUNT" -le 1 ]; then
-            MAX_PARALLEL=1
-          elif [ "$MATRIX_COUNT" -le 2 ]; then
-            MAX_PARALLEL="$MATRIX_COUNT"
+          PLATFORM_COUNT=$(echo "$MATRIX" | jq 'length')
+          if [ "$PLATFORM_COUNT" -ge 5 ]; then
+            MAX_PARALLEL=4
           else
-            MAX_PARALLEL=2
+            MAX_PARALLEL="$MATRIX_COUNT"
           fi
           echo "max_parallel=${MAX_PARALLEL}" >> "$GITHUB_OUTPUT"
+          echo "::notice::max-parallel=${MAX_PARALLEL} (platforms=${PLATFORM_COUNT})"
 
   playwright-tests:
     name: Playwright Tests - ${{ matrix.name }}${{ matrix.shard_total > 1 && format(' (shard {0}/{1})', matrix.shard_index, matrix.shard_total) || '' }} (${{ needs.validate-inputs.outputs.resolved_preview_url && 'preview' || needs.validate-inputs.outputs.cron_env || inputs.test_env || github.event.inputs.test_env || 'staging' }} / ${{ needs.validate-inputs.outputs.cron_suite || inputs.test_suite || github.event.inputs.test_suite || 'smoke' }})
@@ -250,9 +246,9 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      # Matrix platforms share the same test account. Non-sharded runs cap concurrency at 2;
-      # sharded runs (SHARD_TOTAL > 1) allow up to 4 concurrent jobs — see resolve-matrix's
-      # MAX_PARALLEL logic. If shared-account login races reappear, lower this cap first.
+      # Full 5-browser matrix caps at 4 (shared-account pressure). Single-platform and
+      # chromium-all / webkit-all use job count so desktop + mobile run together — see
+      # resolve-matrix. GHA requires a value; "uncapped" = max-parallel equal to matrix size.
       max-parallel: ${{ fromJSON(needs.validate-inputs.outputs.max_parallel) }}
       matrix:
         include: ${{ fromJSON(needs.validate-inputs.outputs.matrix) }}

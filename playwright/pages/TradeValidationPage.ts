@@ -74,6 +74,16 @@ export class TradeValidationPage extends TradeParametersPage {
         return this.durationPopover.locator('.duration-input-desktop__range-text');
     }
 
+    /** Expiry summary under End date / End time in the desktop End time editor. */
+    get durationEndTimeMessage(): Locator {
+        return this.durationPopover.locator('.duration-end-time-desktop__message');
+    }
+
+    /** Save button in the desktop End time editor (no Quick picks — Custom only). */
+    get durationEndTimeSaveButton(): Locator {
+        return this.durationPopover.locator('.duration-end-time-desktop__save-button');
+    }
+
     /** Validation message associated with the Hours field. */
     get durationHoursMessage(): Locator {
         return this.durationPopover
@@ -107,6 +117,18 @@ export class TradeValidationPage extends TradeParametersPage {
             : this.page.getByTestId('dt_duration_end_date_input');
     }
 
+    /** End-time input scoped to the current viewport implementation. */
+    override get durationEndTimeInput(): Locator {
+        return this.isMobile
+            ? this.durationContainer.locator('input[name="time"]')
+            : this.page.getByTestId('dt_duration_end_time_input');
+    }
+
+    /** Mobile End time expiry summary (`Expiry` + date/time line). */
+    get durationEndTimeExpirySummary(): Locator {
+        return this.durationContainer.locator('.duration-container__days-input__expiry');
+    }
+
     /** Visible overlays for nested or top-level desktop parameter popovers. */
     get visibleParameterPopoverOverlays(): Locator {
         return this.page.locator('.input-popover-overlay:visible');
@@ -122,9 +144,13 @@ export class TradeValidationPage extends TradeParametersPage {
         return this.durationContainer.getByRole('option');
     }
 
-    /** Validation text shown by the open barrier editor. */
+    /**
+     * Validation text shown by the open barrier editor.
+     * Mobile Quill TextField renders errors via `message` → `.message__container__text`
+     * (`.barrier-params__error-area` is only a spacer when there is no error).
+     */
     get barrierMessage(): Locator {
-        const editor = this.isMobile ? this.barrierSheet : this.page.locator('.barrier-popover');
+        const editor = this.isMobile ? this.barrierSheet : this.barrierPopover;
         return editor.locator('.message__container__text').first();
     }
 
@@ -182,6 +208,62 @@ export class TradeValidationPage extends TradeParametersPage {
             : this.page.getByRole('listbox', { name: 'Selection options' }).getByRole('option');
     }
 
+    /** Accumulators Growth rate field (committed value like `5%`). */
+    get growthRateField(): Locator {
+        return this.page.getByLabel('Growth rate').first();
+    }
+
+    /** Mobile Growth rate action sheet. */
+    get growthRateSheet(): Locator {
+        return this.page.locator('.quill-action-sheet--root:has(.growth-rate__carousel)');
+    }
+
+    /** Growth rate options in the open editor (desktop listbox / mobile wheel). */
+    get growthRateOptions(): Locator {
+        return this.isMobile
+            ? this.page.locator('.growth-rate__wheel-picker').getByRole('option')
+            : this.page.getByRole('listbox', { name: 'Selection options' }).getByRole('option');
+    }
+
+    /** Turbos Payout per point field (committed value like `$1`). */
+    get payoutPerPointField(): Locator {
+        return this.page.getByLabel('Payout per point').first();
+    }
+
+    /** Mobile Payout per point action sheet. */
+    get payoutPerPointSheet(): Locator {
+        return this.page.locator('.quill-action-sheet--root:has([data-testid="dt_payout-per-point_wrapper"])');
+    }
+
+    /** Mobile Payout per point wheel picker root. */
+    get payoutPerPointWheel(): Locator {
+        return this.page.locator('.payout-per-point__wheel-picker');
+    }
+
+    /** Payout per point options in the open editor (desktop listbox / mobile wheel). */
+    get payoutPerPointOptions(): Locator {
+        return this.isMobile
+            ? this.payoutPerPointWheel.getByRole('option')
+            : this.page.getByRole('listbox', { name: 'Selection options' }).getByRole('option');
+    }
+
+    /** Mobile Strike price action sheet. */
+    get strikePriceSheet(): Locator {
+        return this.page.locator('.quill-action-sheet--root:has([data-testid="dt_strike_wrapper"])');
+    }
+
+    /** Mobile Strike price wheel picker root. */
+    get strikePriceWheel(): Locator {
+        return this.page.locator('.strike__wheel-picker');
+    }
+
+    /** Strike price options in the open editor (desktop listbox / mobile wheel). */
+    get strikePriceOptions(): Locator {
+        return this.isMobile
+            ? this.strikePriceWheel.getByRole('option')
+            : this.page.getByRole('listbox', { name: 'Selection options' }).getByRole('option');
+    }
+
     /** Risk-management field shared by desktop and mobile. */
     get riskManagementField(): Locator {
         return this.page.getByLabel('Risk management').first();
@@ -204,6 +286,17 @@ export class TradeValidationPage extends TradeParametersPage {
         return this.isMobile ? this.page.getByTestId('dt_sl_input') : this.page.getByTestId('dt_sl_input_desktop');
     }
 
+    /**
+     * Risk management TP/SL Save — viewport-aware.
+     * Mobile: ActionSheet.Header Save (`isSaveActionDisabled` when dirty but blocking error).
+     * Desktop: footer `.risk-management-desktop__save-button` (disabled on FE/API errors).
+     */
+    get multipliersRiskManagementSaveButton(): Locator {
+        return this.isMobile
+            ? this.actionSheetSaveButton(this.riskManagementEditor)
+            : this.page.locator('.risk-management-desktop__save-button');
+    }
+
     /** Take-profit range/error message in the open risk editor. */
     get takeProfitMessage(): Locator {
         return this.riskManagementEditor
@@ -222,6 +315,13 @@ export class TradeValidationPage extends TradeParametersPage {
             .first();
     }
 
+    /** TP & SL tab in the open Multipliers risk editor. */
+    get tpSlTab(): Locator {
+        return this.isMobile
+            ? this.page.locator('.segmented-control-single button.item', { hasText: 'TP & SL' })
+            : this.page.locator('.vertical-tab-selector').getByRole('tab', { name: 'TP & SL' });
+    }
+
     /** Deal Cancellation tab in the open Multipliers risk editor. */
     get dealCancellationTab(): Locator {
         return this.isMobile
@@ -236,6 +336,29 @@ export class TradeValidationPage extends TradeParametersPage {
         return this.isMobile
             ? this.page.locator('.deal-cancellation__wheel-picker').getByRole('option')
             : this.page.locator('.deal-cancellation-desktop__chips').getByRole('button');
+    }
+
+    /** Deal Cancellation toggle in the open risk editor. */
+    get dealCancellationToggle(): Locator {
+        return this.isMobile
+            ? this.page.locator('.deal-cancellation__toggle').locator('button.toggle-switch')
+            : this.page.locator('.deal-cancellation-desktop__wrapper').locator('button.toggle-switch');
+    }
+
+    /**
+     * Risk management Save for the active mode.
+     * Desktop DC uses its own footer Save; TP/SL and all mobile modes share the sheet/popover Save.
+     */
+    multipliersRiskManagementSave(mode: 'tp_sl' | 'dc'): Locator {
+        if (!this.isMobile && mode === 'dc') {
+            return this.page.locator('.deal-cancellation-desktop__footer').getByRole('button', { name: 'Save' });
+        }
+        return this.multipliersRiskManagementSaveButton;
+    }
+
+    /** Snackbar message after a Risk management Save that turns the other mode off. */
+    get riskManagementSnackbarMessage(): Locator {
+        return this.page.locator('.snackbar--container .quill-snackbar__message');
     }
 
     /** Market rows in the currently open market-selection category. */
@@ -304,7 +427,8 @@ export class TradeValidationPage extends TradeParametersPage {
     /**
      * Custom Stake drafts (editor already open; desktop switches to Custom when needed).
      * Branches by trade type so new families can plug in without new top-level helpers:
-     * - Accumulators / Turbos / Vanillas → neutral `Range: $min to $max` (empty details)
+     * - Accumulators / Turbos / Vanillas → neutral Range hint (empty details)
+     *   desktop `Range: $min to $max` · mobile `Range $min - $max`
      * - Multipliers → same Range, plus Stop out / Stop out level / Commission rows
      * - Digits / Rise/Fall / Higher/Lower / Touch/No Touch → min error + max-payout error
      * - Default ({@link openStakeEditor}) → min error, then Max payout when shown, else excessive probe
@@ -324,8 +448,8 @@ export class TradeValidationPage extends TradeParametersPage {
             case 'Multipliers': {
                 await expect(
                     this.stakeValidationMessage,
-                    `${tradeType} Custom should show a neutral Range: min to max hint`
-                ).toContainText(/Range:\s*\$?[\d,]+\.?\d*\s+to\s+\$?[\d,]+\.?\d*/i, { timeout: 20_000 });
+                    `${tradeType} Custom should show a neutral Range min–max hint`
+                ).toContainText(/Range:?\s*\$?[\d,]+\.?\d*\s+(?:to|-)\s+\$?[\d,]+\.?\d*/i);
                 await expect(
                     this.stakeDetailsRow('Max payout'),
                     `${tradeType} Custom must not show Max payout`
@@ -339,7 +463,7 @@ export class TradeValidationPage extends TradeParametersPage {
                     await expect(
                         this.stakeDetailsRow('Stop out'),
                         'Multipliers Custom should show Stop out'
-                    ).toBeVisible({ timeout: 20_000 });
+                    ).toBeVisible();
                     await expect(
                         this.stakeDetailsRow('Stop out level'),
                         'Multipliers Custom should show Stop out level'
@@ -363,14 +487,14 @@ export class TradeValidationPage extends TradeParametersPage {
                 await expect(
                     this.stakeValidationMessage,
                     `Stake above maximum (${range.aboveMaximum}) should show an upper stake guardrail`
-                ).toContainText(new RegExp(String(range.maximum).replace('.', '\\.')), { timeout: 20_000 });
+                ).toContainText(new RegExp(this.escapeRegExp(String(range.maximum))), { timeout: 20_000 });
                 await expect(this.stakeSaveButton, 'Save must stay disabled for an above-maximum stake').toBeDisabled();
 
                 await this.fillAcceptedMinimumStake(range.minimum, range.precision);
                 await expect(
                     this.stakeValidationMessage,
                     `An in-range ${tradeType} stake should restore the neutral Range hint`
-                ).toContainText(/Range:/i);
+                ).toContainText(/Range:?/i);
                 await expect(
                     this.stakeSaveButton,
                     `Save must be enabled for an in-range ${tradeType} stake`
@@ -689,14 +813,38 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Fill the open Barrier draft.
+     * Fill the open Barrier draft (sheet on mobile, popover on desktop).
      *
-     * @param value - Unsigned barrier draft.
-     * @returns Promise resolved after filling.
+     * @param value - Unsigned barrier draft (empty string clears the field).
+     * @returns Promise resolved after the draft input reflects `value`.
      */
     async fillBarrierDraft(value: string): Promise<void> {
-        await this.barrierInput.clear();
-        await this.barrierInput.fill(value);
+        const input = this.barrierInput;
+        await expect(input, 'Barrier draft input should be visible').toBeVisible();
+        await input.click();
+        await input.clear();
+        if (value !== '') {
+            await input.fill(value);
+        }
+        await expect(input, `Barrier draft should show "${value}"`).toHaveValue(value);
+    }
+
+    /**
+     * Fill a barrier draft and wait until the editor message settles on `expectedMessage`.
+     * Local validation is debounced (~300ms) and a prior proposal error can linger briefly,
+     * so this retries fill + assert instead of racing the first paint after keystrokes.
+     */
+    private async fillBarrierDraftAndExpectMessage(
+        value: string,
+        expectedMessage: string,
+        description: string,
+        timeout = 20_000
+    ): Promise<void> {
+        await expect(async () => {
+            await this.fillBarrierDraft(value);
+            await expect(this.barrierMessage, description).toHaveText(expectedMessage, { timeout: 3_000 });
+        }).toPass({ timeout });
+        await expect(this.barrierSaveButton, `${description} — Save must stay disabled`).toBeDisabled();
     }
 
     /**
@@ -748,27 +896,6 @@ export class TradeValidationPage extends TradeParametersPage {
         if ((await slToggle.getAttribute('aria-pressed')) !== 'true') await slToggle.click();
         await expect(this.multiplierTakeProfitInput, 'Take-profit input should be enabled').toBeEnabled();
         await expect(this.multiplierStopLossInput, 'Stop-loss input should be enabled').toBeEnabled();
-    }
-
-    /**
-     * Read Deal Cancellation choices from the current Multipliers configuration.
-     *
-     * @returns Rendered duration labels.
-     */
-    async readDealCancellationOptions(): Promise<string[]> {
-        if ((await this.riskManagementEditor.count()) === 0) {
-            await this.riskManagementField.click();
-        }
-        await expect(this.riskManagementEditor, 'Risk-management editor should open').toBeVisible();
-        if ((await this.dealCancellationTab.count()) === 0) {
-            return [];
-        }
-        await this.dealCancellationTab.click();
-        await expect(
-            this.dealCancellationOptions.first(),
-            'Deal Cancellation should expose supported durations for this configuration'
-        ).toBeAttached();
-        return (await this.dealCancellationOptions.allTextContents()).map(value => value.trim()).filter(Boolean);
     }
 
     /**
@@ -912,7 +1039,7 @@ export class TradeValidationPage extends TradeParametersPage {
     /**
      * Stake validation for the **already selected** trade type.
      * Opens Stake → 6 quick picks → {@link verifyStakeCustomBoundaries}(tradeType) (Custom branches
-     * by family: max-payout, Range, or Range + Multipliers details).
+     * by family: max-payout, Range, or Range + Multipliers details), then dismisses the editor.
      *
      * @param tradeType - Active trade type label (e.g. `'Over/Under'`, `'Accumulators'`).
      */
@@ -927,6 +1054,7 @@ export class TradeValidationPage extends TradeParametersPage {
         await expect(this.stakeField, 'Rejected stake drafts must not replace the committed stake').toHaveValue(
             committedStake
         );
+        await this.dismissStakeEditor();
     }
 
     /**
@@ -979,12 +1107,10 @@ export class TradeValidationPage extends TradeParametersPage {
         }
         await this.verifyStakeGuardrails(tradeType);
         if ((await this.waitForOpenOrClosedMarket()) === 'closed') {
-            await this.dismissStakeEditor().catch(() => {});
             await this.verifyClosedMarketTradeFormDisabled();
             return;
         }
         await this.verifyBuyButtonRemainsEnabled();
-        await this.dismissStakeEditor();
     }
 
     /**
@@ -1107,148 +1233,58 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Validate every duration unit the active editor offers.
-     * Prefer {@link verifyDurationGuardrails} from specs (branches by trade type; digits assert
-     * ticks-only there instead of calling this).
+     * Validate Duration units on the open editor.
+     * Desktop: Ticks → Seconds → Minutes → Hours → End time (chips/Custom).
+     * Mobile: Ticks → Time → End time (wheels / date-time sheets).
+     * Prefer {@link verifyDurationGuardrails} from specs (digits use the ticks-only path instead).
      */
     async verifyAllDurationGuardrails(): Promise<void> {
         const committedDuration = await this.durationField.inputValue();
-        const editor = this.isMobile ? this.durationContainer : this.durationPopover;
         await this.durationField.click();
-        await expect(editor, 'Duration editor should open for the active configuration').toBeVisible();
-        let testedModes = 0;
 
         if (this.isMobile) {
-            const hasVisibleUnitTabs = (await this.durationContainer.getByRole('tab').count()) > 0;
-            if (!hasVisibleUnitTabs) {
-                await expect(
-                    this.durationContainer.getByRole('option').first(),
-                    'A single-unit duration should expose constrained runtime options'
-                ).toBeAttached();
-                testedModes += 1;
-            } else if ((await this.durationUnitTab('Ticks').count()) > 0) {
-                await this.openDurationUnit('Ticks');
-                await expect(
-                    this.durationTicksWheel.getByRole('option').first(),
-                    'Ticks should be constrained to API-derived wheel options'
-                ).toBeAttached();
-                testedModes += 1;
-            }
+            await expect(
+                this.durationContainer,
+                'Duration action sheet should open for the active configuration'
+            ).toBeVisible();
 
+            if ((await this.durationUnitTab('Ticks').count()) > 0) {
+                await this.openDurationUnit('Ticks');
+                await this.verifyMobileDurationTicksWheelBounds(this.durationTicksWheel.getByRole('option'));
+            }
+            // Mobile unifies Seconds/Minutes/Hours into one Time tab.
             if ((await this.durationUnitTab('Seconds').count()) > 0) {
                 await this.openDurationUnit('Seconds');
-                await expect(
-                    this.durationTimeWheel.getByRole('listbox').first(),
-                    'Seconds, minutes, and hours should use constrained Time wheel columns'
-                ).toBeVisible();
-                await expect(
-                    this.durationTimeWheel.getByRole('option').first(),
-                    'The Time wheel should expose at least one supported duration'
-                ).toBeAttached();
-                testedModes += 1;
+                await this.verifyMobileDurationTimeWheelBounds();
+            }
+            if ((await this.durationUnitTab('End time').count()) > 0) {
+                await this.openDurationUnit('End time');
+                await this.verifyMobileDurationEndTime();
             }
         } else {
-            const hasVisibleUnitTabs = (await this.durationPopover.getByRole('tab').count()) > 0;
-            if (!hasVisibleUnitTabs) {
-                await this.verifyDurationRuntimeBoundaries('Ticks');
-                testedModes += 1;
-            } else {
-                for (const unit of ['Ticks', 'Seconds', 'Minutes'] as const) {
-                    if ((await this.durationUnitTab(unit).count()) === 0) continue;
-                    await this.verifyDurationRuntimeBoundaries(unit);
-                    testedModes += 1;
-                }
-                if ((await this.durationUnitTab('Hours').count()) > 0) {
-                    await this.verifyDesktopHoursGuardrails();
-                    testedModes += 1;
+            await expect(
+                this.durationPopover,
+                'Duration editor should open for the active configuration'
+            ).toBeVisible();
+
+            for (const unit of ['Ticks', 'Seconds', 'Minutes', 'Hours', 'End time'] as const) {
+                if ((await this.durationUnitTab(unit).count()) === 0) continue;
+                await this.openDurationUnit(unit);
+                if (unit === 'Hours') {
+                    await this.verifyDurationHoursQuickPicksAndCustom();
+                } else if (unit === 'End time') {
+                    await this.verifyDurationEndTimeCustom();
+                } else {
+                    await this.verifyDurationUnitQuickPicksAndCustom(unit);
                 }
             }
         }
-
-        if ((await this.durationUnitTab('End time').count()) > 0) {
-            await this.openDurationUnit('End time');
-            await expect(this.durationEndDateInput, 'End date should be visible for End time duration').toBeVisible();
-            if (await this.durationEndDateInput.isEnabled()) {
-                const originalEndDate = await this.durationEndDateInput.inputValue();
-                await this.durationEndDateInput.click();
-                await expect(
-                    this.disabledDurationCalendarDays.first(),
-                    'Past or unavailable market dates should be disabled in the calendar'
-                ).toBeDisabled();
-                await expect(
-                    this.durationEndDateInput,
-                    'A disabled end date must not replace the selected date'
-                ).toHaveValue(originalEndDate);
-            } else {
-                await expect(
-                    this.durationEndDateInput,
-                    'A configuration without selectable dates should disable End date'
-                ).toBeDisabled();
-            }
-            testedModes += 1;
-        }
-
-        expect(
-            testedModes,
-            'A duration-bearing contract should expose at least one guarded duration mode'
-        ).toBeGreaterThan(0);
 
         await expect(
             this.durationField,
             'Rejected duration drafts must not replace the committed duration'
         ).toHaveValue(committedDuration);
         await this.dismissDurationEditors();
-    }
-
-    /**
-     * Verify the desktop Hours editor rejects invalid hours/minutes combinations.
-     */
-    async verifyDesktopHoursGuardrails(): Promise<void> {
-        await this.openDurationUnit('Hours');
-        await this.durationManualInputToggle.click();
-        await expect(this.durationHoursRange, 'Hours editor should expose its supported range').toContainText(/\d/);
-        const range = await this.readRange(this.durationHoursRange);
-
-        // Known product gap (desktop Hours): opening Hours while a sub-hour Minutes duration is
-        // committed seeds `0h + Xm` with Save still enabled. Do not fail the suite on that seed —
-        // assert only after the user edits hours/minutes. Product fix belongs in
-        // duration-hours-input-desktop.tsx (kept out of this Playwright-only PR).
-
-        await this.durationHoursInput.fill(String(range.minimum));
-        await this.durationHoursInput.fill(String(range.belowMinimum));
-        await this.verifyMessageContainsNumber(
-            this.durationHoursMessage,
-            range.minimum,
-            'Hours below minimum should show the minimum guardrail'
-        );
-        await expect(this.durationSaveButton, 'Hours below minimum must not be saved').toBeDisabled();
-
-        await this.durationHoursInput.fill(String(range.aboveMaximum));
-        await this.verifyMessageContainsNumber(
-            this.durationHoursMessage,
-            range.maximum,
-            'Hours above maximum should show the maximum guardrail'
-        );
-        await expect(this.durationSaveButton, 'Hours above maximum must not be saved').toBeDisabled();
-
-        await this.durationHoursInput.fill(String(range.minimum));
-        await this.durationHoursMinutesInput.fill('60');
-        await this.verifyMessageContainsNumber(
-            this.durationHoursMinutesMessage,
-            59,
-            'Minutes above the supported range should show its maximum guardrail'
-        );
-        await expect(this.durationSaveButton, 'An invalid hour/minute combination must not be saved').toBeDisabled();
-
-        await this.durationHoursMinutesInput.fill('0');
-        await expect(this.durationSaveButton, 'The exact minimum hour duration should be accepted').toBeEnabled();
-
-        await this.durationHoursInput.fill(String(range.maximum));
-        await expect(
-            this.durationHoursMinutesInput,
-            'Minutes should be disabled at the maximum hour boundary'
-        ).toBeDisabled();
-        await expect(this.durationSaveButton, 'The exact maximum hour duration should be accepted').toBeEnabled();
     }
 
     /**
@@ -1285,6 +1321,38 @@ export class TradeValidationPage extends TradeParametersPage {
         await expect(this.durationField, 'Duration field should not be visible.').toBeHidden();
     }
 
+    /** Chip / Custom unit windows for Ticks / Seconds / Minutes (Hours uses a compound editor). */
+    private static readonly DURATION_UNIT_WINDOWS = {
+        Ticks: {
+            chipMin: 1,
+            chipMax: 10,
+            unitWord: 'ticks' as const,
+            chipLabelPattern: /^(\d+)\s*ticks?$/i,
+            customMinFloor: 1,
+            /** Ticks max is API-derived; must stay inside the 1–10 product window. */
+            customMaxExact: null as number | null,
+            customMaxCeiling: 10,
+        },
+        Seconds: {
+            chipMin: 15,
+            chipMax: 60,
+            unitWord: 'seconds' as const,
+            chipLabelPattern: /^(\d+)\s*sec$/i,
+            customMinFloor: 15,
+            customMaxExact: 60,
+            customMaxCeiling: 60,
+        },
+        Minutes: {
+            chipMin: 1,
+            chipMax: 60,
+            unitWord: 'minutes' as const,
+            chipLabelPattern: /^(\d+)\s*min$/i,
+            customMinFloor: 1,
+            customMaxExact: 60,
+            customMaxCeiling: 60,
+        },
+    };
+
     /**
      * Digit ticks Duration: no unit tab selector; desktop exposes exactly 6 quick-pick chips whose
      * values may vary but must each be within 1–10 ticks; mobile wheel options stay within 1–10
@@ -1297,91 +1365,763 @@ export class TradeValidationPage extends TradeParametersPage {
             'Digit Duration must not show Ticks/Seconds/Minutes/Hours/End time unit tabs'
         ).toBeHidden();
 
-        const parseTicksLabel = (label: string): number => {
-            const match = label.trim().match(/^(\d+)\s*ticks?$/i);
-            expect(match, `Duration option should be a ticks label, got "${label}"`).toBeTruthy();
-            return Number(match![1]);
-        };
-
         if (this.isMobile) {
-            const labels = (await this.durationWheelOptions.allTextContents())
-                .map(value => value.trim())
-                .filter(Boolean);
-            expect(labels.length, 'Mobile ticks wheel should expose duration options').toBeGreaterThan(0);
-            const ticks = labels.map(parseTicksLabel);
-            expect(Math.min(...ticks), 'Mobile ticks wheel should start at 1 tick').toBe(1);
-            expect(Math.max(...ticks), 'Mobile ticks wheel should end at 10 ticks').toBe(10);
-            for (const tick of ticks) {
-                expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeGreaterThanOrEqual(1);
-                expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeLessThanOrEqual(10);
-            }
+            await this.verifyMobileDurationTicksWheelBounds(this.durationWheelOptions, { requireEndpoints: true });
             return;
         }
 
-        const chips = this.durationPopover.locator('.value-chips__chip');
-        await expect(chips.first(), 'Desktop Duration quick picks should show chips').toBeVisible();
-        await expect(chips, 'Desktop Duration should expose exactly 6 quick-pick chips').toHaveCount(6);
+        await this.verifyDurationUnitQuickPicks('Ticks');
+    }
 
-        const ticks: number[] = [];
+    /**
+     * Desktop Custom ticks input: read Range, draft min−1 / max+1 (error + Save disabled), then a
+     * valid in-range value. Mobile ticks-only has no free-form Custom — skipped.
+     */
+    private async verifyDurationForTicksCustomOutOfRange(): Promise<void> {
+        await this.verifyDurationUnitCustomOutOfRange('Ticks');
+    }
+
+    /**
+     * Desktop: 6 quick-pick chips within the unit window, then Custom range + out-of-range drafts.
+     * Mobile callers use the wheel helpers instead — this path is desktop-only.
+     */
+    private async verifyDurationUnitQuickPicksAndCustom(unit: 'Ticks' | 'Seconds' | 'Minutes'): Promise<void> {
+        await this.verifyDurationUnitQuickPicks(unit);
+        await this.verifyDurationUnitCustomOutOfRange(unit);
+    }
+
+    /**
+     * Desktop Hours: 6 quick-pick chips (1–24 hr), then Custom Hours + Minutes fields —
+     * verify Range 1–24 hours, draft min/max/acceptable values on both inputs, and Save state.
+     */
+    private async verifyDurationHoursQuickPicksAndCustom(): Promise<void> {
+        const chips = this.durationPopover.locator('.value-chips__chip');
+        await expect(chips.first(), 'Hours Duration quick picks should show chips').toBeVisible();
+        await expect(chips, 'Hours Duration should expose exactly 6 quick-pick chips').toHaveCount(6);
+
         for (let index = 0; index < 6; index += 1) {
-            ticks.push(parseTicksLabel((await chips.nth(index).innerText()).trim()));
+            const label = (await chips.nth(index).innerText()).trim();
+            const match = label.match(/^(\d+)\s*hr$/i);
+            expect(match, `Hours chip should be an hr label, got "${label}"`).toBeTruthy();
+            const value = Number(match![1]);
+            expect(value, `Hours quick-pick chip ${value} should be between 1 and 24`).toBeGreaterThanOrEqual(1);
+            expect(value, `Hours quick-pick chip ${value} should be between 1 and 24`).toBeLessThanOrEqual(24);
         }
-        for (const tick of ticks) {
-            expect(tick, `Quick-pick chip ${tick} ticks should be between 1 and 10`).toBeGreaterThanOrEqual(1);
-            expect(tick, `Quick-pick chip ${tick} ticks should be between 1 and 10`).toBeLessThanOrEqual(10);
+
+        await this.durationManualInputToggle.click();
+        await expect(this.durationHoursRange, 'Custom Hours should show a neutral Range: 1 - 24 hours hint').toHaveText(
+            /Range:\s*1\s*-\s*24\s*hours/i
+        );
+
+        const range = await this.readRange(this.durationHoursRange);
+        expect(range.minimum, 'Hours Custom minimum should be 1').toBe(1);
+        expect(range.maximum, 'Hours Custom maximum should be 24').toBe(24);
+
+        // Known product gap (desktop Hours): opening Hours while a sub-hour Minutes duration is
+        // committed seeds `0h + Xm` with Save still enabled. Reset minutes to 0 after setting hours
+        // before asserting — do not fail the suite on that seed. Product fix belongs in
+        // duration-hours-input-desktop.tsx (kept out of this Playwright-only PR).
+
+        // Hours below minimum → field Range error + Save disabled
+        await this.durationHoursInput.fill(String(range.minimum));
+        await this.durationHoursMinutesInput.fill('0');
+        await this.durationHoursInput.fill(String(range.belowMinimum));
+        await expect(
+            this.durationHoursMessage,
+            `Hours below minimum (${range.belowMinimum}) should show Range: 1 - 24 hours`
+        ).toHaveText(/Range:\s*1\s*-\s*24\s*hours/i);
+        await expect(this.durationSaveButton, 'Save must stay disabled for Hours below minimum').toBeDisabled();
+
+        // Hours above maximum → field Range error + Save disabled
+        await this.durationHoursInput.fill(String(range.aboveMaximum));
+        await expect(
+            this.durationHoursMessage,
+            `Hours above maximum (${range.aboveMaximum}) should show Range: 1 - 24 hours`
+        ).toHaveText(/Range:\s*1\s*-\s*24\s*hours/i);
+        await expect(this.durationSaveButton, 'Save must stay disabled for Hours above maximum').toBeDisabled();
+
+        // Hours at minimum (acceptable) with Minutes at 0 → Save enabled + neutral range
+        await this.durationHoursInput.fill(String(range.minimum));
+        await this.durationHoursMinutesInput.fill('0');
+        await expect(this.durationHoursRange, 'Valid Hours minimum should restore the neutral Range hint').toHaveText(
+            /Range:\s*1\s*-\s*24\s*hours/i
+        );
+        await expect(this.durationSaveButton, 'Save must be enabled for 1h 0m').toBeEnabled();
+
+        // Minutes above maximum (60) → field Range error + Save disabled
+        await this.durationHoursMinutesInput.fill('60');
+        await expect(
+            this.durationHoursMinutesMessage,
+            'Minutes above maximum (60) should show Range: 0 - 59 minutes'
+        ).toHaveText(/Range:\s*0\s*-\s*59\s*minutes/i);
+        await expect(this.durationSaveButton, 'Save must stay disabled for Minutes above maximum').toBeDisabled();
+
+        // Minutes acceptable mid-value → Save enabled
+        await this.durationHoursMinutesInput.fill('30');
+        await expect(this.durationHoursRange, 'Valid Hours + Minutes should restore the neutral Range hint').toHaveText(
+            /Range:\s*1\s*-\s*24\s*hours/i
+        );
+        await expect(this.durationSaveButton, 'Save must be enabled for 1h 30m').toBeEnabled();
+
+        // Minutes at minimum (0) → Save enabled
+        await this.durationHoursMinutesInput.fill('0');
+        await expect(this.durationSaveButton, 'Save must be enabled for 1h 0m').toBeEnabled();
+
+        // Hours at maximum → Minutes disabled (forced to 0) + Save enabled
+        await this.durationHoursInput.fill(String(range.maximum));
+        await expect(
+            this.durationHoursMinutesInput,
+            'Minutes should be disabled at the maximum hour boundary'
+        ).toBeDisabled();
+        await expect(this.durationSaveButton, 'Save must be enabled for 24h').toBeEnabled();
+    }
+
+    /**
+     * Desktop End time: no Quick picks — Custom shows End date + End time + expiry message + Save.
+     * Assert field values, message sync, Save enabled; time picker hour/minute selection updates
+     * field + message; calendar disabled days; future date → End time disabled at 23:59 GMT.
+     */
+    private async verifyDurationEndTimeCustom(): Promise<void> {
+        const endDate = this.durationEndDateInput;
+        const endTime = this.durationEndTimeInput;
+
+        await expect(endDate, 'End date should be visible').toBeVisible();
+        await expect(endDate, 'End date should show a selected date').not.toHaveValue('');
+        await expect(endTime, 'End time should be visible').toBeVisible();
+        await expect(endTime, 'End time should show a GMT time').toHaveValue(/\d{1,2}:\d{2}(?::\d{2})?\s*GMT/i);
+        await expect(this.durationEndTimeSaveButton, 'End time Save should be enabled').toBeEnabled();
+
+        const dateValue = (await endDate.inputValue()).trim();
+        const timeValue = (await endTime.inputValue()).trim();
+        const timeWithoutGmt = timeValue.replace(/\s*GMT\s*$/i, '').trim();
+        await expect(
+            this.durationEndTimeMessage,
+            'Expiry message should mirror the selected End date and End time'
+        ).toHaveText(`Contract will expire on ${dateValue} at ${timeWithoutGmt} GMT.`);
+
+        // Time picker (only while End time is enabled — typically today)
+        if (await endTime.isEnabled()) {
+            await endTime.click();
+            const timePicker = this.page.locator('.time-grid-picker').first();
+            await expect(timePicker, 'End time should open the time-grid picker').toBeVisible();
+
+            const enabledHours = timePicker.locator('.time-grid-picker__grid--hours button:not(:disabled)');
+            await expect(enabledHours.first(), 'Time picker should expose selectable hour options').toBeVisible();
+
+            const [currentHour, currentMinute] = timeWithoutGmt.split(':');
+            const alternateHours = enabledHours.filter({ hasNotText: new RegExp(`^${currentHour}$`) });
+            const selectedHourButton =
+                (await alternateHours.count()) > 0 ? alternateHours.first() : enabledHours.first();
+            await selectedHourButton.click();
+            const selectedHour = ((await selectedHourButton.innerText()) || currentHour).trim();
+
+            // Minutes validity depends on the selected hour — re-query after hour click.
+            const enabledMinutes = timePicker.locator('.time-grid-picker__grid--minutes button:not(:disabled)');
+            await expect(enabledMinutes.first(), 'Time picker should expose selectable minute options').toBeVisible();
+            const alternateMinutes = enabledMinutes.filter({ hasNotText: new RegExp(`^${currentMinute}$`) });
+            const selectedMinuteButton =
+                (await alternateMinutes.count()) > 0 ? alternateMinutes.first() : enabledMinutes.first();
+            await selectedMinuteButton.click();
+            const selectedMinute = ((await selectedMinuteButton.innerText()) || currentMinute).trim();
+
+            await this.durationEndTimeDoneButton.click();
+            await expect(timePicker, 'Time picker should close after Done').not.toBeVisible();
+
+            const selectedTimeLabel = `${selectedHour}:${selectedMinute}`;
+            await expect(endTime, `End time should update to the selected ${selectedTimeLabel} GMT`).toHaveValue(
+                `${selectedTimeLabel} GMT`
+            );
+            await expect(
+                this.durationEndTimeMessage,
+                'Expiry message should mirror the newly selected End time'
+            ).toHaveText(`Contract will expire on ${dateValue} at ${selectedTimeLabel} GMT.`);
+        }
+
+        if (!(await endDate.isEnabled())) {
+            await expect(endDate, 'A configuration without selectable dates should disable End date').toBeDisabled();
+            return;
+        }
+
+        const originalDate = (await endDate.inputValue()).trim();
+        await endDate.click();
+        const calendar = this.page.locator('.react-calendar').filter({ visible: true });
+        await expect(calendar, 'End date should open the calendar').toBeVisible();
+
+        if ((await this.disabledDurationCalendarDays.count()) > 0) {
+            await expect(
+                this.disabledDurationCalendarDays.first(),
+                'Past or unavailable market dates should be disabled in the calendar'
+            ).toBeDisabled();
+            await expect(endDate, 'A disabled end date must not replace the selected date').toHaveValue(originalDate);
+        }
+
+        const futureDays = calendar.locator(
+            '.react-calendar__tile:not(:disabled):not(.react-calendar__month-view__days__day--neighboringMonth):not(.react-calendar__tile--now)'
+        );
+        if ((await futureDays.count()) === 0) {
+            await this.durationCalendarNextMonth.click();
+        }
+        await expect(futureDays.first(), 'Calendar should offer a future selectable date').toBeVisible();
+        await futureDays.first().click();
+
+        // Web-first: calendar commit is async — do not snapshot inputValue before it settles.
+        await expect(endDate, 'Selecting a future date should update End date').not.toHaveValue(originalDate);
+        const futureDateValue = (await endDate.inputValue()).trim();
+        await expect(endTime, 'End time should be disabled for a future date').toBeDisabled();
+        await expect(endTime, 'Future End time should show 23:59 GMT').toHaveValue('23:59 GMT');
+        await expect(
+            this.durationEndTimeMessage,
+            'Expiry message should reflect the future date at 23:59 GMT'
+        ).toHaveText(`Contract will expire on ${futureDateValue} at 23:59 GMT.`);
+        await expect(this.durationEndTimeSaveButton, 'End time Save should stay enabled').toBeEnabled();
+    }
+
+    /**
+     * Desktop Duration quick picks: exactly 6 chips, each value inside the unit chip window.
+     */
+    private async verifyDurationUnitQuickPicks(unit: 'Ticks' | 'Seconds' | 'Minutes'): Promise<void> {
+        const window = TradeValidationPage.DURATION_UNIT_WINDOWS[unit];
+        const chips = this.durationPopover.locator('.value-chips__chip');
+        await expect(chips.first(), `${unit} Duration quick picks should show chips`).toBeVisible();
+        await expect(chips, `${unit} Duration should expose exactly 6 quick-pick chips`).toHaveCount(6);
+
+        for (let index = 0; index < 6; index += 1) {
+            const label = (await chips.nth(index).innerText()).trim();
+            const match = label.match(window.chipLabelPattern);
+            expect(match, `${unit} chip should match expected label, got "${label}"`).toBeTruthy();
+            const value = Number(match![1]);
+            expect(
+                value,
+                `${unit} quick-pick chip ${value} should be between ${window.chipMin} and ${window.chipMax}`
+            ).toBeGreaterThanOrEqual(window.chipMin);
+            expect(
+                value,
+                `${unit} quick-pick chip ${value} should be between ${window.chipMin} and ${window.chipMax}`
+            ).toBeLessThanOrEqual(window.chipMax);
         }
     }
 
     /**
-     * Desktop Custom ticks input: read `Range: min - max ticks`, draft min−1 and max+1 (error + Save
-     * disabled), then a valid in-range value so the error clears and Save re-enables.
-     * Mobile ticks-only has no free-form Custom field — skipped (wheel already bounds options).
+     * Desktop Custom duration input for Ticks / Seconds / Minutes: assert Range min/max against the
+     * product window, draft min−1 / max+1 (exact between-range error + Save disabled), then restore
+     * with minimum. Mobile has no free-form Custom — no-op.
      */
-    private async verifyDurationForTicksCustomOutOfRange(): Promise<void> {
+    private async verifyDurationUnitCustomOutOfRange(unit: 'Ticks' | 'Seconds' | 'Minutes'): Promise<void> {
         if (this.isMobile) {
             return;
         }
 
+        const window = TradeValidationPage.DURATION_UNIT_WINDOWS[unit];
+        const rangePattern = new RegExp(`Range:\\s*\\d+\\s*-\\s*\\d+\\s*${window.unitWord}`, 'i');
+
         await this.durationManualInputToggle.click();
         await expect(
             this.durationMessage,
-            'Custom ticks should show a neutral Range: min - max ticks hint'
-        ).toContainText(/Range:\s*\d+\s*-\s*\d+\s*ticks/i);
+            `Custom ${unit} should show a neutral Range: min - max ${window.unitWord} hint`
+        ).toContainText(rangePattern);
 
         const range = await this.readRange(this.durationMessage);
-        const expectedError = `Please enter a duration between ${range.minimum} to ${range.maximum} ticks.`;
-        const expectedRangeHint = `Range: ${range.minimum} - ${range.maximum} ticks`;
+        expect(
+            range.minimum,
+            `${unit} Custom minimum should be at least ${window.customMinFloor}`
+        ).toBeGreaterThanOrEqual(window.customMinFloor);
+        expect(
+            range.maximum,
+            `${unit} Custom maximum should be at most ${window.customMaxCeiling}`
+        ).toBeLessThanOrEqual(window.customMaxCeiling);
+        if (window.customMaxExact !== null) {
+            expect(range.maximum, `${unit} Custom maximum should be ${window.customMaxExact}`).toBe(
+                window.customMaxExact
+            );
+        }
+
+        const expectedError = `Please enter a duration between ${range.minimum} to ${range.maximum} ${window.unitWord}.`;
+        const expectedRangeHint = `Range: ${range.minimum} - ${range.maximum} ${window.unitWord}`;
 
         await this.fillDurationDraft(String(range.belowMinimum));
         await expect(
             this.durationMessage,
-            `Ticks below minimum (${range.belowMinimum}) should show the between-range error`
+            `${unit} below minimum (${range.belowMinimum}) should show the between-range error`
         ).toHaveText(expectedError);
         await expect(
             this.durationSaveButton,
-            'Save must stay disabled for ticks below the Custom range'
+            `Save must stay disabled for ${unit} below the Custom range`
         ).toBeDisabled();
 
         await this.fillDurationDraft(String(range.aboveMaximum));
         await expect(
             this.durationMessage,
-            `Ticks above maximum (${range.aboveMaximum}) should show the between-range error`
+            `${unit} above maximum (${range.aboveMaximum}) should show the between-range error`
         ).toHaveText(expectedError);
         await expect(
             this.durationSaveButton,
-            'Save must stay disabled for ticks above the Custom range'
+            `Save must stay disabled for ${unit} above the Custom range`
         ).toBeDisabled();
 
         await this.fillDurationDraft(String(range.minimum));
-        await expect(this.durationMessage, 'A valid ticks draft should restore the neutral Range hint').toHaveText(
+        await expect(this.durationMessage, `A valid ${unit} draft should restore the neutral Range hint`).toHaveText(
             expectedRangeHint
         );
-        await expect(this.durationSaveButton, 'Save must be enabled for an in-range ticks draft').toBeEnabled();
+        await expect(this.durationSaveButton, `Save must be enabled for an in-range ${unit} draft`).toBeEnabled();
     }
 
     /**
-     * Verify Multipliers Risk management TP/SL ranges from the active configuration.
-     * Multipliers only — Accumulators/Turbos use standalone Take profit instead.
+     * Mobile ticks wheel: every option is a ticks label inside 1–10.
+     * Digit contracts also require both endpoints (1 and 10) to be present.
+     */
+    private async verifyMobileDurationTicksWheelBounds(
+        options: Locator,
+        { requireEndpoints = false }: { requireEndpoints?: boolean } = {}
+    ): Promise<void> {
+        const labels = (await options.allTextContents()).map(value => value.trim()).filter(Boolean);
+        expect(labels.length, 'Mobile ticks wheel should expose duration options').toBeGreaterThan(0);
+
+        const ticks = labels.map(label => {
+            const match = label.match(/^(\d+)\s*ticks?$/i);
+            expect(match, `Duration option should be a ticks label, got "${label}"`).toBeTruthy();
+            return Number(match![1]);
+        });
+
+        for (const tick of ticks) {
+            expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeGreaterThanOrEqual(1);
+            expect(tick, `Mobile ticks option ${tick} should be between 1 and 10`).toBeLessThanOrEqual(10);
+        }
+
+        if (requireEndpoints) {
+            expect(Math.min(...ticks), 'Mobile ticks wheel should start at 1 tick').toBe(1);
+            expect(Math.max(...ticks), 'Mobile ticks wheel should end at 10 ticks').toBe(10);
+        }
+    }
+
+    /**
+     * Mobile Time tab: hr / min / sec wheel columns stay inside product windows
+     * (hr 0–24, min 0–59, sec 0–59; sec often starts at 15 when hours and minutes are 0).
+     */
+    private async verifyMobileDurationTimeWheelBounds(): Promise<void> {
+        await expect(this.durationTimeWheel, 'Time wheel should be visible on the Time tab').toBeVisible();
+
+        const labels = (await this.durationTimeWheel.getByRole('option').allTextContents())
+            .map(value => value.trim())
+            .filter(Boolean);
+        expect(labels.length, 'Time wheel should expose duration options').toBeGreaterThan(0);
+
+        let parsedCount = 0;
+        for (const label of labels) {
+            const hoursMatch = label.match(/^(\d+)\s*hr$/i);
+            if (hoursMatch) {
+                const value = Number(hoursMatch[1]);
+                expect(value, `Time wheel hours option ${value} should be between 0 and 24`).toBeGreaterThanOrEqual(0);
+                expect(value, `Time wheel hours option ${value} should be between 0 and 24`).toBeLessThanOrEqual(24);
+                parsedCount += 1;
+                continue;
+            }
+            const minutesMatch = label.match(/^(\d+)\s*min$/i);
+            if (minutesMatch) {
+                const value = Number(minutesMatch[1]);
+                expect(value, `Time wheel minutes option ${value} should be between 0 and 59`).toBeGreaterThanOrEqual(
+                    0
+                );
+                expect(value, `Time wheel minutes option ${value} should be between 0 and 59`).toBeLessThanOrEqual(59);
+                parsedCount += 1;
+                continue;
+            }
+            const secondsMatch = label.match(/^(\d+)\s*sec$/i);
+            if (secondsMatch) {
+                const value = Number(secondsMatch[1]);
+                expect(value, `Time wheel seconds option ${value} should be between 0 and 59`).toBeGreaterThanOrEqual(
+                    0
+                );
+                expect(value, `Time wheel seconds option ${value} should be between 0 and 59`).toBeLessThanOrEqual(59);
+                parsedCount += 1;
+            }
+        }
+        expect(parsedCount, 'Time wheel should expose parseable hr/min/sec options').toBeGreaterThan(0);
+    }
+
+    /**
+     * Mobile End time tab: date + time fields, Expiry summary, time-wheel selection when enabled,
+     * calendar disabled days, future date → time disabled at 23:59(/:59) GMT.
+     */
+    private async verifyMobileDurationEndTime(): Promise<void> {
+        const endDate = this.durationEndDateInput;
+        const endTime = this.durationEndTimeInput;
+        const nestedSheet = () => this.visibleActionSheets.last();
+
+        await expect(endDate, 'End date should be visible').toBeVisible();
+        await expect(endDate, 'End date should show a selected date').not.toHaveValue('');
+        await expect(endTime, 'End time should be visible').toBeVisible();
+        await expect(endTime, 'End time should show a GMT time').toHaveValue(/\d{1,2}:\d{2}(?::\d{2})?\s*GMT/i);
+
+        const dateValue = (await endDate.inputValue()).trim();
+        const timeValue = (await endTime.inputValue()).trim();
+        const timeWithoutGmt = timeValue.replace(/\s*GMT\s*$/i, '').trim();
+        await expect(
+            this.durationEndTimeExpirySummary,
+            'Expiry summary should include the selected End date'
+        ).toContainText(dateValue);
+        await expect(
+            this.durationEndTimeExpirySummary,
+            'Expiry summary should include the selected End time'
+        ).toContainText(timeWithoutGmt);
+
+        if (await endTime.isEnabled()) {
+            await endTime.click();
+            // Prefer heading scope over `.last()` — Duration's own Save can otherwise win the race.
+            const timeSheet = this.page.locator('.quill-action-sheet--root:visible').filter({
+                has: this.page.getByRole('heading', { name: 'Pick an end time' }),
+            });
+            await expect(
+                timeSheet.getByRole('heading', { name: 'Pick an end time' }),
+                'End time should open the Pick an end time sheet'
+            ).toBeVisible();
+
+            const timePicker = timeSheet.locator('.duration-container__time-picker');
+            await expect(timePicker, 'End time sheet should show the time wheel picker').toBeVisible();
+            const hourColumn = timePicker.locator('.quill-wheel-picker__container').nth(0);
+            const minuteColumn = timePicker.locator('.quill-wheel-picker__container').nth(1);
+            await expect(hourColumn.getByRole('option').first(), 'Time wheel should expose hours').toBeAttached();
+            await expect(minuteColumn.getByRole('option').first(), 'Time wheel should expose minutes').toBeAttached();
+
+            const [, currentMinute] = timeWithoutGmt.split(':');
+            // Wheel labels may be "5" while the field shows "05" — compare numerically.
+            const sameTimePart = (left: string, right: string) => Number(left) === Number(right);
+            const readTimeParts = async (column: Locator): Promise<string[]> =>
+                (await column.getByRole('option').allTextContents())
+                    .map(value => value.trim())
+                    .filter(option => /^\d{1,2}$/.test(option));
+
+            // Quill mounts a full 00–55 minute list, then reclamps to startTime (debounced). Wait until
+            // the current minute is present so we do not pick a stale "00" that then disappears.
+            await expect(async () => {
+                const minutes = await readTimeParts(minuteColumn);
+                expect(
+                    minutes.some(option => sameTimePart(option, currentMinute)),
+                    'Minute wheel should settle on the hour-clamped list containing the current minute'
+                ).toBe(true);
+            }).toPass({ timeout: 10_000 });
+
+            // Nested Save enables only when browsing time ≠ open snapshot (`is_dirty`). Quill's
+            // TimeWheelPicker ResizeObserver recentres via `scrollIntoView` using a stale column
+            // index `p` (never updated on scroll) and undoes programmatic scrolls — so the wheel
+            // can look changed while `browsing_expiry_time` snaps back and Save stays disabled.
+            // Re-read the browsing value after the clamped list settles (mount effects may adjust it).
+            const snapshotTime = (await endTime.inputValue()).trim();
+            const snapshotWithoutGmt = snapshotTime.replace(/\s*GMT\s*$/i, '').trim();
+            const [snapshotHour, snapshotMinute] = snapshotWithoutGmt.split(':');
+
+            await expect(async () => {
+                const hourOptions = await readTimeParts(hourColumn);
+                const minuteOptions = await readTimeParts(minuteColumn);
+                const alternateMinute = minuteOptions.find(option => !sameTimePart(option, snapshotMinute));
+                const alternateHour = hourOptions.find(option => !sameTimePart(option, snapshotHour));
+
+                const commitColumnOption = async (column: Locator, optionLabel: string) => {
+                    const options = column.getByRole('option');
+                    const labels = (await options.allTextContents()).map(value => value.trim());
+                    const targetIndex = labels.findIndex(label => label === optionLabel);
+                    if (targetIndex < 0) throw new Error(`Time wheel option '${optionLabel}' not found`);
+
+                    const listbox = column.locator('[role="listbox"]');
+                    // Keep scrollIntoView no-op until Save enables — Quill schedules ResizeObserver
+                    // recentre on a 0ms timeout *after* setState, which otherwise undoes the commit.
+                    await this.page.evaluate(() => {
+                        const proto = Element.prototype as Element & {
+                            __playwrightScrollIntoView?: typeof Element.prototype.scrollIntoView;
+                        };
+                        if (!proto.__playwrightScrollIntoView) {
+                            proto.__playwrightScrollIntoView = proto.scrollIntoView;
+                            proto.scrollIntoView = function scrollIntoViewNoop() {
+                                /* suppress Quill TimeWheelPicker ResizeObserver recentre */
+                            };
+                        }
+                    });
+                    await listbox.evaluate((list, index) => {
+                        const element = list as HTMLElement;
+                        const quillRowHeightPx = 48;
+                        element.scrollTop = index * quillRowHeightPx + quillRowHeightPx / 2;
+                        element.dispatchEvent(new Event('scroll'));
+                    }, targetIndex);
+                };
+
+                try {
+                    if (alternateMinute) {
+                        await commitColumnOption(minuteColumn, alternateMinute);
+                    } else if (alternateHour) {
+                        await commitColumnOption(hourColumn, alternateHour);
+                    } else {
+                        throw new Error('Time wheel has no alternate hour or minute to dirty the draft');
+                    }
+
+                    await expect(
+                        this.actionSheetSaveButton(timeSheet),
+                        'End time Save should enable after the wheel draft changes'
+                    ).toBeEnabled({ timeout: 3_000 });
+                    await expect(
+                        endTime,
+                        'Wheel draft should update browsing End time on the Duration sheet'
+                    ).not.toHaveValue(snapshotTime, { timeout: 3_000 });
+                } finally {
+                    await this.page.evaluate(() => {
+                        const proto = Element.prototype as Element & {
+                            __playwrightScrollIntoView?: typeof Element.prototype.scrollIntoView;
+                        };
+                        if (proto.__playwrightScrollIntoView) {
+                            proto.scrollIntoView = proto.__playwrightScrollIntoView;
+                            delete proto.__playwrightScrollIntoView;
+                        }
+                    });
+                }
+            }).toPass({ timeout: 20_000 });
+
+            const committedTime = (await endTime.inputValue()).trim();
+            const committedWithoutGmt = committedTime.replace(/\s*GMT\s*$/i, '').trim();
+            await this.saveMobileSheet(timeSheet);
+            await expect(
+                timeSheet.getByRole('heading', { name: 'Pick an end time' }),
+                'Pick an end time sheet should close after Save'
+            ).not.toBeVisible();
+
+            await expect(endTime, 'End time should keep the saved wheel draft').toHaveValue(committedTime);
+            await expect(
+                this.durationEndTimeExpirySummary,
+                'Expiry summary should mirror the newly selected End time'
+            ).toContainText(committedWithoutGmt);
+        }
+
+        if (!(await endDate.isEnabled())) {
+            await expect(endDate, 'A configuration without selectable dates should disable End date').toBeDisabled();
+            return;
+        }
+
+        const originalDate = (await endDate.inputValue()).trim();
+        await endDate.click();
+        const dateSheet = nestedSheet();
+        await expect(
+            dateSheet.getByRole('heading', { name: 'Pick an end date' }),
+            'End date should open the Pick an end date sheet'
+        ).toBeVisible();
+
+        const calendar = dateSheet.locator('.react-calendar');
+        await expect(calendar, 'End date sheet should show the calendar').toBeVisible();
+
+        if ((await this.disabledDurationCalendarDays.count()) > 0) {
+            await expect(
+                this.disabledDurationCalendarDays.first(),
+                'Past or unavailable market dates should be disabled in the calendar'
+            ).toBeDisabled();
+            await expect(endDate, 'A disabled end date must not replace the selected date').toHaveValue(originalDate);
+        }
+
+        const futureDays = calendar.locator(
+            '.react-calendar__tile:not(:disabled):not(.react-calendar__month-view__days__day--neighboringMonth):not(.react-calendar__tile--now)'
+        );
+        if ((await futureDays.count()) === 0) {
+            await this.durationCalendarNextMonth.click();
+        }
+        await expect(futureDays.first(), 'Calendar should offer a future selectable date').toBeVisible();
+        await futureDays.first().click();
+        await expect(
+            this.actionSheetSaveButton(dateSheet),
+            'End date Save should enable after picking a different day'
+        ).toBeEnabled({ timeout: 15_000 });
+        await this.saveMobileSheet(dateSheet);
+        await expect(
+            dateSheet.getByRole('heading', { name: 'Pick an end date' }),
+            'Pick an end date sheet should close after Save'
+        ).not.toBeVisible();
+
+        await expect(endDate, 'Selecting a future date should update End date').not.toHaveValue(originalDate);
+        const futureDateValue = (await endDate.inputValue()).trim();
+        await expect(endTime, 'End time should be disabled for a future date').toBeDisabled();
+        await expect(endTime, 'Future End time should show 23:59 GMT').toHaveValue(/23:59(?::59)?\s*GMT/i);
+        await expect(this.durationEndTimeExpirySummary, 'Expiry summary should reflect the future date').toContainText(
+            futureDateValue
+        );
+        await expect(
+            this.durationEndTimeExpirySummary,
+            'Expiry summary should reflect 23:59 for a future date'
+        ).toContainText(/23:59/);
+    }
+
+    /**
+     * Multipliers Multiplier — runtime discrete list (e.g. `x100`, `x200`). Opens the editor,
+     * asserts choices look like `xN` and include the committed value, then dismisses.
+     */
+    async verifyMultiplierGuardrails(): Promise<void> {
+        await expect(this.multiplierField, 'Multipliers should expose Multiplier').toBeVisible();
+        const committed = (await this.multiplierField.inputValue()).trim();
+        expect(committed, 'Committed Multiplier should look like xN').toMatch(/^x\d+$/i);
+
+        const options = await this.readMultiplierOptions();
+        expect(options.length, 'Multiplier should expose at least one choice').toBeGreaterThan(0);
+        expect(
+            options.every(option => /^x\d+$/i.test(option)),
+            'Every Multiplier choice should look like xN'
+        ).toBe(true);
+        expect(options, 'Committed Multiplier should belong to the runtime choice list').toContain(committed);
+
+        await this.dismissOpenParameterEditor();
+    }
+
+    /**
+     * Multipliers Deal Cancellation — Risk management always exposes the DC tab; the duration
+     * choice list is the fixed five minutes chips (`5` / `10` / `15` / `30` / `60 min`).
+     * Leaves the editor open on the DC tab for follow-up exclusivity checks.
+     */
+    async verifyDealCancellationGuardrails(): Promise<void> {
+        if ((await this.riskManagementEditor.count()) === 0) {
+            await this.riskManagementField.click();
+        }
+        await expect(this.riskManagementEditor, 'Risk-management editor should open').toBeVisible();
+        await expect(this.dealCancellationTab, 'Deal Cancellation tab should be visible').toBeVisible();
+        await this.dealCancellationTab.click();
+
+        const cancellationOptions = (await this.dealCancellationOptions.allTextContents())
+            .map(value => value.trim())
+            .filter(Boolean);
+        expect(
+            cancellationOptions.every(option => /^\d+\s+min$/i.test(option)),
+            'Every Deal Cancellation choice should show a minutes duration (e.g. "5 min")'
+        ).toBe(true);
+        expect(
+            [...cancellationOptions].sort((a, b) => parseInt(a, 10) - parseInt(b, 10)),
+            'Deal Cancellation should expose the five minutes chips'
+        ).toEqual(['5 min', '10 min', '15 min', '30 min', '60 min']);
+    }
+
+    /**
+     * Commit the open Multipliers Risk management editor for the given mode.
+     *
+     * @param mode - Active tab being saved (`tp_sl` or `dc`).
+     */
+    private async saveMultipliersRiskManagement(mode: 'tp_sl' | 'dc'): Promise<void> {
+        const save = this.multipliersRiskManagementSave(mode);
+        if (this.isMobile) {
+            await expect(async () => {
+                await save.click();
+                await expect(
+                    this.riskManagementEditor,
+                    'Risk-management sheet should close after Save'
+                ).not.toBeVisible({ timeout: 3_000 });
+            }).toPass({ timeout: 20_000 });
+            return;
+        }
+        await expect(save, `${mode} Save should enable before commit`).toBeEnabled({ timeout: 20_000 });
+        await save.click();
+        await expect(this.riskManagementEditor, 'Risk-management popover should close after Save').not.toBeVisible();
+    }
+
+    /**
+     * Enable Deal Cancellation in the open editor and select a minutes duration chip/wheel value.
+     *
+     * @param duration - Visible duration label (e.g. `5 min`).
+     */
+    private async enableDealCancellationDraft(
+        duration: '5 min' | '10 min' | '15 min' | '30 min' | '60 min'
+    ): Promise<void> {
+        if ((await this.dealCancellationToggle.getAttribute('aria-pressed')) !== 'true') {
+            await this.dealCancellationToggle.click();
+        }
+        await expect(this.dealCancellationToggle, 'Deal Cancellation toggle should be on').toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+        if (this.isMobile) {
+            await this.selectWheelPickerOption('.deal-cancellation__wheel-picker', duration);
+            return;
+        }
+        await this.page
+            .locator('.deal-cancellation-desktop__chips')
+            .getByRole('button', { name: `Select value ${duration}`, exact: true })
+            .click();
+    }
+
+    /**
+     * Switch to TP & SL in the open editor, enable both toggles, and fill the given amounts.
+     *
+     * @param takeProfit - TP amount to draft.
+     * @param stopLoss - SL amount to draft.
+     */
+    private async enableTpSlDraft(takeProfit: string, stopLoss: string): Promise<void> {
+        await this.tpSlTab.click();
+        const tpToggle = this.riskManagementEditor
+            .locator('.take-profit__wrapper, .risk-management-desktop__field')
+            .filter({ hasText: 'Take profit' })
+            .locator('button.toggle-switch');
+        const slToggle = this.riskManagementEditor
+            .locator('.take-profit__wrapper, .risk-management-desktop__field')
+            .filter({ hasText: 'Stop loss' })
+            .locator('button.toggle-switch');
+        if ((await tpToggle.getAttribute('aria-pressed')) !== 'true') await tpToggle.click();
+        if ((await slToggle.getAttribute('aria-pressed')) !== 'true') await slToggle.click();
+        await expect(this.multiplierTakeProfitInput, 'Take-profit input should be enabled').toBeEnabled();
+        await expect(this.multiplierStopLossInput, 'Stop-loss input should be enabled').toBeEnabled();
+        await this.multiplierTakeProfitInput.fill(takeProfit);
+        await this.multiplierStopLossInput.fill(stopLoss);
+        await expect(this.takeProfitMessage, 'Take-profit draft should show the Range hint').toContainText(
+            /Range:\s*\$?[\d,]+\.?\d*\s+to\s+\$?[\d,]+\.?\d*/i
+        );
+        await expect(this.stopLossMessage, 'Stop-loss draft should show the Range hint').toContainText(
+            /Range:\s*\$?[\d,]+\.?\d*\s+to\s+\$?[\d,]+\.?\d*/i
+        );
+    }
+
+    /**
+     * Prove TP/SL and Deal Cancellation cannot stay committed together: re-apply the given TP+SL
+     * drafts and Save, then DC (snackbar turns TP/SL off), then TP+SL again (snackbar turns DC off).
+     * Call after `verifyDealCancellationGuardrails()` — switching to the DC tab drops unsaved TP/SL
+     * drafts, so this method re-fills them before the first Save.
+     *
+     * @param takeProfit - In-range Take-profit amount to commit.
+     * @param stopLoss - In-range Stop-loss amount to commit.
+     */
+    async verifyRiskManagementMutualExclusivity(takeProfit: string, stopLoss: string): Promise<void> {
+        const tpSlField = new RegExp(`^TP: .+${this.escapeRegExp(takeProfit)} / SL: .+${this.escapeRegExp(stopLoss)}$`);
+
+        // DC chips leave the editor on the Deal Cancellation tab and drop unsaved TP/SL drafts.
+        await this.enableTpSlDraft(takeProfit, stopLoss);
+        await this.saveMultipliersRiskManagement('tp_sl');
+        await expect(
+            this.riskManagementField,
+            'Risk management should show committed Take profit and Stop loss'
+        ).toHaveValue(tpSlField);
+
+        await this.riskManagementField.click();
+        await expect(
+            this.riskManagementEditor,
+            'Risk-management editor should reopen for Deal Cancellation'
+        ).toBeVisible();
+        await this.dealCancellationTab.click();
+        await this.enableDealCancellationDraft('5 min');
+        await this.saveMultipliersRiskManagement('dc');
+        await expect(
+            this.riskManagementSnackbarMessage,
+            'Saving Deal Cancellation should turn TP and SL off'
+        ).toHaveText('TP and SL have been turned off.');
+        await expect(
+            this.riskManagementField,
+            'Risk management should show Deal Cancellation after overriding TP/SL'
+        ).toHaveValue('DC: 5 minutes');
+
+        await this.riskManagementField.click();
+        await expect(this.riskManagementEditor, 'Risk-management editor should reopen').toBeVisible();
+        await this.enableTpSlDraft(takeProfit, stopLoss);
+        await this.saveMultipliersRiskManagement('tp_sl');
+        await expect(
+            this.riskManagementSnackbarMessage,
+            'Saving Take profit / Stop loss should turn Deal Cancellation off'
+        ).toHaveText('DC has been turned off.');
+        await expect(
+            this.riskManagementField,
+            'Risk management should show TP/SL after overriding Deal Cancellation'
+        ).toHaveValue(tpSlField);
+    }
+
+    /**
+     * Verify Multipliers Risk management: TP/SL below-min / above-max (error + Save disabled),
+     * in-range restores the neutral Range hint, Deal Cancellation five-minutes chips, and mutual
+     * exclusivity with TP/SL (saving one mode turns the other off via snackbar). Multipliers only —
+     * Accumulators/Turbos use standalone TP.
      */
     async verifyMultipliersRiskManagementGuardrails(): Promise<void> {
         await this.openRiskManagementEditor();
@@ -1389,23 +2129,240 @@ export class TradeValidationPage extends TradeParametersPage {
         await expect(this.stopLossMessage, 'Stop-loss should expose a numeric runtime range').toContainText(/\d/);
         const tpRange = await this.readRange(this.takeProfitMessage);
         const slRange = await this.readRange(this.stopLossMessage);
+        const rangeHint = /Range:\s*\$?[\d,]+\.?\d*\s+to\s+\$?[\d,]+\.?\d*/i;
+        const tpSaved = this.formatRangeValue(tpRange.minimum, tpRange.precision);
+        const slSaved = this.formatRangeValue(slRange.minimum, slRange.precision);
 
         await this.multiplierTakeProfitInput.fill(this.formatRangeValue(tpRange.belowMinimum, tpRange.precision));
         await expect(this.takeProfitMessage, 'Take-profit below minimum should show validation').toContainText(
             this.formatRangeValue(tpRange.minimum, tpRange.precision)
         );
+        await expect(
+            this.multipliersRiskManagementSaveButton,
+            'Take-profit below minimum must not be saved'
+        ).toBeDisabled();
+
+        await this.multiplierTakeProfitInput.fill(this.formatRangeValue(tpRange.aboveMaximum, tpRange.precision));
+        await expect(this.takeProfitMessage, 'Take-profit above maximum should show validation').toContainText(
+            this.formatRangeValue(tpRange.maximum, tpRange.precision)
+        );
+        await expect(
+            this.multipliersRiskManagementSaveButton,
+            'Take-profit above maximum must not be saved'
+        ).toBeDisabled();
+
+        await this.multiplierTakeProfitInput.fill(tpSaved);
+        await expect(
+            this.takeProfitMessage,
+            'An in-range Take-profit draft should restore the neutral Range hint'
+        ).toContainText(rangeHint);
+
+        await this.multiplierStopLossInput.fill(this.formatRangeValue(slRange.belowMinimum, slRange.precision));
+        await expect(this.stopLossMessage, 'Stop-loss below minimum should show validation').toContainText(
+            this.formatRangeValue(slRange.minimum, slRange.precision)
+        );
+        await expect(
+            this.multipliersRiskManagementSaveButton,
+            'Stop-loss below minimum must not be saved'
+        ).toBeDisabled();
 
         await this.multiplierStopLossInput.fill(this.formatRangeValue(slRange.aboveMaximum, slRange.precision));
         await expect(this.stopLossMessage, 'Stop-loss above maximum should show validation').toContainText(
             this.formatRangeValue(slRange.maximum, slRange.precision)
         );
+        await expect(
+            this.multipliersRiskManagementSaveButton,
+            'Stop-loss above maximum must not be saved'
+        ).toBeDisabled();
+
+        await this.multiplierStopLossInput.fill(slSaved);
+        await expect(
+            this.stopLossMessage,
+            'An in-range Stop-loss draft should restore the neutral Range hint'
+        ).toContainText(rangeHint);
+
+        await this.verifyDealCancellationGuardrails();
+        await this.verifyRiskManagementMutualExclusivity(tpSaved, slSaved);
+    }
+
+    /**
+     * Accumulators Growth rate — always exposes the fixed discrete list 1%–5%.
+     */
+    async verifyGrowthRateGuardrails(): Promise<void> {
+        await expect(this.growthRateField, 'Accumulators should expose Growth rate').toBeVisible();
+        await this.growthRateField.click();
+        if (this.isMobile) {
+            await expect(this.growthRateSheet, 'Growth rate sheet should open').toBeVisible();
+        } else {
+            await expect(
+                this.page.getByRole('listbox', { name: 'Selection options' }),
+                'Growth rate selection list should open'
+            ).toBeVisible();
+        }
+
+        const options = (await this.growthRateOptions.allTextContents()).map(value => value.trim()).filter(Boolean);
+        expect(options, 'Growth rate should expose the fixed 1%–5% options').toEqual(['1%', '2%', '3%', '4%', '5%']);
+
+        await this.dismissParameterEditor(
+            this.growthRateSheet,
+            this.page.locator('.selection-list-popover'),
+            'Growth rate'
+        );
+    }
+
+    /**
+     * Turbos Payout per point — runtime discrete list from `payout_choices` (currency-prefixed labels,
+     * sorted ascending). Opens the editor, asserts the list, then selects a different option so the
+     * committed field updates (desktop list commits on click; mobile wheel Save waits for proposal).
+     */
+    async verifyPayoutPerPointGuardrails(): Promise<void> {
+        await expect(this.payoutPerPointField, 'Turbos should expose Payout per point').toBeVisible();
+        const committed = (await this.payoutPerPointField.inputValue()).trim();
+        expect(committed, 'Committed Payout per point should include a numeric amount').toMatch(/\d/);
+
+        await this.payoutPerPointField.click();
+        if (this.isMobile) {
+            await expect(this.payoutPerPointSheet, 'Payout per point sheet should open').toBeVisible();
+        } else {
+            await expect(
+                this.page.getByRole('listbox', { name: 'Selection options' }),
+                'Payout per point selection list should open'
+            ).toBeVisible();
+        }
+
+        const options = (await this.payoutPerPointOptions.allTextContents()).map(value => value.trim()).filter(Boolean);
+        expect(options.length, 'Payout per point should expose at least one choice').toBeGreaterThan(0);
+
+        const numericValues = options.map(option => Number(option.replace(/[^\d.]/g, '')));
+        expect(
+            numericValues.every(value => Number.isFinite(value) && value > 0),
+            'Every Payout per point choice should be a positive number'
+        ).toBe(true);
+        expect(numericValues, 'Payout per point choices should be sorted ascending').toEqual(
+            [...numericValues].sort((left, right) => left - right)
+        );
+
+        const committedNumeric = Number(committed.replace(/[^\d.]/g, ''));
+        expect(numericValues, 'Committed Payout per point should belong to the runtime choice list').toContain(
+            committedNumeric
+        );
+
+        const alternate = options.find(option => Number(option.replace(/[^\d.]/g, '')) !== committedNumeric);
+        if (!alternate) {
+            await this.dismissParameterEditor(
+                this.payoutPerPointSheet,
+                this.page.locator('.selection-list-popover'),
+                'Payout per point'
+            );
+            return;
+        }
+
+        if (this.isMobile) {
+            await this.selectWheelPickerOption(this.payoutPerPointWheel, alternate);
+            // Save enables once the wheel draft differs from committed; handleSave still no-ops until
+            // the barrier proposal sets `is_api_response_received_ref`.
+            await expect(
+                this.actionSheetSaveButton(this.payoutPerPointSheet),
+                'Payout per point Save should enable after the wheel draft changes'
+            ).toBeEnabled({ timeout: 20_000 });
+            await expect(
+                this.payoutPerPointSheet.locator('.payout-per-point__barrier__content'),
+                'Barrier proposal for the draft Payout per point should resolve before Save'
+            ).toHaveText(/[+-]?\d/, { timeout: 20_000 });
+            await this.saveMobileSheet(this.payoutPerPointSheet);
+            await expect(this.payoutPerPointSheet, 'Payout per point sheet should close after Save').not.toBeVisible();
+        } else {
+            await this.payoutPerPointOptions.filter({ hasText: alternate }).first().click();
+            await expect(
+                this.page.getByRole('listbox', { name: 'Selection options' }),
+                'Payout per point list should close after selecting a choice'
+            ).not.toBeVisible();
+        }
+
+        const alternateNumeric = alternate.replace(/[^\d.]/g, '');
+        await expect(
+            this.payoutPerPointField,
+            `Payout per point field should update to the selected ${alternate}`
+        ).toHaveValue(new RegExp(alternateNumeric.replace(/\./g, '\\.')));
+    }
+
+    /**
+     * Vanillas Strike price — runtime discrete list from `barrier_choices` (signed relative barriers
+     * like `+0.00`). Opens the editor, asserts the list + Payout per point info (desktop panel /
+     * mobile sheet row), then selects a different option so the committed field updates.
+     */
+    async verifyStrikePriceGuardrails(): Promise<void> {
+        await expect(this.strikePriceField, 'Vanillas should expose Strike price').toBeVisible();
+        if (!this.isMobile) {
+            await expect(
+                this.payoutPerPointInfo,
+                'Vanillas desktop should expose the read-only Payout per point info panel'
+            ).toBeVisible();
+        }
+
+        const committed = (await this.strikePriceField.inputValue()).trim();
+        expect(committed, 'Committed Strike price should be a signed relative barrier').toMatch(/^[+-]?\d/);
+
+        await this.strikePriceField.click();
+        if (this.isMobile) {
+            await expect(this.strikePriceSheet, 'Strike price sheet should open').toBeVisible();
+            await expect(
+                this.strikePriceSheet.locator('.strike__payout'),
+                'Strike sheet should expose the Payout per point info row'
+            ).toBeVisible();
+        } else {
+            await expect(
+                this.page.getByRole('listbox', { name: 'Selection options' }),
+                'Strike price selection list should open'
+            ).toBeVisible();
+        }
+
+        const options = (await this.strikePriceOptions.allTextContents()).map(value => value.trim()).filter(Boolean);
+        expect(options.length, 'Strike price should expose at least one choice').toBeGreaterThan(0);
+        expect(
+            options.every(option => /^[+-]?\d+(\.\d+)?$/.test(option)),
+            'Every Strike price choice should be a signed numeric barrier'
+        ).toBe(true);
+        expect(options, 'Committed Strike price should belong to the runtime choice list').toContain(committed);
+
+        const alternate = options.find(option => option !== committed);
+        if (!alternate) {
+            await this.dismissParameterEditor(
+                this.strikePriceSheet,
+                this.page.locator('.selection-list-popover'),
+                'Strike price'
+            );
+            return;
+        }
+
+        if (this.isMobile) {
+            await this.selectWheelPickerOption(this.strikePriceWheel, alternate);
+            await expect(
+                this.actionSheetSaveButton(this.strikePriceSheet),
+                'Strike price Save should enable after the wheel draft changes'
+            ).toBeEnabled({ timeout: 20_000 });
+            await expect(
+                this.strikePriceSheet.locator('.strike__payout__content'),
+                'Payout per point for the draft Strike should resolve before Save'
+            ).toHaveText(/\$?\d/, { timeout: 20_000 });
+            await this.saveMobileSheet(this.strikePriceSheet);
+            await expect(this.strikePriceSheet, 'Strike price sheet should close after Save').not.toBeVisible();
+        } else {
+            await this.strikePriceOptions.filter({ hasText: alternate }).first().click();
+            await expect(
+                this.page.getByRole('listbox', { name: 'Selection options' }),
+                'Strike price list should close after selecting a choice'
+            ).not.toBeVisible();
+        }
+
+        await expect(this.strikePriceField, `Strike price field should update to ${alternate}`).toHaveValue(alternate);
     }
 
     /**
      * Verify Accumulators/Turbos standalone Take profit rejects out-of-range drafts.
      * These trade types have Take profit only — no Stop loss and no Deal Cancellation.
      */
-    async verifyStandaloneTakeProfitGuardrails(): Promise<void> {
+    async verifyTakeProfitGuardrails(): Promise<void> {
         await expect(this.takeProfitField, 'Standalone Take profit should be available').toBeVisible();
         await expect(this.riskManagementField, 'Risk management is Multipliers-only').toHaveCount(0);
 
@@ -1441,11 +2398,9 @@ export class TradeValidationPage extends TradeParametersPage {
         );
         await expect(this.takeProfitSaveButton, 'Take profit below minimum must not be saved').toBeDisabled();
 
-        // Upper guardrail: Turbos max can move with payout, so assert the live rejection text.
-        await this.takeProfitInput.fill('999999');
-        await expect(message, 'Take profit above maximum should show an upper guardrail').toContainText(/\d/);
-        await expect(message, 'Upper rejection should identify a maximum or range limit').toContainText(
-            /lower than|at most|maximum|Range|between/i
+        await this.takeProfitInput.fill(this.formatRangeValue(range.aboveMaximum, range.precision));
+        await expect(message, 'Take profit above maximum should show validation').toContainText(
+            this.formatRangeValue(range.maximum, range.precision)
         );
         await expect(this.takeProfitSaveButton, 'Take profit above maximum must not be saved').toBeDisabled();
 
@@ -1473,29 +2428,61 @@ export class TradeValidationPage extends TradeParametersPage {
     }
 
     /**
-     * Verify zero and empty Barrier drafts are rejected and do not replace the committed barrier.
-     *
-     * @returns Promise resolved after assertions.
+     * Barrier guardrails for Above spot and Below spot: reject `0`, empty, and a distance that is
+     * too far from spot (`123456`). Mobile uses the horizontal tabs + Quill TextField message inside
+     * the Barrier action sheet. Does not replace the committed barrier; dismisses without save.
      */
-    async verifyBarrierRequiredAndZeroValidation(): Promise<void> {
+    async verifyBarrierGuardrails(): Promise<void> {
         const original = await this.committedBarrierInput.inputValue();
+        const defaultOffset = original.replace(/^[+-]/, '');
         await this.openBarrierEditor();
 
-        await this.fillBarrierDraft('0');
-        await expect(this.barrierMessage, 'Zero barrier should show the dedicated validation').toHaveText(
-            'Barrier cannot be zero.'
-        );
-        await expect(this.barrierSaveButton, 'Zero barrier must not be saved').toBeDisabled();
+        const aboveSpotTab = this.barrierTypeTab('Above spot');
+        const belowSpotTab = this.barrierTypeTab('Below spot');
+        await expect(aboveSpotTab, 'Barrier editor should offer Above spot').toBeVisible();
+        await expect(belowSpotTab, 'Barrier editor should offer Below spot').toBeVisible();
 
-        await this.fillBarrierDraft('');
-        await expect(this.barrierMessage, 'Empty barrier should show required validation').toHaveText(
-            'Barrier is a required field.'
-        );
-        await expect(this.barrierSaveButton, 'Empty barrier must not be saved').toBeDisabled();
+        for (const type of ['Above spot', 'Below spot'] as const) {
+            const tab = this.barrierTypeTab(type);
+            if ((await tab.getAttribute('aria-selected')) !== 'true') {
+                await tab.click();
+            }
+            await expect(tab, `${type} should be the active Barrier mode`).toHaveAttribute('aria-selected', 'true');
+
+            await this.fillBarrierDraftAndExpectMessage(
+                '0',
+                'Barrier cannot be zero.',
+                `${type}: zero barrier should show the dedicated validation`
+            );
+
+            await this.fillBarrierDraftAndExpectMessage(
+                '',
+                'Barrier is a required field.',
+                `${type}: empty barrier should show required validation`
+            );
+
+            // Too-far copy comes from the proposal/API path after local validation passes.
+            await this.fillBarrierDraftAndExpectMessage(
+                '123456',
+                'Your barrier is too far from the current spot. Enter a smaller distance.',
+                `${type}: a distance far from spot should show the too-far validation`
+            );
+
+            // Restore the committed offset so the next mode does not inherit the too-far proposal error.
+            // When clear, Quill unmounts `.message__container__text` — use toBeHidden (not
+            // not.toContainText), which passes for detached nodes.
+            await this.fillBarrierDraft(defaultOffset);
+            await expect(
+                this.barrierMessage,
+                `${type}: restoring the default offset should clear the too-far error`
+            ).toBeHidden();
+        }
+
         await expect(
             this.committedBarrierInput,
             'Invalid barrier drafts must not replace the committed value'
         ).toHaveValue(original);
+        await this.dismissOpenParameterEditor();
     }
 
     /**
@@ -1689,5 +2676,10 @@ export class TradeValidationPage extends TradeParametersPage {
 
     private formatRangeValue(value: number, precision: number): string {
         return value.toFixed(precision);
+    }
+
+    /** Escape a literal string for safe use inside a `RegExp` source. */
+    private escapeRegExp(value: string): string {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 }

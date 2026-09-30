@@ -166,6 +166,21 @@
 | 14 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
 | 15 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
+### Flow 2.5 — Rise/Fall Duration and Stake validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 100 Index: Duration across offered units, then Stake runtime limits. Cross-market Rise/Fall sweeps stay in Flow 14.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_RISE_FALL` / `TEST_EMAIL_RISE_FALL_MOBILE`). Symbol supporting Rise/Fall (e.g. Volatility 100 Index).
+**Spec:** `playwright/tests/trade/rise-fall/verify-rise-fall-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Rise/Fall | `selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall', { verifyAllowEquals: false })` | Chip selected; Duration + Stake visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Rise/Fall')` | Desktop: Ticks/Seconds/Minutes/Hours/End time chips + Custom; Mobile: Ticks wheel 1–10, Time wheel hr/min/sec bounds, End time fields + pickers + future date → 23:59 GMT; editors dismissed | Both |
+| 3 | Stake | `verifyStakeGuardrails('Rise/Fall')` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; editor dismissed; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern).
+
 ---
 
 ## Higher/Lower
@@ -220,6 +235,22 @@
 | 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
 | 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
 
+### Flow 3.3 — Higher/Lower Barrier, Duration and Stake validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 100 Index: Barrier zero/empty/too-far, Duration across offered units, then Stake runtime limits.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_HIGHER_LOWER` / `TEST_EMAIL_HIGHER_LOWER_MOBILE`). Symbol supporting Higher/Lower (e.g. Volatility 100 Index).
+**Spec:** `playwright/tests/trade/higher-lower/verify-higher-lower-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Higher/Lower | `selectMarketAndTradeType('Volatility 100 Index', 'Higher/Lower')` | Chip selected; Barrier + Duration + Stake visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Higher/Lower')` | Desktop: Ticks/Seconds/Minutes/Hours/End time chips + Custom (when offered); Mobile: Ticks/Time/End time wheels; editors dismissed | Both |
+| 3 | Barrier | `verifyBarrierGuardrails()` | Above spot + Below spot tabs present; on each: `0` → cannot be zero; empty → required; `123456` → too far from spot; Save disabled; committed barrier unchanged; editor dismissed | Both |
+| 4 | Stake | `verifyStakeGuardrails('Higher/Lower')` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; editor dismissed; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern).
+
 ---
 
 ## Touch/No Touch
@@ -273,6 +304,22 @@
 | 14 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
 | 15 | Reports — Trade table | `verifyClosedContractInReports()` step 2 | Row by `buyId`; dates, stake, contract value, P&L correct | Both |
 | 16 | Reports — Statement | `verifyClosedContractInReports()` step 3 | Sell row (by `sellId`) + Buy row (by `buyId`); balances correct | Both |
+
+### Flow 4.3 — Touch/No Touch Barrier, Duration and Stake validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 100 Index: Duration across offered units, Barrier zero/empty, then Stake runtime limits.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_TOUCH_NO_TOUCH` / `TEST_EMAIL_TOUCH_NO_TOUCH_MOBILE`). Symbol supporting Touch/No Touch (e.g. Volatility 100 Index).
+**Spec:** `playwright/tests/trade/touch-no-touch/verify-touch-no-touch-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Touch/No Touch | `selectMarketAndTradeType('Volatility 100 Index', 'Touch/No Touch')` | Chip selected; Barrier + Duration + Stake visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Touch/No Touch')` | Desktop: Ticks/Seconds/Minutes/Hours/End time chips + Custom (when offered); Mobile: Ticks/Time/End time wheels; editors dismissed | Both |
+| 3 | Barrier | `verifyBarrierGuardrails()` | Above spot + Below spot tabs present; on each: `0` → cannot be zero; empty → required; `123456` → too far from spot; Save disabled; committed barrier unchanged; editor dismissed | Both |
+| 4 | Stake | `verifyStakeGuardrails('Touch/No Touch')` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max-payout+1 → payout-limits error + Save disabled; editor dismissed; rejected drafts leave Buy unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern).
 
 ---
 
@@ -491,6 +538,24 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 11 | Close contract from trade page | Click "Close [amount] [currency]" on purchase button (trade page) | Contract closed | Both |
 | 12 | Verify closed contract card | `verifyClosedPositionsTab()` — captures P&L | Card shows market, trade type, stake, "Closed" status, P&L | Both |
 | 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance = balanceBeforeClose + stake + P&L | Both |
+
+---
+
+### Flow 8.3 — Accumulators Growth rate, Stake, and Take profit validation
+
+> Split from Flow 14. Single no-purchase journey: Growth rate discrete options, Stake Range guardrails, then standalone Take profit runtime limits. Accumulators have **no Duration**.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_ACCUMULATORS` / `TEST_EMAIL_ACCUMULATORS_MOBILE`). Symbol supporting Accumulators (e.g. Volatility 100 Index).
+**Spec:** `playwright/tests/trade/accumulators/verify-accumulators-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Accumulators | `selectMarketAndTradeType('Volatility 100 Index', 'Accumulators', { verifyParams: false })` | Chip selected; Growth rate / Take profit / Stake available | Both |
+| 2 | Growth rate | `verifyGrowthRateGuardrails()` | Options are exactly `1%` · `2%` · `3%` · `4%` · `5%` | Both |
+| 3 | Stake | `verifyStakeGuardrails('Accumulators')` | **6** quick-pick chips; Custom: `0` → min-stake error + Save disabled; max+1 → Range error + Save disabled; rejected drafts leave Buy unchanged | Both |
+| 4 | Take profit | `verifyTakeProfitGuardrails()` → `verifyBuyButtonRemainsEnabled()` | Standalone TP (no Risk management); below-min / above-max drafts show the bound + Save disabled; committed TP unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Duplicate-Buy / settle recovery stays in Flow 14.
 
 ---
 
@@ -721,6 +786,23 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 12 | Verify closed position | Closed tab + `verifyClosedMultipliersContractDetailsPage()` | Executed DC on closed details | Both |
 | 13 | Verify balance after cancel | `verifyBalanceAfterContractClose()` | Balance = after-buy + Total cost + P/L | Both |
 
+### Flow 9.9 — Multipliers Multiplier, Stake, and Risk management validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 25 (1s) Index: Multipliers have **no Duration**; Multiplier discrete choices, Stake Range (+ Stop out / Commission rows), Risk management TP/SL out-of-range drafts, Deal Cancellation (always-visible tab + five minutes chips), and TP/SL ↔ DC mutual exclusivity on Save.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_MULTIPLIERS` / `TEST_EMAIL_MULTIPLIERS_MOBILE`). Symbol supporting Multipliers (e.g. Volatility 25 (1s) Index).
+**Spec:** `playwright/tests/trade/multipliers/verify-multipliers-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Multipliers | `selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers')` | Chip selected; Multiplier + Risk management + Stake visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Multipliers')` | Duration field absent | Both |
+| 3 | Multiplier | `verifyMultiplierGuardrails()` | Runtime `xN` choices; committed value in list; editor dismissed | Both |
+| 4 | Stake | `verifyStakeGuardrails('Multipliers')` | **6** chips; Custom Range + Stop out / Stop out level / Commission; out-of-range Save disabled | Both |
+| 5 | Risk management | `verifyMultipliersRiskManagementGuardrails()` → `verifyBuyButtonRemainsEnabled()` | TP and SL each: below-min / above-max show bound + Save disabled; in-range restores `Range: … to …`; `verifyDealCancellationGuardrails` (five minutes chips); `verifyRiskManagementMutualExclusivity` (DC Save → `TP and SL have been turned off.` / `DC: 5 minutes`; TP+SL Save → `DC has been turned off.`); Buy stays enabled | Both |
+
+> **POM:** call leaf helpers directly after one select. Multipliers lifecycle buy/close stays in Flow 9.1–9.8.
+
 ---
 
 ## Turbos
@@ -800,6 +882,23 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 9 | Open contract details | `openFirstContract()` + `verifyContractDetailsPage()` | Contract details shows TP amount `20.00` | Both |
 | 10 | Verify open position in Reports | `verifyOpenPositionsInReports()` — captures `buyId` | Headers, row values, footer totals correct | Both |
 
+### Flow 10.5 — Turbos Duration, Payout per point, Stake, and Take profit validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 100 (1s) Index: Duration across offered units, Stake runtime limits, Payout per point discrete choices, then standalone Take profit. Turbos have **no** Higher/Lower-style Barrier editor (barrier is an info panel nested under Payout per point on mobile).
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_TURBOS` / `TEST_EMAIL_TURBOS_MOBILE`). Symbol supporting Turbos (e.g. Volatility 100 (1s) Index).
+**Spec:** `playwright/tests/trade/turbos/verify-turbos-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Turbos | `selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos')` | Chip selected; Duration + Payout per point + Stake + Take profit visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Turbos')` | Desktop: offered unit chips + Custom; Mobile: Time/End time wheels (as offered); editors dismissed | Both |
+| 3 | Stake | `verifyStakeGuardrails('Turbos')` | **6** quick-pick chips; Custom out-of-range drafts show Range/limit errors + Save disabled; editor dismissed | Both |
+| 4 | Payout per point | `verifyPayoutPerPointGuardrails()` | Runtime `payout_choices` list (currency-prefixed, sorted ascending); committed value in list; selecting another choice updates the field (mobile Save waits for barrier proposal) | Both |
+| 5 | Take profit | `verifyTakeProfitGuardrails()` → `verifyBuyButtonRemainsEnabled()` | Standalone TP (no Risk management); below-min / above-max drafts show the bound + Save disabled; committed TP unchanged | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Turbos lifecycle buy/close recovery stays in Flow 14.
+
 ---
 
 ## Vanillas
@@ -855,6 +954,22 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 13 | Verify balance after close | `verifyBalanceAfterContractClose()` | Balance reflects P/L from early close | Both |
 | 14 | Verify closed contract in Reports | `verifyClosedContractInReports()` | Trade table + Statement rows correct | Both |
 
+### Flow 11.3 — Vanillas Duration, Strike, and Stake validation
+
+> Split from Flow 14. Single no-purchase journey on Volatility 100 Index: Duration across offered units, Strike price discrete choices (plus read-only Payout per point info), then Stake runtime limits. Vanillas have **no** Take profit.
+
+**Prerequisites:** Authenticated (`TEST_EMAIL_VANILLAS` / `TEST_EMAIL_VANILLAS_MOBILE`). Symbol supporting Vanillas (e.g. Volatility 100 Index).
+**Spec:** `playwright/tests/trade/vanillas/verify-vanillas-validations.spec.ts`
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Select Vanillas | `selectMarketAndTradeType('Volatility 100 Index', 'Vanillas')` | Chip selected; Duration + Strike + Stake visible | Both |
+| 2 | Duration | `verifyDurationGuardrails('Vanillas')` | Desktop: offered unit chips + Custom; Mobile: Time/End time wheels (as offered); editors dismissed | Both |
+| 3 | Strike price | `verifyStrikePriceGuardrails()` | Runtime `barrier_choices` list (signed relative barriers); committed value in list; selecting another choice updates the field; Payout per point info visible (desktop panel / mobile strike sheet row) | Both |
+| 4 | Stake | `verifyStakeGuardrails('Vanillas')` → `verifyBuyButtonRemainsEnabled()` | **6** quick-pick chips; Custom out-of-range drafts show Range/limit errors + Save disabled; editor dismissed; Buy stays enabled | Both |
+
+> **POM:** call leaf helpers directly after one select (dedicated trade-type pattern). Vanillas lifecycle buy/close stays in Flow 11.1 / 11.2.
+
 ## Flow 12 — Market closed: purchase hidden and open-market recovery · `verify-manual-trade-negative-validation.spec.ts`
 
 **Prerequisites:** Authenticated account and at least one currently closed market returned by staging.
@@ -887,17 +1002,23 @@ Identical chain to Flow 7.1 with `selectPredictionOption('Odd', 'bottom')` (purc
 | 1 | Validate Stake matrix | Run current-limit checks across every Stake-bearing trade type and one representative per market family | Invalid drafts show configuration-specific limits; exact minimum is accepted; committed Stake and Buy stay unchanged | Both |
 | 2 | Validate Stake filtering | Type letters, symbols, and excessive precision | Invalid characters are rejected and precision is bounded | Both |
 | 3 | Validate Duration | Read desktop range or mobile wheel options | Out-of-range values are blocked; mobile options are bounded | Both |
-| 4 | Validate Barrier | Enter zero and empty drafts | Validation appears, Save is disabled, committed value remains | Both |
-| 5 | Validate Multipliers risk | Read multiplier, TP/SL ranges, and DC choices | Values come from the active configuration | Both |
-| 6 | Validate market families | Inspect all live asset categories | Every major family has a representative | Both |
-| 7 | Validate stale values | Switch symbols/types after setting parameters | Retained values belong to the new runtime ranges/options | Both |
-| 8 | Validate duplicate purchase | Double-click Accumulators Buy | Exactly one buy request is sent | Both |
-| 9 | Validate Accumulator recovery | Settle the Accumulator | Buy returns enabled | Both |
-| 10 | Validate Turbos lifecycle | Buy and close a Turbos contract | Open position closes and Buy recovers | Both |
+| 4 | Validate Multipliers risk | Read multiplier, TP/SL ranges, and DC choices | Values come from the active configuration | Both |
+| 5 | Validate market families | Inspect all live asset categories | Every major family has a representative | Both |
+| 6 | Validate stale values | Switch symbols/types after setting parameters | Retained values belong to the new runtime ranges/options | Both |
+| 7 | Validate duplicate purchase | Double-click Accumulators Buy | Exactly one buy request is sent | Both |
+| 8 | Validate Accumulator recovery | Settle the Accumulator | Buy returns enabled | Both |
+| 9 | Validate Turbos lifecycle | Buy and close a Turbos contract | Open position closes and Buy recovers | Both |
 
+> **Rise/Fall** Duration / Stake on Vol 100 moved to Flow **2.5** (`verify-rise-fall-validations.spec.ts`) — cross-market Rise/Fall sweeps stay here.
+> **Higher/Lower** Barrier / Duration / Stake on Vol 100 moved to Flow **3.3** (`verify-higher-lower-validations.spec.ts`).
+> **Touch/No Touch** Barrier / Duration / Stake on Vol 100 moved to Flow **4.3** (`verify-touch-no-touch-validations.spec.ts`).
 > **Matches/Differs** digit / duration / stake validation moved to Flow **5.3** (`verify-matches-differs-validations.spec.ts`).
 > **Over/Under** digit / duration / stake validation moved to Flow **6.3** (`verify-over-under-validations.spec.ts`).
 > **Even/Odd** duration / stake validation moved to Flow **7.3** (`verify-even-odd-validations.spec.ts`) — no digit prediction on this type.
+> **Accumulators** Growth rate / stake / Take profit validation moved to Flow **8.3** (`verify-accumulators-validations.spec.ts`) — duplicate-Buy recovery stays here.
+> **Multipliers** Multiplier / Stake / Risk management validation moved to Flow **9.9** (`verify-multipliers-validations.spec.ts`) — buy/close stays in Flow 9.1–9.8.
+> **Turbos** Duration / Payout per point / Stake / Take profit validation moved to Flow **10.5** (`verify-turbos-validations.spec.ts`) — buy/close recovery stays here.
+> **Vanillas** Duration / Strike / Stake validation moved to Flow **11.3** (`verify-vanillas-validations.spec.ts`) — buy/close stays in Flow 11.1 / 11.2.
 
 > The current market picker does not expose Asians, Ends Between/Outside, or Stays Between/Goes Outside. Server-only open-position-cap setup is also unavailable with current account tooling; these states are not reported as passing by this flow.
 

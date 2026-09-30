@@ -114,10 +114,6 @@ test.describe(
             }
 
             await test.step('No-duration trade types reject stale Duration UI', async () => {
-                await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Accumulators', {
-                    verifyParams: false,
-                });
-                await tradeValidationPage.verifyDurationUnavailable();
                 await tradeValidationPage.selectMarketAndTradeType('BTC/USD', 'Multipliers', {
                     verifyParams: false,
                 });
@@ -125,59 +121,11 @@ test.describe(
             });
         });
 
-        test('VERIFY Barrier rejects zero and empty values without replacing committed state', async ({
-            tradeValidationPage,
-        }) => {
-            await tradeValidationPage.selectMarketAndTradeType('Volatility 75 Index', 'Higher/Lower');
-            await tradeValidationPage.verifyBarrierRequiredAndZeroValidation();
-            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
-        });
+        // Higher/Lower barrier (+ duration + stake) → Flow 3.3 (`verify-higher-lower-validations.spec.ts`)
 
-        test('VERIFY Multipliers Risk management enforces TP, SL, and Deal Cancellation options', async ({
-            tradeValidationPage,
-        }) => {
-            await tradeValidationPage.selectMarketAndTradeType('Volatility 25 (1s) Index', 'Multipliers');
-            const multiplierOptions = await tradeValidationPage.readMultiplierOptions();
-            expect(multiplierOptions.length, 'Active symbol should expose at least one multiplier').toBeGreaterThan(0);
-            expect(
-                multiplierOptions,
-                'Committed multiplier should belong to the options returned for the active symbol'
-            ).toContain(await tradeValidationPage.multiplierField.inputValue());
+        // Multipliers Multiplier + Stake + Risk management → Flow 9.9 (`verify-multipliers-validations.spec.ts`)
 
-            await tradeValidationPage.dismissOpenParameterEditor();
-            await tradeValidationPage.verifyMultipliersRiskManagementGuardrails();
-            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
-            await tradeValidationPage.dismissOpenParameterEditor();
-
-            const cancellationOptions = await tradeValidationPage.readDealCancellationOptions();
-            if (cancellationOptions.length === 0) {
-                await expect(
-                    tradeValidationPage.dealCancellationTab,
-                    'When Deal Cancellation is unavailable the DC tab should be absent'
-                ).toHaveCount(0);
-            } else {
-                expect(
-                    cancellationOptions.length,
-                    'Deal Cancellation should expose only supported durations for the current configuration'
-                ).toBeGreaterThan(0);
-            }
-        });
-
-        test('VERIFY Accumulators standalone Take profit enforces its runtime range', async ({
-            tradeValidationPage,
-        }) => {
-            await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Accumulators', {
-                verifyParams: false,
-            });
-            await tradeValidationPage.verifyStandaloneTakeProfitGuardrails();
-            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
-        });
-
-        test('VERIFY Turbos standalone Take profit enforces its runtime range', async ({ tradeValidationPage }) => {
-            await tradeValidationPage.selectMarketAndTradeType('Volatility 100 (1s) Index', 'Turbos');
-            await tradeValidationPage.verifyStandaloneTakeProfitGuardrails();
-            await tradeValidationPage.verifyBuyButtonRemainsEnabled();
-        });
+        // Turbos Duration + Payout per point + Stake + Take profit → Flow 10.5 (`verify-turbos-validations.spec.ts`)
 
         test('VERIFY Rise/Fall has no Take profit or Risk management controls', async ({ tradeValidationPage }) => {
             await tradeValidationPage.selectMarketAndTradeType('Volatility 100 Index', 'Rise/Fall');

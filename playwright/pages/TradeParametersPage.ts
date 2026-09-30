@@ -562,12 +562,14 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     /**
-     * Barrier value input inside the popover/action-sheet.
-     * Both viewports: input[name="barrier_1"]
+     * Barrier value input inside the open popover/action-sheet.
+     * Mobile: scoped to `.barrier-params` sheet (`input[name="barrier_1"]`).
+     * Desktop: scoped to `.barrier-popover`.
      * Source: barrier-content-desktop.tsx + barrier-input.tsx
      */
     get barrierInput(): Locator {
-        return this.page.locator('input[name="barrier_1"]');
+        const editor = this.isMobile ? this.barrierSheet : this.barrierPopover;
+        return editor.locator('input[name="barrier_1"]');
     }
 
     /**
@@ -1378,14 +1380,18 @@ export class TradeParametersPage extends TradeBasePage {
         const targetIndex = labels.findIndex(t => t?.trim() === value);
         if (targetIndex < 0) throw new Error(`Wheel picker option '${value}' not found`);
 
-        // Snap formula: index*itemHeight + itemHeight/2 (half-item snap offset). Measured live rather
-        // than hardcoded, so a future quill-ui item-height change can't silently snap to the wrong option.
-        const itemHeight = await options[0].evaluate(el => el.getBoundingClientRect().height);
+        // Quill's WheelPicker scroll handler uses a fixed 48px row height (`Math.floor(scrollTop / 48)`),
+        // so snap with that same constant — a measured height that drifts from 48 selects the wrong index.
+        // Programmatic scrollTop does not always emit `scroll` under automation; dispatch it so
+        // `setSelectedValue` (and thus End time `is_dirty`) actually runs.
+        const quillRowHeightPx = 48;
         await listbox.evaluate(
             (el, scrollTop) => {
-                (el as HTMLElement).scrollTop = scrollTop;
+                const element = el as HTMLElement;
+                element.scrollTop = scrollTop;
+                element.dispatchEvent(new Event('scroll'));
             },
-            targetIndex * itemHeight + itemHeight / 2
+            targetIndex * quillRowHeightPx + quillRowHeightPx / 2
         );
 
         // Confirm the picker's own scroll handler has actually processed the new position before
@@ -2144,7 +2150,7 @@ export class TradeParametersPage extends TradeBasePage {
             }
             await expect(tab, `Barrier type "${type}" should be selected`).toHaveAttribute('aria-selected', 'true');
         }
-        const input = this.isMobile ? this.barrierSheet.locator('input[name="barrier_1"]') : this.barrierInput;
+        const input = this.barrierInput;
         await input.clear();
         await input.fill(value);
         await expect(input, `Barrier input should contain "${value}" before saving`).toHaveValue(value);

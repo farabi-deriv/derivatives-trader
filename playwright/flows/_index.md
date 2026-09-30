@@ -5,7 +5,7 @@ This folder contains plain-English journey specifications, coverage scorecards, 
 
 Updated when new flows are added, tests are implemented, or coverage status changes.
 
-Last updated: 2026-09-23
+Last updated: 2026-09-30
 
 ---
 
@@ -37,15 +37,15 @@ Each module section lists every documented flow with its current **status** and 
 | Module | Total Flows | Documented | Automated |
 | --- | --- | --- | --- |
 | `auth` | 5 | 5 | 5 |
-| `feed` | 5 | 5 | 5 |
+| `feed` | 7 | 7 | 7 |
 | `market-selection` | 27 | 27 | 26 |
 | `notifications` | 9 | 4 | 4 |
 | `pageerrors` | 1 | 1 | 1 |
 | `positions` | 11 | 11 | 11 |
 | `reports` | 8 | 8 | 8 |
-| `trade` | 42 | 42 | 42 |
+| `trade` | 52 | 52 | 52 |
 | `trade-automate` | 47 | 47 | 45 |
-| **Total** | **155** | **150** | **147** |
+| **Total** | **167** | **162** | **159** |
 
 > Status advances: `documented` → `automated`. Flows marked `N/A` (e.g. notifications Flows 3–7 — surface removed) count towards **Total Flows** only, not Documented/Automated.
 
@@ -64,10 +64,13 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 2.2 | P0 | Rise/Fall — buy Fall → close | authenticated, funded | `automated` |
 | Flow 2.3 | P2 | Rise/Fall Allow Equals — buy Rise → close | authenticated, funded | `automated` |
 | Flow 2.4 | P2 | Rise/Fall Allow Equals — buy Fall → close | authenticated, funded | `automated` |
+| Flow 2.5 | P1 | Rise/Fall Duration and Stake validation | authenticated | `automated` |
 | Flow 3.1 | P1 | Higher/Lower — buy Higher → close | authenticated, funded | `automated` |
 | Flow 3.2 | P1 | Higher/Lower — buy Lower → close | authenticated, funded | `automated` |
+| Flow 3.3 | P1 | Higher/Lower Barrier, Duration and Stake validation | authenticated | `automated` |
 | Flow 4.1 | P2 | Touch/No Touch — buy Touch → close | authenticated, funded | `automated` |
 | Flow 4.2 | P2 | Touch/No Touch — buy No Touch → close | authenticated, funded | `automated` |
+| Flow 4.3 | P1 | Touch/No Touch Barrier, Duration and Stake validation | authenticated | `automated` |
 | Flow 5.1 | P0 | Matches/Differs — buy Matches → expiry | authenticated, funded | `automated` |
 | Flow 5.2 | P0 | Matches/Differs — buy Differs → expiry | authenticated, funded | `automated` |
 | Flow 5.3 | P1 | Matches/Differs digit, Duration, and Stake validation | authenticated | `automated` |
@@ -79,8 +82,8 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 7.2 | P2 | Even/Odd — buy Odd → expiry | authenticated, funded | `automated` |
 | Flow 7.3 | P1 | Even/Odd Duration and Stake validation | authenticated | `automated` |
 | Flow 8.1 | P0 | Accumulators without TP — buy → close | authenticated, funded | `automated` |
-| Flow 8.1 | P0 | Accumulators without TP — buy → close | authenticated, funded | `automated` |
 | Flow 8.2 | P0 | Accumulators with TP — buy → verify TP set → close | authenticated, funded | `automated` |
+| Flow 8.3 | P1 | Accumulators Growth rate, Stake, and Take profit validation | authenticated | `automated` |
 | Flow 9.1 | P0 | Multipliers no TP/SL — buy Up → close | authenticated, funded | `automated` |
 | Flow 9.2 | P0 | Multipliers no TP/SL — buy Down → close | authenticated, funded | `automated` |
 | Flow 9.3 | P0 | Multipliers with TP — buy Up → close | authenticated, funded | `automated` |
@@ -89,12 +92,15 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 9.6 | P1 | Multipliers with SL — buy Down → close | authenticated, funded | `automated` |
 | Flow 9.7 | P2 | Multipliers with Deal Cancellation — buy Up → cancel | authenticated, funded | `automated` |
 | Flow 9.8 | P2 | Multipliers with Deal Cancellation — buy Down → cancel | authenticated, funded | `automated` |
+| Flow 9.9 | P1 | Multipliers Multiplier, Stake, and Risk management validation | authenticated | `automated` |
 | Flow 10.1 | P1 | Turbos without TP — buy Up → verify in positions | authenticated, funded | `automated` |
 | Flow 10.2 | P1 | Turbos without TP — buy Down → verify in positions | authenticated, funded | `automated` |
 | Flow 10.3 | P1 | Turbos with TP — buy Up → verify TP set in positions | authenticated, funded | `automated` |
 | Flow 10.4 | P1 | Turbos with TP — buy Down → verify TP set in positions | authenticated, funded | `automated` |
+| Flow 10.5 | P1 | Turbos Duration, Payout per point, Stake, and Take profit validation | authenticated | `automated` |
 | Flow 11.1 | P1 | Vanillas — buy Call → close contract | authenticated, funded | `automated` |
 | Flow 11.2 | P1 | Vanillas — buy Put → close contract | authenticated, funded | `automated` |
+| Flow 11.3 | P1 | Vanillas Duration, Strike, and Stake validation | authenticated | `automated` |
 | Flow 12 | P2 | Market closed → purchase hidden, countdown + recovery | authenticated, closed market | `automated` |
 | Flow 13 | P1 | Insufficient balance → inline-validation gate (post-#1398) | authenticated, low balance | `automated` |
 | Flow 14 | P1 | Manual Trading negative validation matrix | authenticated, funded | `automated` |

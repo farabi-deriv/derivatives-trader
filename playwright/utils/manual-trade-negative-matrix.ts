@@ -5,10 +5,12 @@
 
 export type MarketCategory = 'Derived' | 'Forex' | 'Stocks & indices' | 'Commodities' | 'Cryptocurrencies';
 
-export type StakeTradeType = 'Accumulators' | 'Higher/Lower' | 'Touch/No Touch' | 'Multipliers' | 'Turbos' | 'Vanillas';
-
-/** Matches/Differs → Flow 5.3; Over/Under → Flow 6.3; Even/Odd → Flow 7.3. */
-export type DurationTradeType = 'Higher/Lower' | 'Touch/No Touch' | 'Turbos' | 'Vanillas';
+/** Matches/Differs → 5.3; Over/Under → 6.3; Even/Odd → 7.3; Accumulators → 8.3.
+ *  Rise/Fall Vol 100 duration+stake → Flow 2.5; Higher/Lower barrier+duration+stake → Flow 3.3;
+ *  Touch/No Touch barrier+duration+stake → Flow 4.3; Multipliers multiplier+stake+RM → Flow 9.9;
+ *  Turbos duration+PPP+stake+TP → Flow 10.5; Vanillas duration+strike+stake → Flow 11.3;
+ *  cross-market RF sweeps stay in Flow 14.
+ *  Dedicated stake/duration trade-type rows emptied — all splits live in their own specs. */
 
 /** One representative market per category for Rise/Fall-capable families. */
 export const STAKE_MARKET_CATEGORIES: ReadonlyArray<{
@@ -26,26 +28,23 @@ export const DURATION_MARKET_CATEGORIES = STAKE_MARKET_CATEGORIES;
 
 export const STAKE_TRADE_TYPE_CAPABILITIES: ReadonlyArray<{
     market: string;
-    tradeType: StakeTradeType;
+    tradeType: string;
     verifyParams?: boolean;
 }> = [
-    { market: 'Volatility 100 Index', tradeType: 'Accumulators', verifyParams: false },
-    { market: 'Volatility 100 (1s) Index', tradeType: 'Higher/Lower' },
-    { market: 'Volatility 10 (1s) Index', tradeType: 'Touch/No Touch' },
+    // Higher/Lower barrier+duration+stake → Flow 3.3 (`verify-higher-lower-validations.spec.ts`)
+    // Touch/No Touch duration+stake → Flow 4.3 (`verify-touch-no-touch-validations.spec.ts`)
     // Matches/Differs stake+duration → Flow 5.3 (`verify-matches-differs-validations.spec.ts`)
     // Over/Under stake+duration → Flow 6.3 (`verify-over-under-validations.spec.ts`)
     // Even/Odd stake+duration → Flow 7.3 (`verify-even-odd-validations.spec.ts`)
-    { market: 'Volatility 25 (1s) Index', tradeType: 'Multipliers' },
-    { market: 'Volatility 100 (1s) Index', tradeType: 'Turbos' },
-    { market: 'Volatility 100 Index', tradeType: 'Vanillas' },
+    // Accumulators Growth rate + stake + TP → Flow 8.3 (`verify-accumulators-validations.spec.ts`)
+    // Multipliers multiplier + stake + RM → Flow 9.9 (`verify-multipliers-validations.spec.ts`)
+    // Turbos duration + PPP + stake + TP → Flow 10.5 (`verify-turbos-validations.spec.ts`)
+    // Vanillas duration + strike + stake → Flow 11.3 (`verify-vanillas-validations.spec.ts`)
 ];
 
 export const DURATION_TRADE_TYPE_CAPABILITIES: ReadonlyArray<{
     market: string;
-    tradeType: DurationTradeType;
+    tradeType: string;
 }> = [
-    { market: 'Volatility 100 (1s) Index', tradeType: 'Higher/Lower' },
-    { market: 'Volatility 10 (1s) Index', tradeType: 'Touch/No Touch' },
-    { market: 'Volatility 100 (1s) Index', tradeType: 'Turbos' },
-    { market: 'Volatility 100 Index', tradeType: 'Vanillas' },
+    // Vanillas duration + strike + stake → Flow 11.3 (`verify-vanillas-validations.spec.ts`)
 ];
