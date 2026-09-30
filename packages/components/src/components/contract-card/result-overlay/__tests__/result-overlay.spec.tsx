@@ -1,11 +1,12 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { getCardLabels } from '@deriv/shared';
 import ResultOverlay from '../result-overlay';
 
 const default_mocked_props = {
     currency: 'USD',
     contract_id: 1987232323,
-    getCardLabels: () => ({ CLOSED: 'Closed' }),
+    getCardLabels,
     getContractPath: jest.fn(),
     is_positions: true,
     is_visible: true,

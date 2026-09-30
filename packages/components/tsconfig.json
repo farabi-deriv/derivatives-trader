@@ -5,13 +5,12 @@
         "baseUrl": "./",
         "paths": {
             "@deriv/*": ["../*/src"]
-        },
-        "typeRoots": ["./types", "@types"]
+        }
     },
     "include": [
         "src",
         "./@types/react-div-100vh/react-div-100vh-config.d.ts",
-        "./@types/@enykeev/react-virtualized/dist/es/AutoSizer.d.ts",
-        "../../types/deriv-com-translations.d.ts"
+        "../../types/deriv-com-translations.d.ts",
+        "../../types/testing-library.d.ts"
     ]
 }

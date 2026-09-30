@@ -18,11 +18,5 @@
         "outDir": "./dist",
         "baseUrl": "./"
     },
-    "include": [
-      "src",
-      "./index.d.ts",
-      "../../globals.d.ts",
-      "../../utils.d.ts",
-      "../../types/deriv-com-translations.d.ts"
-    ]
+    "include": ["src", "../../types/deriv-com-translations.d.ts", "../../types/testing-library.d.ts"]
 }

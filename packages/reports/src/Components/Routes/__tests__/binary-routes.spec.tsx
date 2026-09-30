@@ -19,7 +19,7 @@ describe('<BinaryRoutes />', () => {
 
     it('should render BinaryRoutes with mocked route component', () => {
         const mock = mockStore({});
-        const wrapper = ({ children }: { children: JSX.Element }) => (
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
             <StoreProvider store={mock}>{children}</StoreProvider>
         );
         render(

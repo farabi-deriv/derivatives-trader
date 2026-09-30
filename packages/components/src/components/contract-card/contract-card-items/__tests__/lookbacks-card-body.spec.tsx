@@ -8,10 +8,10 @@ type TLookBacksCardBody = React.ComponentProps<typeof LookBacksCardBody>;
 describe('<LookBacksCardBody />', () => {
     const mockProps: TLookBacksCardBody = {
         contract_info: mockContractInfo({
-            buy_price: 6.55,
+            buy_price: '6.55',
             contract_type: CONTRACT_TYPES.LB_HIGH_LOW,
-            sell_price: 5.06,
-            profit: -1.49,
+            sell_price: '5.06',
+            profit: '-1.49',
             multiplier: 5,
         }),
         is_sold: false,

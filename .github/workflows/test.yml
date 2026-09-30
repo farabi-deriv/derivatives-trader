@@ -44,13 +44,9 @@ jobs:
     - name: Install dependencies
       uses: "./.github/actions/npm_install_from_cache"
     
-    # TypeScript checking (parallel)
+    # TypeScript gate — runs every gated package's project in parallel and fails on any of them.
     - name: Check TypeScript
-      run: |
-        npx tsc --project packages/api/tsconfig.json -noEmit &
-        npx tsc --project packages/utils/tsconfig.json -noEmit &
-        npx tsc --project packages/stores/tsconfig.json -noEmit &
-        wait
+      run: npm run test:typescript
 
     # Import checking
     - name: Check imports
@@ -74,12 +70,21 @@ jobs:
     - name: Check tests for @deriv/utils
       run: bash ./scripts/check-tests.sh packages/utils/src
     
-    # Linting (parallel)
+    # Linting (parallel) — each PID is waited on individually so either failure fails the step.
     - name: Run linting
       run: |
         npm run test:stylelint &
+        stylelint_pid=$!
         npm run test:eslint-all &
-        wait
+        eslint_pid=$!
+        stylelint_status=0
+        eslint_status=0
+        wait "$stylelint_pid" || stylelint_status=$?
+        wait "$eslint_pid" || eslint_status=$?
+        if [ "$stylelint_status" -ne 0 ] || [ "$eslint_status" -ne 0 ]; then
+          echo "stylelint exited $stylelint_status, eslint exited $eslint_status"
+          exit 1
+        fi
   test:
     name: Tests - ${{ matrix.description }}
     runs-on: runner_8cores_derivatives_trader

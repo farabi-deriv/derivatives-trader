@@ -14,7 +14,7 @@ const contract_info = mockContractInfo({
     contract_id: 1,
     contract_type: CONTRACT_TYPES.ACCUMULATOR,
     is_valid_to_cancel: 1,
-    profit: 50,
+    profit: '50',
 });
 
 const contract = {

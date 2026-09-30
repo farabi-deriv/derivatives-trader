@@ -30,7 +30,7 @@ describe('useStore', () => {
     });
 
     test('[DCR-013] should not add a feature_flags store to the provided value', async () => {
-        const mockRootStore: DeepPartial<TStores> = { client: { email: 'john@company.com' } };
+        const mockRootStore: DeepPartial<TStores> = { client: { email_address: 'john@company.com' } };
 
         const wrapper = ({ children }: { children: JSX.Element }) => (
             <StoreProvider store={mockRootStore as TStores}>{children}</StoreProvider>

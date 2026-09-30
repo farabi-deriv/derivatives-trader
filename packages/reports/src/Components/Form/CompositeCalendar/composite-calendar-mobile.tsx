@@ -83,7 +83,7 @@ const CompositeCalendarMobile = React.memo(
         const today = toMoment().format('YYYY-MM-DD');
 
         const selectDateRange = (_selected_date_range: TInputDateRange, is_today?: boolean) => {
-            const new_from = _selected_date_range.duration;
+            const new_from = _selected_date_range.duration ?? 0;
             onChange(
                 {
                     from:

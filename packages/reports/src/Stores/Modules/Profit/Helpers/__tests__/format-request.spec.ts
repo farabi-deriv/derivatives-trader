@@ -14,7 +14,7 @@ describe('getDateBoundaries', () => {
     });
 
     it('should return date_from and date_to with partial_fetch_time', () => {
-        jest.useFakeTimers('modern').setSystemTime(new Date('2021-11-01').getTime());
+        jest.useFakeTimers().setSystemTime(new Date('2021-11-01').getTime());
         const date_from = 1635724900;
         const date_to = 1635811200;
         const partial_fetch_time = 1635724800;

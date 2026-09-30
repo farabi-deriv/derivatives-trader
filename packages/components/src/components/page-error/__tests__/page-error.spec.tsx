@@ -110,7 +110,7 @@ describe('<PageError/>', () => {
 
         const page_error = screen.getByTestId('dc-page-error__btn-wrapper');
 
-        expect(page_error).not.toHaveTextContent();
+        expect(page_error).toHaveTextContent(/^$/);
     });
 
     it('Should show on mobile version text size of the error equals to "xs" and not show the button when redirect equals to false and redirect_labels has one element in the array', () => {

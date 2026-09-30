@@ -53,11 +53,10 @@ const createLocalStorageMock = () => {
 
 // Helper function to mock window.location
 const mockLocation = (originalLocation: Location, overrides: Partial<Location>) => {
-    delete (window as any).location;
-    window.location = {
-        ...originalLocation,
-        ...overrides,
-    } as Location;
+    Object.defineProperty(window, 'location', {
+        value: { ...originalLocation, ...overrides },
+        writable: true,
+    });
 };
 
 describe('isDemoAccountId / isRealAccountId', () => {

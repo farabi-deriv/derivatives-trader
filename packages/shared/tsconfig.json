@@ -4,8 +4,7 @@
         "baseUrl": "./",
         "paths": {
             "@deriv/*": ["../*/src"]
-        },
-        "typeRoots": ["node_modules/@types"]
+        }
     },
-    "include": ["src", "../../utils.d.ts", "../../types/deriv-com-translations.d.ts"]
+    "include": ["src", "../../types/deriv-com-translations.d.ts", "../../types/testing-library.d.ts"]
 }

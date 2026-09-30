@@ -131,10 +131,51 @@ describe('cleanup guardrails are re-verified, not re-implemented (CSN-008)', () 
         }
 
         expect(stale).toEqual([]);
-        // The workflow still targets the packages it did before: the three tsc projects and the
-        // three test-matrix groups are untouched by the reference cleanup.
-        expect(workflow).toContain('npx tsc --project packages/api/tsconfig.json -noEmit');
+        // The workflow still targets the packages it did before: the type gate and the three
+        // test-matrix groups are untouched by the reference cleanup.
+        expect(workflow).toContain('npm run test:typescript');
         expect(workflow).toContain('packages/api packages/shared packages/stores packages/utils packages/components');
+    });
+});
+
+// -------------------------------------------------------------------------------------------------
+// TSG-001 — the TypeScript gate is a real gate: it runs the aggregating runner and nothing in the
+// workflow may discard a backgrounded command's exit status.
+// -------------------------------------------------------------------------------------------------
+
+describe('typescript gate (TSG-001)', () => {
+    const workflow = read('.github/workflows/test.yml');
+    const steps = parseWorkflowSteps(workflow);
+
+    it('[TSG-001] no CI step ends on a bare wait', () => {
+        // `wait` with no arguments returns 0 regardless of its children, so the step always passes.
+        const swallowing = steps.filter(step => /^\s*wait\s*$/m.test(step.body)).map(step => step.name);
+        expect(swallowing).toEqual([]);
+    });
+
+    it('[TSG-001] Check TypeScript invokes the aggregating runner', () => {
+        const [step] = steps.filter(candidate => candidate.name === 'Check TypeScript');
+        expect(step).toBeDefined();
+        expect(step.body).toMatch(/^\s*run:\s*npm run test:typescript\s*$/m);
+        expect(step.body).not.toMatch(/\|\|/);
+        expect(step.body).not.toMatch(/&\s*$/m);
+        expect(step.body).not.toMatch(/continue-on-error/);
+    });
+});
+
+describe('parallel lint step (TSG-005)', () => {
+    const steps = parseWorkflowSteps(read('.github/workflows/test.yml'));
+
+    it('[TSG-005] waits on each backgrounded lint command individually and aggregates their statuses', () => {
+        const [step] = steps.filter(candidate => candidate.name === 'Run linting');
+        expect(step).toBeDefined();
+
+        ['npm run test:stylelint', 'npm run test:eslint-all'].forEach(command => {
+            expect(step.body).toMatch(new RegExp(`${command}\\s*&\\s*$`, 'm'));
+        });
+        // One `wait "$pid"` per backgrounded command, each status folded into the step's exit code.
+        expect(step.body.match(/wait\s+"\$\w+"/g) || []).toHaveLength(2);
+        expect(step.body).toMatch(/exit\s+\d/);
     });
 });
 

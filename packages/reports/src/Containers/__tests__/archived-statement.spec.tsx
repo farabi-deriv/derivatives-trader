@@ -84,7 +84,7 @@ describe('ArchivedStatement', () => {
             render(
                 <ReportsProviders store={store}>
                     <MemoryRouter>
-                        <ArchivedStatement />
+                        <ArchivedStatement component_icon={<div>IcStatement</div>} />
                     </MemoryRouter>
                 </ReportsProviders>
             );

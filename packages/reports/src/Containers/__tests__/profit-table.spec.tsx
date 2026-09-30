@@ -192,7 +192,7 @@ describe('Profit Table', () => {
         render(
             <ReportsProviders store={store}>
                 <MemoryRouter>
-                    <ProfitTable />
+                    <ProfitTable component_icon={<div>IcProfitTable</div>} />
                 </MemoryRouter>
             </ReportsProviders>
         );

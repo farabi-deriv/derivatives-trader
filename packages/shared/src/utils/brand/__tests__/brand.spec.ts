@@ -4,11 +4,10 @@ describe('getHelpCentreUrl', () => {
     const originalLocation = window.location;
 
     const mockLocation = (overrides: Partial<Location>) => {
-        delete (window as any).location;
-        window.location = {
-            ...originalLocation,
-            ...overrides,
-        } as Location;
+        Object.defineProperty(window, 'location', {
+            value: { ...originalLocation, ...overrides },
+            writable: true,
+        });
     };
 
     afterEach(() => {
@@ -50,11 +49,10 @@ describe('getMediaUrl', () => {
     const originalLocation = window.location;
 
     const mockLocation = (overrides: Partial<Location>) => {
-        delete (window as any).location;
-        window.location = {
-            ...originalLocation,
-            ...overrides,
-        } as Location;
+        Object.defineProperty(window, 'location', {
+            value: { ...originalLocation, ...overrides },
+            writable: true,
+        });
     };
 
     afterEach(() => {

@@ -15,9 +15,9 @@ describe('<AccumulatorCardBody />', () => {
     const mock_props: TAccumulatorCardBody = {
         addToast: jest.fn(),
         contract_info: mockContractInfo({
-            buy_price: 123,
-            sell_price: 234,
-            profit: 111,
+            buy_price: '123',
+            sell_price: '234',
+            profit: '111',
             contract_id: 12345,
             is_valid_to_sell: 1,
             status: 'sold',

@@ -26,6 +26,7 @@ npm run test                                 # Stylelint + ESLint + Jest
 npm run test:jest                            # Jest only
 npm run test:jest -- path/to/test.spec.ts    # Single test file
 npm run test:jest -- --watch                 # Watch mode
+npm run test:typescript                      # Blocking type gate: tsc --noEmit per package (7 packages, core excluded)
 npm run test:eslint-all                      # ESLint all packages
 npm run test:stylelint                       # SCSS linting
 npm run stylelint:fix                        # Auto-fix styles

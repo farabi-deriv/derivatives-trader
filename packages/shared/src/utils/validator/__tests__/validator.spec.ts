@@ -120,7 +120,8 @@ describe('validator.ts', () => {
             const barrier_rules = {
                 barrier_1: [['barrier', options]],
             };
-            const validator = new Validator({ barrier_1: 'abc' }, barrier_rules, store);
+            const inputs = { barrier_1: 'abc' } as Pick<typeof store, keyof typeof store>;
+            const validator = new Validator(inputs, barrier_rules, store);
             const addFailure = jest.spyOn(validator, 'addFailure');
             const check = jest.spyOn(validator, 'check');
             expect(validator.isPassed()).toBe(false);

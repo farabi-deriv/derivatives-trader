@@ -1,5 +1,5 @@
 import React from 'react';
-import { withRouter } from 'react-router';
+import { RouteComponentProps, withRouter } from 'react-router';
 import classNames from 'classnames';
 
 import { DataList, DataTable, usePrevious } from '@deriv/components';
@@ -25,7 +25,7 @@ import CompositeCalendar from '../Components/Form/CompositeCalendar';
 import PlaceholderComponent from '../Components/placeholder-component';
 import { ReportsMeta } from '../Components/reports-meta';
 
-type TProfitTable = {
+type TProfitTable = RouteComponentProps & {
     component_icon: React.ReactElement;
 };
 

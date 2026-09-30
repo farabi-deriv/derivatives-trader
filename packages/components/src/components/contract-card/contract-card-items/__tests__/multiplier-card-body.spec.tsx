@@ -14,8 +14,8 @@ describe('MultiplierCardBody', () => {
             addToast: jest.fn(),
             contract_info: mockContractInfo({
                 // 'Total profit/loss' equals to bid_price - buy_price;
-                buy_price: 10.44,
-                bid_price: 10,
+                buy_price: '10.44',
+                bid_price: '10',
                 cancellation: { ask_price: 0.44 },
                 is_valid_to_cancel: 0,
                 is_valid_to_sell: 0,
@@ -27,10 +27,10 @@ describe('MultiplierCardBody', () => {
                         value: '1942.71',
                     },
                 },
-                sell_price: 10,
+                sell_price: '10',
                 status: 'cancelled',
-                profit: 0,
-                underlying: '1HZ100V',
+                profit: '0',
+                underlying_symbol: '1HZ100V',
             }),
             contract_update: {},
             currency: 'USD',
@@ -86,7 +86,7 @@ describe('MultiplierCardBody', () => {
     it('should render progress_slider and "-" in disabled state  in Deal Cancel.fee when contract is open for a crypto asset in mobile', () => {
         mock_props.is_mobile = true;
         mock_props.contract_info.status = 'open';
-        mock_props.contract_info.underlying = 'cryBTCUSD';
+        mock_props.contract_info.underlying_symbol = 'cryBTCUSD';
         mock_props.is_sold = false;
         mock_props.has_progress_slider = true;
         mock_props.progress_slider = progress_slider;

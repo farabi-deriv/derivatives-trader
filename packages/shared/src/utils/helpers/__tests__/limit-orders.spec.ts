@@ -64,6 +64,7 @@ describe('setLimitOrderBarriers', () => {
         updateBarriers: jest.fn(),
         updateBarrierShade: jest.fn(),
         onBarrierChange: jest.fn(),
+        updateColor: jest.fn(),
         barrier_count: 1,
         default_shade: 'acbd',
     };

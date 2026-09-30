@@ -90,6 +90,7 @@
         "baseline:bundle": "node scripts/bundle-baseline.js",
         "baseline:check": "node scripts/baseline-check.js",
         "baseline:update": "node scripts/baseline-check.js --update",
+        "test:typescript": "node scripts/typecheck.js",
         "test:scripts": "jest --config scripts/jest.config.js",
         "test": "npm run test:stylelint && npm run test:eslint-all && npm run test:jest",
         "test:eslint-all": "npm run --workspaces --if-present test:eslint",
