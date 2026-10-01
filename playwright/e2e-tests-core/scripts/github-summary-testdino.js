@@ -15,7 +15,9 @@
  *
  * Behaviour:
  *   - Fetches the 50 most recent TestDino runs and matches on pipeline.id === GITHUB_RUN_ID,
- *     preferring the run tagged for PLATFORM when more than one match is found.
+ *     then selects the run tagged/platformed for PLATFORM when that env is set.
+ *   - When PLATFORM is set, never falls back to another platform's run — if no tagged
+ *     match exists the summary reports unavailable instead of cross-wiring stats.
  *   - Fetches failed test titles via GET /debug-bundle?runId={id} (paginated).
  *     (The retired GET /context endpoint now returns 404.)
  *   - Always writes the "View TestDino Report" link.
@@ -96,14 +98,18 @@ function titleAndSpecFromItem(item) {
     const testName = titlePath.length
         ? titlePath[titlePath.length - 1]
         : (item?.title ?? testObj?.title ?? 'Unknown test');
-    const spec =
-        item?.file_path ??
-        specObj?.filePath ??
-        specObj?.path ??
-        (typeof item?.spec === 'string' ? item.spec : '') ??
-        titlePath.find(part => /\.(spec|test)\.[jt]sx?$/.test(String(part))) ??
-        titlePath[2] ??
+    // Prefer explicit path fields; fall back to title_path (TestDino puts the relative
+    // spec there, e.g. "trade-automate/foo.spec.ts"). Do not park '' in a ?? chain —
+    // empty string is not nullish, so it used to swallow the title_path fallbacks and
+    // leave the Spec column blank in the GH summary.
+    const fromFields =
+        item?.file_path ||
+        specObj?.filePath ||
+        specObj?.path ||
+        (typeof item?.spec === 'string' ? item.spec : '') ||
         '';
+    const fromTitlePath = titlePath.find(part => /\.(spec|test)\.[jt]sx?$/.test(String(part))) || titlePath[2] || '';
+    const spec = fromFields || fromTitlePath || '';
     const caseId = item?.caseId ?? testObj?.caseId ?? item?.pw_test_id ?? testObj?.pw_test_id ?? item?.id ?? null;
     return { testName, spec, caseId };
 }
@@ -185,8 +191,9 @@ const main = async () => {
 
     // Response shape: { items: [...], pagination: { ... } }
     const runs = listResult.body?.items ?? [];
-    // Desktop and mobile can share one github.run_id — prefer the run tagged for THIS platform
-    // (when tagged), else fall back to the newest pipeline match.
+    // Desktop and mobile share one github.run_id — when PLATFORM is set, require a run tagged
+    // for THIS platform. Never fall back to another platform's stats (that cross-wires the
+    // GH summary so Chromium desktop looks like chromium-mobile).
     const platform = (PLATFORM ?? '').toLowerCase();
     const pipelineMatches = Array.isArray(runs)
         ? runs.filter(r => r.ci?.pipeline?.id === GITHUB_RUN_ID || r.metadata?.pipeline?.id === GITHUB_RUN_ID)
@@ -198,10 +205,11 @@ const main = async () => {
         return;
     }
 
-    // The list API returns stripped objects — platforms is null. Fetch full detail for each
-    // pipeline-matching run in parallel so we can match on the platforms[] field.
+    // The list API returns stripped objects — platforms/tags are often null. When PLATFORM is
+    // set, fetch full detail for every pipeline match so we can match tags[] / platforms[].
+    // (pipelineMatches is non-empty here — the length===0 guard returned above.)
     let detailedRuns = pipelineMatches;
-    if (platform && pipelineMatches.length > 1) {
+    if (platform) {
         const details = await Promise.all(
             pipelineMatches.map(async r => {
                 const res = await apiFetch(`/test-runs/${encodeURIComponent(r.id)}`);
@@ -211,19 +219,23 @@ const main = async () => {
         detailedRuns = details;
     }
 
-    // Match the platform against the run's tags[] first (e2e-deriv-api tags its runs "desktop"/
-    // "mobile" via TESTDINO_TAG), then fall back to platforms[] (home-app passes the Playwright
-    // project name — "chromium"/"chromium-mobile"/"firefox"/... — which TestDino stores in
-    // platforms[], and sets no tags). The union supports both consumers without either changing.
+    // Match tags[] first (TESTDINO_TAG = matrix.platform), then platforms[]. When PLATFORM is
+    // set, require an explicit match even if there is only one pipeline candidate — a lone
+    // match can still be the *other* platform (e.g. desktop job, only chromium-mobile streamed).
+    // Prefer "unavailable" over cross-wiring stats.
     const matchesPlatform = r =>
         (r.tags ?? []).some(t => String(t).toLowerCase() === platform) ||
         (r.platforms ?? []).some(p => String(p).toLowerCase() === platform);
-    const run = (platform && detailedRuns.find(matchesPlatform)) || detailedRuns[0] || null;
+    const run = platform ? detailedRuns.find(matchesPlatform) || null : detailedRuns[0] || null;
 
     if (!run?.id) {
         write(`### 🚀 [View TestDino Report](${fallbackUrl})`);
         write('');
-        write('_TestDino summary unavailable — no run matched this Actions run ID._');
+        write(
+            platform
+                ? `_TestDino summary unavailable — no run matched platform \`${sanitizeMd(platform)}\` for this Actions run ID._`
+                : '_TestDino summary unavailable — no run matched this Actions run ID._'
+        );
         return;
     }
 

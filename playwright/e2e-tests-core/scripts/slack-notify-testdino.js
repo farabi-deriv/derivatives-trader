@@ -185,8 +185,8 @@ async function fetchTestDinoRunByGithubId() {
         const listJson = await listRes.json();
         // Response shape: { items: [...], pagination: { ... } }
         const runs = listJson?.items ?? [];
-        // Desktop and mobile can share one github.run_id, so match the pipeline AND — when the run
-        // is tagged with the platform — prefer the run for THIS platform; else fall back to newest.
+        // Desktop and mobile share one github.run_id — when PLATFORM is set, require a run tagged
+        // for THIS platform. Never fall back to another platform's run (cross-wires Slack stats).
         const platform = env('PLATFORM', '').toLowerCase();
         const pipelineMatches = Array.isArray(runs)
             ? runs.filter(r => r.ci?.pipeline?.id === githubRunId || r.metadata?.pipeline?.id === githubRunId)
@@ -196,10 +196,11 @@ async function fetchTestDinoRunByGithubId() {
             return null;
         }
 
-        // The list API returns stripped objects — platforms is null. Fetch full detail for each
-        // pipeline-matching run in parallel so we can match on the platforms[] field.
+        // The list API returns stripped objects — platforms/tags are often null. When PLATFORM is
+        // set, fetch full detail for every pipeline match so we can match tags[] / platforms[].
+        // (pipelineMatches is non-empty here — the length===0 guard returned above.)
         let detailedRuns = pipelineMatches;
-        if (platform && pipelineMatches.length > 1) {
+        if (platform) {
             const details = await Promise.all(
                 pipelineMatches.map(async r => {
                     try {
@@ -216,16 +217,19 @@ async function fetchTestDinoRunByGithubId() {
             detailedRuns = details;
         }
 
-        // Match the platform against the run's tags[] first (e2e-deriv-api tags its runs "desktop"/
-        // "mobile" via TESTDINO_TAG), then fall back to platforms[] (home-app passes the Playwright
-        // project name — "chromium"/"chromium-mobile"/"firefox"/... — which TestDino stores in
-        // platforms[], and sets no tags). The union supports both consumers without either changing.
+        // Match tags[] first (TESTDINO_TAG = matrix.platform), then platforms[]. When PLATFORM is
+        // set, require an explicit match even for a lone pipeline candidate — it can still be
+        // the other platform. Prefer unavailable over cross-wiring stats.
         const matchesPlatform = r =>
             (r.tags ?? []).some(t => String(t).toLowerCase() === platform) ||
             (r.platforms ?? []).some(p => String(p).toLowerCase() === platform);
-        const run = (platform && detailedRuns.find(matchesPlatform)) || detailedRuns[0] || null;
+        const run = platform ? detailedRuns.find(matchesPlatform) || null : detailedRuns[0] || null;
         if (!run?.id) {
-            console.warn(`⚠️ TestDino: no run matched pipeline.id=${githubRunId}`);
+            console.warn(
+                platform
+                    ? `⚠️ TestDino: no run matched pipeline.id=${githubRunId} platform=${platform}`
+                    : `⚠️ TestDino: no run matched pipeline.id=${githubRunId}`
+            );
             return null;
         }
 
