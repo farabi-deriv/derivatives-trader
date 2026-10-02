@@ -427,9 +427,9 @@ export class TradeValidationPage extends TradeParametersPage {
     /**
      * Custom Stake drafts (editor already open; desktop switches to Custom when needed).
      * Branches by trade type so new families can plug in without new top-level helpers:
-     * - Accumulators / Turbos / Vanillas → neutral Range hint (empty details)
-     *   desktop `Range: $min to $max` · mobile `Range $min - $max`
-     * - Multipliers → same Range, plus Stop out / Stop out level / Commission rows
+     * - Accumulators / Turbos / Vanillas / Multipliers → neutral Range hint (empty payout details)
+     *   Mobile: `Range $min - $max` (stake-input.tsx)
+     *   Desktop: `Range: $min to $max` (stake-input-desktop.tsx)
      * - Digits / Rise/Fall / Higher/Lower / Touch/No Touch → min error + max-payout error
      * - Default ({@link openStakeEditor}) → min error, then Max payout when shown, else excessive probe
      *
@@ -446,10 +446,11 @@ export class TradeValidationPage extends TradeParametersPage {
             case 'Turbos':
             case 'Vanillas':
             case 'Multipliers': {
+                // Mobile omits the colon and uses a hyphen; desktop uses `Range: … to …`.
                 await expect(
                     this.stakeValidationMessage,
-                    `${tradeType} Custom should show a neutral Range min–max hint`
-                ).toContainText(/Range:?\s*\$?[\d,]+\.?\d*\s+(?:to|-)\s+\$?[\d,]+\.?\d*/i);
+                    `${tradeType} Custom should show a neutral Range min/max hint`
+                ).toContainText(/Range:?\s*\$?[\d,]+\.?\d*\s*(?:to|-)\s*\$?[\d,]+\.?\d*/i, { timeout: 20_000 });
                 await expect(
                     this.stakeDetailsRow('Max payout'),
                     `${tradeType} Custom must not show Max payout`
@@ -494,7 +495,7 @@ export class TradeValidationPage extends TradeParametersPage {
                 await expect(
                     this.stakeValidationMessage,
                     `An in-range ${tradeType} stake should restore the neutral Range hint`
-                ).toContainText(/Range:?/i);
+                ).toContainText(/Range/i);
                 await expect(
                     this.stakeSaveButton,
                     `Save must be enabled for an in-range ${tradeType} stake`

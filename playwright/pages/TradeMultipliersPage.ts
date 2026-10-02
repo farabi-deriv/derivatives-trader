@@ -659,18 +659,35 @@ export class TradeMultipliersPage extends TradeParametersPage {
     /**
      * Read the Stop out amount pre-buy, from the MultipliersInformation rows (desktop: trade-page
      * landing panel; mobile: Stake action sheet details rows — stake-details.tsx). Reopening the
-     * sheet is a no-op: the draft already equals the committed stake, so header Save stays disabled
-     * (`stake-input.tsx` dirty gate). Dismiss with Close. The values are populated from the proposal
-     * response, which can lag under load; `not.toBeEmpty()` auto-retries, so a generous budget is used
-     * instead of the default window.
+     * sheet is a no-op once the draft equals the committed stake (`stake-input.tsx` dirty gate).
+     * Dismiss with Close.
      *
-     * The "Stop out level" and "Commission" rows are asserted present (#1413) but their values are
-     * not captured here — closed-contract Commission still comes from the open details API copy.
+     * Mobile Order Details labels this **amount** as "Stop out level" (`useOrderDetails` maps
+     * `limit_order.stop_out.order_amount` → `STOP_OUT_LEVEL`) and renders Money as `-N.NN USD`.
+     * Capture the absolute numeric amount so `toContainText` matches either surface.
+     *
+     * Waits until the mobile sheet shows `committedStake` and Stop out equals `expectedStopOutAmount`
+     * (stake when there is no SL; the Stop-loss amount when SL is set). A stale proposal can flash
+     * `$2.00` and stay there long enough to fool a stability-only check.
+     *
+     * The "Stop out level" (price) and "Commission" rows are asserted present (#1413) but their
+     * values are not captured here — closed-contract Commission still comes from the open details API copy.
+     *
+     * @param committedStake - Stake already saved on the trade form (e.g. `'5.40'`).
+     * @param expectedStopOutAmount - Amount Order Details will show under "Stop out level"
+     *   (`stopLoss` when set, otherwise `committedStake`).
      */
-    private async readStopOut(): Promise<{ stopOut: string }> {
+    private async readStopOut(committedStake: string, expectedStopOutAmount: string): Promise<{ stopOut: string }> {
         if (this.isMobile) {
             await this.stakeField.click();
             await expect(this.stakeContainer, 'Stake action sheet should open').toBeVisible();
+            await expect(async () => {
+                const sheetStake = parseFloat((await this.stakePopoverInput.inputValue()).replace(/[^\d.]/g, ''));
+                expect(
+                    sheetStake,
+                    `Stake sheet should show the committed stake ${committedStake} before reading Stop out`
+                ).toBe(parseFloat(committedStake));
+            }).toPass({ timeout: 15_000 });
         }
 
         // Stop out / Stop out level / Commission are populated from the proposal response
@@ -684,9 +701,18 @@ export class TradeMultipliersPage extends TradeParametersPage {
             this.commissionValue,
             'Commission should be visible beside Stop out / Stop out level (#1413)'
         ).not.toBeEmpty();
-        // Trade params render `$20.00`; closed mobile Order Details still uses Money (`-20.00 USD`).
-        // Keep the numeric amount so `toContainText` matches either surface.
-        const stopOut = (await this.stopOutValue.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '');
+
+        const expectedAmount = parseFloat(expectedStopOutAmount);
+        let stopOut = '';
+        await expect(async () => {
+            const current = (await this.stopOutValue.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '');
+            expect(current, 'Stop out should be a numeric amount').toMatch(/^\d+(?:\.\d+)?$/);
+            expect(
+                parseFloat(current),
+                `Stop out should match expected amount ${expectedStopOutAmount} (reject stale proposal quotes)`
+            ).toBe(expectedAmount);
+            stopOut = current;
+        }).toPass({ timeout: 20_000, intervals: [250, 400, 500] });
 
         if (this.isMobile) {
             await this.stakeCloseButton.click();
@@ -740,7 +766,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         const totalCost = parseFloat(
             (await this.multipliersTotalCost.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '')
         ).toFixed(2);
-        const { stopOut } = await this.readStopOut();
+        const { stopOut } = await this.readStopOut(stake, stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();
@@ -853,7 +879,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         const totalCost = parseFloat(
             (await this.multipliersTotalCost.innerText()).replace(/,/g, '').replace(/[^\d.]/g, '')
         ).toFixed(2);
-        const { stopOut } = await this.readStopOut();
+        const { stopOut } = await this.readStopOut(stake, stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();
@@ -968,7 +994,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         if (riskManagement) {
             await this.setRiskManagement(riskManagement);
         }
-        const { stopOut } = await this.readStopOut();
+        const { stopOut } = await this.readStopOut(stake, riskManagement?.stopLoss ?? stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();
@@ -1106,7 +1132,7 @@ export class TradeMultipliersPage extends TradeParametersPage {
         if (riskManagement) {
             await this.setRiskManagement(riskManagement);
         }
-        const { stopOut } = await this.readStopOut();
+        const { stopOut } = await this.readStopOut(stake, riskManagement?.stopLoss ?? stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();
