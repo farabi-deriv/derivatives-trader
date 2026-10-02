@@ -43,14 +43,14 @@ test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@dalember
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
             market: 'Volatility 100 (1s) Index',
-            growthRate: '5%',
+            growthRate: '1%',
             stake: '3',
             automation: {
                 strategy: "D'Alembert",
                 stakeIncrement: 3,
                 maxStake: '60',
                 profitThreshold: '111',
-                lossThreshold: '112',
+                lossThreshold: '500',
             },
         });
     });
@@ -60,14 +60,14 @@ test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@dalember
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
             market: 'Volatility 100 (1s) Index',
-            growthRate: '4%',
+            growthRate: '2%',
             stake: '5',
             automation: {
                 strategy: "D'Alembert",
                 stakeIncrement: 3,
                 maxStake: '60',
                 profitThreshold: '113',
-                lossThreshold: '114',
+                lossThreshold: '500',
             },
         });
     });

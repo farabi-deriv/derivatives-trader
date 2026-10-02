@@ -816,15 +816,49 @@ export class TradeAutomatePage extends TradeParametersPage {
     }
 
     /**
-     * Start the automation run with the current (default) configuration.
-     * Waits for the Run button to be enabled before clicking.
-     *
-     * @returns Promise that resolves once the Run button has been clicked.
+     * Idle/starting Run control — matches both "Run" and the transient "Starting..." label.
+     * Prefer this over `runButton` (`name: 'Run' exact`) when waiting through the start transition.
+     */
+    private get runControlButton(): Locator {
+        return this.automationActions.getByRole('button', { name: /^(Run|Starting)/ });
+    }
+
+    /**
+     * Automation start/validation error surface after a failed Run click.
+     * Desktop: inline `.automation-actions__error`. Mobile: Quill banner from AutomationErrorBanner
+     * (`quill-notification__banner--mobile`, title "Error").
+     */
+    private get automationStartError(): Locator {
+        return this.isMobile
+            ? this.page.locator('.quill-notification__banner--mobile').filter({ hasText: 'Error' })
+            : this.page.locator('.automation-actions__error');
+    }
+
+    /**
+     * Start the automation run with the current configuration.
+     * Waits until Running (status mounts only after the first contract) and fails fast on
+     * inline start errors or a Run click that never leaves idle.
      */
     async startAutomateRun(): Promise<void> {
         await expect(this.runButton, 'Run button should be visible before starting').toBeVisible();
         await expect(this.runButton, 'Run button should be enabled before starting').toBeEnabled();
         await this.runButton.click();
+
+        await expect(async () => {
+            if (await this.automationStartError.isVisible().catch(() => false)) {
+                throw new Error(
+                    `Automation failed to start: ${(await this.automationStartError.textContent())?.trim()}`
+                );
+            }
+            if (await this.automationActionsStatus.isVisible().catch(() => false)) {
+                return;
+            }
+            const label = ((await this.runControlButton.textContent()) ?? '').trim();
+            if (/Starting/i.test(label)) {
+                throw new Error('waiting for first contract (Starting…)');
+            }
+            throw new Error('Run stayed idle after click — start did not begin');
+        }).toPass({ timeout: 60_000, intervals: [500, 1_000, 2_000] });
     }
 
     /**
@@ -1552,6 +1586,9 @@ export class TradeAutomatePage extends TradeParametersPage {
         maxStake?: string;
     }): Promise<void> {
         await expect(async () => {
+            if (!(await this.statusRunning.isVisible().catch(() => false))) {
+                throw new Error('Automation stopped before an open position could be verified');
+            }
             if (/\/contract\//.test(this.page.url())) {
                 if (await this.contractDetailsPage.isAutomationContractDetailsClosed()) {
                     await this.contractDetailsPage.closeContractDetails();
@@ -1572,7 +1609,7 @@ export class TradeAutomatePage extends TradeParametersPage {
                 allowStrategyAdjustedStake: true,
                 maxStake,
             });
-        }).toPass({ timeout: 90_000 });
+        }).toPass({ timeout: 90_000, intervals: [500, 1_000, 2_000] });
         await this.contractDetailsPage.closeContractDetails();
         if (this.isMobile) {
             await this.goToAutomatedTrading();

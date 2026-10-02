@@ -249,14 +249,14 @@ await tradeAutomatePage.runAccumulatorsAndVerify({
 await tradeAutomatePage.runAccumulatorsAndVerify({
     accountType: 'demo',
     market: 'Volatility 100 (1s) Index',
-    growthRate: '5%',
+    growthRate: '1%',
     stake: '3',
     automation: {
         strategy: "D'Alembert",
         stakeIncrement: 3,
         maxStake: '60',
         profitThreshold: '111',
-        lossThreshold: '112',
+        lossThreshold: '500',
     },
 });
 ```
@@ -552,13 +552,12 @@ await tradeAutomatePage.runOverUnderAndVerify({
 
 | # | Step | Action | Expected Result | Platform |
 | --- | --- | --- | --- | --- |
-| 1 | Open Trade | `gotoTradePage()` | Trade page loaded | Both |
-| 2 | Select a CLOSED market | `selectClosedMarketFromPicker()` | First session-gated **CLOSED** row committed (skip when none closed) | Both |
-| 3 | Open Automate | `goToAutomatedTrading()` | Strategy parameters panel; same closed market retained | Both |
-| 4 | Assert closed banner | Observe reopen intro + countdown | `ClosedMarketMessage` intro + `HH:MM:SS` timer | Both |
-| 5 | Assert Strategy params disabled | Observe Strategy, Stake multiplier/increment, Max. stake, Initial stake, Duration (if present) | All disabled | Both |
-| 6 | Assert Risk management disabled | Observe Profit / Loss threshold | Both disabled | Both |
-| 7 | Assert Run hidden + no lock overlay | Observe Run + `.trade-params__lock-overlay` | Run not visible (reopen banner occupies the slot); lock overlay count `0` | Both |
+| 1 | Open Automate | `goToAutomatedTrading()` | Strategy parameters panel | Both |
+| 2 | Select a CLOSED market | `selectClosedMarketFromPicker()` | First session-gated **CLOSED** row committed on Automate (skip when none closed). Must run *after* Automate — Trade/Automate markets are independent (`reconcileTradeModeMarket`) | Both |
+| 3 | Assert closed banner | Observe reopen intro + countdown | `ClosedMarketMessage` intro + `HH:MM:SS` timer | Both |
+| 4 | Assert Strategy params disabled | Observe Strategy, Stake multiplier/increment, Max. stake, Initial stake, Duration (if present) | All disabled | Both |
+| 5 | Assert Risk management disabled | Observe Profit / Loss threshold | Both disabled | Both |
+| 6 | Assert Run hidden + no lock overlay | Observe Run + `.trade-params__lock-overlay` | Run not visible (reopen banner occupies the slot); lock overlay count `0` | Both |
 
 > **POM:** `verifyClosedMarketAutomateParamsDisabled(tradeType)`.
 

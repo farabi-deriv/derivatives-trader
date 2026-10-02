@@ -508,34 +508,55 @@ export class PositionsPage extends TradeBasePage {
 
     private async pollUntilContractClosed(closeButton: import('@playwright/test').Locator): Promise<void> {
         // The Open tab stays active after close — the card disappears and the empty state appears.
-        // We poll for the empty state with a short inner timeout to allow MobX re-render to settle.
-        // Retry the close on each interval; click errors (button gone or disabled) are swallowed.
+        // Tick Rise/Fall (and already-settled cards) show a disabled "Resale not offered" Close —
+        // clicking it does nothing; wait for portfolio to drop the card, with an occasional flyout
+        // refresh when status is already Closed.
+        let settledRefreshTicks = 0;
         await expect
             .poll(
                 async () => {
-                    // Use a short inner timeout — the global expect timeout is 45s, which would
-                    // block each poll interval for 45s on every miss before retrying the close.
-                    try {
-                        await expect(this.noOpenPositionsText).toBeVisible({ timeout: 5000 });
+                    if (await this.noOpenPositionsText.isVisible().catch(() => false)) {
                         return true;
-                    } catch {
-                        // not visible yet — retry close only if button is still attached
                     }
-                    try {
-                        if (this.isMobile) {
-                            await closeButton.click({ force: true });
-                        } else {
-                            await closeButton.click();
+
+                    const card = this.firstContractCard;
+                    const alreadyClosed = await card
+                        .getByText('Closed', { exact: true })
+                        .isVisible()
+                        .catch(() => false);
+                    const cannotSell = await card
+                        .getByRole('button', { name: /Resale not offered/i })
+                        .isVisible()
+                        .catch(() => false);
+
+                    if (!alreadyClosed && !cannotSell) {
+                        try {
+                            if (this.isMobile) {
+                                await closeButton.click({ force: true });
+                            } else if (await closeButton.isEnabled().catch(() => false)) {
+                                await closeButton.click();
+                            }
+                        } catch {
+                            // button gone or disabled — ignore
                         }
-                    } catch {
-                        // button gone or disabled — ignore
+                    } else if (alreadyClosed && !this.isMobile) {
+                        settledRefreshTicks += 1;
+                        // Nudge portfolio when a settled card is stuck on Open (every ~5s).
+                        if (settledRefreshTicks % 5 === 0) {
+                            await this.positionsFlyout
+                                .getByRole('button', { name: 'Close flyout' })
+                                .click()
+                                .catch(() => {});
+                            await this.sidebarPositionsButton.click().catch(() => {});
+                        }
                     }
+
                     return false;
                 },
                 {
                     message: 'Open positions empty state should appear after closing the contract',
                     intervals: [1000],
-                    timeout: 60_000,
+                    timeout: 90_000,
                 }
             )
             .toBe(true);

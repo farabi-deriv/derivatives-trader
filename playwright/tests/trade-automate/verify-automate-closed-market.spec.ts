@@ -32,16 +32,15 @@ test.describe('Automate — Closed market params', { tag: ['@automate', '@deskto
     test('VERIFY Automate strategy and risk params are disabled when the market is closed', async ({
         tradeAutomatePage,
     }) => {
-        // Select CLOSED from the Trade picker first — Automate mobile search filters some session-gated
-        // symbols (e.g. BTC/USD) and can miss CLOSED candidates the Trade picker finds.
-        await tradeAutomatePage.gotoTradePage();
+        // Select CLOSED while already on Automate — Trade/Automate keep independent markets
+        // (`reconcileTradeModeMarket`), so a Trade-first pick is restored away on the mode switch.
+        await tradeAutomatePage.goToAutomatedTrading();
         const selection = await tradeAutomatePage.selectClosedMarketFromPicker();
         if (!selection) {
             test.skip(true, 'No session-gated market is CLOSED right now — rerun outside exchange hours');
             return;
         }
 
-        await tradeAutomatePage.goToAutomatedTrading();
         await tradeAutomatePage.verifyClosedMarketAutomateParamsDisabled(selection.tradeType);
     });
 });

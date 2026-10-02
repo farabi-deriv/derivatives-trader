@@ -43,14 +43,14 @@ test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@martinga
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'demo',
             market: 'Volatility 100 (1s) Index',
-            growthRate: '4%',
+            growthRate: '1%',
             stake: '1',
             automation: {
                 strategy: 'Martingale',
                 stakeMultiplier: 2,
                 maxStake: '50',
                 profitThreshold: '101',
-                lossThreshold: '102',
+                lossThreshold: '502',
             },
         });
     });
@@ -60,14 +60,14 @@ test.describe('Trade Automate — Accumulators', { tag: ['@automate', '@martinga
         await tradeAutomatePage.runAccumulatorsAndVerify({
             accountType: 'real',
             market: 'Volatility 100 (1s) Index',
-            growthRate: '5%',
+            growthRate: '2%',
             stake: '2',
             automation: {
                 strategy: 'Martingale',
                 stakeMultiplier: 2,
                 maxStake: '50',
                 profitThreshold: '101',
-                lossThreshold: '102',
+                lossThreshold: '502',
             },
         });
     });
