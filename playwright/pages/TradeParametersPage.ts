@@ -1,4 +1,4 @@
-import { Locator, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import { NavigationUtils } from '../e2e-tests-core/utils';
 import { FeedPage } from './FeedPage';
 import { TradeBasePage } from './TradeBasePage';
@@ -489,7 +489,13 @@ export class TradeParametersPage extends TradeBasePage {
      * via Quill's for/id pairing. getByLabel resolves directly to that input on both viewports.
      */
     get stakeField(): Locator {
-        return this.page.getByLabel('Stake').first();
+        return this.stakeFieldOn(this.page);
+    }
+
+    /** {@link stakeField} bound to any page — single owner of the label-based selector, shared
+     * with popup-page verification (Flow 21) so it is not duplicated. */
+    stakeFieldOn(page: Page): Locator {
+        return page.getByLabel('Stake').first();
     }
 
     /**
@@ -1551,7 +1557,13 @@ export class TradeParametersPage extends TradeBasePage {
 
     /** V2 copy when `trade_type` in the URL is invalid — issue #895, UrlUnavailableModal. */
     get urlUnavailableTradeTypeTitle(): Locator {
-        return this.page.getByText('Unsupported trade type', { exact: true });
+        return this.urlUnavailableTradeTypeTitleOn(this.page);
+    }
+
+    /** {@link urlUnavailableTradeTypeTitle} bound to any page — single owner of the title-text
+     * selector, shared with popup-page verification (Flow 21) so it is not duplicated. */
+    urlUnavailableTradeTypeTitleOn(page: Page): Locator {
+        return page.getByText('Unsupported trade type', { exact: true });
     }
 
     get urlUnavailableTradeTypeMessage(): Locator {
@@ -1578,7 +1590,13 @@ export class TradeParametersPage extends TradeBasePage {
     }
 
     get urlUnavailableModal(): Locator {
-        return this.page.locator('.url-unavailable-modal');
+        return this.urlUnavailableModalOn(this.page);
+    }
+
+    /** {@link urlUnavailableModal} bound to any page — single owner of the `.url-unavailable-modal`
+     * selector, shared with popup-page verification (Flow 21) so it is not duplicated. */
+    urlUnavailableModalOn(page: Page): Locator {
+        return page.locator('.url-unavailable-modal');
     }
 
     /**
@@ -1812,6 +1830,104 @@ export class TradeParametersPage extends TradeBasePage {
         await expect(this.page, 'Browser should navigate to the Deriv signup page').toHaveURL(
             url => url.pathname === signupPath || url.pathname.endsWith('/signup')
         );
+    }
+
+    // ============================================
+    // Cross-tab deep link — URL trade type over inherited session (Flow 21, #1524)
+    // ============================================
+
+    /**
+     * Open the trade page with `query` in a NEW TAB and return it — reproducing Chrome's
+     * sessionStorage inheritance on `target="_blank"`, which `context.newPage()` does not (a
+     * programmatically created page starts with an empty session, so the inherited-sessionStorage
+     * symptom of #1524 can only be exercised through a real popup).
+     * The anchor is injected and clicked so the popup opens from a trusted user gesture (a bare
+     * `window.open` from evaluate can be popup-blocked), and no opener-severing `rel` is set —
+     * severing the opener would also drop the sessionStorage clone.
+     * @param query URL query string, with or without the leading '?'
+     * @returns the popup page, waited to DOM content loaded
+     */
+    async openTradeQueryInNewTab(query: string): Promise<Page> {
+        const path = query.startsWith('?') ? `/${query}` : `/?${query}`;
+        const url = new URL(path, this.page.url()).href;
+        await this.page.evaluate((href: string) => {
+            const anchor = document.createElement('a');
+            anchor.id = 'qa-deeplink-anchor';
+            anchor.target = '_blank';
+            anchor.href = href;
+            anchor.textContent = 'QA deep link';
+            document.body.appendChild(anchor);
+        }, url);
+        const popup = this.page.context().waitForEvent('page');
+        await this.page.locator('#qa-deeplink-anchor').click();
+        const new_tab = await popup;
+        await new_tab.waitForLoadState('domcontentloaded');
+        return new_tab;
+    }
+
+    /**
+     * Verify the CURRENT tab's sessionStorage trade_store has `symbol` as its active symbol —
+     * the blob Chrome clones into a `target="_blank"` tab, i.e. the precondition for the #1524
+     * deep-link tests. Asserts the parsed `symbol` field (never a raw substring match on the
+     * serialized blob, which unrelated fields containing the symbol would satisfy).
+     */
+    async verifySessionOwnsMarket(symbol: string): Promise<void> {
+        await expect(async () => {
+            const stored = await this.page.evaluate(() => window.sessionStorage.getItem('trade_store'));
+            const parsed = stored ? (JSON.parse(stored) as { symbol?: string }) : {};
+            expect(parsed.symbol, `sessionStorage 'trade_store'.symbol should be '${symbol}'`).toBe(symbol);
+        }).toPass();
+    }
+
+    /**
+     * Verify a tab opened by openTradeQueryInNewTab landed on the URL's OWN market: the active
+     * market tab shows the linked (market, trade type), the URL keeps the linked symbol (no
+     * silent substitution to the account default), the stake field renders, and the "Unsupported
+     * trade type" UrlUnavailableModal never appears — with the #1528 fix the trade-type
+     * availability decision waits for the URL symbol's own contracts_for list instead of judging
+     * against the inherited (outgoing market's) list.
+     */
+    async verifyDeepLinkLandedOnMarket(
+        popup: Page,
+        expected: { market: string; tradeType: string; symbol: string }
+    ): Promise<void> {
+        await NavigationUtils.waitForDerivApiSettled(popup);
+        const active_tab = TradeBasePage.activeMarketTabOn(popup);
+        await expect(active_tab, 'Deep-linked tab should render the trade form').toBeVisible();
+        await expect(active_tab, `Active market tab should show the linked market '${expected.market}'`).toContainText(
+            expected.market
+        );
+        await expect(
+            active_tab,
+            `Active market tab should show the linked trade type '${expected.tradeType}'`
+        ).toContainText(expected.tradeType);
+        await expect(
+            this.stakeFieldOn(popup),
+            'Trade parameters (stake) should render on the deep-linked market'
+        ).toBeVisible();
+        await expect(popup, 'URL should keep the deep-linked symbol — no substitution').toHaveURL(
+            new RegExp(`symbol=${expected.symbol}(&|$)`)
+        );
+        await expect(
+            this.urlUnavailableTradeTypeTitleOn(popup),
+            'A valid deep link must not show the Unsupported trade type modal (#1524 fix)'
+        ).not.toBeVisible();
+        await expect(
+            this.urlUnavailableModalOn(popup),
+            'No UrlUnavailableModal container should render (#1524 fix)'
+        ).toBeHidden();
+    }
+
+    /**
+     * Verify a tab opened by openTradeQueryInNewTab with a genuinely invalid trade type STILL
+     * shows the "Unsupported trade type" UrlUnavailableModal — the fix must not silence the
+     * legitimate modal (#1524 regression guard, mirrors Flow 18).
+     */
+    async verifyUnsupportedTradeTypeModalOnPopup(popup: Page): Promise<void> {
+        await expect(
+            this.urlUnavailableTradeTypeTitleOn(popup),
+            'Genuinely invalid trade type deep link should still show the modal'
+        ).toBeVisible();
     }
 
     // ============================================

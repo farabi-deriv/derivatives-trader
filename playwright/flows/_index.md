@@ -111,6 +111,7 @@ Each module section lists every documented flow with its current **status** and 
 | Flow 18 | P1 | Invalid URL — unsupported market and trade type modals | unauthenticated | `automated` |
 | Flow 19 | P2 | Manual trade param info icons reveal descriptions | authenticated | `automated` |
 | Flow 20 | P2 | System theme follows OS / locks after explicit choice | unauthenticated | `automated` |
+| Flow 21 | P1 | Cross-tab deep link resolves URL market over inherited session (#1524) | authenticated, dedicated account | `automated` |
 
 ---
 

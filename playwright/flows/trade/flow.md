@@ -1193,3 +1193,25 @@ Two child flows in one spec — separate staging accounts. Product stance (post 
 > **POM:** `seedThemePreference` · `setThemePreference` (branches Menu radios vs sidebar toggle) · `expectResolvedBodyTheme`.
 >
 > Chart canvas theme is N/A for Playwright — covered by unit/manual for SmartCharts `settings.theme`.
+
+---
+
+## Flow 21 — Cross-tab deep link — URL trade type resolves over the inherited session
+
+> Covers regression for #1524.
+
+**Prerequisites:** Authenticated (dedicated account via `createAccountV2viaJS`). Accumulators active on Crash 500 Index in the current tab — Chrome clones its `trade_store` sessionStorage into a `target="_blank"` tab, so the deep link resolves against an inherited outgoing-market session.
+**Spec:** `playwright/tests/trade/verify-deep-link-cross-tab.spec.ts`
+**Desktop only** — the popup path is a desktop browser behaviour (`context.newPage()` starts with an empty session and cannot reproduce it; Flow 18 covers the same-tab modal paths on both platforms).
+
+| # | Step | Action | Expected Result | Platform |
+| --- | --- | --- | --- | --- |
+| 1 | Seed the inherited session | `selectMarketAndTradeType('Crash 500 Index', 'Accumulators')` → `verifySessionOwnsMarket('CRASH500')` | sessionStorage `trade_store` carries CRASH500 | Desktop |
+| 2 | Deep link to another market in a new tab | `openTradeQueryInNewTab('trade_type=rise_fall&symbol=1HZ25V&…')` | Popup opens with the URL market, not the inherited Crash 500 session | Desktop |
+| 3 | Verify landed market | `verifyDeepLinkLandedOnMarket(popup, { market: 'Volatility 25 (1s)', tradeType: 'Rise/Fall', symbol: '1HZ25V' })` | Active market tab shows the linked market + trade type; URL keeps `symbol=1HZ25V`; stake renders; no "Unsupported trade type" modal | Desktop |
+| 4 | Deep link to the default-market card | Repeat step 2 with `symbol=1HZ100V` | Lands on Volatility 100 (1s) Rise/Fall — pre-fix this variant showed "Invalid trade type" | Desktop |
+| 5 | Regression guard — genuinely invalid trade type | Repeat step 2 with `trade_type=high_lowsd&symbol=1HZ100V` | "Unsupported trade type" UrlUnavailableModal still shows (fix is not a blanket suppression) | Desktop |
+
+> **POM:** `openTradeQueryInNewTab` (real `target="_blank"` anchor — reproduces Chrome's sessionStorage clone; no opener-severing `rel`) · `verifySessionOwnsMarket` · `verifyDeepLinkLandedOnMarket` · `verifyUnsupportedTradeTypeModalOnPopup`.
+>
+> **Mechanism (#1528):** the trade-type availability decision waits for the URL symbol's own stamped `contracts_for` list (`contract_types_list_v2_symbol`) instead of judging against the inherited outgoing market's list.

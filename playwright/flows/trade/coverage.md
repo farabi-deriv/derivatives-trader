@@ -60,6 +60,7 @@
 | Flow 18 | Invalid URL — unsupported market and trade type modals | ✅ | ✅ | Covers regression for #895 |
 | Flow 19 | Manual trade param info icons reveal descriptions | ✅ | ✅ | Covers regression for #995; Automate panel in trade-automate Flow 17 |
 | Flow 20 | System theme follows OS / locks after explicit choice | ✅ | ✅ | Covers #1177 — mobile System radio; desktop sidebar toggle |
+| Flow 21 | Cross-tab deep link resolves URL market over inherited session | ✅ | ❌ | Covers regression for #1524; Mobile N/A — popup path is desktop browser behaviour (Flow 18 covers same-tab modals on both) |
 
 ---
 

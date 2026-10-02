@@ -206,7 +206,18 @@ export class TradeBasePage {
      * in and logged out.
      */
     get activeMarketTab(): Locator {
-        return this.page.locator('[data-testid="dt_market_tab"][aria-current="true"]').first();
+        return TradeBasePage.activeMarketTabOn(this.page);
+    }
+
+    /**
+     * {@link activeMarketTab} bound to any page — the single owner of the selector so pages
+     * other than the page object's own (e.g. a `target="_blank"` popup in trade Flow 21) do not
+     * duplicate it.
+     * @param page - Page to locate the active market tab on
+     * @returns Locator for the currently-active market tab
+     */
+    static activeMarketTabOn(page: Page): Locator {
+        return page.locator('[data-testid="dt_market_tab"][aria-current="true"]').first();
     }
 
     /**

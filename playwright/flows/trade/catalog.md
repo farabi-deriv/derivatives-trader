@@ -1,7 +1,7 @@
 # 🗺️ Trade Journey Catalog — Technical Reference
 
 > Source of truth: `packages/trader/src/AppV2/Containers/Trade/` · `packages/trader/src/AppV2/Components/TradeParameters/` · `packages/trader/src/AppV2/Components/PurchaseButton/`
-> Last updated: 2026-09-11
+> Last updated: 2026-09-30
 
 ---
 
@@ -60,6 +60,7 @@
 | Flow 18 | `trade/verify-invalid-url-modal.spec.ts` | `@trade @desktop @mobile` |
 | Flow 19 | `trade/verify-trade-param-info-icon-hover.spec.ts` | `@trade @desktop @mobile` |
 | Flow 20 | `trade/verify-system-theme-option.spec.ts` | `@trade @desktop @mobile` |
+| Flow 21 | `trade/verify-deep-link-cross-tab.spec.ts` | `@trade @desktop` |
 
 > **Runtime skip (Flow 15):** `selectClosedMarketFromPicker()` returns `null` when no session-gated candidate shows **CLOSED** in the picker — test skips (typical during exchange hours).
 >
