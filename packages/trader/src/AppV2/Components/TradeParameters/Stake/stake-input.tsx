@@ -12,9 +12,9 @@ import { ValueChips, ValueChipsSkeleton } from 'AppV2/Components/InputPopover';
 import { getStakePresets } from 'AppV2/Config/trade-parameter-presets';
 import useIsVirtualKeyboardOpen from 'AppV2/Hooks/useIsVirtualKeyboardOpen';
 import { useProposal } from 'AppV2/Hooks/useProposal';
+import useStakeBalanceHint from 'AppV2/Hooks/useStakeBalanceHint';
 import { formatAmountWithSymbol, getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { createDecimalInputGuard, getDecimalInputMaxLength } from 'AppV2/Utils/decimal-input';
-import { getInsufficientBalanceMessage, parseAmount } from 'AppV2/Utils/insufficient-balance-utils';
 import { mapContractTypeToStakePresetKey } from 'AppV2/Utils/trade-params-preset-utils';
 import { getPayoutInfo, getStakeLadderValues } from 'AppV2/Utils/trade-params-utils';
 import { getDisplayedContractTypes } from 'AppV2/Utils/trade-types-utils';
@@ -575,22 +575,12 @@ const StakeInput = observer(
             onClose();
         };
 
-        // The drafted amount is only the sum being charged while `basis` is `stake` — on `payout`
-        // basis (kept for Rise/Fall by `PurchaseButton`, and persisted) it is a target payout, so
-        // comparing it against the balance would warn about a trade the user can afford. Anything
-        // other than `stake` therefore stays silent and leaves the gate at Buy as the authority.
-        const parsed_balance = parseAmount(balance);
-        // A zero/negative balance is surfaced here too (the helper's empty-balance branch), not just
-        // Buy: an unaffordable preset must show something rather than nothing while the balance is 0.
-        const balance_hint =
-            basis === 'stake' && Number.isFinite(parsed_balance)
-                ? getInsufficientBalanceMessage({
-                      balance,
-                      stake: displayAmount,
-                      currency: account_currency,
-                      fallback: null,
-                  })
-                : null;
+        const balance_hint = useStakeBalanceHint({
+            stake: displayAmount,
+            basis,
+            balance,
+            currency: account_currency,
+        });
 
         // Read from `displayAmount`, not the debounced `proposal_request_values.amount`, or a
         // just-typed digit is flagged as missing for the 300 ms the debounce is pending.

@@ -6,3 +6,11 @@
     line-height: var(--core-lineHeight-400);
     text-align: center;
 }
+
+// quill caps sheets at 360px, but only from 1024px up — a phone in landscape is 844px, so every sheet
+// fell back to the 800px base and spanned the viewport. The portal wrapper already centres it.
+@include phone-landscape {
+    .quill-action-sheet--root {
+        max-width: 57.2rem;
+    }
+}

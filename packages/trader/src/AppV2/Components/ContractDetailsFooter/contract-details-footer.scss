@@ -13,7 +13,10 @@
     }
 
     &-button__wrapper {
+        // Backs the transparent `secondary` Cancel so content never shows through it. Rounded to the
+        // button's radius, or its square corners show around the pill.
         background-color: var(--semantic-color-slate-solid-surface-frame-low);
+        border-radius: var(--component-button-border-radius-xl);
         width: 100%;
 
         button {
@@ -22,4 +25,18 @@
             }
         }
     }
+
+    // `nowrap` so a long amount never breaks mid-number.
+    &-button__label {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--core-spacing-400);
+        white-space: nowrap;
+    }
+}
+
+// The xl radius quill buttons take across the app; `!important` because quill's own
+// `.quill-button__size--*` otherwise wins, as it does for the stake and guide sheets.
+.contract-details-footer-button__wrapper .quill-button {
+    border-radius: var(--component-button-border-radius-xl) !important;
 }

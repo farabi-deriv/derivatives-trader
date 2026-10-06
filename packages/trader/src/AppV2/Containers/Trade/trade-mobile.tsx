@@ -11,6 +11,7 @@ import ChartMaximizeButton from 'AppV2/Components/ChartMaximizeButton';
 import ChartProfitLoss from 'AppV2/Components/ChartProfitLoss';
 import CompactHeader from 'AppV2/Components/CompactHeader';
 import CurrentSpot from 'AppV2/Components/CurrentSpot';
+import LandscapePrompt from 'AppV2/Components/LandscapePrompt';
 import MarketTabs from 'AppV2/Components/MarketTabs';
 import OnboardingGuide from 'AppV2/Components/OnboardingGuide/GuideForPages';
 import TradeErrorSnackbar from 'AppV2/Components/TradeErrorSnackbar';
@@ -26,12 +27,7 @@ import { TradeChart } from '../Chart';
 
 const Trade = observer(() => {
     const chart_ref = React.useRef<HTMLDivElement>(null);
-    const {
-        client,
-        common: { current_language, network_status },
-        contract_trade,
-        ui,
-    } = useStore();
+    const { client, contract_trade, ui } = useStore();
     const { is_logged_in } = client;
     const { is_chart_maximized, is_chart_maximize_animating, setIsChartMaximized, setChartMaximizeAnimating } = ui;
     const {
@@ -41,8 +37,6 @@ const Trade = observer(() => {
         is_accumulator,
         is_multiplier,
         is_market_closed,
-        onMount,
-        onUnmount,
         symbol,
         proposal_info,
         trade_types: trade_types_store,
@@ -81,12 +75,6 @@ const Trade = observer(() => {
             })),
         [active_symbols]
     );
-
-    React.useEffect(() => {
-        onMount();
-        return onUnmount;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [current_language, network_status.class]);
 
     // Clear contract markers when navigating to trade page from reports
     React.useEffect(() => {
@@ -160,6 +148,7 @@ const Trade = observer(() => {
                     {/* Deferred while the selector is open on load; shows once closed. Self-gates on
                         the `guide_dtrader_v2.trade_page` flag, so it appears once total per device. */}
                     {is_logged_in && !should_defer_onboarding && <OnboardingGuide type='trade_page' />}
+                    <LandscapePrompt />
                 </React.Fragment>
             ) : (
                 <Loading.DTraderV2 />

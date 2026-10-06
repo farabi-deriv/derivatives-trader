@@ -58,6 +58,22 @@ describe('DescriptionModal', () => {
         expect(screen.getByTestId('dt_video_player')).toBeInTheDocument();
     });
 
+    it('renders the title in all three shells, including the inline one landscape uses', () => {
+        const { rerender } = render(<GuideDescriptionModal {...mockProps} />);
+        expect(screen.getByRole('heading', { name: 'Trade types' })).toBeInTheDocument();
+
+        // `show_description_in_a_modal={false}` is the landscape guide page — it used to get no
+        // heading, so the caller rendered its own.
+        rerender(<GuideDescriptionModal {...mockProps} show_description_in_a_modal={false} />);
+        expect(screen.getByRole('heading', { name: 'Trade types' })).toBeInTheDocument();
+    });
+
+    it('titles the guide after the trade type when showing just that one', () => {
+        render(<GuideDescriptionModal {...mockProps} show_guide_for_selected_contract />);
+
+        expect(screen.getByRole('heading', { name: CONTRACT_LIST.ACCUMULATORS })).toBeInTheDocument();
+    });
+
     it('should render component with description for only for selected trade type if show_guide_for_selected_contract === true', () => {
         render(<GuideDescriptionModal {...mockProps} show_guide_for_selected_contract />);
 

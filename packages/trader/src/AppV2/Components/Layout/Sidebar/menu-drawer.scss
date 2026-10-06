@@ -1,0 +1,92 @@
+.menu-drawer {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+
+    // Header for the nested Theme / Language views.
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: var(--core-spacing-800);
+        padding: var(--core-spacing-800);
+    }
+
+    &__back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 3.2rem;
+        block-size: 3.2rem;
+        flex-shrink: 0;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        // Static light chip, as the design's tertiary button.
+        background-color: var(--color-surface-section);
+        cursor: pointer;
+
+        // Points back along the reading direction, so it flips in RTL.
+        [dir='rtl'] & svg {
+            transform: scaleX(-1);
+        }
+    }
+
+    &__title {
+        font-size: var(--core-fontSize-300);
+        font-weight: var(--core-fontWeight-bold);
+        line-height: var(--core-lineHeight-400);
+        color: var(--color-text-primary);
+    }
+
+    // `flex: 1` is what pins Log out to the bottom, as the Figma has it.
+    &__list {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: var(--core-spacing-800);
+        inline-size: 100%;
+        block-size: 5.6rem;
+        flex-shrink: 0;
+        padding: 0 var(--core-spacing-800);
+        border: none;
+        background-color: transparent;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        text-align: start;
+
+        &:hover {
+            background-color: var(--color-interactive-hover);
+        }
+    }
+
+    &__row-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 2rem;
+        block-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    &__row-label {
+        flex: 1;
+        min-inline-size: 0;
+        font-size: var(--core-fontSize-100);
+        font-weight: 500; // Figma: Medium. No core token for 500 — light/regular/bold only.
+        line-height: var(--core-lineHeight-300);
+        color: var(--color-text-primary);
+    }
+
+    &__row-chevron {
+        flex-shrink: 0;
+        // Points along the reading direction, so it flips in RTL.
+        [dir='rtl'] & {
+            transform: scaleX(-1);
+        }
+    }
+}

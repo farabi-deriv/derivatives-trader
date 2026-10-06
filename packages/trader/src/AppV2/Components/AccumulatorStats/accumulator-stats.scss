@@ -57,6 +57,40 @@
         border-bottom-right-radius: var(--core-borderRadius-400);
     }
 
+    // Figma "accumulators stats": a flat 32px strip (771x32, padding 0 8 0 24) between header and
+    // chart — not the floating card the desktop variant renders, and not the mobile card either.
+    // The root is only a positioning wrapper; `__container` is the flex row, so the layout goes there.
+    @include phone-landscape {
+        position: unset;
+        bottom: unset;
+        right: unset;
+        z-index: unset;
+        border: unset;
+        border-radius: unset;
+        background: unset;
+        block-size: var(--core-spacing-1600);
+
+        .accumulators-stats-v2__container {
+            block-size: 100%;
+            padding-inline: var(--core-spacing-1200) var(--core-spacing-400);
+
+            // The card variants space their rows with vertical margins; at 32px those overflow the
+            // strip and push the baseline off-centre.
+            &__heading,
+            &__stats {
+                margin-block: 0;
+            }
+
+            &__stats__stat {
+                margin-block-start: 0;
+            }
+
+            &__expand {
+                padding-block-start: 0;
+            }
+        }
+    }
+
     &__container {
         display: flex;
         justify-content: space-between;

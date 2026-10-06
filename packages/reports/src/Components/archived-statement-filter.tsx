@@ -16,7 +16,7 @@ import {
     LegacyCalendar1pxIcon,
     LegacyChevronRight1pxIcon,
 } from '@deriv/quill-icons';
-import { type Dayjs, dayjs, toMoment } from '@deriv/shared';
+import { type Dayjs, dayjs, isPhoneLandscape, toMoment } from '@deriv/shared';
 import { ActionSheet, Button, Chip, DatePicker, RadioButton, RadioGroup, Text } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
@@ -34,10 +34,11 @@ type TAccountOption = {
 };
 
 type TArchivedStatementFilter = {
-    accounts: TAccountOption[];
+    /** Omitted where only the time filter is wanted — the account chip is skipped when empty. */
+    accounts?: TAccountOption[];
     handleDateChange: (values: TDateChangeValues) => void;
-    handleLoginidChange: (loginid: string) => void;
-    selectedLoginid: string;
+    handleLoginidChange?: (loginid: string) => void;
+    selectedLoginid?: string;
 };
 
 const currencyIconMap = {
@@ -98,7 +99,7 @@ const computeDatesForFilter = (value: string): { from?: Dayjs; to?: Dayjs; is_ba
 };
 
 const ArchivedStatementFilter = ({
-    accounts,
+    accounts = [],
     handleDateChange,
     handleLoginidChange,
     selectedLoginid,
@@ -169,6 +170,7 @@ const ArchivedStatementFilter = ({
         setShowCalendar(false);
     };
 
+    // Landscape keeps the desktop dropdown: a bottom sheet would cover a 390px-tall screen.
     if (isMobile) {
         const time_label =
             custom_date_label ||
@@ -289,7 +291,7 @@ const ArchivedStatementFilter = ({
                                             key={account.value}
                                             className={`archived-statement__account-card${is_active ? ' archived-statement__account-card--active' : ''}`}
                                             onClick={() => {
-                                                handleLoginidChange(account.value);
+                                                handleLoginidChange?.(account.value);
                                                 setIsAccountSheetOpen(false);
                                             }}
                                         >
@@ -391,6 +393,11 @@ const ArchivedStatementFilter = ({
         },
     ];
 
+    // Figma `139-43653`: landscape lists plain rows, without Yesterday or Custom.
+    const landscape_time_filter_list = time_filter_options
+        .filter(option => option.value !== 'Yesterday')
+        .map(option => ({ value: option.value, text: option.label }));
+
     const account_list_with_icons = accounts.map(account => {
         const Icon = currencyIconMap[(account.currency || '').toLowerCase()] || CurrencyNoneIcon;
         return {
@@ -413,7 +420,7 @@ const ArchivedStatementFilter = ({
                         classNameDisplay='archived-statement__dropdown-display'
                         list={account_list_with_icons}
                         value={selectedLoginid}
-                        onChange={(e: { target: { value: string } }) => handleLoginidChange(e.target.value)}
+                        onChange={(e: { target: { value: string } }) => handleLoginidChange?.(e.target.value)}
                     />
                 </div>
             )}
@@ -424,7 +431,7 @@ const ArchivedStatementFilter = ({
                             custom_date_label || (selected_time && selected_time !== '0'),
                     })}
                     classNameDisplay='archived-statement__dropdown-display'
-                    list={time_filter_list}
+                    list={isPhoneLandscape() ? landscape_time_filter_list : time_filter_list}
                     value={selected_time}
                     onChange={(e: { target: { value: string } }) => applyTimeFilter(e.target.value)}
                 />

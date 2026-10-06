@@ -54,12 +54,19 @@ export const PositionsDrawerClosedContent = observer(() => {
     // Filter is always rendered so the user can change/clear the time range
     // even from the loading and empty-results states — otherwise they'd be
     // stranded when a filter returns zero rows.
+
     const renderBody = () => {
         if (is_loading && !closedPositions.length) {
             return <Loading.DTraderV2 is_positions is_closed_tab />;
         }
         if (is_empty && !closedPositions.length) {
-            return <EmptyPortfolioMessage />;
+            return (
+                <EmptyPortfolioMessage
+                    // Mirrors the open tab's wording; Figma only specifies the open-positions state.
+                    title={<Localize i18n_default_text='No closed positions yet' />}
+                    description={<Localize i18n_default_text='Your closed positions will appear here.' />}
+                />
+            );
         }
         return (
             <div className='positions-drawer-closed' onScroll={onScroll}>

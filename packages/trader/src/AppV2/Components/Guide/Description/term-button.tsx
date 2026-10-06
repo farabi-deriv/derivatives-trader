@@ -1,8 +1,8 @@
 import React from 'react';
 
 import { TooltipPortal } from '@deriv/components';
-import { useDevice } from '@deriv-com/ui';
 
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { getTermDefinition } from 'AppV2/Utils/contract-description-utils';
 
 export type TTermName =
@@ -27,10 +27,10 @@ type TTermButton = {
 };
 
 const TermButton = ({ term, contract_type, onTermClick, children }: TTermButton) => {
-    const { isMobile } = useDevice();
+    const is_phone_viewport = useIsPhoneViewport();
     const definition = getTermDefinition({ term, contract_type });
 
-    if (isMobile) {
+    if (is_phone_viewport) {
         return (
             <button
                 className='description__content--definition'

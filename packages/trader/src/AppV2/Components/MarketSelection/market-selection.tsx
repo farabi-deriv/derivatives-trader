@@ -1,5 +1,7 @@
 import { useDevice } from '@deriv-com/ui';
 
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
+
 import MarketSelectionDesktop from './market-selection-desktop';
 import MarketSelectionMobile from './market-selection-mobile';
 
@@ -19,6 +21,22 @@ type TMarketSelection = {
  */
 const MarketSelection = ({ isOpen, setIsOpen, triggerRef, supported_trade_types }: TMarketSelection) => {
     const { isMobile } = useDevice();
+    const is_phone_landscape = useIsPhoneLandscape();
+
+    // Landscape is a phone despite `isMobile` being width-only — 844px reads as desktop, so it would
+    // otherwise get the 900px anchored popover, which does not fit a 390px-tall viewport. It takes the
+    // full-screen shell instead, laid out in two columns: there is room for the trade-type sidebar
+    // beside the list, but not for a second stacked row above it.
+    if (is_phone_landscape) {
+        return (
+            <MarketSelectionMobile
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                supported_trade_types={supported_trade_types}
+                is_landscape
+            />
+        );
+    }
 
     if (!isMobile && triggerRef) {
         return (

@@ -76,6 +76,18 @@ describe('MarketSelectionSidebar', () => {
         expect(screen.getByText(/Favourite \(3\)/).className).toMatch(/weight--bold/);
     });
 
+    it('renders no tooltip when with_tooltips is off, while selection still works', async () => {
+        const onSelectTradeType = jest.fn();
+        render(<MarketSelectionSidebar {...baseProps} onSelectTradeType={onSelectTradeType} with_tooltips={false} />);
+        const item = screen.getByRole('button', { name: /Higher\/Lower/ });
+
+        await userEvent.hover(item);
+        await userEvent.click(item);
+
+        expect(screen.queryByText(/Earn when exit price is above or below barrier/)).not.toBeInTheDocument();
+        expect(onSelectTradeType).toHaveBeenCalledTimes(1);
+    });
+
     it('restricts the trade types to supported_trade_types when provided (e.g. Automate)', () => {
         render(<MarketSelectionSidebar {...baseProps} supported_trade_types={new Set(['rise_fall'])} />);
         expect(screen.getByRole('button', { name: /Rise\/Fall/ })).toBeInTheDocument();

@@ -133,6 +133,8 @@ const PurchaseButton = observer(() => {
         is_vanilla,
         max_payout: maximum_payout,
     };
+    // Do NOT swap this `isMobile` for `useIsPhoneViewport()` — landscape relies on it being false here
+    // to get the spec's label-only button; swapping restores the `Max. payout` caption.
     const has_no_button_content =
         is_vanilla || is_vanilla_fx || is_turbos || (is_accumulator && !has_open_accu_contract && !isMobile);
     const contract_types = getDisplayedContractTypes(trade_types, contract_type, trade_type_tab);

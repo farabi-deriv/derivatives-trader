@@ -3,16 +3,18 @@ import clsx from 'clsx';
 
 import { LabelPairedChevronUpSmBoldIcon, LabelPairedXmarkMdRegularIcon } from '@deriv/quill-icons';
 import { observer, useStore } from '@deriv/stores';
+import { TooltipPortal } from '@deriv/components';
 import { ActionSheet, Heading, Modal, Text } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 import { getAccumulatorStatsVideoId } from 'AppV2/Utils/video-config';
 import { useTraderStore } from 'Stores/useTraderStores';
 
 import StreamIframe from '../StreamIframe';
 
-import AccumulatorStatsDescription from './accumulator-stats-description';
+import AccumulatorStatsDescription, { StatsDescriptionText } from './accumulator-stats-description';
 import AccumulatorStatsModal from './accumulator-stats-modal';
 import StatsRow from './accumulator-stats-row';
 
@@ -76,7 +78,7 @@ const DesktopStatsModal = React.memo(
                     <StreamIframe src={video_src} title='accumulator_stats' />
                 </div>
                 <Text className='accumulator-stats-desktop-modal__description'>
-                    <Localize i18n_default_text='Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.' />
+                    <StatsDescriptionText />
                 </Text>
             </div>
         </Modal>
@@ -90,6 +92,7 @@ const AccumulatorStats = observer(() => {
         ui: { is_dark_mode_on },
     } = useStore();
     const { isDesktop } = useDevice();
+    const is_phone_landscape = useIsPhoneLandscape();
     const [is_open, setIsOpen] = useState(false);
     const [is_open_description, setIsOpenDescription] = useState(false);
     const [is_expanded_desktop, setIsExpandedDesktop] = useState(false);
@@ -111,6 +114,10 @@ const AccumulatorStats = observer(() => {
             return acc;
         }, []);
     }, [ticks_history]);
+
+    // The collapsed strip shows two rows' worth (10 ticks) in portrait. Landscape is ~3x as wide, so it
+    // takes a third row — matching the design's ~15. Extras beyond the width still scroll.
+    const strip_ticks = useMemo(() => rows.slice(0, is_phone_landscape ? 3 : 2).flat(), [rows, is_phone_landscape]);
 
     const onActionSheetClose = useCallback(() => {
         setIsOpen(false);
@@ -151,20 +158,37 @@ const AccumulatorStats = observer(() => {
     if (rows.length === 0) {
         return null;
     }
+
+    const stats_heading = (
+        <button
+            className='accumulators-stats-v2__container__heading'
+            // Landscape explains Stats in a tooltip instead of opening the sheet.
+            onClick={() => {
+                if (is_phone_landscape) return;
+                if (isDesktop) setIsModalOpen(true);
+                else setIsOpenDescription(true);
+            }}
+        >
+            <Text size='sm'>
+                <Localize i18n_default_text='Stats' />
+            </Text>
+        </button>
+    );
+
+    const heading = is_phone_landscape ? (
+        <TooltipPortal message={<StatsDescriptionText />} position='bottom' className='accumulators-stats-v2__tooltip'>
+            {stats_heading}
+        </TooltipPortal>
+    ) : (
+        stats_heading
+    );
     return (
         <React.Fragment>
             <div
                 className={`accumulators-stats-v2${isDesktop && is_expanded_desktop ? ' accumulators-stats-v2--is-expanded' : ''}`}
             >
                 <div className='accumulators-stats-v2__container'>
-                    <button
-                        className='accumulators-stats-v2__container__heading'
-                        onClick={() => (isDesktop ? setIsModalOpen(true) : setIsOpenDescription(true))}
-                    >
-                        <Text size='sm'>
-                            <Localize i18n_default_text='Stats' />
-                        </Text>
-                    </button>
+                    {heading}
                     {/* Show "History of tick counts" when expanded on desktop, otherwise show stats row */}
                     {isDesktop && is_expanded_desktop ? (
                         <div className='accumulators-stats-v2__container__expanded-header'>
@@ -177,7 +201,7 @@ const AccumulatorStats = observer(() => {
                             <div className='accumulators-stats-v2__container__divider' />
                             <div className='accumulators-stats-v2__container__stats'>
                                 <StatsRow
-                                    rows={[...rows[0], ...(rows[1] || [])]}
+                                    rows={strip_ticks}
                                     animation_class={animation_class}
                                     is_moving_transaction={is_moving_transaction}
                                     className='accumulators-stats-v2__container__stats'

@@ -62,7 +62,14 @@ jest.mock('@deriv-com/quill-ui', () => ({
 }));
 
 jest.mock('@deriv/core/src/App/Components/Layout/Header/account-switcher', () => {
-    return jest.fn(() => <div data-testid='account-switcher'>Account Switcher</div>);
+    return jest.fn(({ onAccountSwitch }: { onAccountSwitch?: () => void }) => (
+        <div data-testid='account-switcher'>
+            Account Switcher
+            <button data-testid='dt_pick_account' onClick={onAccountSwitch}>
+                pick
+            </button>
+        </div>
+    ));
 });
 
 jest.mock('@deriv/core/src/App/Containers/Modals/TryRealModal', () => {
@@ -123,6 +130,122 @@ describe('AccountHeader', () => {
         // Mock window.location to prevent jsdom navigation errors
         delete (window as any).location;
         (window as any).location = { href: '' };
+    });
+
+    describe('Account switch loader', () => {
+        const renderSwitching = () => {
+            const setIsSwitchingAccount = jest.fn();
+            const store = {
+                ...default_mock_store,
+                ui: { ...default_mock_store.ui, is_switching_account: true, setIsSwitchingAccount },
+            };
+            render(
+                <APIProvider>
+                    <StoreProvider store={store}>
+                        <AccountHeader />
+                    </StoreProvider>
+                </APIProvider>
+            );
+            return setIsSwitchingAccount;
+        };
+
+        it('[ACH-002] shows the loader, not Log in, while auth is still resolving', () => {
+            // `is_logged_in` is false until the socket authorises, so testing it first flashed Log in
+            // on every reload and again mid-switch.
+            const store = {
+                ...default_mock_store,
+                client: { ...default_mock_store.client, is_logged_in: false, is_logging_in: true },
+            };
+            render(
+                <APIProvider>
+                    <StoreProvider store={store}>
+                        <AccountHeader />
+                    </StoreProvider>
+                </APIProvider>
+            );
+
+            expect(screen.queryByText('Log in')).not.toBeInTheDocument();
+        });
+
+        it('[ACH-005] shows Log in when logged out, even though the disabled query reports loading', () => {
+            // `useDerivativesAccount` is `enabled: is_logged_in`; in react-query v4 a disabled query
+            // keeps `status: 'loading'`, which held logged-out users on a permanent skeleton.
+            mockUseDerivativesAccount.mockReturnValue({
+                data: { data: [{ account_id: 'ROT90070611', account_type: 'real', balance: '1', currency: 'USD' }] },
+                isLoading: true,
+                isFetching: false,
+                error: null,
+                refetch: mockRefetch,
+            });
+            const store = {
+                ...default_mock_store,
+                client: { ...default_mock_store.client, is_logged_in: false, is_logging_in: false },
+            };
+            render(
+                <APIProvider>
+                    <StoreProvider store={store}>
+                        <AccountHeader />
+                    </StoreProvider>
+                </APIProvider>
+            );
+
+            expect(screen.getByText('Log in')).toBeInTheDocument();
+        });
+
+        it('[ACH-002] shows Log in once auth has settled logged out', () => {
+            const store = {
+                ...default_mock_store,
+                client: { ...default_mock_store.client, is_logged_in: false, is_logging_in: false },
+            };
+            render(
+                <APIProvider>
+                    <StoreProvider store={store}>
+                        <AccountHeader />
+                    </StoreProvider>
+                </APIProvider>
+            );
+
+            expect(screen.getByText('Log in')).toBeInTheDocument();
+        });
+
+        it('[ACH-003] keeps the loader until loginid leaves the account being switched away from', async () => {
+            // `switchAccount` rewrites localStorage and reconnects; `client.loginid` only moves when
+            // the new authorize lands. A settle arriving before that still describes the OLD account.
+            const setIsSwitchingAccount = jest.fn();
+            const store = {
+                ...default_mock_store,
+                client: { ...default_mock_store.client, loginid: 'DOT90096855' },
+                ui: { ...default_mock_store.ui, is_switching_account: false, setIsSwitchingAccount },
+            };
+            // `observer` memoises, so re-rendering needs a changed prop; balance is inert here.
+            const treeWith = (balance: string) => (
+                <APIProvider>
+                    <StoreProvider store={store}>
+                        <AccountHeader balance={balance} />
+                    </StoreProvider>
+                </APIProvider>
+            );
+            const { rerender } = render(treeWith('10,000.00'));
+
+            await userEvent.click(screen.getByTestId('dt_pick_account'));
+            setIsSwitchingAccount.mockClear();
+
+            // The query settles, but loginid has not moved yet.
+            mockUseDerivativesAccount.mockReturnValue({
+                data: { data: [{ account_id: 'ROT90070611', account_type: 'real', balance: '2', currency: 'USD' }] },
+                isLoading: false,
+                isFetching: false,
+                error: null,
+                refetch: mockRefetch,
+            });
+            rerender(treeWith('20,000.00'));
+
+            expect(setIsSwitchingAccount).not.toHaveBeenCalledWith(false);
+        });
+
+        it('[ACH-001] releases it once the fetch settles', () => {
+            expect(renderSwitching()).toHaveBeenCalledWith(false);
+        });
     });
 
     describe('Logged in state', () => {

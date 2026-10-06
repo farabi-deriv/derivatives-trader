@@ -1,0 +1,227 @@
+// Floating pill + passive glass panel over the landscape chart. Geometry is self-consistent
+// (pill 318x90 collapsed, chip 148x56, Buy 120x56) and every colour maps to an existing theme-aware
+// token (LTP-011) so the surfaces are correct in both themes — no light-only hex.
+$chip-collapse-transition:
+    max-inline-size 0.3s ease-in-out,
+    padding-inline 0.3s ease-in-out,
+    border-inline-width 0.3s ease-in-out,
+    margin-inline-end 0.3s ease-in-out,
+    opacity 0.3s ease-in-out;
+
+.landscape-params {
+    // Shared positioning context: the panel is a SIBLING of the pill, never a child — nested, it
+    // would be clipped by the pill's rounded box instead of floating above it.
+    position: relative;
+
+    &__panel {
+        position: absolute;
+        inset-block-end: calc(100% + 0.8rem);
+        // Horizontal placement is a measured `left` + translateX(-50%) set inline, so the panel sits
+        // straight over the active chip. No `inset-inline-end` here on purpose: with a fixed width and
+        // both insets set the box is over-constrained, and the one the browser drops flips with
+        // direction — it would silently ignore the measured offset in RTL.
+        inline-size: 19.8rem;
+        block-size: 13.6rem;
+        padding: var(--core-spacing-800);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: var(--core-spacing-400);
+        border-radius: var(--core-borderRadius-800);
+        background: var(--semantic-color-monochrome-surface-normal-lowest);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        // Hosts the drag — the browser must never claim it for a page pan.
+        touch-action: none;
+        user-select: none;
+        cursor: ns-resize;
+        // One declaration, four inset layers — four separate box-shadow lines would override each other.
+        box-shadow:
+            0 4px 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+            0 -4px 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+            4px 0 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+            -4px 0 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset;
+
+        @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+            background: var(--semantic-color-slate-solid-surface-frame-low);
+        }
+
+        &-hint {
+            color: var(--semantic-color-status-light-danger);
+            font-size: var(--text-size-xxxs);
+            text-align: center;
+        }
+
+        // Figma `363-2711`: take profit's panel adds a 24px title row with the switch — 24 + 8 + 96
+        // of wheel + 32 padding = 160.
+        &--switchable {
+            block-size: 16rem;
+        }
+
+        &-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            block-size: 2.4rem;
+        }
+
+        &-label {
+            color: var(--component-textIcon-normal-subtle);
+            font-size: var(--text-size-xs);
+            font-weight: var(--core-fontWeight-bold);
+            line-height: 2.1rem;
+        }
+    }
+
+    &__pill {
+        display: flex;
+        align-items: center;
+        gap: var(--core-spacing-800);
+        padding: var(--core-spacing-600);
+        border: 1px solid var(--semantic-color-monochrome-border-normal-mid);
+        border-radius: 999px;
+        // Figma: fill rgba(24,28,37,.04) — the same 4% monochrome surface as the panel — and
+        // clipsContent FALSE. The pill must not clip: it shares a stacking context with the glass
+        // panel, so an overflow here would cut the panel off.
+        background: var(--semantic-color-monochrome-surface-normal-lowest);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        // Width animates with the collapse (the take-profit chip drops out of the row).
+        transition: all 0.3s ease-in-out;
+        // The pill is draggable sideways to uncover the chart, so the browser must not claim the
+        // horizontal gesture for a page pan. The chips already set this for their own vertical drag.
+        touch-action: none;
+        cursor: grab;
+
+        @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+            background: var(--semantic-color-slate-solid-surface-frame-low);
+        }
+
+        &--dragging {
+            cursor: grabbing;
+            // The collapse transition would lag the finger, since the wrapper's transform is live.
+            transition: none;
+        }
+    }
+
+    // The drag's visible handle, so it must not shrink away when the pill is tight on room. Sized by
+    // the icon itself (8x24, viewBox `0 0 8 24`), NOT by CSS: it is a tall narrow glyph, so forcing it
+    // into a square box letterboxes it and the dots come out far smaller than the design.
+    &__grip {
+        flex-shrink: 0;
+        // The pill's own 16px gap is meant for the params-to-Buy split; the handle sits closer in.
+        margin-inline-end: calc(var(--core-spacing-800) * -1 + var(--core-spacing-400));
+    }
+
+    // Figma wraps the two param chips in their own frame with an 8px gap, separate from the pill's
+    // 16px gap to the Buy button: 148 + 8 + 148 = 304, and 16 + 304 + 16 + 120 + 16 + 2 borders = 474.
+    &__params {
+        display: flex;
+        align-items: center;
+        gap: var(--core-spacing-400);
+    }
+
+    &__chip {
+        // Label over value, centred — two lines now that the wheel has moved to the panel.
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        inline-size: 12rem;
+        block-size: 4.8rem;
+        padding-inline: var(--core-spacing-800);
+        border: 1px solid var(--semantic-color-monochrome-border-normal-high);
+        border-radius: 999px;
+        background: var(--semantic-color-slate-solid-surface-frame-low);
+        // A tap target now; `manipulation` drops the 300ms double-tap delay.
+        touch-action: manipulation;
+        cursor: pointer;
+        user-select: none;
+        // Clips its own content as it collapses; the pill itself must not clip (see `&__pill`).
+        overflow: hidden;
+        max-inline-size: 12rem;
+        transition: $chip-collapse-transition;
+
+        // An open accumulator contract locks its terms, as it does in portrait and on desktop. The
+        // chip already refuses the gesture; this is what says so. The pill itself stays draggable.
+        &--disabled {
+            opacity: 0.32;
+            cursor: default;
+        }
+
+        // Take profit leaving the collapsed pill. Padding and border go too (border-box keeps them), the
+        // margin eats the row gap, and the delayed `visibility` drops it from tab order. After `--disabled`.
+        &--collapsed {
+            max-inline-size: 0;
+            padding-inline: 0;
+            border-inline-width: 0;
+            margin-inline-end: calc(var(--core-spacing-400) * -1);
+            opacity: 0;
+            visibility: hidden;
+            transition:
+                $chip-collapse-transition,
+                visibility 0s 0.3s;
+        }
+
+        &-label {
+            color: var(--color-text-secondary);
+            // Spec `font/size-label` — 12px regular, matching the portrait param label's 12px box
+            // (trade-parameters.scss) so the two breakpoints agree.
+            font-size: var(--text-size-xxs);
+            font-weight: var(--core-fontWeight-regular);
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+
+        &-value {
+            font-size: var(--text-size-s);
+            font-weight: var(--core-fontWeight-regular);
+            line-height: 1.5;
+            text-align: center;
+        }
+    }
+
+    .landscape-value-rows--panel {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: var(--core-spacing-200);
+
+        // Take profit while off.
+        &.landscape-value-rows--off {
+            opacity: 0.32;
+        }
+
+        // Figma: 24 + 8 + 40 + 8 + 24 = 104, + 32 padding = the 136px panel. (An earlier 22/44/22 was
+        // derived from the geometry alone and was wrong.)
+        // `min-block-size` for the same reason as the chip: an empty out-of-range neighbour has no line
+        // box, so without it the panel's rows would shift at either end of the ladder.
+        .landscape-value-rows__row {
+            opacity: 0.32;
+            font-size: var(--text-size-s);
+            font-weight: var(--core-fontWeight-regular);
+            line-height: 2.4rem;
+            min-block-size: 2.4rem;
+        }
+
+        .landscape-value-rows__row--current {
+            opacity: 1;
+            min-block-size: 4rem;
+            // 32px w800. NOT `--text-size-lg` — that token does not exist anywhere in the repo or in
+            // quill-tokens, so the declaration was invalid and the headline value silently inherited
+            // the parent size instead of rendering large. CSS fails silently, so nothing caught it.
+            font-size: var(--text-size-l);
+            font-weight: 800;
+            line-height: 4rem;
+        }
+
+        &.landscape-value-rows--error .landscape-value-rows__row--current {
+            color: var(--semantic-color-status-light-danger);
+        }
+    }
+
+    // Fit the reused PurchaseButton to the 120px spec with CSS only (do NOT modify purchase-button.tsx).
+    .purchase-button__wrapper {
+        width: 12rem;
+    }
+}

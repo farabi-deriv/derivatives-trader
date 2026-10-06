@@ -1,6 +1,9 @@
 .guide {
-    &__title {
-        margin-block-end: var(--component-actionSheet-spacing-padding-lg);
+    // Scoped under its wrappers to outrank quill's `.quill-typography { margin: 0 }`, which has the same
+    // specificity but ships in a separate CSS chunk — so which won depended on chunk load order.
+    &__wrapper__content &__title,
+    &__wrapper__content--separate &__title {
+        margin-block-end: var(--core-spacing-800);
     }
 
     &__menu {
@@ -53,8 +56,9 @@
         flex: 1;
         min-height: 40rem;
 
+        // Not in a modal: the host page scrolls, so no viewport-derived height.
         &--without-btn {
-            height: calc(90dvh - 17rem);
+            min-height: 0;
         }
     }
 
@@ -66,10 +70,18 @@
         padding: var(--component-actionSheet-spacing-padding-lg);
     }
 
-    &-video {
-        position: relative;
-        border-radius: var(--core-borderRadius-400);
+    // Viewport, not width: a phone in landscape is 844px wide. CSS twin of `useIsPhoneViewport`.
+    @mixin video-phone {
+        @include tablet-down {
+            @content;
+        }
 
+        @include phone-landscape {
+            @content;
+        }
+    }
+
+    &-video {
         &__player {
             width: 44.8rem;
             border-radius: var(--core-borderRadius-400);
@@ -82,7 +94,7 @@
             height: 25.2rem;
             width: 44.8rem;
 
-            @media (max-width: 768px) {
+            @include video-phone {
                 height: 7.3rem;
                 width: 11.2rem;
                 flex-shrink: 0;
@@ -114,33 +126,11 @@
                     height: 8.8rem;
                     z-index: 2;
 
-                    @media (max-width: 768px) {
+                    @include video-phone {
                         width: 3.4rem;
                         height: 3.4rem;
                     }
                 }
-            }
-        }
-
-        iframe {
-            border-radius: var(--core-borderRadius-400);
-        }
-
-        &:before {
-            content: '';
-            display: block;
-            height: 25.2rem;
-            width: 44.8rem;
-            position: absolute;
-            top: 0;
-            inset-inline-start: 0;
-            border-radius: var(--core-borderRadius-400);
-            background-color: var(--core-color-opacity-black-200);
-            z-index: 1;
-
-            @media (max-width: 768px) {
-                height: 7.3rem;
-                width: 11.2rem;
             }
         }
 
@@ -152,18 +142,12 @@
             align-items: center;
             gap: var(--component-actionSheet-spacing-padding-sm);
             cursor: pointer;
-
-            @media (max-width: 768px) {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-            }
         }
 
         &__description {
             display: none;
 
-            @media (max-width: 768px) {
+            @include video-phone {
                 display: block;
                 flex: 1;
             }

@@ -1,3 +1,35 @@
+// The selector rises over the trade page, and each page opened from it rises over the selector.
+@keyframes market-selection-slide-up {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes market-selection-slide-down {
+    to {
+        transform: translateY(100%);
+    }
+}
+
+// The close is the open in reverse; `forwards` holds it off-screen until SlideUpPresence unmounts it.
+@mixin slide-up {
+    animation: market-selection-slide-up 0.3s ease-out;
+
+    &.market-selection--closing {
+        animation: market-selection-slide-down 0.3s ease-in forwards;
+        pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+
+        &.market-selection--closing {
+            animation: none;
+            visibility: hidden;
+        }
+    }
+}
+
 // Full-screen modal shell (portalled to <body>). Sits just below the quill-ui ActionSheet layer
 // (z-index 150) so the Guide sheet — and snackbars — surface above it, while still covering the
 // page chrome (which tops out well below 150).
@@ -8,6 +40,14 @@
     display: flex;
     flex-direction: column;
     background: var(--semantic-color-slate-solid-surface-frame-low);
+    @include slide-up;
+}
+
+.market-selection__page {
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    @include slide-up;
 }
 
 .market-selection {
@@ -15,6 +55,7 @@
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    isolation: isolate;
 
     &__header-bar {
         display: flex;
@@ -177,3 +218,100 @@
 @import 'styles/market-changes-dropdown'; // "Changes (window)" dropdown
 @import 'styles/market-info'; // market info screen
 @import 'styles/market-selection-desktop'; // desktop popover panel, sidebar, rows
+
+// Landscape reuses the full-screen shell, laid out in two columns. A 390px-tall viewport has no room
+// for a stacked row of trade-type tabs above the list, but 844px of width has room for the sidebar
+// beside it — so the trade types move to the side rather than the list losing half its height.
+.market-selection--landscape {
+    // Portrait draws this line via the trade-type tabs row that sits under the header. Landscape puts
+    // those in the sidebar instead, so nothing separated the header from the content.
+    .market-selection__header-bar {
+        border-block-end: 1px solid var(--color-surface-border);
+    }
+
+    .market-selection__columns {
+        display: flex;
+        flex: 1;
+        // Without this the flex children refuse to shrink and the list scrolls the page instead.
+        min-block-size: 0;
+        overflow: hidden;
+    }
+
+    .market-selection__browse {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-inline-size: 0;
+        overflow: hidden;
+    }
+
+    .market-selection-sidebar {
+        padding-block-start: 0;
+
+        // The shell's top bar already carries Guide, so the sidebar's own header would duplicate it.
+        &__header {
+            display: none;
+        }
+    }
+
+    // Figma `888-95305`: the guide page scrolls past the 334px body under its own header.
+    .market-selection__guide {
+        flex: 1;
+        min-block-size: 0;
+        overflow-y: auto;
+        padding: var(--core-spacing-800);
+        @include themed-scrollbar;
+
+        // Only a paired media section takes one column (Rise | Fall); everything else spans both.
+        .guide__contract-description {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--core-spacing-800);
+        }
+
+        .description__section:not(.description__section--paired) {
+            grid-column: 1 / -1;
+        }
+
+        // Keyed on "a full-width section after a media one", so no stray rule without the pair.
+        .description__section--paired + .description__section:not(.description__section--paired) {
+            padding-block-start: var(--core-spacing-800);
+            border-block-start: 1px solid var(--color-surface-border);
+        }
+
+        // Figma `882-93393`: copy left, thumbnail filling the right column. The grid gap spaces the
+        // row, so the sheet's own margin comes off.
+        .guide-video__wrapper {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--core-spacing-800);
+            align-items: center;
+            margin-block-start: 0;
+            padding-block-start: var(--core-spacing-800);
+            border-block-start: 1px solid var(--color-surface-border);
+        }
+
+        // Placed explicitly: DOM order is thumbnail then copy, the design reads the other way.
+        .guide-video__description {
+            grid-area: 1 / 1;
+        }
+
+        .guide-video__preview {
+            grid-area: 1 / 2;
+            inline-size: 100%;
+            block-size: 7.2rem;
+        }
+
+        // The phone caption is too small here; the design uses a description section's md/sm pair.
+        .guide-video__description-title {
+            font-size: var(--semantic-typography-body-md-bold-default-fontSize);
+            line-height: var(--semantic-typography-body-md-bold-default-lineHeight);
+        }
+
+        .guide-video__description-copy {
+            font-size: var(--semantic-typography-body-sm-regular-default-fontSize);
+            line-height: var(--semantic-typography-body-sm-regular-default-lineHeight);
+        }
+    }
+}

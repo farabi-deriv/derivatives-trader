@@ -1,0 +1,171 @@
+.trade--landscape {
+    display: flex;
+    flex-direction: column;
+    // Fallback first: 100dvh handles the iOS Safari landscape toolbar that 100vh overstates.
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+
+    // Armed for CHART_MAXIMIZE_ANIMATION_MS on each auto-hide flip: SmartCharts' own
+    // .chartContainer { transition: height .4s } would trail the chrome collapse and make the drawing
+    // lag the edge; neutralise it during the flip so the chart tracks the flex resize 1:1.
+    &--animating .chartContainer {
+        transition: none;
+    }
+}
+
+// The nav rail's width (sidebar.scss). The landscape toast is inset from the content area, not the
+// viewport, so it has to clear the rail.
+$LANDSCAPE_RAIL_WIDTH: 7.2rem;
+
+// The snackbar portals to <body>, so the media query is the only available scope. Bottom-right,
+// hugging its content: opposite the pill, which anchors left.
+@include phone-landscape {
+    .quill-snackbar {
+        // Hug the content, and let quill's own 560px cap bound it. Reserving width beside the pill
+        // left 250px at 844px — too little for a one-line message plus its close button.
+        width: auto;
+        // Logical, so in RTL it moves to the left, still opposite the pill.
+        inset-inline-end: var(--core-spacing-800);
+    }
+
+    .quill-snackbar--container {
+        justify-content: flex-end;
+    }
+
+    // Quill's mobile banner is `width: calc(100vw - …)`, which spans the whole landscape viewport for
+    // a two-line message. Hug the content and centre it instead.
+    //
+    // Centred by pinning both insets and letting auto margins share the slack — NOT by
+    // `left: 50%` + `translateX(-50%)`: the base rule sets `inset-inline-start`, which resolves to the
+    // same physical `left`, so whichever is declared last wins and the pair silently fight.
+    .quill-notification__banners--mobile {
+        width: fit-content;
+        max-width: calc(100vw - #{$LANDSCAPE_RAIL_WIDTH} - var(--core-spacing-1600));
+        inset-inline: 0;
+        margin-inline: auto;
+    }
+
+    // Figma's `overlay`: rgba(0,0,0,0.72), under the sheet but over the rail (z-index 100) and pill.
+    .landscape-flyout-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 140;
+        background: var(--core-color-opacity-black-600);
+        opacity: 0;
+        pointer-events: none;
+        // The flyout's own slide (flyout.scss), so dim and sheet move as one.
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &--visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    }
+
+    // Figma side sheets anchor to the viewport edge, over the rail, at full height — 240px for
+    // menu/language, 420px for positions. The slide-in transform is left as the component defines it.
+    .dc-flyout {
+        /* rtl:begin:ignore */
+        left: 0;
+        /* rtl:end:ignore */
+        width: 24rem;
+        height: 100%;
+        border-radius: 0;
+        // Above the 72px rail it covers (`.sidebar` is z-index 100).
+        z-index: 150;
+
+        // Figma: 420x390, 16px padding, rounded on the exposed right edge only. Pinned min/max so it
+        // cannot be squeezed narrower than the spec. The radii are rtl-ignored like the `left` above —
+        // the panel stays on the left in RTL, so the exposed edge is always the right one.
+        &--positions {
+            width: 42rem;
+            min-width: 42rem;
+            max-width: 42rem;
+            padding: var(--core-spacing-800);
+            /* rtl:begin:ignore */
+            border-top-right-radius: var(--core-borderRadius-800);
+            border-bottom-right-radius: var(--core-borderRadius-800);
+            /* rtl:end:ignore */
+        }
+
+        // Figma: 240x390, `padding: 16px 0` — the rows carry their own inline padding.
+        &--menu {
+            padding-block: var(--core-spacing-800);
+            /* rtl:begin:ignore */
+            border-top-right-radius: var(--core-borderRadius-800);
+            border-bottom-right-radius: var(--core-borderRadius-800);
+            /* rtl:end:ignore */
+
+            // No title or close button, as with positions: a press outside is the way out.
+            .dc-flyout__header {
+                display: none;
+            }
+
+            .dc-flyout__body {
+                height: 100%;
+            }
+        }
+    }
+}
+
+.trade-landscape {
+    &__header {
+        display: flex;
+        align-items: center;
+        // Spec: MarketTabs left, AccountHeader right.
+        justify-content: space-between;
+        flex-shrink: 0;
+        overflow: hidden;
+        // Spec: 72px tall with a 24px trailing inset. The spec's 771px width is derived, not literal —
+        // it is a 844px landscape viewport minus the 7.2rem nav rail (see trade.scss), so the header
+        // takes the full content width and stays correct on any phone. Logical property mirrors in RTL.
+        // height: var(--core-size-3600);
+        max-height: var(--core-size-3600);
+        width: 100%;
+        padding-inline-end: var(--core-spacing-1200);
+        // Mirror .trade__market-tabs--collapsed: animate the collapse via max-height + opacity.
+        // max-height wins over height, so the collapsed rule still clamps the box to zero.
+        transition:
+            max-height 0.3s ease-in-out,
+            opacity 0.3s ease-in-out;
+
+        &--collapsed {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+    }
+
+    &__stats {
+        flex-shrink: 0;
+    }
+
+    &__chart-tooltip {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+        // Figma "responsive chart - area": padding-right 24, matching the header's trailing inset.
+        padding-inline-end: var(--core-spacing-1200);
+
+        .trade__chart {
+            height: 100%;
+        }
+
+        // Floating params pill, bottom-left over the chart, clear of SmartCharts' own toolbar: that
+        // sits at `left: 16px` with `width: 40px`, so it ends at 56px and the pill starts a 16px gap
+        // after it. Logical inset, so in RTL the pill moves to the opposite side from the toolbar
+        // (which is pinned `direction: ltr`) and the clearance is moot there. Draggable from here.
+        .landscape-params {
+            position: absolute;
+            inset-block-end: 1.6rem;
+            inset-inline-start: 7.2rem;
+            z-index: 10;
+        }
+
+        // Portrait's button sits at 3, below SmartCharts' own overlays in this stacking context.
+        .landscape-fullscreen-button {
+            z-index: 10;
+        }
+    }
+}

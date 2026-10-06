@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { mockStore } from '@deriv/stores';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -239,5 +241,10 @@ describe('TakeProfitInputDesktop', () => {
         render(<MockedTakeProfitInputDesktop store={store} />);
 
         expect(screen.getByText(/0.01 to \$5,000.00/)).toBeInTheDocument();
+    });
+
+    it('paints an enabled switch as on when it opens, rather than sliding there from off', () => {
+        // Static markup runs no effects, so it is the first paint — where a slide-in from off shows.
+        expect(renderToStaticMarkup(<MockedTakeProfitInputDesktop />)).toContain('aria-pressed="true"');
     });
 });

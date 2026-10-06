@@ -45,6 +45,8 @@ const useMarketSelection = ({ is_open, onClose }: TUseMarketSelection) => {
     const [selected_category, setSelectedCategory] = useState<string>('');
     const [is_favourites_tab, setIsFavouritesTab] = useState(false);
     const [is_searching, setIsSearching] = useState(false);
+    // Landscape shows the Guide as a page in this shell; reset alongside the other view state below.
+    const [is_guide_open, setIsGuideOpen] = useState(false);
     const [info_symbol, setInfoSymbol] = useState<string | null>(null);
     // The trade type the info screen was opened from, so its Favourite button can default to it.
     const [info_trade_type, setInfoTradeType] = useState('');
@@ -70,6 +72,7 @@ const useMarketSelection = ({ is_open, onClose }: TUseMarketSelection) => {
         setSelectedCategory('');
         setIsFavouritesTab(false);
         setIsSearching(false);
+        setIsGuideOpen(false);
         setInfoSymbol(null);
         setInfoTradeType('');
     }, [is_open, contract_type]);
@@ -112,6 +115,9 @@ const useMarketSelection = ({ is_open, onClose }: TUseMarketSelection) => {
         setListWindow(next);
     }, []);
 
+    // Stable, so the header's `Guide` keeps its observer memo bailout across list re-renders.
+    const toggleGuide = useCallback(() => setIsGuideOpen(prev => !prev), []);
+
     const is_list_view = is_favourites_tab || effective_category !== SPECIAL_CATEGORIES.FEATURED;
     const list_underlying = useMemo(() => {
         if (!is_list_view) return [];
@@ -142,6 +148,7 @@ const useMarketSelection = ({ is_open, onClose }: TUseMarketSelection) => {
     const handleClose = () => {
         setInfoSymbol(null);
         setIsSearching(false);
+        setIsGuideOpen(false);
         onClose();
     };
 
@@ -197,6 +204,8 @@ const useMarketSelection = ({ is_open, onClose }: TUseMarketSelection) => {
         setIsFavouritesTab,
         is_searching,
         setIsSearching,
+        is_guide_open,
+        toggleGuide,
         info_symbol,
         setInfoSymbol,
         info_trade_type,

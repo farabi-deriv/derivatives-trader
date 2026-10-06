@@ -8,10 +8,17 @@ import userEvent from '@testing-library/user-event';
 import TraderProviders from '../../../../trader-providers';
 import AccumulatorStats from '../accumulator-stats';
 
+const mockIsPhoneLandscape = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
+    __esModule: true,
+    default: () => mockIsPhoneLandscape(),
+}));
+
 describe('AccumulatorStats', () => {
     let default_mock_store: ReturnType<typeof mockStore>;
 
     beforeEach(() => {
+        mockIsPhoneLandscape.mockReturnValue(false);
         default_mock_store = mockStore({
             modules: {
                 trade: {
@@ -59,6 +66,32 @@ describe('AccumulatorStats', () => {
                 'Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.'
             )
         ).toBeInTheDocument();
+    });
+
+    const STATS_DESCRIPTION =
+        'Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.';
+
+    test('[AST-001] explains Stats in a tooltip in landscape, without opening the sheet', async () => {
+        mockIsPhoneLandscape.mockReturnValue(true);
+        const user = userEvent.setup();
+        renderAccumulatorState(default_mock_store);
+
+        expect(screen.queryByText(STATS_DESCRIPTION)).not.toBeInTheDocument();
+
+        // TooltipPortal reveals on focus, which is what a tap gives the heading.
+        await user.click(screen.getByText('Stats'));
+
+        expect(screen.getByText(STATS_DESCRIPTION)).toBeInTheDocument();
+        expect(screen.queryByText('Got it')).not.toBeInTheDocument();
+    });
+
+    test('[AST-001] keeps the description sheet in portrait', async () => {
+        const user = userEvent.setup();
+        renderAccumulatorState(default_mock_store);
+
+        await user.click(screen.getByText('Stats'));
+
+        expect(screen.getByText('Got it')).toBeInTheDocument();
     });
 
     test('should open ActionSheet with stats when expand icon is clicked', async () => {

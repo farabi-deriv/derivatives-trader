@@ -230,6 +230,7 @@ const TakeProfitInputDesktop = observer(({ onClose, is_open }: TTakeProfitInputD
                 </Text>
                 <ToggleSwitch
                     checked={state.is_enabled}
+                    defaultChecked={state.is_enabled}
                     onChange={onToggleSwitch}
                     data-testid='dt_take_profit_toggle'
                 />

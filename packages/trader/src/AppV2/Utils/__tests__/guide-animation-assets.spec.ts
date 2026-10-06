@@ -1,7 +1,6 @@
+import { unzipSync } from 'fflate';
 import fs from 'fs';
 import path from 'path';
-
-import { unzipSync } from 'fflate';
 
 import { getContractDescriptionAnimationSrc } from '../video-config';
 

@@ -6,8 +6,8 @@ import { LabelPairedXmarkMdRegularIcon } from '@deriv/quill-icons';
 import { clickAndKeyEventHandler } from '@deriv/shared';
 import { ActionSheet, Heading, Modal } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
-import { useDevice } from '@deriv-com/ui';
 
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { getDescriptionVideoIds } from 'AppV2/Utils/contract-description-utils';
 import { getVideoMp4Url } from 'AppV2/Utils/video-config';
 
@@ -58,7 +58,8 @@ const GuideDescriptionModal = ({
     show_all_trade_types_in_guide,
 }: TGuideDescriptionModal) => {
     const [is_video_player_opened, setIsVideoPlayerOpened] = React.useState(false);
-    const { isMobile } = useDevice();
+    // Viewport, not width: landscape would take the desktop Modal and never mount the video player.
+    const is_phone_viewport = useIsPhoneViewport();
 
     const video_src = getDescriptionVideoIds(selected_contract_type, is_dark_mode_on);
 
@@ -78,10 +79,20 @@ const GuideDescriptionModal = ({
         video_src,
     };
 
+    const title = (
+        <Heading.H4 className='guide__title'>
+            {show_guide_for_selected_contract && !show_all_trade_types_in_guide ? (
+                selected_contract_type
+            ) : (
+                <Localize i18n_default_text='Trade types' />
+            )}
+        </Heading.H4>
+    );
+
     return (
         <React.Fragment>
             {show_description_in_a_modal ? (
-                !isMobile ? (
+                !is_phone_viewport ? (
                     <Modal
                         isOpened={is_open}
                         showHandleBar={false}
@@ -94,15 +105,7 @@ const GuideDescriptionModal = ({
                         className='guide-desktop-modal'
                     >
                         <div className='guide-desktop-modal__header'>
-                            <Heading.H4 className='guide__title'>
-                                {show_all_trade_types_in_guide ? (
-                                    <Localize i18n_default_text='Trade types' />
-                                ) : show_guide_for_selected_contract ? (
-                                    selected_contract_type
-                                ) : (
-                                    <Localize i18n_default_text='Trade types' />
-                                )}
-                            </Heading.H4>
+                            {title}
                             <button className='guide-desktop-modal__close' onClick={onClose} aria-label='Close'>
                                 <LabelPairedXmarkMdRegularIcon />
                             </button>
@@ -115,15 +118,7 @@ const GuideDescriptionModal = ({
                     <ActionSheet.Root isOpen={is_open} onClose={onClose} position='left' expandable={false}>
                         <ActionSheet.Portal shouldCloseOnDrag>
                             <ActionSheet.Content className='guide__wrapper__content'>
-                                <Heading.H4 className='guide__title'>
-                                    {show_all_trade_types_in_guide ? (
-                                        <Localize i18n_default_text='Trade types' />
-                                    ) : show_guide_for_selected_contract ? (
-                                        selected_contract_type
-                                    ) : (
-                                        <Localize i18n_default_text='Trade types' />
-                                    )}
-                                </Heading.H4>
+                                {title}
                                 <GuideContent {...guide_content_props} />
                             </ActionSheet.Content>
                             <ActionSheet.Footer
@@ -139,10 +134,11 @@ const GuideDescriptionModal = ({
                 )
             ) : (
                 <div className='guide__wrapper__content--separate'>
+                    {title}
                     <GuideContent {...guide_content_props} />
                 </div>
             )}
-            {isMobile && (
+            {is_phone_viewport && (
                 <PortalModal isOpen={is_video_player_opened}>
                     <VideoPlayer
                         className='modal-player__wrapper'

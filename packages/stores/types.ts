@@ -275,6 +275,11 @@ type TUiStore = {
     is_history_tab_active: boolean;
     is_chart_maximized: boolean;
     is_chart_maximize_animating: boolean;
+    /** Whether the landscape trade page's chrome (header, nav rail, full params pill) is auto-hidden. */
+    is_landscape_chrome_hidden: boolean;
+    landscape_params_offset_x: number;
+    has_seen_landscape_prompt: boolean;
+    has_seen_landscape_onboarding: boolean;
     is_dark_mode_on: boolean;
     theme_preference: 'light' | 'dark' | 'system';
     is_loading: boolean;
@@ -285,7 +290,7 @@ type TUiStore = {
     is_mobile: boolean;
     is_tablet: boolean;
     is_mobile_language_menu_open: boolean;
-    active_sidebar_flyout: 'language' | 'positions' | 'account' | null;
+    active_sidebar_flyout: 'language' | 'positions' | 'account' | 'menu' | null;
     is_positions_drawer_on: boolean;
     is_services_error_visible: boolean;
     isUrlUnavailableModalVisible: boolean;
@@ -300,6 +305,10 @@ type TUiStore = {
     }) => JSX.Element;
     setIsChartMaximized: (value: boolean) => void;
     setChartMaximizeAnimating: (value: boolean) => void;
+    setLandscapeChromeHidden: (value: boolean) => void;
+    setLandscapeParamsOffsetX: (value: number) => void;
+    setHasSeenLandscapePrompt: (value: boolean) => void;
+    setHasSeenLandscapeOnboarding: (value: boolean) => void;
     toggleChartMaximized: () => void;
     resetPurchaseStates: () => void;
     setAppContentsScrollRef: (ref: React.MutableRefObject<null | HTMLDivElement>) => void;
@@ -323,7 +332,7 @@ type TUiStore = {
     is_chart_loading: boolean;
     setIsChartLoading: (value: boolean) => void;
     toggleTryRealModal: (value: boolean) => void;
-    setSidebarFlyout: (flyout_type: 'language' | 'positions' | 'account' | null) => void;
+    setSidebarFlyout: (flyout_type: 'language' | 'positions' | 'account' | 'menu' | null) => void;
     closeSidebarFlyout: () => void;
     removeToast: (key: string) => void;
     reports_route_tab_index: number;

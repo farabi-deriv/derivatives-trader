@@ -3,9 +3,15 @@ import path from 'path';
 
 import { Analytics } from '@deriv-com/analytics';
 
-import { trackAnalyticsEvent } from '../analytics-utils';
+import { getAnalyticsData, getAnalyticsDeviceOrientation, trackAnalyticsEvent } from '../analytics-utils';
 
 const trackEvent = Analytics.trackEvent as jest.Mock;
+
+const mock_device = { is_mobile: false, is_phone_landscape: false };
+jest.mock('../../os', () => ({
+    isMobileOs: () => mock_device.is_mobile,
+    isPhoneLandscape: () => mock_device.is_phone_landscape,
+}));
 
 /**
  * `APP_VERSION` is captured once at module load in analytics-utils, so each env
@@ -155,5 +161,28 @@ describe('[ANLY-001] @deriv-com/analytics is pinned to 1.43.0', () => {
         expect(version_matches.length).toBeGreaterThan(0);
         version_matches.forEach(match => expect(match).toContain('1.43.0'));
         expect(lockfile_text).toContain('analytics-1.43.0.tgz');
+    });
+});
+
+describe('[AEV-004] device_orientation', () => {
+    afterEach(() => Object.assign(mock_device, { is_mobile: false, is_phone_landscape: false }));
+
+    it("reports a phone's current orientation, read at call time", () => {
+        mock_device.is_mobile = true;
+
+        mock_device.is_phone_landscape = true;
+        expect(getAnalyticsDeviceOrientation()).toBe('landscape');
+
+        mock_device.is_phone_landscape = false;
+        expect(getAnalyticsDeviceOrientation()).toBe('portrait');
+    });
+
+    it('rides along with account_type and device_type on a phone, and is undefined elsewhere', () => {
+        expect(getAnalyticsData().device_orientation).toBeUndefined();
+
+        Object.assign(mock_device, { is_mobile: true, is_phone_landscape: true });
+        expect(getAnalyticsData()).toEqual(
+            expect.objectContaining({ account_type: expect.any(String), device_orientation: 'landscape' })
+        );
     });
 });

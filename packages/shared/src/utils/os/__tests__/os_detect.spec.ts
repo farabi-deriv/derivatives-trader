@@ -1,9 +1,11 @@
-import { isDesktopOs, OSDetect } from '../os_detect';
+import { isDesktopOs, isPhoneLandscape, OSDetect, PHONE_LANDSCAPE_MEDIA_QUERY } from '../os_detect';
 
 const DESKTOP_UA =
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const IPAD_UA =
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
+const IPHONE_UA =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 
 type TDeviceStub = {
     platform?: string;
@@ -145,5 +147,38 @@ describe('isTabletOs', () => {
                     'Mozilla/5.0 (Linux; Android 13; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             })
         ).toBe(true);
+    });
+});
+
+describe('isPhoneLandscape', () => {
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    const stubViewport = ({ userAgent, query_matches }: { userAgent: string; query_matches: boolean }) => {
+        Object.defineProperty(window.navigator, 'userAgent', { value: userAgent, configurable: true });
+        // matchMedia is writable-but-not-configurable in the global setup, so assign rather than redefine.
+        window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+            matches: query === PHONE_LANDSCAPE_MEDIA_QUERY ? query_matches : false,
+            media: query,
+        })) as unknown as typeof window.matchMedia;
+    };
+
+    it('[LTM-001] is true only when the media query matches and isMobileOs() is true', () => {
+        stubViewport({ userAgent: IPHONE_UA, query_matches: true });
+
+        expect(isPhoneLandscape()).toBe(true);
+    });
+
+    it('[LTM-001] is false when isMobileOs() is false even though the media query matches', () => {
+        stubViewport({ userAgent: DESKTOP_UA, query_matches: true });
+
+        expect(isPhoneLandscape()).toBe(false);
+    });
+
+    it('[LTM-001] is false when the media query does not match (soft-keyboard portrait viewport)', () => {
+        stubViewport({ userAgent: IPHONE_UA, query_matches: false });
+
+        expect(isPhoneLandscape()).toBe(false);
     });
 });

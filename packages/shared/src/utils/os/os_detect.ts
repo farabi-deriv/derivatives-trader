@@ -65,6 +65,15 @@ export const isMobileOs = () =>
     (/android/i.test(navigator.userAgent.toLowerCase()) && /mobile/i.test(navigator.userAgent.toLowerCase())) ||
     /webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+// Kept byte-identical to the `phone-landscape` mixin in styles/devices.scss so CSS and JS cannot drift.
+export const PHONE_LANDSCAPE_MEDIA_QUERY = '(orientation: landscape) and (max-height: 500px) and (min-width: 568px)';
+
+export const isPhoneLandscape = () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(PHONE_LANDSCAPE_MEDIA_QUERY).matches &&
+    isMobileOs();
+
 /**
  * True only for devices whose *primary* input is touch (real tablets/phones).
  *

@@ -9,6 +9,11 @@ import { getAccumulatorStatsVideoId } from 'AppV2/Utils/video-config';
 
 import StreamIframe from '../StreamIframe';
 
+// Shared with the landscape tooltip on the Stats heading, so the copy is translated once.
+export const StatsDescriptionText = () => (
+    <Localize i18n_default_text='Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.' />
+);
+
 const AccumulatorStatsDescription = observer(({ onActionSheetClose }: { onActionSheetClose: () => void }) => {
     const {
         ui: { is_dark_mode_on },
@@ -26,7 +31,7 @@ const AccumulatorStatsDescription = observer(({ onActionSheetClose }: { onAction
                     </div>
                     <div className='stats-description__content__description'>
                         <Text>
-                            <Localize i18n_default_text='Stats show the history of consecutive tick counts, i.e. the number of ticks the price remained within range continuously.' />
+                            <StatsDescriptionText />
                         </Text>
                     </div>
                 </div>

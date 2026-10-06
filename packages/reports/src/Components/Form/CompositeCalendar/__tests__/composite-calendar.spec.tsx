@@ -24,6 +24,17 @@ const mockDefaultProps = {
 jest.mock('../composite-calendar-mobile', () => jest.fn(() => <div>CompositeCalendarMobile</div>));
 jest.mock('../two-month-picker', () => jest.fn(() => <div>{twoMonthPickerComponent}</div>));
 
+const mockIsPhoneLandscape = jest.fn(() => false);
+jest.mock('@deriv/shared', () => ({
+    ...jest.requireActual('@deriv/shared'),
+    isPhoneLandscape: () => mockIsPhoneLandscape(),
+}));
+jest.mock('../../../archived-statement-filter', () =>
+    jest.fn(({ handleDateChange }: { handleDateChange: (value: unknown) => void }) => (
+        <button onClick={() => handleDateChange({ from: 1 })}>ArchivedStatementFilter</button>
+    ))
+);
+
 jest.mock('@deriv-com/ui', () => ({
     useDevice: jest.fn(() => ({
         isDesktop: true,
@@ -41,6 +52,17 @@ describe('<CompositeCalendar />', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockIsPhoneLandscape.mockReturnValue(false);
+    });
+
+    it('[RLD-001] renders the one-chip date filter in phone landscape, wired to onChange', async () => {
+        mockIsPhoneLandscape.mockReturnValue(true);
+        render(mockCompositeCalendar());
+
+        expect(screen.queryByPlaceholderText(inputDataFromPlaceholderText)).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: 'ArchivedStatementFilter' }));
+
+        expect(mockDefaultProps.onChange).toHaveBeenCalledWith({ from: 1 });
     });
 
     it('should render component with default props', () => {

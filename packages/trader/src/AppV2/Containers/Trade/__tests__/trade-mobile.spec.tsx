@@ -55,6 +55,9 @@ jest.mock('AppV2/Components/AccumulatorStats', () =>
     jest.fn(() => <div data-testid='accumulator-stats'>AccumulatorStats</div>)
 );
 jest.mock('AppV2/Components/CurrentSpot', () => jest.fn(() => <div data-testid='current-spot'>CurrentSpot</div>));
+jest.mock('AppV2/Components/LandscapePrompt', () =>
+    jest.fn(() => <div data-testid='landscape-prompt'>LandscapePrompt</div>)
+);
 jest.mock('AppV2/Components/MarketTabs', () => jest.fn(() => <div data-testid='market-tabs'>MarketTabs</div>));
 jest.mock('AppV2/Components/OnboardingGuide/GuideForPages', () =>
     jest.fn(() => <div data-testid='onboarding-guide'>OnboardingGuide</div>)
@@ -285,16 +288,11 @@ describe('Trade', () => {
             expect(screen.getByTestId('trade-error-snackbar')).toBeInTheDocument();
         });
 
-        it('should call onMount on component mount', () => {
-            const mockOnMount = jest.fn();
-            mockUseTraderStore.mockReturnValue({
-                ...mockUseTraderStore(),
-                onMount: mockOnMount,
-            });
-
+        // The prompt self-gates on accumulators / first-visit / phone; the portrait page only has to mount it.
+        it('should mount the landscape prompt so it can nudge a first-time accumulators user', () => {
             renderTrade();
 
-            expect(mockOnMount).toHaveBeenCalled();
+            expect(screen.getByTestId('landscape-prompt')).toBeInTheDocument();
         });
     });
 

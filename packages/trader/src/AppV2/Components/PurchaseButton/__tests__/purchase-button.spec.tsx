@@ -479,6 +479,18 @@ describe('PositionsContent', () => {
         expect(default_mock_store.modules.trade.onPurchaseV2).toBeCalled();
     });
 
+    it('[LTP-009] hides the payout caption for a fresh accumulator in landscape (isMobile false)', () => {
+        // useDevice is mocked to isMobile=false (width > 600), matching phone landscape. For a fresh
+        // accumulator this makes has_no_button_content true, so the button is label-only. Guards the
+        // purchase-button.tsx:137 isMobile non-swap against a future useIsPhoneViewport() change.
+        setAccuTradeType();
+        default_mock_store.modules.trade.has_open_accu_contract = false;
+        mockPurchaseButton();
+
+        expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(1);
+        expect(screen.queryByText('Max payout')).not.toBeInTheDocument();
+    });
+
     describe('stake-error confinement — Buy stays enabled for a client-provable shortfall', () => {
         beforeEach(() => {
             default_mock_store.client.is_logged_in = true;

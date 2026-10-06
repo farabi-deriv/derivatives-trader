@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { dayjs, trackAnalyticsEvent } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
+import type { TCoreStores } from '@deriv/stores/types';
 import { render, screen } from '@testing-library/react';
 
 import App from '../app';
@@ -32,6 +33,9 @@ jest.mock('@deriv-com/quill-ui', () => ({
 
 jest.mock('Stores/init-store', () => jest.fn(rootStore => rootStore));
 
+// AppShell reads the trader store through this, which the stubbed ModulesProvider below never supplies.
+jest.mock('AppV2/Hooks/useIsPortraitPromptBlocking', () => jest.fn(() => false));
+
 jest.mock('Stores/Providers/modules-providers', () => {
     const MockModulesProvider = ({ children }: { children: React.ReactNode }) => (
         <div data-testid='modules-provider'>{children}</div>
@@ -42,7 +46,7 @@ jest.mock('Stores/Providers/modules-providers', () => {
 
 jest.mock('../../trader-providers', () => {
     const { StoreProvider } = jest.requireActual('@deriv/stores');
-    const MockTraderProviders = ({ children, store }: { children: React.ReactNode; store: any }) => (
+    const MockTraderProviders = ({ children, store }: { children: React.ReactNode; store: TCoreStores }) => (
         <StoreProvider store={store}>
             <div data-testid='trader-providers'>{children}</div>
         </StoreProvider>

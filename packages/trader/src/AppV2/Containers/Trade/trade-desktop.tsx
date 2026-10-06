@@ -37,7 +37,6 @@ const TradeDesktop = observer(() => {
     const chart_ref = React.useRef<HTMLDivElement>(null);
     const {
         client,
-        common: { current_language, network_status },
         ui: { active_sidebar_flyout },
     } = useStore();
     const { is_logged_in } = client;
@@ -49,8 +48,6 @@ const TradeDesktop = observer(() => {
         is_multiplier,
         is_chart_loading,
         is_market_closed,
-        onMount,
-        onUnmount,
         proposal_info,
         setActiveTradePanelTab,
         should_show_active_symbols_loading,
@@ -111,12 +108,6 @@ const TradeDesktop = observer(() => {
             })),
         [active_symbols]
     );
-
-    React.useEffect(() => {
-        onMount();
-        return onUnmount;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [current_language, network_status.class]);
 
     return (
         <>

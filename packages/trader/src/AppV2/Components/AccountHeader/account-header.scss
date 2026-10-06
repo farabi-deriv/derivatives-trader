@@ -5,6 +5,11 @@
     position: relative;
     gap: 3rem;
 
+    // `space-between` already separates the two; landscape has no width to spare for the extra 3rem.
+    @include phone-landscape {
+        gap: 0;
+    }
+
     &--loading {
         margin-left: 1.6rem;
     }
@@ -91,5 +96,27 @@
         &--invert {
             transform: rotate(180deg);
         }
+    }
+}
+
+// Landscape portals the switcher out of the trade header, which clips it (overflow: hidden, for the
+// chrome collapse). Inside the portal the panel is the popover's only child, so drop its own
+// absolute anchoring and chrome — the popover already supplies position, width and elevation.
+// Mirrors the existing `.account-switcher-action-sheet` override for the mobile sheet.
+.account-header__switcher-popover {
+    padding: 0;
+    // The popover caps its height to the space under the trigger and clips what overflows, and the
+    // account list carries no scroll of its own — so on a short landscape viewport a longer list was
+    // cut off with its lower accounts unreachable. Scroll inside the cap instead.
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    .acc-switcher__wrapper {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        box-shadow: none;
+        border: none;
+        background: none;
     }
 }

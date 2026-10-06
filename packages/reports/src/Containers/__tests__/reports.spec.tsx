@@ -27,7 +27,10 @@ jest.mock('@deriv/shared', () => ({
         return routes.find((route: { path: string }) => route.path === pathname) || routes[0];
     }),
     trackAnalyticsEvent: jest.fn(),
+    isPhoneLandscape: jest.fn(() => false),
 }));
+
+const { isPhoneLandscape } = jest.requireMock('@deriv/shared');
 
 // Mock window.location.href for redirect tests
 delete (window as any).location;
@@ -116,6 +119,7 @@ describe('Reports', () => {
     beforeEach(() => {
         store = mockStore(mock);
         jest.clearAllMocks();
+        isPhoneLandscape.mockReturnValue(false);
 
         // Default mock for useDevice
         (useDevice as jest.Mock).mockReturnValue({
@@ -135,6 +139,27 @@ describe('Reports', () => {
                 </Router>
             </StoreProvider>
         );
+    test('[RL-001] swaps PageOverlay and the sidebar for the landscape shell', () => {
+        isPhoneLandscape.mockReturnValue(true);
+        const history = createMemoryHistory();
+
+        renderReports(store, history);
+
+        expect(screen.queryByText('Overlay')).not.toBeInTheDocument();
+        expect(screen.queryByText('Vertical Tab')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+        expect(screen.getAllByText(report1Text).length).toBeGreaterThan(0);
+    });
+
+    test('[RL-001] keeps PageOverlay outside landscape', () => {
+        const history = createMemoryHistory();
+
+        renderReports(store, history);
+
+        expect(screen.getByText('Overlay')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+    });
+
     test('renders Reports component', () => {
         const history = createMemoryHistory();
         renderReports(store, history);

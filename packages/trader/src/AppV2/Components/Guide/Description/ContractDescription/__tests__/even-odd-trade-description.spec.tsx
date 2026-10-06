@@ -2,8 +2,9 @@ import React from 'react';
 
 import { render, screen } from '@testing-library/react';
 
-import EvenOddTradeDescription from '../even-odd-trade-description';
 import { CONTRACT_LIST } from 'AppV2/Utils/trade-types-utils';
+
+import EvenOddTradeDescription from '../even-odd-trade-description';
 
 jest.mock('@deriv/stores', () => ({
     ...jest.requireActual('@deriv/stores'),

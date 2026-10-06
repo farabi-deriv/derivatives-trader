@@ -1,11 +1,12 @@
 import React from 'react';
-import { TRADE_TYPES } from '@deriv/shared';
+
 import {
+    LegacyAccumulatorIcon,
     LegacyTradeTypeAllIcon,
     LegacyTradeTypeMultipliersIcon,
     LegacyVanillaIcon,
-    LegacyAccumulatorIcon,
 } from '@deriv/quill-icons';
+import { TRADE_TYPES } from '@deriv/shared';
 
 import {
     getAvailableContractTypes,

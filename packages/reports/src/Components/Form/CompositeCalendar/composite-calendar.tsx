@@ -1,10 +1,12 @@
 import React from 'react';
 
 import { InputField, useOnClickOutside } from '@deriv/components';
-import { type ConfigType, type Dayjs, daysFromTodayTo, toMoment } from '@deriv/shared';
+import { type ConfigType, type Dayjs, daysFromTodayTo, isPhoneLandscape, toMoment } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
+
+import ArchivedStatementFilter from '../../archived-statement-filter';
 
 import CalendarIcon from './calendar-icon';
 import CompositeCalendarMobile from './composite-calendar-mobile';
@@ -134,6 +136,11 @@ const CompositeCalendar = observer((props: TCompositeCalendar) => {
     };
 
     const isPeriodDisabledFrom = (date: Dayjs) => date.unix() > to;
+
+    // Landscape reuses the archived statement's one-chip date filter.
+    if (isPhoneLandscape()) {
+        return <ArchivedStatementFilter handleDateChange={onChange} />;
+    }
 
     if (!isMobile) {
         return (

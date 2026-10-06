@@ -7,6 +7,7 @@ import { ActionSheet, Text } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { DISCOVERY_WINDOWS, TDiscoveryWindow } from 'AppV2/Utils/market-discovery-utils';
 
 type TMarketChangesDropdown = {
@@ -44,6 +45,7 @@ const MOBILE_TRIGGER_LABELS: Record<TDiscoveryWindow, React.ReactNode> = {
 
 const MarketChangesDropdown = ({ selected_window, onSelect, disabled }: TMarketChangesDropdown) => {
     const { isMobile } = useDevice();
+    const is_phone_viewport = useIsPhoneViewport();
     const [is_open, setIsOpen] = useState(false);
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const trigger_ref = useRef<HTMLButtonElement>(null);
@@ -51,7 +53,7 @@ const MarketChangesDropdown = ({ selected_window, onSelect, disabled }: TMarketC
 
     // Outside-click close for the desktop popover only (the ActionSheet handles its own dismissal).
     useEffect(() => {
-        if (!is_open || isMobile) return undefined;
+        if (!is_open || is_phone_viewport) return undefined;
         const handleOutside = (event: MouseEvent) => {
             const target = event.target as Node;
             if (popover_ref.current?.contains(target) || trigger_ref.current?.contains(target)) return;
@@ -59,11 +61,11 @@ const MarketChangesDropdown = ({ selected_window, onSelect, disabled }: TMarketC
         };
         document.addEventListener('mousedown', handleOutside);
         return () => document.removeEventListener('mousedown', handleOutside);
-    }, [is_open, isMobile]);
+    }, [is_open, is_phone_viewport]);
 
     const toggleMenu = () => {
         if (disabled) return;
-        if (!isMobile) {
+        if (!is_phone_viewport) {
             const rect = trigger_ref.current?.getBoundingClientRect();
             if (rect) setPosition({ top: rect.bottom + 4, left: rect.right });
         }
@@ -107,7 +109,7 @@ const MarketChangesDropdown = ({ selected_window, onSelect, disabled }: TMarketC
                     fill='var(--semantic-color-monochrome-surface-normal-high)'
                 />
             </button>
-            {isMobile ? (
+            {is_phone_viewport ? (
                 <ActionSheet.Root isOpen={is_open} onClose={() => setIsOpen(false)} position='left' expandable={false}>
                     <ActionSheet.Portal shouldCloseOnDrag>
                         <ActionSheet.Header

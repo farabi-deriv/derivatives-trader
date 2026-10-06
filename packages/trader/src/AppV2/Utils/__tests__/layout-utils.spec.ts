@@ -218,6 +218,19 @@ describe('getErrorSnackbarBottomOffset', () => {
         expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_positions, is_logged_in: true })).toBe('48px');
         expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_positions, is_logged_in: false })).toBe('-8px');
     });
+
+    it('[LTP-010] sits at the design inset when is_landscape, beside the pill rather than above it', () => {
+        const offset = getErrorSnackbarBottomOffset({ pathname: routes.index, is_landscape: true });
+
+        // The toast sits bottom-right, opposite the pill, so it shares the bottom band with it.
+        expect(offset).toBe(`${HEIGHT.LANDSCAPE_SNACKBAR_INSET}px`);
+    });
+
+    it('[LTP-010] leaves every existing (portrait) case unchanged without the landscape flag', () => {
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.index, is_logged_in: true })).toBe('112px');
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.index, is_chart_maximized: true })).toBe('56px');
+        expect(getErrorSnackbarBottomOffset({ pathname: routes.trader_positions, is_logged_in: false })).toBe('-8px');
+    });
 });
 
 describe('checkIsServiceModalError', () => {

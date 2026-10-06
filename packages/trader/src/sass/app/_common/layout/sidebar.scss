@@ -1,6 +1,7 @@
 /** @define sidebar */
 .sidebar {
     height: 100vh;
+    height: 100dvh;
     width: 7.2rem;
     min-width: 7.2rem;
     z-index: 100;
@@ -34,6 +35,18 @@
         flex: 1;
         padding: 0 0 var(--core-spacing-800);
         justify-content: space-between;
+
+        // A 390px-tall landscape viewport cannot hold the full-height items, so anything that does not
+        // fit scrolls instead of being cut off at the bottom edge.
+        @include phone-landscape {
+            min-block-size: 0;
+            overflow-y: auto;
+            scrollbar-width: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
     }
 
     &__nav-main {
@@ -54,6 +67,13 @@
 
     &__item {
         height: 7.2rem;
+        // Figma's landscape rail items are 57px — the labels are hidden there, so the extra height is
+        // only whitespace, and at 7.2rem six items overflow a 390px viewport.
+        @include phone-landscape {
+            height: 5.7rem;
+            flex-shrink: 0;
+        }
+
         position: relative;
         display: flex;
         flex-direction: column;
@@ -97,6 +117,21 @@
         justify-content: center;
         height: 3.2rem;
         width: 3.2rem;
+        // The Trade glyph paints with `currentColor`; without this it inherits the item's lighter
+        // secondary colour while the quill icons beside it pass `--color-text-primary`.
+        color: var(--color-text-primary);
+
+        // Figma's rail gives the icon a 40x40 hit target around the same glyph.
+        @include phone-landscape {
+            height: 4rem;
+            width: 4rem;
+            border-radius: var(--core-borderRadius-400);
+        }
+    }
+
+    // Always brand: Trade is the rail's only page, so it is permanently the active item.
+    &__trade-icon {
+        color: var(--brand-primary);
     }
 
     &__item-badge {
@@ -127,6 +162,14 @@
         overflow-wrap: break-word;
         text-align: center;
         line-height: 1.2;
+
+        // Landscape is icon-only: every `container - label` in the Figma rail is visible:false, and a
+        // 390px-tall viewport has no room for two-line labels beside ten items. The rail keeps its
+        // 7.2rem width; only the captions go. Icons retain their accessible names via the item's own
+        // label/tooltip, so this is presentational.
+        @include phone-landscape {
+            display: none;
+        }
     }
 
     &__tooltip {

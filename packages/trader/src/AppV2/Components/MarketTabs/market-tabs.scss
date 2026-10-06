@@ -441,3 +441,24 @@
         }
     }
 }
+
+// ---- Landscape ----
+// Figma `landscape - top section` → `responsive market selector` (456x64) with three markets open:
+//   + button  x=24  56x48 · tab 1 (active) x=88 224x48 · tab 2 x=320 56x48 · tab 3 x=384 56x48
+// i.e. a 24px leading inset and an 8px gap everywhere, on the icon-only strip the mobile rules
+// already provide. Only the heights differ from portrait (48 rather than 56), so that is all this
+// block sets — the squares, gaps and reveal behaviour are inherited.
+.market-tabs--landscape {
+    padding-inline-start: var(--core-spacing-1200, 24px);
+    // Flex item of the landscape header: without this it refuses to shrink and the tabs, rather than
+    // the list, absorb the squeeze.
+    min-width: 0;
+
+    .market-tabs__add {
+        height: 4.8rem;
+    }
+
+    .market-tab {
+        height: 4.8rem;
+    }
+}

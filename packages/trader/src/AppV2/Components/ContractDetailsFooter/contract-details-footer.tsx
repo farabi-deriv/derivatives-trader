@@ -40,8 +40,14 @@ const ContractDetailsFooter = observer(({ contract_info }: ContractInfoProps) =>
         currency: currency as 'USD', // currency types mismatched between utils and shared
     });
     const is_close_button_disabled = Number(profit) < 0 && is_valid_to_cancel;
-    const bid_details = is_close_button_disabled ? '' : `${formatted_bid_price} ${currency}`;
-    const label = `${card_labels.CLOSE} ${bid_details}`;
+    const bid_amount = `${formatted_bid_price} ${currency}`;
+    // Separate spans, not one string, so the label and amount get a real gap between them.
+    const renderCloseLabel = (amount?: string) => (
+        <span className='contract-details-footer-button__label'>
+            <span>{card_labels.CLOSE}</span>
+            {amount && <span>{amount}</span>}
+        </span>
+    );
     const button_props: ButtonProps = {
         color: 'black-white',
         size: 'lg',
@@ -54,7 +60,7 @@ const ContractDetailsFooter = observer(({ contract_info }: ContractInfoProps) =>
                 <>
                     <span className='contract-details-footer-button__wrapper'>
                         <Button
-                            label={label}
+                            label={renderCloseLabel(is_close_button_disabled ? undefined : bid_amount)}
                             isLoading={is_sell_requested}
                             disabled={is_close_button_disabled}
                             onClick={() => onClickSell(contract_id)}
@@ -87,11 +93,7 @@ const ContractDetailsFooter = observer(({ contract_info }: ContractInfoProps) =>
             ) : (
                 <span className='contract-details-footer-button__wrapper'>
                     <Button
-                        label={
-                            is_valid_to_sell
-                                ? `${card_labels.CLOSE} ${formatted_bid_price} ${currency}`
-                                : card_labels.RESALE_NOT_OFFERED
-                        }
+                        label={is_valid_to_sell ? renderCloseLabel(bid_amount) : card_labels.RESALE_NOT_OFFERED}
                         isLoading={is_sell_requested && is_valid_to_sell}
                         isOpaque
                         onClick={is_valid_to_sell ? () => onClickSell(contract_id) : undefined}

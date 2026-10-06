@@ -66,3 +66,71 @@ $TWO_BUTTONS_FOOTER_HEIGHT: 17.6rem; // 5.6rem (bottom nav) + 4.8rem * 2 (two bu
         }
     }
 }
+
+// Landscape contract details, sized from Figma `989:105663`: an 844x835 page — taller than the
+// viewport, so the page scrolls rather than each column. Two 401px columns, 10px gaps, 16px inset.
+.contract-details-landscape {
+    display: flex;
+    flex-direction: column;
+    // A bounded height, not `min-height`: the box has to be smaller than its content for its own
+    // `overflow-y` to engage, and the ancestors clip rather than scroll.
+    block-size: 100vh;
+    block-size: 100dvh;
+    overflow-y: auto;
+}
+
+.contract-details--landscape {
+    // Beats the base `height: 100%` / `overflow-y: auto`, which would scroll this instead of the page.
+    height: auto;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+    padding: var(--core-spacing-400);
+
+    .contract-details__pane {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    // Figma's chart card. Portrait sizes it off the viewport height, which leaves nothing here.
+    .contract-details-chart {
+        height: 27.9rem;
+    }
+
+    // Portrait fixes this above the bottom nav, which landscape does not have. Sticky instead, inset by
+    // the grid's padding so the 8px gap beneath it holds whether it is floating or settled.
+    .contract-details-footer--container {
+        position: sticky;
+        inset-block-end: var(--core-spacing-400);
+        padding: 0;
+        z-index: 2;
+        // A multiplier's Close and Cancel sit side by side here, Cancel first; a lone Close still spans
+        // the row. Reversed because Close comes first in the DOM, where portrait stacks it on top.
+        flex-direction: row-reverse;
+    }
+}
+
+// Portrait pins this header and centres its title; landscape stacks the close above a left-aligned
+// title and leaves it in flow, or it overlaps the contract card beneath.
+.contract-details-header-v2--landscape {
+    position: static;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--core-spacing-400);
+    padding: var(--core-spacing-800) var(--core-spacing-800) 0;
+
+    .close {
+        background: var(--semantic-color-monochrome-surface-normal-lowest);
+    }
+
+    p {
+        font-size: var(--core-fontSize-300);
+        line-height: var(--core-lineHeight-400);
+    }
+}

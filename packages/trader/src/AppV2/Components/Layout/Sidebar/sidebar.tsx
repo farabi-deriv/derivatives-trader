@@ -6,6 +6,7 @@ import { Button, Flyout, Text } from '@deriv/components';
 import {
     DerivProductBrandLightDerivTraderLogoIcon,
     LabelPairedLifeRingSmRegularIcon,
+    StandaloneBarsRegularIcon,
     StandaloneClockThreeFillIcon,
     StandaloneClockThreeRegularIcon,
     StandaloneFileRegularIcon,
@@ -20,9 +21,13 @@ import { getBrandUrl, getHelpCentreUrl, routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Localize, localize, useTranslations } from '@deriv-com/translations';
 
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
+import IcManualTrading from 'Assets/SvgComponents/settings/ic-manual-trading.svg';
+
 import PositionsDrawerTabs from '../PositionsDrawer/positions-drawer-tabs';
 
 import LanguageSelector from './language-selector';
+import MenuDrawer from './menu-drawer';
 
 type TSidebarItem = {
     id: string;
@@ -32,12 +37,15 @@ type TSidebarItem = {
     isActive: boolean;
     badge?: number;
     dataTestId?: string;
+    /** Hidden from a public user. Trade and Menu work signed out, as on the bottom nav. */
+    requires_auth?: boolean;
 };
 
 const Sidebar = observer(() => {
     const { ui, client, portfolio, common } = useStore();
     const { currentLang } = useTranslations();
     const { is_dark_mode_on, active_sidebar_flyout, setSidebarFlyout, closeSidebarFlyout } = ui;
+    const is_phone_landscape = useIsPhoneLandscape();
     const { is_logged_in, logout } = client;
     const { current_language } = common;
     const { active_positions_count, onMount, onUnmount } = portfolio;
@@ -81,6 +89,15 @@ const Sidebar = observer(() => {
         setSidebarFlyout(active_sidebar_flyout === 'positions' ? null : 'positions');
     };
 
+    const handleMenuToggle = () => {
+        setSidebarFlyout(active_sidebar_flyout === 'menu' ? null : 'menu');
+    };
+
+    const handleTradeClick = () => {
+        closeSidebarFlyout();
+        if (!is_on_index) history.push(routes.index);
+    };
+
     const handleReportsClick = () => {
         setSidebarFlyout(null);
         history.push(routes.reports);
@@ -103,32 +120,89 @@ const Sidebar = observer(() => {
         closeSidebarFlyout();
     };
 
+    // Landscape drops the flyout's header, so its close button goes with it — a press outside, or Escape
+    // for keyboard and switch users, is the way out. The rail is excluded: its own handlers toggle the
+    // flyout, and closing here first would let the toggle immediately re-open it.
+    React.useEffect(() => {
+        if (!is_phone_landscape || !active_sidebar_flyout) return undefined;
+        const onOutsidePointerDown = (event: PointerEvent) => {
+            if ((event.target as Element | null)?.closest?.('.dc-flyout, .sidebar')) return;
+            closeSidebarFlyout();
+        };
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeSidebarFlyout();
+        };
+        document.addEventListener('pointerdown', onOutsidePointerDown, { capture: true, passive: true });
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('pointerdown', onOutsidePointerDown, { capture: true });
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [is_phone_landscape, active_sidebar_flyout, closeSidebarFlyout]);
+
     // Main navigation items
     const isPositionsActive = active_sidebar_flyout === 'positions';
     const isReportsActive = isActiveRoute(routes.reports);
+    const isMenuActive = active_sidebar_flyout === 'menu';
 
-    const navigationItems: TSidebarItem[] = [
-        {
-            id: 'home',
-            icon: <StandaloneHouseBlankRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
-            label: localize('Home'),
-            onClick: handleHomeClick,
-            isActive: false,
-            dataTestId: 'dt_sidebar_home',
-        },
-        {
-            id: 'positions',
-            icon: isPositionsActive ? (
+    const home_item: TSidebarItem = {
+        id: 'home',
+        icon: <StandaloneHouseBlankRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+        label: localize('Home'),
+        onClick: handleHomeClick,
+        isActive: false,
+        dataTestId: 'dt_sidebar_home',
+    };
+
+    const positions_item: TSidebarItem = {
+        id: 'positions',
+        // Landscape has no current page but Trade, so nothing else takes the filled icon.
+        icon:
+            isPositionsActive && !is_phone_landscape ? (
                 <StandaloneClockThreeFillIcon fill='var(--color-nav-item-active)' iconSize='sm' />
             ) : (
                 <StandaloneClockThreeRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
             ),
-            label: localize('Positions'),
-            onClick: handlePositionsToggle,
-            isActive: isPositionsActive,
-            badge: active_positions_count,
-            dataTestId: 'dt_sidebar_positions',
+        label: localize('Positions'),
+        onClick: handlePositionsToggle,
+        isActive: isPositionsActive,
+        badge: active_positions_count,
+        dataTestId: 'dt_sidebar_positions',
+        requires_auth: true,
+    };
+
+    /**
+     * The mobile bottom nav's items, minus Automate (no landscape surface to open). Only the items are
+     * copied, not the model: there Positions and Menu are routes, here drawers, since navigating away
+     * tears down the chart and its proposal subscription.
+     */
+    const landscape_items: TSidebarItem[] = [
+        home_item,
+        {
+            id: 'trade',
+            // Native 14: unlike the quill glyphs beside it, this asset fills its viewBox, so 24 read a
+            // third larger. Colour comes from the class — it paints with `currentColor`, not a prop.
+            icon: <IcManualTrading className='sidebar__trade-icon' width={14} height={14} />,
+            label: localize('Trade'),
+            onClick: handleTradeClick,
+            // The rail's only page; a drawer opens over it rather than leaving it.
+            isActive: true,
+            dataTestId: 'dt_sidebar_trade',
         },
+        positions_item,
+        {
+            id: 'menu',
+            icon: <StandaloneBarsRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+            label: localize('Menu'),
+            onClick: handleMenuToggle,
+            isActive: isMenuActive,
+            dataTestId: 'dt_sidebar_menu',
+        },
+    ];
+
+    const desktop_items: TSidebarItem[] = [
+        home_item,
+        positions_item,
         {
             id: 'reports',
             icon: <StandaloneFileRegularIcon fill='var(--color-text-primary)' iconSize='sm' />,
@@ -136,54 +210,61 @@ const Sidebar = observer(() => {
             onClick: handleReportsClick,
             isActive: isReportsActive,
             dataTestId: 'dt_sidebar_reports',
+            requires_auth: true,
         },
     ];
+
+    const navigationItems = is_phone_landscape ? landscape_items : desktop_items;
 
     // Utility items (bottom section)
     const isLanguageActive = active_sidebar_flyout === 'language';
 
-    const utilityItems = [
-        {
-            id: 'help',
-            icon: <LabelPairedLifeRingSmRegularIcon fill='var(--color-text-primary)' />,
-            label: localize('Help'),
-            onClick: handleHelpCentreClick,
-            isActive: false,
-            dataTestId: 'dt_sidebar_help',
-        },
-        {
-            id: 'language',
-            icon: isLanguageActive ? (
-                <StandaloneGlobeFillIcon fill='var(--color-nav-item-active)' iconSize='sm' />
-            ) : (
-                <StandaloneGlobeRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
-            ),
-            label: localize('Language'),
-            onClick: handleLanguageToggle,
-            isActive: isLanguageActive,
-            dataTestId: 'dt_sidebar_language',
-        },
-        {
-            id: 'theme',
-            icon: is_dark_mode_on ? (
-                <StandaloneSunBrightRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
-            ) : (
-                <StandaloneMoonRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
-            ),
-            label: localize('Theme'),
-            onClick: handleThemeToggle,
-            isActive: false,
-            dataTestId: 'dt_sidebar_theme',
-        },
-        {
-            id: 'logout',
-            icon: <StandaloneRightFromBracketRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
-            label: localize('Log out'),
-            onClick: handleLogout,
-            isActive: false,
-            dataTestId: 'dt_sidebar_logout',
-        },
-    ];
+    // Landscape moves these behind the Menu drawer; the Figma hides this list there too.
+    const utilityItems = is_phone_landscape
+        ? []
+        : [
+              {
+                  id: 'help',
+                  icon: <LabelPairedLifeRingSmRegularIcon fill='var(--color-text-primary)' />,
+                  label: localize('Help'),
+                  onClick: handleHelpCentreClick,
+                  isActive: false,
+                  dataTestId: 'dt_sidebar_help',
+              },
+              {
+                  id: 'language',
+                  icon: isLanguageActive ? (
+                      <StandaloneGlobeFillIcon fill='var(--color-nav-item-active)' iconSize='sm' />
+                  ) : (
+                      <StandaloneGlobeRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
+                  ),
+                  label: localize('Language'),
+                  onClick: handleLanguageToggle,
+                  isActive: isLanguageActive,
+                  dataTestId: 'dt_sidebar_language',
+              },
+              {
+                  id: 'theme',
+                  icon: is_dark_mode_on ? (
+                      <StandaloneSunBrightRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
+                  ) : (
+                      <StandaloneMoonRegularIcon fill='var(--color-text-primary)' iconSize='sm' />
+                  ),
+                  label: localize('Theme'),
+                  onClick: handleThemeToggle,
+                  isActive: false,
+                  dataTestId: 'dt_sidebar_theme',
+              },
+              {
+                  id: 'logout',
+                  icon: <StandaloneRightFromBracketRegularIcon iconSize='sm' fill='var(--color-text-primary)' />,
+                  label: localize('Log out'),
+                  onClick: handleLogout,
+                  isActive: false,
+                  dataTestId: 'dt_sidebar_logout',
+                  requires_auth: true,
+              },
+          ];
 
     const getFlyoutContent = () => {
         switch (active_sidebar_flyout) {
@@ -197,6 +278,18 @@ const Sidebar = observer(() => {
                 return {
                     title: <Localize i18n_default_text='Positions' />,
                     content: <PositionsDrawerTabs />,
+                    footer: null,
+                };
+            case 'menu':
+                return {
+                    title: <Localize i18n_default_text='Menu' />,
+                    content: (
+                        <MenuDrawer
+                            onReports={handleReportsClick}
+                            onHelpCentre={handleHelpCentreClick}
+                            onLogout={handleLogout}
+                        />
+                    ),
                     footer: null,
                 };
             default:
@@ -224,9 +317,7 @@ const Sidebar = observer(() => {
                 <nav className='sidebar__nav'>
                     <div className='sidebar__nav-main'>
                         {navigationItems.map((item, index) => {
-                            const shouldShow = item.id === 'home' || is_logged_in;
-
-                            if (!shouldShow) return null;
+                            if (item.requires_auth && !is_logged_in) return null;
 
                             return (
                                 <Button
@@ -248,33 +339,45 @@ const Sidebar = observer(() => {
                             );
                         })}
                     </div>
-                    {/* Utility Section */}
-                    <div className='sidebar__nav-utility'>
-                        <div className='sidebar__separator' />
-                        {utilityItems.map(item => {
-                            const shouldShow = item.id === 'logout' ? is_logged_in : true;
+                    {/* Omitted when empty, or its separator renders as a stray rule under the last item. */}
+                    {utilityItems.length > 0 && (
+                        <div className='sidebar__nav-utility' data-testid='dt_sidebar_utility'>
+                            <div className='sidebar__separator' />
+                            {utilityItems.map(item => {
+                                if (item.requires_auth && !is_logged_in) return null;
 
-                            if (!shouldShow) return null;
-
-                            return (
-                                <Button
-                                    key={item.id}
-                                    className={classNames('sidebar__item', {
-                                        'sidebar__item--active': item.isActive,
-                                    })}
-                                    onClick={item.onClick}
-                                    data-testid={item.dataTestId}
-                                    aria-label={item.label}
-                                    type='button'
-                                >
-                                    <Text className='sidebar__item-icon'>{item.icon}</Text>
-                                    <Text className='sidebar__item-label'>{item.label}</Text>
-                                </Button>
-                            );
-                        })}
-                    </div>
+                                return (
+                                    <Button
+                                        key={item.id}
+                                        className={classNames('sidebar__item', {
+                                            'sidebar__item--active': item.isActive,
+                                        })}
+                                        onClick={item.onClick}
+                                        data-testid={item.dataTestId}
+                                        aria-label={item.label}
+                                        type='button'
+                                    >
+                                        <Text className='sidebar__item-icon'>{item.icon}</Text>
+                                        <Text className='sidebar__item-label'>{item.label}</Text>
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </nav>
             </aside>
+
+            {/* Dims the page behind an open side sheet. The outside-press effect above already counts a
+                tap here as "outside", so it dismisses without a handler of its own. Kept mounted so it
+                fades with the sheet's slide instead of snapping. */}
+            {is_on_index && is_phone_landscape && (
+                <div
+                    className={classNames('landscape-flyout-backdrop', {
+                        'landscape-flyout-backdrop--visible': flyoutContent !== null,
+                    })}
+                    data-testid='dt_landscape_flyout_backdrop'
+                />
+            )}
 
             {/* Single Flyout with conditional content - unmount when navigating away to avoid flash.
                 is_open keys on the resolved content, not the raw flyout value: `active_sidebar_flyout`
@@ -282,6 +385,7 @@ const Sidebar = observer(() => {
                 that had a theme flyout) must not rehydrate into an open-but-empty panel. */}
             {is_on_index && (
                 <Flyout
+                    className={active_sidebar_flyout ? `dc-flyout--${active_sidebar_flyout}` : undefined}
                     is_open={flyoutContent !== null}
                     onClose={closeFlyout}
                     title={flyoutContent?.title}

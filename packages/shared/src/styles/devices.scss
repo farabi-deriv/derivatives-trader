@@ -106,3 +106,10 @@ $min-desktop-width: 1280px;
         @content;
     }
 }
+
+// Kept byte-identical to PHONE_LANDSCAPE_MEDIA_QUERY in utils/os/os_detect.ts so CSS and JS cannot drift.
+@mixin phone-landscape {
+    @media (orientation: landscape) and (max-height: 500px) and (min-width: 568px) {
+        @content;
+    }
+}

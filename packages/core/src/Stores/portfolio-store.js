@@ -20,6 +20,7 @@ import {
     isAccumulatorContract,
     isEmptyObject,
     isMultiplierContract,
+    isPhoneLandscape,
     isValidToSell,
     mapErrorMessage,
     routes,
@@ -296,7 +297,10 @@ export default class PortfolioStore extends BaseStore {
                         // Temporary switching off old snackbar for DTrader-V2
                         this.root_store.ui.is_mobile // V2 for mobile, V1 for desktop
                     );
-                } else if (window.location.pathname !== routes.index || !this.root_store.ui.is_mobile) {
+                } else if (
+                    window.location.pathname !== routes.index ||
+                    !(this.root_store.ui.is_mobile || isPhoneLandscape())
+                ) {
                     this.root_store.notifications.addNotificationMessage(contractCancelled());
                 }
             });
@@ -365,7 +369,7 @@ export default class PortfolioStore extends BaseStore {
             }
         } else if (!response.error && response.sell) {
             this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
-            if (window.location.pathname !== routes.index || !this.root_store.ui.is_mobile) {
+            if (window.location.pathname !== routes.index || !(this.root_store.ui.is_mobile || isPhoneLandscape())) {
                 this.root_store.notifications.addNotificationMessage(
                     contractSold(this.root_store.client.currency, response.sell.sold_for, Money)
                 );
@@ -436,7 +440,9 @@ export default class PortfolioStore extends BaseStore {
             this.root_store.common.resetServicesError();
         }
 
-        if (this.root_store.ui.is_mobile && getEndTime(contract_response)) {
+        // `ui.is_mobile` is width-only, so a phone in landscape never got the settled-contract
+        // notification.
+        if ((this.root_store.ui.is_mobile || isPhoneLandscape()) && getEndTime(contract_response)) {
             const contract_info = this.positions[i].contract_info;
 
             if (window.location.pathname === routes.index)

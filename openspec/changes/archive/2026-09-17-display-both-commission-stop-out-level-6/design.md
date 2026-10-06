@@ -73,7 +73,7 @@ Commission is identical for `MULTUP` and `MULTDOWN` — the comment #1107 delete
 ("commission and cancellation.`ask_price` is the same for MULTUP/MULTDOWN"), and it follows from
 commission being a function of stake and multiplier, not direction. So it uses `any_proposal` in
 `MultipliersInformation` (selected side, else Up, else Down) and the same `contract_types[0] ??
-contract_types[1]` fallback in the stake editors. It must **not** copy the Stop out _level_'s
+contract_types[1]` fallback in the stake editors. It must **not** copy the Stop out \_level\*'s
 selected-side-only rule, which exists because a price is direction-specific.
 
 ### D3 — In the stake editor, carry commission on `details`, mirroring `stop_out` exactly

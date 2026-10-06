@@ -1,4 +1,5 @@
 import React from 'react';
+import clsx from 'clsx';
 
 import { Text } from '@deriv-com/quill-ui';
 import { Localize, localize } from '@deriv-com/translations';
@@ -171,34 +172,66 @@ export const getTermDefinition = ({ contract_type, term }: { contract_type?: str
     return result ?? '';
 };
 
-export const getContractDescription = (
-    content: {
-        type: string;
-        text: JSX.Element | string;
-    }[]
-) =>
-    content.map(({ type, text }, index) => {
-        if (type === 'heading' && typeof text !== 'string')
-            return (
-                <Text key={text.props.i18n_default_text} bold size='md' className='description__heading'>
-                    {text}
-                </Text>
-            );
-        if ((type === 'paragraph' || type === 'general') && typeof text !== 'string')
-            return (
-                <Text
-                    as='p'
-                    key={text.props.i18n_default_text}
-                    size='sm'
-                    className={`description__${type}`}
-                    color='quill-typography__color--default'
-                >
-                    {text}
-                </Text>
-            );
-        if (type === 'video' && typeof text === 'string')
-            return <VideoFragment contract_type={text} key={text + index} />;
+type TDescriptionItem = { type: string; text: JSX.Element | string };
+
+const renderDescriptionItem = ({ type, text }: TDescriptionItem, index: number) => {
+    if (type === 'heading' && typeof text !== 'string')
+        return (
+            <Text key={text.props.i18n_default_text} bold size='md' className='description__heading'>
+                {text}
+            </Text>
+        );
+    if ((type === 'paragraph' || type === 'general') && typeof text !== 'string')
+        return (
+            <Text
+                as='p'
+                key={text.props.i18n_default_text}
+                size='sm'
+                className={`description__${type}`}
+                color='quill-typography__color--default'
+            >
+                {text}
+            </Text>
+        );
+    if (type === 'video' && typeof text === 'string') return <VideoFragment contract_type={text} key={text + index} />;
+};
+
+const isVideo = (item: TDescriptionItem) => item.type === 'video';
+
+/**
+ * Splits a description into sections at each heading; the copy before the first heading is its own
+ * intro section. Landscape sets a pair of video sections side by side (Figma `888-95305`), so in a
+ * pair a section also ends at its video: the copy after it (Multipliers, Turbos, Vanillas run on with
+ * no heading) belongs to the whole trade type and spans both columns. A lone video section is never
+ * paired — it would half-fill the row (Accumulators). Portrait and desktop leave the wrappers unstyled.
+ */
+export const getContractDescription = (content: TDescriptionItem[]) => {
+    const by_heading: TDescriptionItem[][] = [];
+    content.forEach(item => {
+        if (item.type === 'heading' || !by_heading.length) by_heading.push([]);
+        by_heading[by_heading.length - 1].push(item);
     });
+
+    const has_pair = by_heading.filter(section => section.some(isVideo)).length > 1;
+    const sections = has_pair
+        ? by_heading.flatMap(section => {
+              const video_index = section.findIndex(isVideo);
+              const rest = video_index === -1 ? [] : section.slice(video_index + 1);
+              return rest.length ? [section.slice(0, video_index + 1), rest] : [section];
+          })
+        : by_heading;
+
+    return sections.map((section, section_index) => (
+        <div
+            key={section_index}
+            className={clsx('description__section', {
+                'description__section--paired': has_pair && section.some(isVideo),
+            })}
+        >
+            {section.map(renderDescriptionItem)}
+        </div>
+    ));
+};
 
 export const DESCRIPTION_VIDEO_IDS: TDtraderVideoUrl = {
     [CONTRACT_LIST.ACCUMULATORS]: DESCRIPTION_VIDEO_ID.accumulator,

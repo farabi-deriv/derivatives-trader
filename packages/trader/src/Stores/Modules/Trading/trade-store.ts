@@ -51,6 +51,7 @@ import {
     isHighLow,
     isMarketClosed,
     isMultiplierContract,
+    isPhoneLandscape,
     isTouchContract,
     isTurbosContract,
     isVanillaContract,
@@ -369,6 +370,10 @@ export default class TradeStore extends BaseStore<TRootStore> {
     // The tab a long-press is about to replace: while set, the next `selectMarketAndTradeType` swaps
     // this tab in place instead of appending a new one. Transient (not observable/persisted).
     replacing_market: TOpenMarket | null = null;
+    // A (symbol, trade type) the user picked in landscape that only portrait can render. Held rather
+    // than committed so the Accumulators landscape surface stays up behind PortraitPrompt; it lands
+    // on rotation. Session-only (not persisted).
+    pending_landscape_selection: TOpenMarket | null = null;
     // Count of in-flight market/trade-type commit cascades (see `is_selecting_market`). A counter,
     // not a boolean: commits can overlap (rapid tab clicks, un-awaited mode reconcile), and a boolean
     // would drop the guard when the FIRST cascade finished while a second was still mid-flight.
@@ -792,6 +797,9 @@ export default class TradeStore extends BaseStore<TRootStore> {
             queueTabTradeParams: action.bound,
             setAutomationSupportedTradeTypes: action.bound,
             setReplacingMarket: action.bound,
+            pending_landscape_selection: observable,
+            setPendingLandscapeSelection: action.bound,
+            commitPendingLandscapeSelection: action.bound,
             startSelectingMarket: action.bound,
             stopSelectingMarket: action.bound,
             resolveContractTypeAvailability: action.bound,
@@ -1416,6 +1424,17 @@ export default class TradeStore extends BaseStore<TRootStore> {
         contract_type: string,
         { save_outgoing_params = true }: { save_outgoing_params?: boolean } = {}
     ) {
+        // Landscape renders Accumulators only, so leaving it is held rather than committed: the
+        // landscape surface stays up behind PortraitPrompt and this pair lands on rotation. Both ways
+        // in — the tab strip and the market selector — come through here, so one guard covers them.
+        // Must precede every mutation below, starting with the error clear and the epoch bump.
+        if (isPhoneLandscape() && this.is_accumulator && !isAccumulatorContract(contract_type)) {
+            this.setPendingLandscapeSelection({ symbol: underlying_symbol, contract_type });
+            return;
+        }
+        // Any real commit supersedes a held one — including picking Accumulators again, which lands
+        // here rather than above and would otherwise leave the prompt naming a selection now dropped.
+        if (this.pending_landscape_selection) this.setPendingLandscapeSelection(null);
         // Every tab shares this store, so the outgoing tab's error state must go before the incoming
         // tab's cascade starts — otherwise an error raised for the tab being left is re-raised
         // against a perfectly configured one (#1246). Re-confirming the active pair is not a switch:
@@ -1537,6 +1556,25 @@ export default class TradeStore extends BaseStore<TRootStore> {
 
     setReplacingMarket(market: TOpenMarket | null) {
         this.replacing_market = market;
+    }
+
+    setPendingLandscapeSelection(market: TOpenMarket | null) {
+        this.pending_landscape_selection = market;
+    }
+
+    /**
+     * Lands the selection that landscape held back. Called once the phone reaches portrait, where the
+     * trade type the user picked can actually be rendered.
+     */
+    commitPendingLandscapeSelection() {
+        const pending = this.pending_landscape_selection;
+        if (!pending) return;
+        // Cleared first: the commit re-enters `selectMarketAndTradeType`, whose guard is orientation-
+        // gated and so inert here, but which would otherwise clear this itself mid-flight.
+        this.setPendingLandscapeSelection(null);
+        // Swallowed like every other un-awaited commit (see `commitAndClose`): the cascade surfaces
+        // its own failures, and an unhandled rejection here would take the page down instead.
+        this.selectMarketAndTradeType(pending.symbol, pending.contract_type).catch(() => undefined);
     }
 
     get is_selecting_market() {
@@ -2452,7 +2490,9 @@ export default class TradeStore extends BaseStore<TRootStore> {
                                 });
                             }
 
-                            if (!isMobile) {
+                            // `isMobile` is width-only, so a phone in landscape reads as desktop and
+                            // would get the drawer thrown over its chart on every buy.
+                            if (!isMobile && !isPhoneLandscape()) {
                                 this.root_store.ui.openPositionsDrawer();
                             }
                             this.proposal_info = {};
@@ -2462,7 +2502,9 @@ export default class TradeStore extends BaseStore<TRootStore> {
                             this.debouncedProposal();
                             this.clearLimitOrderBarriers();
                             this.pushPurchaseDataToGtm(contract_data);
-                            if (this.root_store.ui.is_mobile) {
+                            // `ui.is_mobile` is width-only, so landscape skipped the trade
+                            // notification entirely.
+                            if (this.root_store.ui.is_mobile || isPhoneLandscape()) {
                                 const shortcode = response.buy.shortcode;
                                 const extracted_info_from_shortcode = extractInfoFromShortcode(shortcode);
                                 const contract_id = response.buy.contract_id;

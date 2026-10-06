@@ -3,6 +3,7 @@ import React from 'react';
 import { routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
 
 import useErrorSnackbar from '../../Hooks/useErrorSnackbar';
@@ -25,6 +26,7 @@ const TradeErrorSnackbar = observer(
         const {
             ui: { is_chart_maximized },
         } = useStore();
+        const is_landscape = useIsPhoneLandscape();
         const announceError = useErrorSnackbar();
         const { is_error_matching_field: has_error, message } = useTradeError({
             error_fields, // array with BE error_fields, for which we will track errors.
@@ -44,6 +46,7 @@ const TradeErrorSnackbar = observer(
                     marginBottom: getErrorSnackbarBottomOffset({
                         pathname: routes.index,
                         is_chart_maximized,
+                        is_landscape,
                     }),
                     width: 'calc(100% - var(--core-spacing-800)',
                 },

@@ -7,5 +7,10 @@
     }
     &__footer {
         margin: var(--core-size-400);
+
+        // Match the app's other action buttons; quill ships a smaller radius on its own class.
+        .quill-button {
+            border-radius: var(--component-button-border-radius-xl) !important;
+        }
     }
 }

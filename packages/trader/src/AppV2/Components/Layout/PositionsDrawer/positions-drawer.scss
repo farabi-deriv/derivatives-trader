@@ -193,3 +193,114 @@
         }
     }
 }
+
+// Figma `landscape - open positions` (420x390): the segmented control is 40px, and the empty state
+// fills what is left below it — a 48px briefcase, an 18px bold title and a 14px regular subtitle.
+@include phone-landscape {
+    // Figma shows the panel starting at the segmented control: no "Positions" title and no close
+    // button (a press outside dismisses it — see sidebar.tsx).
+    .dc-flyout--positions {
+        .dc-flyout__header {
+            display: none;
+        }
+
+        // The body's height is `calc(100% - $HEADER_HEIGHT)`, so hiding the header above left exactly
+        // 6.4rem of dead space under the list. Reclaim it.
+        .dc-flyout__body,
+        .dc-flyout__body--with-footer {
+            height: 100%;
+        }
+    }
+
+    .positions-drawer-tabs__tab-bar {
+        min-height: 4rem;
+        max-height: 4rem;
+
+        // Figma has both the track and the selected segment fully rounded; quill's `sm` ships 8px/4px.
+        .segmented-control-single {
+            @include pill-segmented-control;
+
+            // Figma gives BOTH labels `--text/prominent`; quill greys the unselected one. The nested
+            // label carries its own colour, hence the descendant selector.
+            .item,
+            .item * {
+                color: var(--color-text-primary);
+            }
+
+            // Semi Bold, against quill's 700. 500 not the spec's 600: index.html loads IBM Plex Sans at
+            // 300/400/500/700, and CSS matches an unloaded 600 up to the very 700 this corrects.
+            // `.animated` too — quill moves the just-slid segment to it, so `.selected` alone works
+            // on first render then stops.
+            .item.selected,
+            .item.selected *,
+            .item.animated,
+            .item.animated * {
+                font-weight: 500;
+            }
+        }
+    }
+
+    // The design has no rules around the P/L row — it is no longer a footer, and it sits directly
+    // under the filters.
+    .positions-drawer-closed-tab__filters {
+        border-block-end: none;
+    }
+
+    .contract-cards-section__title {
+        padding: var(--core-spacing-200) var(--core-spacing-800);
+    }
+
+    .positions-drawer-tabs__summary .positions-drawer-footer--summary {
+        // The footer slot carried this padding; out of it the row sat flush against the panel edge.
+        // Matches the card list's own `padding-inline`, so the label lines up with the cards below.
+        padding: var(--core-spacing-200) var(--core-spacing-800);
+
+        // The design's row is a single label/value pair — no position count.
+        .positions-drawer-footer--count {
+            display: none;
+        }
+
+        // Left as the only child, the total would bunch up at the start; stretch it so the label
+        // stays left and the amount sits right, as the design has it.
+        .positions-drawer-footer--total {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+    }
+
+    // `height: 100%` on the empty state does not resolve against the scrolling body, so it sat at the
+    // top. Make the body a flex column and let the state grow into it instead.
+    .positions-drawer-tabs__body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .portfolio-empty--landscape {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+        text-align: center;
+
+        .portfolio-empty__landscape-icon {
+            margin-block-end: var(--core-spacing-400);
+        }
+
+        .portfolio-empty__landscape-title {
+            font-size: var(--text-size-xsm);
+            font-weight: var(--core-fontWeight-bold);
+            line-height: 1.5;
+            color: var(--color-text-primary);
+        }
+
+        .portfolio-empty__landscape-description {
+            font-size: var(--text-size-xs);
+            font-weight: var(--core-fontWeight-regular);
+            line-height: 1.5;
+            color: var(--color-text-primary);
+        }
+    }
+}

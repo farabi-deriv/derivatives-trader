@@ -307,3 +307,9 @@
         }
     }
 }
+
+// Match the xl radius the other close buttons use; `!important` because quill's own
+// `.quill-button__size--*` otherwise wins.
+.contract-card__sell-btn {
+    border-radius: var(--component-button-border-radius-xl) !important;
+}

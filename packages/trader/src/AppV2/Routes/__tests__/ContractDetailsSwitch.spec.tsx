@@ -10,6 +10,12 @@ jest.mock('@deriv-com/ui', () => ({
     useDevice: jest.fn(),
 }));
 
+const mockIsPhoneLandscape = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
+    __esModule: true,
+    default: () => mockIsPhoneLandscape(),
+}));
+
 jest.mock('Modules/Contract', () => {
     const V1Contract = () => <div data-testid='v1-contract'>V1 Contract Details</div>;
     V1Contract.displayName = 'V1Contract';
@@ -25,6 +31,20 @@ jest.mock('AppV2/Containers/ContractDetails', () => {
 describe('ContractDetailsSwitch', () => {
     afterEach(() => {
         jest.clearAllMocks();
+    });
+
+    beforeEach(() => {
+        mockIsPhoneLandscape.mockReturnValue(false);
+    });
+
+    it('[CDS-001] renders V2 in phone landscape, where isMobile is false at 844px', async () => {
+        (useDevice as jest.Mock).mockReturnValue({ isMobile: false });
+        mockIsPhoneLandscape.mockReturnValue(true);
+
+        render(<ContractDetailsSwitch />);
+
+        expect(await screen.findByTestId('v2-contract')).toBeInTheDocument();
+        expect(screen.queryByTestId('v1-contract')).not.toBeInTheDocument();
     });
 
     it('should render V2 ContractDetails on mobile', async () => {

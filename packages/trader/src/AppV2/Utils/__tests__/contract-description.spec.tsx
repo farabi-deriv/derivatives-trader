@@ -125,11 +125,50 @@ describe('getContractDescription', () => {
         },
     ];
 
+    // The layout tests read the returned sections without rendering, so plain items are enough.
+    const paragraph = (text: string) => ({ type: 'paragraph', text: <p>{text}</p> });
+    const heading = (text: string) => ({ type: 'heading', text: <h4>{text}</h4> });
+    const video = { type: 'video', text: CONTRACT_LIST.MULTIPLIERS };
+    const layoutOf = (content: Parameters<typeof getContractDescription>[0]) =>
+        getContractDescription(content).map(({ props: { className, children } }) => ({
+            paired: className.includes('description__section--paired'),
+            items: React.Children.count(children),
+        }));
+
     it('should parse passed content', () => {
         render(<div>{getContractDescription(mock_content)}</div>);
 
         expect(screen.getByText(/If you select “Even”/i)).toBeInTheDocument();
         expect(screen.getByText(/Some general text/i)).toBeInTheDocument();
+    });
+
+    it('sets copy after the second video of a pair full width, not under that video alone', () => {
+        // Multipliers' shape: the shared explanation runs on after the "Down" video with no heading.
+        const content = [
+            paragraph('Intro'),
+            heading('Up'),
+            paragraph('Up copy'),
+            video,
+            heading('Down'),
+            paragraph('Down copy'),
+            video,
+            paragraph('Shared copy'),
+            paragraph('More shared copy'),
+        ];
+
+        expect(layoutOf(content)).toEqual([
+            { paired: false, items: 1 },
+            { paired: true, items: 3 },
+            { paired: true, items: 3 },
+            { paired: false, items: 2 },
+        ]);
+    });
+
+    it('leaves a single-video description as one section, since nothing is paired', () => {
+        // Accumulators' shape: splitting here would only add a grid gap under the video.
+        const content = [paragraph('Intro'), video, paragraph('After the video')];
+
+        expect(layoutOf(content)).toEqual([{ paired: false, items: 3 }]);
     });
 });
 

@@ -2,8 +2,9 @@ import React from 'react';
 
 import { render, screen } from '@testing-library/react';
 
-import MatchesDiffersTradeDescription from '../matches-differs-trade-description';
 import { CONTRACT_LIST } from 'AppV2/Utils/trade-types-utils';
+
+import MatchesDiffersTradeDescription from '../matches-differs-trade-description';
 
 jest.mock('@deriv/stores', () => ({
     ...jest.requireActual('@deriv/stores'),

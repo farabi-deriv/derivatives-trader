@@ -17,14 +17,16 @@ type TMarketSelectionSidebar = {
     onSelectFavourites: () => void;
     /** When set (e.g. in Automate), restrict the sidebar to these trade-type values. */
     supported_trade_types?: Set<string>;
+    /** Off for touch: quill only closes the tooltip on mouseleave, which a tap never sends. */
+    with_tooltips?: boolean;
 };
 
 // Directional first (Rise/Fall …), then Growth based, then Digit based — matches the desktop design.
 const CATEGORY_ORDER = ['directional', 'growth_based', 'digit_based'];
 
 /**
- * Desktop trade-types sidebar (left column of the market-selection panel): the trade types grouped
- * by category (Directional / Growth based / Digit based) with a Favourite entry pinned at the
+ * Trade-types sidebar (left column of the desktop panel and the landscape shell): the trade types
+ * grouped by category (Directional / Growth based / Digit based) with a Favourite entry pinned at the
  * bottom. Selecting a trade type scopes the market list on the right; Favourite shows the favourites
  * view. The header carries the Guide trigger, mirroring the mobile header.
  */
@@ -35,6 +37,7 @@ const MarketSelectionSidebar = ({
     onSelectTradeType,
     onSelectFavourites,
     supported_trade_types,
+    with_tooltips = true,
 }: TMarketSelectionSidebar) => {
     const all_contracts = useAvailableContracts();
     // An empty set means "not loaded yet" (e.g. automation strategies still fetching) — show all
@@ -70,19 +73,16 @@ const MarketSelectionSidebar = ({
                             </Text>
                             {contracts.map(contract => {
                                 const is_selected = !is_favourites_selected && contract.id === selected_trade_type_id;
-                                return (
-                                    <Tooltip
-                                        key={contract.id}
-                                        as='button'
-                                        type='button'
-                                        tooltipContent={contract.tooltip as JSX.Element}
-                                        tooltipPosition='right'
-                                        className={clsx('market-selection-sidebar__item', {
-                                            'market-selection-sidebar__item--selected': is_selected,
-                                        })}
-                                        aria-pressed={is_selected}
-                                        onClick={() => onSelectTradeType(contract)}
-                                    >
+                                const item_props = {
+                                    type: 'button' as const,
+                                    className: clsx('market-selection-sidebar__item', {
+                                        'market-selection-sidebar__item--selected': is_selected,
+                                    }),
+                                    'aria-pressed': is_selected,
+                                    onClick: () => onSelectTradeType(contract),
+                                };
+                                const item_content = (
+                                    <>
                                         <Text
                                             size='md'
                                             bold={is_selected}
@@ -94,7 +94,23 @@ const MarketSelectionSidebar = ({
                                             <span className='market-selection-sidebar__badge'>{contract.badge}</span>
                                         )}
                                         {contract.show_fire_icon && <FireIcon />}
+                                    </>
+                                );
+
+                                return with_tooltips ? (
+                                    <Tooltip
+                                        key={contract.id}
+                                        as='button'
+                                        tooltipContent={contract.tooltip as JSX.Element}
+                                        tooltipPosition='right'
+                                        {...item_props}
+                                    >
+                                        {item_content}
                                     </Tooltip>
+                                ) : (
+                                    <button key={contract.id} {...item_props}>
+                                        {item_content}
+                                    </button>
                                 );
                             })}
                         </div>

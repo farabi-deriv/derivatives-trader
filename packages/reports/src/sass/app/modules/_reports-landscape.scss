@@ -1,0 +1,130 @@
+// Landscape reports shell (Figma `110-28010`). Gated by the JS branch in reports.tsx, not a media query.
+$menu-width: 20rem;
+$menu-max-height: 44rem;
+
+.reports--landscape {
+    display: flex;
+    flex-direction: column;
+    // Own the viewport (100vh fallback): PageOverlay no longer supplies the box.
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+
+    .reports__landscape-header {
+        display: flex;
+        align-items: center;
+        block-size: 5.6rem;
+        padding-inline: 1.6rem;
+        flex-shrink: 0;
+    }
+
+    .reports__landscape-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--core-spacing-200, 4px);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        background: var(--semantic-color-monochrome-surface-normal-lowest);
+    }
+
+    .reports__landscape-page {
+        display: flex;
+        flex: 1;
+        min-block-size: 0;
+        flex-direction: column;
+        gap: var(--core-spacing-400);
+        padding: 0 1.6rem 0.8rem;
+        overflow: hidden;
+    }
+
+    // Heading, page chip and date filter on one line.
+    .reports__meta {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.8rem;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+
+        &-filter {
+            width: auto;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+        }
+    }
+
+    // Figma `110-28010` sets 24/800/1.35; Heading.H4 supplies the colour.
+    .reports__landscape-heading {
+        flex: 1;
+        min-inline-size: 0;
+        margin: 0;
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+    // Dress both Dropdowns here: the pill rules are scoped to `.archived-statement__filter`, which
+    // this row is not inside.
+    .archived-statement__dropdown-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    // Dropdown ships width:100%/min-width:15rem here, which stretches the chip.
+    .dc-dropdown-container {
+        width: auto;
+        min-width: 0;
+    }
+
+    .dc-dropdown__display {
+        block-size: 3.2rem;
+        border-radius: 999px;
+        border-color: var(--color-interactive-disabled);
+
+        &:hover {
+            border-color: var(--color-text-secondary);
+        }
+    }
+
+    .dc-dropdown__display-text {
+        width: auto;
+        text-align: start;
+    }
+
+    // Figma: 200 wide, 4 padding, 8 between rows, capped at 440 so it scrolls.
+    .dc-dropdown__list {
+        width: $menu-width;
+        max-height: $menu-max-height;
+        // Chips sit right: anchor the list to the trailing edge (`left: 0` by default).
+        inset-inline-start: auto;
+        inset-inline-end: 0;
+
+        .dc-list {
+            padding: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .dc-list__item-text {
+            justify-content: flex-start;
+            text-align: start;
+        }
+    }
+
+    // min-height:auto would grow to content instead of scrolling; also bounds AutoSizer.
+    .reports__content {
+        padding-bottom: 0;
+        min-block-size: 0;
+
+        // DataTable's root sets no flex sizing of its own.
+        > .table {
+            flex: 1;
+            min-block-size: 0;
+        }
+    }
+}

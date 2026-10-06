@@ -7,10 +7,10 @@ import {
     MAX_OPEN_MARKETS_MOBILE,
     MAX_OPEN_MARKETS_WEB,
     OPEN_MARKETS_STORAGE_KEYS,
-    resetLegacyOpenMarketsCleanupForTesting,
     readOpenMarkets,
     removeFromOpenMarkets,
     replaceInOpenMarkets,
+    resetLegacyOpenMarketsCleanupForTesting,
     writeOpenMarkets,
 } from '../open-markets-utils';
 

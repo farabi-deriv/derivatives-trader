@@ -1,6 +1,6 @@
 // TODO: this component is created as a temporary solution until we migrate to a new design system. We can replace it with existing popover/tooltip component when they meet our requirements.
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import classNames from 'classnames';
 import debounce from 'lodash.debounce';
@@ -116,7 +116,10 @@ const TooltipPortal = ({ message, children, className, position = 'top', anchorR
 
     const debouncedCalculatePosition = React.useMemo(() => debounce(calculatePosition, 100), [calculatePosition]);
 
-    useEffect(() => {
+    // Layout, not passive: the portal mounts at the position left over from the last time it was shown
+    // (or 0,0 on the first), so measuring after paint let that stale spot show for a frame and the
+    // tooltip visibly jumped into place from wherever it had been.
+    useLayoutEffect(() => {
         if (isVisible) {
             calculatePosition();
             window.addEventListener('scroll', debouncedCalculatePosition);

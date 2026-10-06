@@ -239,13 +239,15 @@ const MarketInfoScreen = observer(({ item, onBack, onTraded, default_trade_type 
                         </div>
                     </div>
                     <Skeleton.Square height={42} rounded />
-                    <Skeleton.Square height={isMobile ? 195 : 251} rounded />
-                    <div className='market-info__stats'>
-                        {Array.from({ length: 4 }).map((_, index) => (
-                            <div className='market-info__stat' key={index}>
-                                <Skeleton.Square width={80} height={48} rounded />
-                            </div>
-                        ))}
+                    <div className='market-info__overview'>
+                        <Skeleton.Square height={isMobile ? 195 : 251} rounded />
+                        <div className='market-info__stats'>
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <div className='market-info__stat' key={index}>
+                                    <Skeleton.Square width={80} height={48} rounded />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                     <div className='market-info__section'>
                         <Skeleton.Square width={100} height={24} rounded />
@@ -335,60 +337,63 @@ const MarketInfoScreen = observer(({ item, onBack, onTraded, default_trade_type 
                         )}
                     </div>
 
-                    <div className='market-info__chart'>
-                        <div className='market-info__chart-header'>
-                            <MarketChangesDropdown
-                                selected_window={chart_window}
-                                onSelect={setChartWindow}
-                                disabled={is_market_closed}
-                            />
+                    {/* Chart and stats: stacked in portrait, side by side in landscape. */}
+                    <div className='market-info__overview'>
+                        <div className='market-info__chart'>
+                            <div className='market-info__chart-header'>
+                                <MarketChangesDropdown
+                                    selected_window={chart_window}
+                                    onSelect={setChartWindow}
+                                    disabled={is_market_closed}
+                                />
+                            </div>
+                            {is_chart_loading ? (
+                                <Skeleton.Square height={200} rounded />
+                            ) : (
+                                <div
+                                    className={clsx('market-info__chart-body', {
+                                        'market-info__chart-body--closed': is_market_closed,
+                                    })}
+                                >
+                                    {chart_data.length > 1 && (
+                                        <MarketSparkline
+                                            data={chart_data}
+                                            is_positive={!is_market_closed && (change_percentage ?? 0) > 0}
+                                            is_negative={!is_market_closed && (change_percentage ?? 0) < 0}
+                                            with_area
+                                            responsive
+                                            width={300}
+                                            height={200}
+                                            className='market-info__chart-svg'
+                                        />
+                                    )}
+                                    {is_market_closed && (
+                                        <div className='market-info__chart-closed'>
+                                            <span className='market-info__chart-closed-pill'>
+                                                <StandaloneLockBoldIcon
+                                                    iconSize='sm'
+                                                    fill='var(--component-textIcon-normal-subtle)'
+                                                />
+                                                <Text size='sm'>
+                                                    <Localize i18n_default_text='Market closed' />
+                                                </Text>
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        {is_chart_loading ? (
-                            <Skeleton.Square height={200} rounded />
-                        ) : (
-                            <div
-                                className={clsx('market-info__chart-body', {
-                                    'market-info__chart-body--closed': is_market_closed,
-                                })}
-                            >
-                                {chart_data.length > 1 && (
-                                    <MarketSparkline
-                                        data={chart_data}
-                                        is_positive={!is_market_closed && (change_percentage ?? 0) > 0}
-                                        is_negative={!is_market_closed && (change_percentage ?? 0) < 0}
-                                        with_area
-                                        responsive
-                                        width={300}
-                                        height={200}
-                                        className='market-info__chart-svg'
-                                    />
-                                )}
-                                {is_market_closed && (
-                                    <div className='market-info__chart-closed'>
-                                        <span className='market-info__chart-closed-pill'>
-                                            <StandaloneLockBoldIcon
-                                                iconSize='sm'
-                                                fill='var(--component-textIcon-normal-subtle)'
-                                            />
-                                            <Text size='sm'>
-                                                <Localize i18n_default_text='Market closed' />
-                                            </Text>
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
 
-                    <div className='market-info__stats'>
-                        {stat_cells.map((cell, index) => (
-                            <div className='market-info__stat' key={index}>
-                                <Text bold className='market-info__stat-value'>
-                                    {formatPrice(cell.value, chart_pip_size)}
-                                </Text>
-                                <CaptionText className='market-info__stat-label'>{cell.label}</CaptionText>
-                            </div>
-                        ))}
+                        <div className='market-info__stats'>
+                            {stat_cells.map((cell, index) => (
+                                <div className='market-info__stat' key={index}>
+                                    <Text bold className='market-info__stat-value'>
+                                        {formatPrice(cell.value, chart_pip_size)}
+                                    </Text>
+                                    <CaptionText className='market-info__stat-label'>{cell.label}</CaptionText>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {trade_types.length > 0 && (

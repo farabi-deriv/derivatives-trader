@@ -1,0 +1,52 @@
+.rotate-prompt {
+    position: fixed;
+    inset: 0;
+    // Above everything it has to cover, since the prompt is raised by a trade-type change made from
+    // inside the market selector: that shell is 1000/1001 (InputPopover) and the account dropdown is
+    // 10001, both of which used to render on top of this at 999.
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // Static dim in both themes — the content on top is static light-on-dark.
+    background: var(--core-color-opacity-black-600);
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--core-spacing-1200);
+        padding: var(--core-spacing-800);
+        inline-size: 100%;
+        max-inline-size: 39rem;
+    }
+
+    &__message-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--core-spacing-800);
+    }
+
+    &__message {
+        color: var(--color-text-white);
+        font-size: var(--core-fontSize-100);
+        font-weight: var(--core-fontWeight-regular);
+        line-height: var(--core-lineHeight-300);
+        text-align: center;
+    }
+
+    &__dismiss {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 4rem;
+        block-size: 4rem;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        // Static light chip on the dim, so it must not follow the theme.
+        background: var(--semantic-color-slate-solid-surface-static-low);
+        cursor: pointer;
+    }
+}

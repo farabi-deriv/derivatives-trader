@@ -1,5 +1,6 @@
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import classNames from 'classnames';
 
 import {
     Div100vhContainer,
@@ -10,7 +11,8 @@ import {
     useDocumentTitle,
     VerticalTab,
 } from '@deriv/components';
-import { getSelectedRoute, routes as appRoutes, trackAnalyticsEvent } from '@deriv/shared';
+import { StandaloneXmarkBoldIcon } from '@deriv/quill-icons';
+import { getSelectedRoute, isPhoneLandscape, routes as appRoutes, trackAnalyticsEvent } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { isAllowedRedirectDomain } from '@deriv/utils';
 import { useTranslations } from '@deriv-com/translations';
@@ -37,6 +39,7 @@ const Reports = observer(({ history, location, routes }: TReports) => {
     const { routeBackInApp } = common;
     const { is_reports_visible, setReportsTabIndex, toggleReports } = ui;
     const { isMobile } = useDevice();
+    const is_phone_landscape = isPhoneLandscape();
     const is_rtl = current_language?.toLowerCase() === 'ar';
 
     // Store the redirect parameter when component mounts to preserve it across tab navigation
@@ -77,6 +80,11 @@ const Reports = observer(({ history, location, routes }: TReports) => {
         toggleReports(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // The landscape page chip has no Open positions entry, so bounce that route to Trade table.
+    React.useEffect(() => {
+        if (is_phone_landscape && location.pathname === appRoutes.positions) history.replace(appRoutes.profit);
+    }, [is_phone_landscape, location.pathname, history]);
 
     const onClickClose = () => {
         // When closing the archived statement view, return to the Statement page
@@ -211,47 +219,76 @@ const Reports = observer(({ history, location, routes }: TReports) => {
         return <Loading is_fullscreen />;
     }
 
+    const page = selected_route?.component && (
+        <selected_route.component icon_component={selected_route.icon_component} />
+    );
+
+    // No room in landscape for PageOverlay's header or the VerticalTab sidebar.
+    const landscape_shell = (
+        <React.Fragment>
+            <header className='reports__landscape-header'>
+                <button
+                    type='button'
+                    className='reports__landscape-close'
+                    aria-label={localize('Close')}
+                    onClick={onClickClose}
+                >
+                    <StandaloneXmarkBoldIcon
+                        iconSize='sm'
+                        fill='var(--semantic-color-monochrome-surface-normal-high)'
+                    />
+                </button>
+            </header>
+            <div className='reports__landscape-page'>{page}</div>
+        </React.Fragment>
+    );
+
     return (
         <FadeWrapper is_visible={is_reports_visible} className='reports-page-wrapper' keyname='reports-page-wrapper'>
-            <div className='reports' dir={is_rtl ? 'rtl' : undefined}>
-                <PageOverlay
-                    header={localize(is_archived_statement_path ? 'Archived statement' : 'Reports')}
-                    onClickClose={onClickClose}
-                >
-                    {!isMobile ? (
-                        <VerticalTab
-                            is_floating
-                            current_path={location.pathname}
-                            is_routed
-                            is_full_width
-                            is_sidebar_enabled={!is_archived_statement_path}
-                            setVerticalTabIndex={setReportsTabIndex}
-                            list={menu_options}
-                        />
-                    ) : (
-                        <Div100vhContainer className='reports__mobile-wrapper' height_offset='80px'>
-                            {!is_archived_statement_path && (
-                                <SelectNative
-                                    className='reports__route-selection'
-                                    list_items={menu_options
-                                        .filter(option => !option.is_hidden)
-                                        .map(option => ({
-                                            text: option.label,
-                                            value: option.path ?? '',
-                                        }))}
-                                    value={selected_route.path ?? ''}
-                                    should_show_empty_option={false}
-                                    onChange={handleRouteChange}
-                                    label={''}
-                                    hide_top_placeholder={false}
-                                />
-                            )}
-                            {selected_route?.component && (
-                                <selected_route.component icon_component={selected_route.icon_component} />
-                            )}
-                        </Div100vhContainer>
-                    )}
-                </PageOverlay>
+            <div
+                className={classNames('reports', { 'reports--landscape': is_phone_landscape })}
+                dir={is_rtl ? 'rtl' : undefined}
+            >
+                {is_phone_landscape ? (
+                    landscape_shell
+                ) : (
+                    <PageOverlay
+                        header={localize(is_archived_statement_path ? 'Archived statement' : 'Reports')}
+                        onClickClose={onClickClose}
+                    >
+                        {!isMobile ? (
+                            <VerticalTab
+                                is_floating
+                                current_path={location.pathname}
+                                is_routed
+                                is_full_width
+                                is_sidebar_enabled={!is_archived_statement_path}
+                                setVerticalTabIndex={setReportsTabIndex}
+                                list={menu_options}
+                            />
+                        ) : (
+                            <Div100vhContainer className='reports__mobile-wrapper' height_offset='80px'>
+                                {!is_archived_statement_path && (
+                                    <SelectNative
+                                        className='reports__route-selection'
+                                        list_items={menu_options
+                                            .filter(option => !option.is_hidden)
+                                            .map(option => ({
+                                                text: option.label,
+                                                value: option.path ?? '',
+                                            }))}
+                                        value={selected_route.path ?? ''}
+                                        should_show_empty_option={false}
+                                        onChange={handleRouteChange}
+                                        label={''}
+                                        hide_top_placeholder={false}
+                                    />
+                                )}
+                                {page}
+                            </Div100vhContainer>
+                        )}
+                    </PageOverlay>
+                )}
             </div>
         </FadeWrapper>
     );

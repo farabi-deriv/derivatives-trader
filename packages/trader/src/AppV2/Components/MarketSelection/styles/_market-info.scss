@@ -163,6 +163,13 @@
         }
     }
 
+    // Chart + stats. Same gap as the body, so portrait and desktop read as before.
+    &__overview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--core-spacing-1200, 24px);
+    }
+
     // Worm chart with a duration dropdown above it.
     &__chart {
         display: flex;
@@ -329,6 +336,43 @@
 
     &__availability-separator {
         color: var(--component-textIcon-normal-subtle);
+    }
+
+    // Landscape: stats on the left, beside the chart and its dropdown; one divider spans both.
+    @include phone-landscape {
+        // Figma `162:13677`: 16px between every section in landscape.
+        .market-info__body {
+            gap: var(--core-spacing-800, 16px);
+        }
+
+        .market-info__overview {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            column-gap: var(--core-spacing-2400);
+            padding-block-start: var(--core-spacing-800, 16px);
+            border-block-start: 1px solid var(--color-surface-border);
+        }
+
+        .market-info__chart {
+            padding-block-start: 0;
+            border-block-start: 0;
+        }
+
+        .market-info__chart-body {
+            height: 11.2rem;
+        }
+
+        .market-info__stats {
+            order: -1;
+            padding-block-end: 0;
+            border-block-end: 0;
+        }
+
+        // Block padding rather than a row gap, so the column divider runs unbroken through both rows.
+        .market-info__stat {
+            padding: var(--core-spacing-600) var(--core-spacing-800);
+        }
     }
 
     // Mobile-only sizing — the desktop info card keeps its larger defaults (set via the Text props).

@@ -1,0 +1,39 @@
+// Figma `399:43022`: 360x134 at (104, 68) of the viewport — the same spot whether the chrome is shown
+// or hidden, so the card never moves under the tap it is teaching.
+.landscape-onboarding {
+    position: fixed;
+    inset-block-start: 6.8rem;
+    inset-inline-start: 10.4rem;
+    // Above the chart overlays and the pill (10); below the market selector (149) and quill sheets (150).
+    z-index: 20;
+    inline-size: 36rem;
+    max-inline-size: calc(100vw - 10.4rem - var(--core-spacing-800));
+    padding: var(--core-spacing-800);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border-radius: var(--core-borderRadius-800);
+    background: var(--semantic-color-monochrome-surface-normal-low);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    @supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
+        background: var(--semantic-color-slate-solid-surface-frame-low);
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        inline-size: 100%;
+    }
+
+    &__content {
+        margin-block: var(--core-spacing-400) var(--core-spacing-800);
+        color: var(--component-textIcon-normal-default);
+    }
+
+    .quill-button {
+        border-radius: 999px;
+    }
+}

@@ -30,6 +30,9 @@ let mockIsMarketLocked = false;
 let mockAutomationRunMarket: { symbol: string; contract_type: string | null } | null = null;
 
 jest.mock('@deriv-com/ui', () => ({ useDevice: () => ({ isMobile: true }) }));
+// jsdom's matchMedia stub never matches, so portrait unless a test says otherwise.
+let mockIsPhoneLandscape = false;
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => () => mockIsPhoneLandscape);
 
 // Spy on snackbars (mobile surfaces the disabled-"+" reason this way) while keeping the rest of
 // quill-ui real (Tooltip, Text, …).
@@ -153,6 +156,7 @@ describe('MarketTabs', () => {
     beforeEach(() => {
         mockStoreSymbol = 'frxEURUSD';
         mockStoreContractType = 'rise_fall';
+        mockIsPhoneLandscape = false;
         mockIsSelectingMarket = false;
         mockIsAutomationMode = true;
         mockIsMarketLocked = false;
@@ -221,6 +225,73 @@ describe('MarketTabs', () => {
         render(<MarketTabs />);
         fireEvent.click(screen.getByTestId('close-frxGBPUSD__rise_fall'));
         expect(mockSelect).toHaveBeenCalledWith('frxUSDJPY', 'rise_fall'); // right neighbour
+    });
+
+    it('prefers an Accumulators neighbour in landscape, which cannot render any other type', () => {
+        // Selecting the adjacent Rise/Fall tab there is held rather than committed, so the strip was
+        // left pointing at the tab just closed and showed nothing active.
+        mockIsPhoneLandscape = true;
+        mockOpenMarkets = [
+            { symbol: '1HZ25V', contract_type: 'accumulator' },
+            jpy_market,
+            { symbol: '1HZ75V', contract_type: 'accumulator' },
+        ];
+        mockStoreSymbol = '1HZ25V';
+        mockStoreContractType = 'accumulator';
+        render(<MarketTabs />);
+
+        fireEvent.click(screen.getByTestId('close-1HZ25V__accumulator'));
+
+        expect(mockSelect).toHaveBeenCalledWith('1HZ75V', 'accumulator');
+    });
+
+    it('keeps the last Accumulators tab in landscape, even with other tabs open', () => {
+        // Landscape can show nothing else, so closing it would strand the user on the rotate prompt.
+        mockIsPhoneLandscape = true;
+        mockOpenMarkets = [{ symbol: '1HZ25V', contract_type: 'accumulator' }, jpy_market, gbp_market];
+        mockStoreSymbol = '1HZ25V';
+        mockStoreContractType = 'accumulator';
+        render(<MarketTabs />);
+
+        expect(screen.getByTestId('tab-1HZ25V__accumulator')).toHaveAttribute('data-removable', 'false');
+    });
+
+    it('lets an Accumulators tab close in landscape while another remains', () => {
+        mockIsPhoneLandscape = true;
+        mockOpenMarkets = [
+            { symbol: '1HZ25V', contract_type: 'accumulator' },
+            jpy_market,
+            { symbol: '1HZ75V', contract_type: 'accumulator' },
+        ];
+        mockStoreSymbol = '1HZ25V';
+        mockStoreContractType = 'accumulator';
+        render(<MarketTabs />);
+
+        expect(screen.getByTestId('tab-1HZ25V__accumulator')).toHaveAttribute('data-removable', 'true');
+    });
+
+    it('still lets the last Accumulators tab close in portrait', () => {
+        mockOpenMarkets = [{ symbol: '1HZ25V', contract_type: 'accumulator' }, jpy_market, gbp_market];
+        mockStoreSymbol = '1HZ25V';
+        mockStoreContractType = 'accumulator';
+        render(<MarketTabs />);
+
+        expect(screen.getByTestId('tab-1HZ25V__accumulator')).toHaveAttribute('data-removable', 'true');
+    });
+
+    it('still takes the plain right-hand neighbour in portrait', () => {
+        mockOpenMarkets = [
+            { symbol: '1HZ25V', contract_type: 'accumulator' },
+            jpy_market,
+            { symbol: '1HZ75V', contract_type: 'accumulator' },
+        ];
+        mockStoreSymbol = '1HZ25V';
+        mockStoreContractType = 'accumulator';
+        render(<MarketTabs />);
+
+        fireEvent.click(screen.getByTestId('close-1HZ25V__accumulator'));
+
+        expect(mockSelect).toHaveBeenCalledWith('frxUSDJPY', 'rise_fall');
     });
 
     it('activates the left-hand neighbour when the active last tab is closed', () => {

@@ -9,6 +9,7 @@ import {
     getContractPath,
     getUnsupportedContracts,
     initMoment,
+    isPhoneLandscape,
 } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Analytics } from '@deriv-com/analytics';
@@ -71,6 +72,8 @@ const ProfitTable = observer(({ component_icon }: TProfitTable) => {
         totals,
     } = profit_table;
     const { isMobile } = useDevice();
+    // Landscape drops the totals footer: the design's table ends on its last contract row.
+    const table_footer = isPhoneLandscape() ? undefined : totals;
 
     React.useEffect(() => {
         initMoment(current_language);
@@ -181,7 +184,7 @@ const ProfitTable = observer(({ component_icon }: TProfitTable) => {
                                 data_source={data}
                                 columns={columns}
                                 onScroll={handleScroll}
-                                footer={totals}
+                                footer={table_footer}
                                 getRowAction={getRowAction}
                                 getRowSize={() => 63}
                                 content_loader={ReportsTableRowLoader}
@@ -195,7 +198,7 @@ const ProfitTable = observer(({ component_icon }: TProfitTable) => {
                                 rowRenderer={mobileRowRenderer}
                                 getRowAction={getRowAction}
                                 onScroll={handleScroll}
-                                footer={totals}
+                                footer={table_footer}
                                 row_gap={8}
                             >
                                 <PlaceholderComponent is_loading={is_loading} />

@@ -5,6 +5,7 @@ import { observer, useStore } from '@deriv/stores';
 import { ActionSheet, Modal, Text } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { checkIsServiceModalError, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
@@ -12,8 +13,8 @@ import ServiceErrorDescription from './service-error-description';
 
 const ServiceErrorSheet = observer(() => {
     const [is_open, setIsOpen] = useState(false);
-    const { common, client, ui } = useStore();
-    const { is_mobile } = ui;
+    const { common, client } = useStore();
+    const is_phone_viewport = useIsPhoneViewport();
     const { is_virtual, currency } = client;
     const { services_error, resetServicesError, current_language } = common;
     const { clearPurchaseInfo, requestProposal: resetPurchase } = useTraderStore();
@@ -139,7 +140,7 @@ const ServiceErrorSheet = observer(() => {
 
     if (!should_show_error_modal) return null;
 
-    if (is_mobile) {
+    if (is_phone_viewport) {
         return (
             <ActionSheet.Root
                 className='service-error-sheet'

@@ -5,6 +5,7 @@ import { mockStore } from '@deriv/stores';
 import { act, render, screen, waitFor } from '@testing-library/react';
 
 import useActiveSymbols from 'AppV2/Hooks/useActiveSymbols';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { isDigitTradeType } from 'AppV2/Utils/digits';
 import { useSmartChartsAdapter } from 'Modules/SmartChart/Hooks/useSmartChartsAdapter';
 
@@ -65,6 +66,7 @@ jest.mock('AppV2/Hooks/useActiveSymbols', () => ({
         activeSymbols: [{ symbol: 'EURUSD', display_name: 'EUR/USD', exchange_is_open: 1 }],
     })),
 }));
+jest.mock('AppV2/Hooks/useIsPhoneViewport', () => ({ __esModule: true, default: jest.fn(() => false) }));
 
 describe('TradeChart', () => {
     const mockedTradeChart = (store_override?: ReturnType<typeof mockStore>) => {
@@ -278,6 +280,41 @@ describe('TradeChart', () => {
             mockToolbarWidgetsProps.updateGranularity(60);
 
             expect(store.contract_trade.updateGranularity).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('phone-landscape chart props', () => {
+        afterEach(() => (useIsPhoneViewport as jest.Mock).mockReturnValue(false));
+
+        it('[LTM-007] gives the chart the touch-modality/accumulator-geometry values in landscape', async () => {
+            (useIsPhoneViewport as jest.Mock).mockReturnValue(true);
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            // is_accumulator is derived from contract_type via isAccumulatorContract.
+            store.modules.trade.contract_type = TRADE_TYPES.ACCUMULATOR;
+            mockedTradeChart(store);
+
+            await screen.findByText(mock_chart);
+
+            expect(mockSmartChartProps.isMobile).toBe(true);
+            expect(mockSmartChartProps.isVerticalScrollEnabled).toBe(false);
+            expect(mockSmartChartProps.enabledNavigationWidget).toBe(false);
+            expect(mockSmartChartProps.settings.minimumLeftBars).toBe(3);
+            expect(mockSmartChartProps.yAxisMargin.top).toBe(76);
+            expect(mockSmartChartProps.leftMargin).toBe(80);
+            expect(mockSmartChartProps.drawingToolFloatingMenuPosition).toEqual({ x: 100, y: 100 });
+        });
+
+        it('[LTM-007] keeps maxTick bounded at 8 in landscape, never undefined', async () => {
+            (useIsPhoneViewport as jest.Mock).mockReturnValue(true);
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            mockedTradeChart(store);
+
+            await screen.findByText(mock_chart);
+
+            expect(mockSmartChartProps.maxTick).toBe(8);
+            expect(mockSmartChartProps.maxTick).not.toBeUndefined();
         });
     });
 });

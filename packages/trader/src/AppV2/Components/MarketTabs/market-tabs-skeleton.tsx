@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 
 import { Skeleton } from '@deriv-com/quill-ui';
-import { useDevice } from '@deriv-com/ui';
+
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 
 import './market-tabs.scss';
 
@@ -12,10 +14,15 @@ import './market-tabs.scss';
  * button + a couple of collapsed tabs) until the real strip can render safely.
  */
 const MarketTabsSkeleton = () => {
-    const { isMobile } = useDevice();
+    // Mirrors `market-tabs.tsx`, or the strip changes shape when the skeleton resolves.
+    const is_phone_viewport = useIsPhoneViewport();
+    const is_phone_landscape = useIsPhoneLandscape();
     return (
         <div
-            className={clsx('market-tabs', 'market-tabs--skeleton', { 'market-tabs--desktop': !isMobile })}
+            className={clsx('market-tabs', 'market-tabs--skeleton', {
+                'market-tabs--desktop': !is_phone_viewport,
+                'market-tabs--landscape': is_phone_landscape,
+            })}
             data-testid='dt_market_tabs_skeleton'
         >
             <Skeleton.Square width={56} height={56} rounded />

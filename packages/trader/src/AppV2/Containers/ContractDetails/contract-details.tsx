@@ -27,12 +27,14 @@ import StopLoss from 'AppV2/Components/StopLoss/stop-loss';
 import TakeProfit from 'AppV2/Components/TakeProfit/take-profit';
 import TakeProfitHistory from 'AppV2/Components/TakeProfitHistory';
 import useContractDetails from 'AppV2/Hooks/useContractDetails';
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 import { getContractDetailsConfig } from 'AppV2/Utils/contract-details-config';
 
 import ContractDetailsChart from '../Chart/contract-details-chart';
 
 const ContractDetails = observer(() => {
     const { contract_info, is_loading } = useContractDetails();
+    const is_phone_landscape = useIsPhoneLandscape();
     const { contract_id, currency, contract_type, limit_order } = contract_info;
     const { take_profit, stop_loss } = limit_order ?? { take_profit: {}, stop_loss: {} };
     const [update_history, setUpdateHistory] = React.useState<TContractUpdateHistory>([]);
@@ -83,6 +85,57 @@ const ContractDetails = observer(() => {
     if (isAccumulatorContract(contract_info.contract_type)) {
         showRiskManagement = isOpen(contract_info) && Boolean(limit_order);
     }
+    const contract_and_chart = (
+        <React.Fragment>
+            <ContractCard contractInfo={contract_info} serverTime={server_time} currency={currency} />
+            <ContractDetailsChart />
+        </React.Fragment>
+    );
+
+    const details = (
+        <React.Fragment>
+            <DealCancellation />
+            {showRiskManagement && (
+                <CardWrapper>
+                    <TakeProfit />
+                    <StopLoss />
+                </CardWrapper>
+            )}
+            <OrderDetails contract_info={contract_info} />
+            {/* Hidden as we disable longcode temporarily */}
+            {/* TODO: enable or delete when decision is made */}
+            {/* <PayoutInfo contract_info={contract_info} /> */}
+            <EntryExitDetails contract_info={contract_info} />
+            {isTpHistoryVisible && update_history && update_history.length > 0 && (
+                <TakeProfitHistory history={update_history} currency={currency} is_multiplier={isMultiplier} />
+            )}
+        </React.Fragment>
+    );
+
+    const footer = shouldShowSell && <ContractDetailsFooter contract_info={contract_info} />;
+
+    // Two columns in landscape (contract + chart | the detail cards), the page itself scrolling.
+    // Portrait keeps the single column, in the same DOM order as before.
+    if (is_phone_landscape) {
+        return (
+            <div className='contract-details-landscape'>
+                <ContractDetailsHeader />
+                <div className='contract-details contract-details--landscape'>
+                    <div className='contract-details__pane' data-testid='dt_contract_details_pane'>
+                        {contract_and_chart}
+                    </div>
+                    <div
+                        className='contract-details__pane contract-details__pane--details'
+                        data-testid='dt_contract_details_pane'
+                    >
+                        {details}
+                        {footer}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <ContractDetailsHeader />
@@ -92,25 +145,10 @@ const ContractDetails = observer(() => {
                     'contract-details--one-button': shouldShowSell && !showCancelButton,
                 })}
             >
-                <ContractCard contractInfo={contract_info} serverTime={server_time} currency={currency} />
-                <ContractDetailsChart />
-                <DealCancellation />
-                {showRiskManagement && (
-                    <CardWrapper>
-                        <TakeProfit />
-                        <StopLoss />
-                    </CardWrapper>
-                )}
-                <OrderDetails contract_info={contract_info} />
-                {/* Hidden as we disable longcode temporarily */}
-                {/* TODO: enable or delete when decision is made */}
-                {/* <PayoutInfo contract_info={contract_info} /> */}
-                <EntryExitDetails contract_info={contract_info} />
-                {isTpHistoryVisible && update_history && update_history.length > 0 && (
-                    <TakeProfitHistory history={update_history} currency={currency} is_multiplier={isMultiplier} />
-                )}
+                {contract_and_chart}
+                {details}
             </div>
-            {shouldShowSell && <ContractDetailsFooter contract_info={contract_info} />}
+            {footer}
         </>
     );
 });

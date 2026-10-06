@@ -105,6 +105,25 @@ describe('ContractDetailsFooter', () => {
         expect(default_mock_store.contract_replay.onClickSell).toHaveBeenCalledWith(1);
     });
 
+    it('renders the Close label and the amount as separate elements', () => {
+        // The accessible name is the same either way, so only this catches a return to one string.
+        (isMultiplierContract as jest.Mock).mockImplementation(() => true);
+        (isValidToSell as jest.Mock).mockImplementation(() => true);
+        default_mock_store.contract_replay.contract_store.contract_info.contract_type = 'multiplier';
+        default_mock_prop = mockContractInfo({
+            bid_price: '123.45',
+            currency: 'USD',
+            contract_id: 1,
+            profit: '20',
+            contract_type: 'multiplier',
+        });
+
+        renderFooter();
+
+        expect(screen.getByText('Close')).toBeInTheDocument();
+        expect(screen.getByText('123.45 USD')).toBeInTheDocument();
+    });
+
     it('renders disabled close button without bid price for multiplier contracts if profit is negative and cancellation is valid', () => {
         (isMultiplierContract as jest.Mock).mockImplementation(() => true);
         (isValidToSell as jest.Mock).mockImplementation(() => true);

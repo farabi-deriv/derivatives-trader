@@ -362,6 +362,7 @@ const TakeProfitStopLossDesktop = observer(({ onClose, is_open }: TTakeProfitSto
                     </Text>
                     <ToggleSwitch
                         checked={tp_state.is_enabled}
+                        defaultChecked={tp_state.is_enabled}
                         onChange={onTpToggle}
                         data-testid='dt_tp_toggle_desktop'
                     />
@@ -407,6 +408,7 @@ const TakeProfitStopLossDesktop = observer(({ onClose, is_open }: TTakeProfitSto
                     </Text>
                     <ToggleSwitch
                         checked={sl_state.is_enabled}
+                        defaultChecked={sl_state.is_enabled}
                         onChange={onSlToggle}
                         data-testid='dt_sl_toggle_desktop'
                     />

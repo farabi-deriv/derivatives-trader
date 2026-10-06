@@ -5,6 +5,7 @@ import { observer, useStore } from '@deriv/stores';
 import { Localize, localize } from '@deriv-com/translations';
 
 import { ContractCardList } from 'AppV2/Components/ContractCard';
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 
 import EmptyPortfolioMessage from './empty-portfolio-message';
 
@@ -19,6 +20,7 @@ export const PositionsDrawerContent = observer(() => {
     const { server_time } = common;
     const { active_positions, error, onClickCancel, onClickSell } = portfolio;
     const { is_switching_account } = ui;
+    const is_phone_landscape = useIsPhoneLandscape();
 
     if (active_positions.length === 0 || error || is_switching_account) {
         return <EmptyPortfolioMessage error={error} />;
@@ -26,6 +28,11 @@ export const PositionsDrawerContent = observer(() => {
 
     return (
         <div className='positions-drawer-open'>
+            {is_phone_landscape && (
+                <div className='positions-drawer-tabs__summary'>
+                    <PositionsDrawerFooter />
+                </div>
+            )}
             <ContractCardList
                 currency={currency}
                 onClickCancel={onClickCancel}

@@ -1,5 +1,6 @@
 import { Analytics } from '@deriv-com/analytics';
 
+import { isMobileOs, isPhoneLandscape } from '../os';
 import { isMobile } from '../screen';
 
 // Resolved once at module load. `||` not `??`: an unset build variable arrives at
@@ -48,13 +49,24 @@ export const getAnalyticsDeviceType = (): 'Mobile' | 'Desktop' => {
 };
 
 /**
- * Gets both account type and device type for analytics
+ * Determines the phone's orientation for analytics, read when the event is sent. Landscape is the same
+ * test the landscape trade page uses, so a keyboard shrinking a portrait screen isn't counted.
+ * @returns 'portrait' | 'landscape' on phones; undefined elsewhere
+ */
+export const getAnalyticsDeviceOrientation = (): 'portrait' | 'landscape' | undefined => {
+    if (!isMobileOs()) return undefined;
+    return isPhoneLandscape() ? 'landscape' : 'portrait';
+};
+
+/**
+ * Gets account type, device type and, on phones, device orientation for analytics
  * @param client - The client store object with is_logged_in and is_virtual properties
- * @returns Object with account_type and device_type
+ * @returns Object with account_type, device_type and device_orientation
  */
 export const getAnalyticsData = (client?: ClientStore) => ({
     account_type: getAnalyticsAccountType(client),
     device_type: getAnalyticsDeviceType(),
+    device_orientation: getAnalyticsDeviceOrientation(),
 });
 
 /**

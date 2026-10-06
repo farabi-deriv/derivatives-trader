@@ -22,6 +22,11 @@ import TraderProviders from '../../../../trader-providers';
 import ContractDetails from '../contract-details';
 
 jest.mock('AppV2/Hooks/useContractDetails', () => jest.fn());
+const mockIsPhoneLandscape = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
+    __esModule: true,
+    default: () => mockIsPhoneLandscape(),
+}));
 jest.mock('AppV2/Hooks/useOrderDetails', () => jest.fn());
 
 jest.mock('AppV2/Components/ContractCard', () => {
@@ -165,6 +170,7 @@ const default_mock_store = {
 // Todo: Enable tests after fixing infinite loop issues
 describe('ContractDetails', () => {
     beforeEach(() => {
+        mockIsPhoneLandscape.mockReturnValue(false);
         // Use stable mock references to prevent infinite loops
         (useContractDetails as jest.Mock).mockReturnValue({
             contract_info: mockContractInfo,
@@ -194,13 +200,29 @@ describe('ContractDetails', () => {
         jest.clearAllMocks();
     });
 
-    const renderContractDetails = () => {
+    const renderContractDetails = () =>
         render(
             <TraderProviders store={mockStore(default_mock_store)}>
                 <ContractDetails />
             </TraderProviders>
         );
-    };
+
+    it('[CDL-001] splits into two panes in landscape', async () => {
+        mockIsPhoneLandscape.mockReturnValue(true);
+        renderContractDetails();
+
+        await screen.findByText('ContractCard');
+
+        expect(screen.getAllByTestId('dt_contract_details_pane')).toHaveLength(2);
+    });
+
+    it('[CDL-001] stays a single column in portrait', async () => {
+        renderContractDetails();
+
+        await screen.findByText('ContractCard');
+
+        expect(screen.queryAllByTestId('dt_contract_details_pane')).toHaveLength(0);
+    });
 
     it('should render the ContractCard component', async () => {
         renderContractDetails();

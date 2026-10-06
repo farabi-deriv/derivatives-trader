@@ -105,6 +105,22 @@ export default class UIStore extends BaseStore {
     // NOT on unrelated height changes (trade-type switches, viewport/keyboard resize).
     is_chart_maximize_animating = false;
 
+    // AppV2 landscape trade mode (Accumulators). Session-only (not persisted) so it resets on reload
+    // and on leaving the trade page. Deliberately separate from is_chart_maximized, whose consumers
+    // compute portrait snackbar offsets.
+    // Drives the 8s auto-hide of nav rail, header and the pill's collapsed state.
+    is_landscape_chrome_hidden = false;
+    // One-time nudge shown the first time Accumulators is picked on a phone in portrait. Persisted:
+    // it is onboarding, so it must not return on every visit.
+    has_seen_landscape_prompt = false;
+    // The landscape "tap to show or hide controls" card. Persisted, like the prompt above.
+    has_seen_landscape_onboarding = false;
+    // How far the floating params pill has been dragged along the inline axis, px, signed against the
+    // reading direction (negative = away from its anchored edge). Unlike the two flags above this one
+    // IS persisted — the user places the pill to uncover part of the chart and expects it to stay put.
+    // A stored pixel offset outsizes a narrower viewport, so every consumer re-clamps before use.
+    landscape_params_offset_x = 0;
+
     screen_width = window.innerWidth;
     screen_height = window.innerHeight;
     is_onscreen_keyboard_active = false;
@@ -146,6 +162,9 @@ export default class UIStore extends BaseStore {
             'theme_preference',
             'active_sidebar_flyout',
             'is_reports_visible',
+            'landscape_params_offset_x',
+            'has_seen_landscape_prompt',
+            'has_seen_landscape_onboarding',
             // 'is_purchase_confirm_on',
             // 'is_purchase_lock_on',
             'should_show_cancellation_warning',
@@ -157,6 +176,10 @@ export default class UIStore extends BaseStore {
             is_services_error_visible: observable,
             is_chart_maximized: observable,
             is_chart_maximize_animating: observable,
+            is_landscape_chrome_hidden: observable,
+            landscape_params_offset_x: observable,
+            has_seen_landscape_prompt: observable,
+            has_seen_landscape_onboarding: observable,
             screen_width: observable,
             screen_height: observable,
             is_onscreen_keyboard_active: observable,
@@ -208,6 +231,10 @@ export default class UIStore extends BaseStore {
             setAppContentsScrollRef: action.bound,
             setIsChartMaximized: action.bound,
             setChartMaximizeAnimating: action.bound,
+            setLandscapeChromeHidden: action.bound,
+            setLandscapeParamsOffsetX: action.bound,
+            setHasSeenLandscapePrompt: action.bound,
+            setHasSeenLandscapeOnboarding: action.bound,
             toggleChartMaximized: action.bound,
             setCurrentFocus: action.bound,
             setDarkMode: action.bound,
@@ -407,6 +434,22 @@ export default class UIStore extends BaseStore {
 
     setChartMaximizeAnimating(is_animating) {
         this.is_chart_maximize_animating = is_animating;
+    }
+
+    setLandscapeChromeHidden(is_hidden) {
+        this.is_landscape_chrome_hidden = is_hidden;
+    }
+
+    setLandscapeParamsOffsetX(offset_x) {
+        this.landscape_params_offset_x = offset_x;
+    }
+
+    setHasSeenLandscapePrompt(has_seen) {
+        this.has_seen_landscape_prompt = has_seen;
+    }
+
+    setHasSeenLandscapeOnboarding(has_seen) {
+        this.has_seen_landscape_onboarding = has_seen;
     }
 
     toggleChartMaximized() {

@@ -5,10 +5,10 @@ import { trackAnalyticsEvent } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Button, Text } from '@deriv-com/quill-ui';
 import { Localize, localize } from '@deriv-com/translations';
-import { useDevice } from '@deriv-com/ui';
 
 import useAvailableContracts from 'AppV2/Hooks/useAvailableContracts';
 import useGuideContractTypes from 'AppV2/Hooks/useGuideContractTypes';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { AVAILABLE_CONTRACTS, TAvailableContract } from 'AppV2/Utils/trade-types-utils';
 import ImageGuide from 'Assets/SvgComponents/trade_explanations/img-guide.svg';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -31,6 +31,8 @@ type TGuide = {
     /** Override the trade types shown as chips (e.g. the market selector's own list), instead of the
      * ones derived from the store's current symbol. */
     guide_contract_types?: TAvailableContract[];
+    /** Hand the trigger press to the caller instead of opening the built-in description. */
+    onTriggerClick?: () => void;
 };
 
 const Guide = observer(
@@ -43,14 +45,16 @@ const Guide = observer(
         force_compact_trigger,
         guide_contract_type,
         guide_contract_types,
+        onTriggerClick,
     }: TGuide) => {
         const {
             ui: { is_dark_mode_on },
             common: { current_language },
         } = useStore();
         const { contract_type } = useTraderStore();
-        const { isMobile } = useDevice();
-        const show_compact_trigger = isMobile || force_compact_trigger;
+        // Viewport, not width: at 844px landscape would widen the trigger to a link.
+        const is_phone_viewport = useIsPhoneViewport();
+        const show_compact_trigger = is_phone_viewport || force_compact_trigger;
         const available_contracts = useAvailableContracts();
         const contract_type_title =
             guide_contract_type ?? available_contracts.find(item => item.for.includes(contract_type))?.id ?? '';
@@ -80,6 +84,17 @@ const Guide = observer(
 
         const onClose = React.useCallback(() => setIsDescriptionOpened(false), []);
 
+        // Shared by both triggers, so the analytics stay in one place.
+        const onTrigger = () => {
+            trackAnalyticsEvent('ce_trade_types_form_v2', {
+                action: 'info_open',
+                trade_type_name: contract_type_title || contract_type,
+                source: 'trade_page',
+            });
+            if (onTriggerClick) onTriggerClick();
+            else setIsDescriptionOpened(true);
+        };
+
         React.useEffect(() => {
             if (show_guide_for_selected_contract) setSelectedContractType(contract_type_title);
         }, [show_guide_for_selected_contract, contract_type_title]);
@@ -97,31 +112,14 @@ const Guide = observer(
                             color={is_dark_mode_on ? 'white' : 'black'}
                             className='trade__guide'
                             aria-label={localize('Guide')}
-                            onClick={() => {
-                                trackAnalyticsEvent('ce_trade_types_form_v2', {
-                                    action: 'info_open',
-                                    trade_type_name: contract_type_title || contract_type,
-                                    source: 'trade_page',
-                                });
-                                setIsDescriptionOpened(true);
-                            }}
+                            onClick={onTrigger}
                             variant='tertiary'
                             key={current_language}
                         >
                             <ImageGuide />
                         </Button>
                     ) : (
-                        <div
-                            className='guide-link'
-                            onClick={() => {
-                                trackAnalyticsEvent('ce_trade_types_form_v2', {
-                                    action: 'info_open',
-                                    trade_type_name: contract_type_title || contract_type,
-                                    source: 'trade_page',
-                                });
-                                setIsDescriptionOpened(true);
-                            }}
-                        >
+                        <div className='guide-link' onClick={onTrigger}>
                             <Text size='sm' color='quill-typography__color--prominent'>
                                 <Localize
                                     i18n_default_text='How to trade {{trade_type}}?'
@@ -150,7 +148,7 @@ const Guide = observer(
                     show_description_in_a_modal={show_description_in_a_modal}
                     show_all_trade_types_in_guide={show_all_trade_types_in_guide}
                 />
-                {isMobile && (
+                {is_phone_viewport && (
                     <GuideDefinitionModal
                         contract_type={selected_contract_type}
                         term={selected_term}

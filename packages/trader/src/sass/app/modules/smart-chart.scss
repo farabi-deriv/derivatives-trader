@@ -645,6 +645,10 @@ $solid-blue-700: #2c9aff;
         animation: 0.5s spot-emphasizer 0.2s;
     }
 }
+// LANDMINE for a future landscape expansion: these `100vw` barrier rules are emitted only by
+// reset-contract-chart-elements.tsx for Reset Call/Put — never for Accumulators, the only landscape
+// trade type today — so they don't affect the landscape surface. Revisit if landscape grows beyond
+// Accumulators: `100vw` ignores the nav rail's width and would overflow the landscape chart region.
 .sc-reset_barrier {
     width: 100vw;
     height: 0.1rem;

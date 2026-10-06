@@ -27,4 +27,22 @@
             margin-left: 0;
         }
     }
+
+    // Landscape auto-hide collapses the nav rail without unmounting it, so its state is preserved.
+    @include phone-landscape {
+        .sidebar {
+            overflow: hidden;
+            transition:
+                width 0.3s ease-in-out,
+                min-width 0.3s ease-in-out,
+                opacity 0.3s ease-in-out;
+        }
+
+        &--chrome-hidden .sidebar {
+            width: 0;
+            min-width: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+    }
 }

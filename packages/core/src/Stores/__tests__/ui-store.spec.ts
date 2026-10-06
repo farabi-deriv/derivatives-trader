@@ -503,3 +503,55 @@ describe('UIStore.toggleUrlUnavailableModal', () => {
         expect(ui.urlUnavailableModalReason).toBe('symbol');
     });
 });
+
+describe('UIStore frozen chart controls removed', () => {
+    const buildUi = () =>
+        new UIStore({ common: {}, client: {} } as never) as InstanceType<typeof UIStore> & {
+            is_chart_layout_default?: unknown;
+            is_chart_countdown_visible?: unknown;
+            is_chart_asset_info_visible?: unknown;
+            setChartLayout?: unknown;
+            setChartCountdown?: unknown;
+            local_storage_properties: string[];
+        };
+
+    it('[ABF-011] no longer exposes the frozen chart layout/countdown observables, setters, or persisted keys', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_layout_default).toBeUndefined();
+        expect(store.is_chart_countdown_visible).toBeUndefined();
+        expect(store.setChartLayout).toBeUndefined();
+        expect(store.setChartCountdown).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_layout_default');
+        expect(store.local_storage_properties).not.toContain('is_chart_countdown_visible');
+    });
+
+    it('[ABF-013] no longer persists the dead chart asset-info key', () => {
+        const store = buildUi();
+
+        expect(store.is_chart_asset_info_visible).toBeUndefined();
+        expect(store.local_storage_properties).not.toContain('is_chart_asset_info_visible');
+    });
+});
+
+describe('UIStore landscape trade flags', () => {
+    let ui: InstanceType<typeof UIStore>;
+
+    beforeEach(() => {
+        ui = new UIStore({ common: {}, client: {} } as never);
+    });
+
+    it('[LTM-010] exposes the chrome-hidden flag with an action setter', () => {
+        expect(ui.is_landscape_chrome_hidden).toBe(false);
+
+        ui.setLandscapeChromeHidden(true);
+
+        expect(ui.is_landscape_chrome_hidden).toBe(true);
+    });
+
+    it('[LTM-010] does not persist it to local storage', () => {
+        // Chrome visibility is a per-session view state; restoring it would hide the rail on a fresh
+        // load with no gesture to explain why.
+        expect(ui.local_storage_properties).not.toContain('is_landscape_chrome_hidden');
+    });
+});

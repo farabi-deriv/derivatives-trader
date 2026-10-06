@@ -20,6 +20,10 @@ export const HEIGHT = {
     // clearing the block leaves the toast floating a row higher, which reads as detached from the
     // action it is about.
     PURCHASE_BUTTON: 48,
+    // Figma places the landscape toast 24px off the bottom. It sits bottom-right, opposite the pill
+    // (see `.quill-snackbar` under `@include phone-landscape`), so it shares the bottom band rather
+    // than being lifted over the pill.
+    LANDSCAPE_SNACKBAR_INSET: 24,
 };
 
 // Duration (ms) of the mobile chart maximize/minimize transition. The JS timer that disarms the
@@ -110,13 +114,18 @@ export const getErrorSnackbarBottomOffset = ({
     is_logged_in = true,
     is_chart_maximized = false,
     is_cancellable_multiplier = false,
+    is_landscape = false,
 }: {
     pathname: string;
     /** Only consulted off the trade/automate pages, so the trade-page callers omit it. */
     is_logged_in?: boolean;
     is_chart_maximized?: boolean;
     is_cancellable_multiplier?: boolean;
+    is_landscape?: boolean;
 }) => {
+    // Landscape trade surface: the toast is left-aligned and capped short of the pill, so it sits beside
+    // the pill at the design's bottom inset instead of being lifted above it.
+    if (is_landscape) return `${HEIGHT.LANDSCAPE_SNACKBAR_INSET}px`;
     if (pathname === routes.index || pathname === routes.trader_automate) {
         const clears_bottom_nav = !is_chart_maximized;
         return `${HEIGHT.PURCHASE_BUTTON + ERROR_SNACKBAR_GAP + (clears_bottom_nav ? HEIGHT.BOTTOM_NAV : 0)}px`;

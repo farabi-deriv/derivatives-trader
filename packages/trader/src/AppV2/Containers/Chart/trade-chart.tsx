@@ -7,6 +7,7 @@ import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import useActiveSymbols from 'AppV2/Hooks/useActiveSymbols';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { filterPositionsBySymbolAndTradeType } from 'AppV2/Utils/positions-utils';
 import { SmartChart } from 'Modules/SmartChart';
 import AccumulatorsChartElements from 'Modules/SmartChart/Components/Markers/accumulators-chart-elements';
@@ -48,6 +49,9 @@ const BottomWidgetsMobile = observer(({ digits, tick }: TBottomWidgetsParams) =>
 const TradeChart = observer(() => {
     const { ui, common, contract_trade, portfolio, client } = useStore();
     const { isMobile } = useDevice();
+    // Phone landscape reports isMobile false; use the phone-viewport predicate for the touch-modality
+    // and accumulator-geometry chart props so they stay correct after a rotate.
+    const is_phone_viewport = useIsPhoneViewport();
     const { is_logged_in } = client;
     const {
         accumulator_barriers_data,
@@ -150,12 +154,12 @@ const TradeChart = observer(() => {
             ...(is_accumulator
                 ? {
                       whitespace: CHART_CONSTANTS.ACCUMULATOR_WHITESPACE,
-                      minimumLeftBars: isMobile ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
+                      minimumLeftBars: is_phone_viewport ? CHART_CONSTANTS.ACCUMULATOR_MIN_LEFT_BARS_MOBILE : undefined,
                   }
                 : {}),
             ...(has_barrier ? { whitespace: CHART_CONSTANTS.BARRIER_WHITESPACE } : {}),
         }),
-        [current_language, is_dark_mode_on, is_accumulator, isMobile, has_barrier]
+        [current_language, has_barrier, is_accumulator, is_dark_mode_on, is_phone_viewport]
     );
 
     const { current_spot, current_spot_time } = accumulator_barriers_data || {};
@@ -235,9 +239,9 @@ const TradeChart = observer(() => {
     // Memoize yAxisMargin to prevent object recreation
     const yAxisMargin = React.useMemo(
         () => ({
-            top: isMobile ? CHART_CONSTANTS.Y_AXIS_MARGIN_MOBILE : CHART_CONSTANTS.Y_AXIS_MARGIN_DESKTOP,
+            top: is_phone_viewport ? CHART_CONSTANTS.Y_AXIS_MARGIN_MOBILE : CHART_CONSTANTS.Y_AXIS_MARGIN_DESKTOP,
         }),
-        [isMobile]
+        [is_phone_viewport]
     );
 
     if (!symbol || !active_symbols.length) return null;
@@ -269,7 +273,7 @@ const TradeChart = observer(() => {
             <SmartChart
                 key='trade-chart'
                 drawingToolFloatingMenuPosition={
-                    isMobile
+                    is_phone_viewport
                         ? CHART_CONSTANTS.MOBILE_DRAWING_TOOL_POSITION
                         : CHART_CONSTANTS.DESKTOP_DRAWING_TOOL_POSITION
                 }
@@ -289,12 +293,13 @@ const TradeChart = observer(() => {
                 getQuotes={getQuotes}
                 subscribeQuotes={subscribeQuotes}
                 unsubscribeQuotes={unsubscribeQuotes}
-                enabledNavigationWidget={!isMobile}
+                enabledNavigationWidget={!is_phone_viewport}
                 enabledChartFooter={false}
                 id='trade'
-                isMobile={isMobile}
-                isVerticalScrollEnabled={!isMobile}
-                maxTick={isMobile ? max_ticks : undefined}
+                isMobile={is_phone_viewport}
+                isVerticalScrollEnabled={!is_phone_viewport}
+                // Keep maxTick bounded (8) in landscape — never undefined, which uncaps the tick window.
+                maxTick={is_phone_viewport ? max_ticks : undefined}
                 granularity={is_tick_chart_type_only ? 0 : granularity}
                 settings={settings}
                 allowTickChartTypeOnly={is_tick_chart_type_only}
@@ -320,7 +325,7 @@ const TradeChart = observer(() => {
                 yAxisMargin={yAxisMargin}
                 isLive
                 leftMargin={
-                    !isMobile && active_sidebar_flyout
+                    !is_phone_viewport && active_sidebar_flyout
                         ? CHART_CONSTANTS.LEFT_MARGIN_WITH_DRAWER
                         : CHART_CONSTANTS.LEFT_MARGIN_DEFAULT
                 }
@@ -333,7 +338,7 @@ const TradeChart = observer(() => {
                         has_crossed_accu_barriers={has_crossed_accu_barriers}
                         should_show_profit_text={!!accumulator_contract_barriers_data.accumulators_high_barrier}
                         symbol={symbol}
-                        is_mobile={isMobile}
+                        is_mobile={is_phone_viewport}
                     />
                 )}
             </SmartChart>

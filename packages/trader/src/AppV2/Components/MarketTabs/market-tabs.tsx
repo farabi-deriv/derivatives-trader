@@ -6,6 +6,7 @@ import {
     getRedesignPlatform,
     getSymbolDisplayName,
     getViewMarketsFromURL,
+    isAccumulatorContract,
     pickDefaultSymbol,
     removeViewMarketsFromURL,
     trackTradeTabClosed,
@@ -20,6 +21,7 @@ import { useDevice } from '@deriv-com/ui';
 
 import useAutomationLockedSnackbar from 'AppV2/Hooks/useAutomationLockedSnackbar';
 import useAvailableContracts from 'AppV2/Hooks/useAvailableContracts';
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 import { getMaxOpenMarkets, TOpenMarket } from 'AppV2/Utils/open-markets-utils';
 import { filterPositionsBySymbolAndTradeType, getTotalPositionsProfit } from 'AppV2/Utils/positions-utils';
 import { isSameTradeTypeCategory } from 'AppV2/Utils/trade-types-utils';
@@ -51,8 +53,10 @@ type TMarketTabs = {
  */
 const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TMarketTabs = {}) => {
     const { isMobile } = useDevice();
-    // Device-dependent tab cap: 4 on mobile, 7 on web.
-    const max_open_markets = getMaxOpenMarkets(isMobile);
+    const is_phone_landscape = useIsPhoneLandscape();
+    const is_phone_viewport = isMobile || is_phone_landscape;
+    // Tab cap: 4 on a phone, 7 on web. Viewport, not width — a rotated phone is still a phone.
+    const max_open_markets = getMaxOpenMarkets(is_phone_viewport);
     useAvailableContracts();
     // Kept so the async seed can read LIVE store state at commit time — a captured value freezes at
     // the last render, which never happens again once the strip unmounts.
@@ -233,14 +237,15 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
         const current = open_markets.length;
         prev_tab_count_ref.current = current;
         if (prev === null) return; // baseline the first observed count without emitting
-        const platform = getRedesignPlatform(isMobile);
+        // Viewport, or a landscape phone reports `platform: 'web'` with the phone `limit: 4`.
+        const platform = getRedesignPlatform(is_phone_viewport);
         if (current > prev && prev >= 1) {
             trackTradeTabOpened({ tab_count_after_open: current, platform });
             if (current >= max_open_markets) trackTradeTabLimitReached({ limit: max_open_markets, platform });
         } else if (current < prev) {
             trackTradeTabClosed({ tab_count_after_close: current, platform });
         }
-    }, [open_markets.length, isMobile, max_open_markets]);
+    }, [open_markets.length, is_phone_viewport, max_open_markets]);
 
     // A tab is the active one when its symbol matches AND its trade type is the same as the store's
     // *category* — not necessarily the exact value. The store can resolve a tab's trade type to a
@@ -262,6 +267,8 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
 
     // Tradeable = not disabled in the current mode. Used to keep at least one tradeable tab around.
     const tradeable_count = open_markets.filter(market => !isDisabled(market)).length;
+    // Landscape can only show Accumulators, so the last of those is the last tab it can land on.
+    const accumulator_count = open_markets.filter(market => isAccumulatorContract(market.contract_type)).length;
 
     const handleSelect = (market: TOpenMarket) => {
         // While a run locks the strip, the only tappable tab is the active (running) one — block its
@@ -299,7 +306,13 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
             // one immediately to its LEFT. (After removing `index`, the former right neighbour sits at
             // `remaining[index]`.) Skip disabled tabs but keep that right→left preference.
             const ordered = [...remaining.slice(index), ...remaining.slice(0, index).reverse()];
-            const next = ordered.find(item => !isDisabled(item)) ?? ordered[0];
+            const enabled = ordered.filter(item => !isDisabled(item));
+            // Landscape renders Accumulators only: any other neighbour is held behind PortraitPrompt
+            // rather than committed, so the strip would be left pointing at the tab just removed.
+            const renderable = is_phone_landscape
+                ? enabled.find(item => isAccumulatorContract(item.contract_type))
+                : undefined;
+            const next = renderable ?? enabled[0] ?? ordered[0];
             selectMarketAndTradeType(next.symbol, next.contract_type);
         }
         removeOpenMarket(market);
@@ -324,15 +337,14 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
             type='button'
             className='market-tabs__add'
             aria-label={localize('Add market')}
-            // Desktop natively disables the button and explains via a hover tooltip. Mobile has no
-            // hover and a disabled button can't be tapped, so keep it enabled + aria-disabled and
-            // surface the reason as a snackbar on tap instead.
-            disabled={is_add_disabled && !isMobile}
+            // Desktop disables it and explains on hover. A touch device has neither, so keep it
+            // tappable + aria-disabled and answer the tap with a snackbar.
+            disabled={is_add_disabled && !is_phone_viewport}
             aria-disabled={is_add_disabled}
             onClick={() => {
                 if (!is_add_disabled) {
                     handleOpenSelector();
-                } else if (isMobile && add_disabled_reason) {
+                } else if (is_phone_viewport && add_disabled_reason) {
                     addSnackbar({ message: add_disabled_reason, hasCloseButton: true, hasFixedHeight: false });
                 }
             }}
@@ -343,12 +355,15 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
 
     return (
         <div
+            // Landscape takes the icon-only strip: Figma gives the selector 456px and desktop tabs want
+            // 264px each, so they crushed to bare icons.
             className={clsx('market-tabs', {
-                'market-tabs--desktop': !isMobile,
+                'market-tabs--desktop': !is_phone_viewport,
+                'market-tabs--landscape': is_phone_landscape,
             })}
             data-testid='dt_market_tabs'
         >
-            {add_disabled_reason && !isMobile ? (
+            {add_disabled_reason && !is_phone_viewport ? (
                 <Tooltip
                     as='div'
                     className='market-tabs__add-tooltip'
@@ -366,7 +381,10 @@ const MarketTabs = observer(({ supported_trade_types, onSelectorOpenChange }: TM
                     const is_disabled = isDisabled(market);
                     // Keep at least one tab overall, and never let the last tradeable tab be closed
                     // (else the user would be left with only un-tradeable markets).
-                    const is_removable = open_markets.length > 1 && (is_disabled || tradeable_count > 1);
+                    const is_last_landscape_tab =
+                        is_phone_landscape && isAccumulatorContract(market.contract_type) && accumulator_count === 1;
+                    const is_removable =
+                        open_markets.length > 1 && (is_disabled || tradeable_count > 1) && !is_last_landscape_tab;
                     // Live P/L for this market + trade type (computed inline so the observer tracks
                     // bid-price updates); null when nothing is running so the tab shows no P/L.
                     const positions = filterPositionsBySymbolAndTradeType(

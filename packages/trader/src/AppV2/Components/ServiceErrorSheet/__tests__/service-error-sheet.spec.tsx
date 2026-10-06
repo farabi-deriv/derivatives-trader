@@ -23,6 +23,12 @@ jest.mock('@deriv/shared', () => ({
     getBrandUrl: jest.fn(() => 'https://home.deriv.com/dashboard'),
 }));
 
+const mockIsPhoneViewport = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneViewport', () => ({
+    __esModule: true,
+    default: () => mockIsPhoneViewport(),
+}));
+
 // Mock window.location.href
 delete (window as any).location;
 window.location = { href: '' } as any;
@@ -46,6 +52,27 @@ describe('ServiceErrorSheet', () => {
         });
         // Reset window.location.href before each test
         window.location.href = '';
+        mockIsPhoneViewport.mockReturnValue(false);
+    });
+
+    describe('surface', () => {
+        // The sheet and the modal render the same copy, so assert on the surface itself.
+        const sheetBody = (container: HTMLElement) =>
+            // eslint-disable-next-line testing-library/no-node-access
+            container.ownerDocument.querySelector('.service-error-sheet__body');
+
+        it('[SES-001] uses the bottom sheet on any phone viewport, landscape included', () => {
+            mockIsPhoneViewport.mockReturnValue(true);
+            const { container } = render(mockTrade());
+
+            expect(sheetBody(container)).toBeInTheDocument();
+        });
+
+        it('[SES-001] keeps the centred modal on desktop', () => {
+            const { container } = render(mockTrade());
+
+            expect(sheetBody(container)).not.toBeInTheDocument();
+        });
     });
 
     const mockTrade = () => {
@@ -142,7 +169,7 @@ describe('ServiceErrorSheet', () => {
         });
 
         it('shows the backend message on mobile regardless of balance', () => {
-            default_mock_store.ui.is_mobile = true;
+            mockIsPhoneViewport.mockReturnValue(true);
             default_mock_store.client.balance = 0;
             render(mockTrade());
 
@@ -153,7 +180,7 @@ describe('ServiceErrorSheet', () => {
         });
 
         it('shows the backend message on mobile when balance is below the stake', () => {
-            default_mock_store.ui.is_mobile = true;
+            mockIsPhoneViewport.mockReturnValue(true);
             default_mock_store.client.balance = '4.00';
             default_mock_store.modules.trade.amount = 10;
             render(mockTrade());

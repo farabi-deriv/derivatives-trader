@@ -30,6 +30,10 @@
     &__section-title {
         padding: var(--core-spacing-800, 16px) var(--core-spacing-400, 8px) 0;
         font-size: 1.4rem;
+
+        @include phone-landscape {
+            padding-block-start: var(--core-spacing-400, 8px);
+        }
     }
 
     &__group {
