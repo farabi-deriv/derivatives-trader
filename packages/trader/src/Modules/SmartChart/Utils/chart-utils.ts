@@ -70,4 +70,16 @@ export const CHART_CONSTANTS = {
 
     // Minimum left bars for accumulator on mobile
     ACCUMULATOR_MIN_LEFT_BARS_MOBILE: 3,
+
+    /**
+     * Y-axis zoom for Accumulators: the chart's own maximum, i.e. the least
+     * padding a drag on the quote labels can reach (`BasicChartState`'s
+     * `minVerticalPaddingFraction` in deriv_chart).
+     *
+     * Accumulators is the one trade type whose barriers are a control. Zoomed
+     * out, the band collapses to a few pixels and is neither readable nor
+     * draggable, so it opens as tall as the chart allows. The user can still
+     * drag the axis from there.
+     */
+    ACCUMULATOR_VERTICAL_PADDING_FRACTION: 0.05,
 } as const;

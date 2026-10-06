@@ -504,6 +504,36 @@ describe('UIStore.toggleUrlUnavailableModal', () => {
     });
 });
 
+describe('UIStore accumulator barrier guide', () => {
+    const buildUi = () =>
+        new UIStore({ common: {}, client: {} } as never) as InstanceType<typeof UIStore> & {
+            accumulator_barrier_guide_tap_count: number;
+            markAccumulatorBarrierGuideTapped: () => void;
+            local_storage_properties: string[];
+        };
+
+    it('starts untapped, so the hint runs on a first visit', () => {
+        expect(buildUi().accumulator_barrier_guide_tap_count).toBe(0);
+    });
+
+    it('counts up rather than being set, so two callers cannot clash', () => {
+        const store = buildUi();
+
+        store.markAccumulatorBarrierGuideTapped();
+        store.markAccumulatorBarrierGuideTapped();
+
+        // Raising it needs no read-back, so a caller can never base the new
+        // value on a count that moved underneath it.
+        expect(store.accumulator_barrier_guide_tap_count).toBe(2);
+    });
+
+    it('survives a reload', () => {
+        // The whole point of the count: the taps are spread over sessions, so
+        // without persisting it every session would look like the first.
+        expect(buildUi().local_storage_properties).toContain('accumulator_barrier_guide_tap_count');
+    });
+});
+
 describe('UIStore frozen chart controls removed', () => {
     const buildUi = () =>
         new UIStore({ common: {}, client: {} } as never) as InstanceType<typeof UIStore> & {

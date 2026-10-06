@@ -1,5 +1,4 @@
 import {
-    getContractStatus,
     getCurrentTick,
     getDecimalPlaces,
     getEndTime,
@@ -164,39 +163,6 @@ export const createTickMarkers = (contract_info, is_delayed_markers_update) => {
     });
     return result;
 };
-
-const dark_theme = {
-    bg: '#181c25',
-    fg: '#ffffff',
-    grey_border: '#6e6e6e',
-    lost: '#e6190e',
-    open: '#2c9aff',
-    sold: '#ffad3a',
-    won: '#008832',
-};
-
-const light_theme = {
-    bg: '#ffffff',
-    fg: '#333333',
-    grey_border: '#999999',
-    lost: '#ec3f3f',
-    open: '#2c9aff',
-    sold: '#ffad3a',
-    won: '#008832',
-};
-
-function getColor({ status, profit, is_dark_theme, is_vanilla }) {
-    const colors = is_dark_theme ? dark_theme : light_theme;
-    let color = colors[status || 'open'];
-    if (is_vanilla) {
-        if (status === 'open') return colors.open;
-        return colors[profit > 0 ? 'won' : 'lost'];
-    }
-    if (status === 'open' && profit) {
-        color = colors[profit > 0 ? 'won' : 'lost'];
-    }
-    return color;
-}
 
 const currency_symbols = {
     AUD: '\u0041\u0024',
@@ -463,7 +429,12 @@ export function calculateMarker(contract_info, is_dark_theme, is_last_contract, 
                 });
             }
         }
-        if (exit_spot_time && exit_spot) {
+        // Accumulators draw their own exit spot: the closed-band annotation puts a
+        // glow dot on the exit tick, coloured by the contract's result, with the
+        // Won/Loss callout hanging off it. A marker here would stack a second dot
+        // on the same point — and one coloured by marker direction rather than by
+        // profit, so a lost contract would get a buy-green dot over the red one.
+        if (!is_accumulator_contract && exit_spot_time && exit_spot) {
             markers.push({
                 epoch: exit_spot_time,
                 quote: +exit_spot,
@@ -527,7 +498,8 @@ export function calculateMarker(contract_info, is_dark_theme, is_last_contract, 
             }
         }
 
-        if (exit_spot) {
+        // See the finished branch: the accumulator band owns its exit spot.
+        if (!is_accumulator_contract && exit_spot) {
             markers.push({
                 epoch: exit_spot_time,
                 quote: +exit_spot,
@@ -550,25 +522,9 @@ export function calculateMarker(contract_info, is_dark_theme, is_last_contract, 
         markers.push(...getTickStreamMarkers(contract_info, barrier_price));
     }
 
-    if (is_accumulator_contract && tick_stream?.length > 0) {
-        const contract_status = getContractStatus(contract_info);
-        const is_accu_contract_ended = contract_status !== 'open';
-
-        if (is_accu_contract_ended) {
-            const exit = tick_stream[tick_stream.length - 1];
-            const previous_tick = tick_stream[tick_stream.length - 2] || exit;
-
-            markers.push(
-                ...getAccumulatorBarrierMarkers({
-                    high_barrier,
-                    low_barrier,
-                    prev_epoch: previous_tick.epoch,
-                    is_dark_mode_on: is_dark_theme,
-                    contract_info,
-                })
-            );
-        }
-    }
+    // A finished Accumulator used to append its barrier band here as markers.
+    // That band is an annotation now (`accumulator_barriers_payload`), which
+    // bounds it at the exit tick instead of stretching it to the chart edge.
 
     const contractMarkerLeftPadding = is_mobile ? 10 : 100;
 
@@ -658,96 +614,58 @@ export const getContractTypeLabel = contract_info => {
     return allContracts[type] || null;
 };
 
-function getAccumulatorBarrierMarkers({
-    contract_info,
-    high_barrier,
-    low_barrier,
-    is_accumulator_trade_without_contract = false,
-    is_dark_theme,
-    has_crossed_accu_barriers,
-    barrier_spot_distance,
-    prev_epoch: epoch,
-}) {
-    const { profit, is_sold } = contract_info || {};
+/**
+ * Epoch of the last tick strictly before `exit_epoch` — the tick a finished
+ * Accumulator's barriers were measured against, and where its band starts.
+ *
+ * Resolved by epoch rather than by index from the end, so it doesn't change as
+ * the exit tick lands in `tick_stream` a beat after `exit_spot_time` does, which
+ * would otherwise shift the band after it had already rendered.
+ */
+export function getPriorTickEpoch(tick_stream = [], exit_epoch) {
+    for (let i = tick_stream.length - 1; i >= 0; i--) {
+        const { epoch } = tick_stream[i] || {};
+        if (epoch && epoch < exit_epoch) return epoch;
+    }
 
-    const contract_status = getContractStatus(contract_info || {});
-    const is_accu_contract_ended = contract_status !== 'open';
-
-    const getStatus = () => {
-        if (has_crossed_accu_barriers || contract_status === 'lost') {
-            return 'lost';
-        } else if (is_accumulator_trade_without_contract) {
-            return 'open';
-        }
-
-        return 'won';
-    };
-
-    const barrier_color = getColor({
-        status: getStatus(),
-        is_dark_theme,
-    });
-
-    const tick_color = is_accumulator_trade_without_contract
-        ? getColor({ status: 'fg', is_dark_theme })
-        : getColor({
-              is_dark_theme,
-              status: contract_status,
-              profit: is_sold || is_accu_contract_ended ? profit : null,
-          });
-
-    const markers = [
-        {
-            epoch,
-            quote: +high_barrier,
-            type: 'highBarrier',
-            color: barrier_color,
-            text: barrier_spot_distance ? `+${barrier_spot_distance}` : '',
-        },
-        {
-            epoch,
-            quote: +low_barrier,
-            type: 'lowBarrier',
-            color: barrier_color,
-            text: barrier_spot_distance ? `-${barrier_spot_distance}` : '',
-        },
-        {
-            epoch,
-            type: 'previousTick',
-            color: tick_color,
-        },
-    ];
-
-    return markers;
+    return undefined;
 }
 
-export function getAccumulatorMarkers({
-    prev_epoch,
-    high_barrier,
-    low_barrier,
-    is_accumulator_trade_without_contract = false,
-    has_crossed_accu_barriers = false,
-    is_dark_theme,
-    contract_info,
-    in_contract_details = false,
-    barrier_spot_distance,
-}) {
-    const markers = getAccumulatorBarrierMarkers({
-        contract_info,
-        high_barrier,
-        low_barrier,
-        is_accumulator_trade_without_contract,
-        is_dark_theme,
-        has_crossed_accu_barriers,
-        barrier_spot_distance,
-        prev_epoch,
-    });
+/**
+ * Start-time and entry-spot markers for an open Accumulator contract.
+ *
+ * The barrier band itself is NOT a marker any more — it is a native chart
+ * annotation fed through the `accumulatorBarriers` prop (see
+ * `ContractTradeStore.accumulator_barriers_payload`), which is what the Deriv
+ * mobile app uses too. What is left here is the same pair of markers mobile
+ * draws with the default tick painter.
+ *
+ * Returns null when the contract hasn't started yet.
+ */
+export function getAccumulatorMarkers({ contract_info }) {
+    const { date_start, entry_spot, entry_spot_time } = contract_info || {};
+
+    if (!date_start || !entry_spot) return null;
 
     return {
         type: 'AccumulatorContract',
-        markers,
-        props: {
-            hasPersistentBorders: in_contract_details,
-        },
+        // Accumulators are non-directional; 'up' keeps the default styling.
+        direction: 'up',
+        markers: [
+            {
+                epoch: date_start,
+                quote: +entry_spot,
+                type: 'startTime',
+            },
+            ...(entry_spot_time
+                ? [
+                      {
+                          epoch: entry_spot_time,
+                          quote: +entry_spot,
+                          type: 'entrySpot',
+                      },
+                  ]
+                : []),
+        ],
     };
 }

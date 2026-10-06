@@ -31,6 +31,13 @@ jest.mock('@deriv/shared', () => ({
     WS: mockWS,
 }));
 
+// Portrait by default, so every other test keeps the caption it was written against.
+const mockUseIsPhoneLandscape = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
+    __esModule: true,
+    default: () => mockUseIsPhoneLandscape(),
+}));
+
 // Mock useContractsFor hook to avoid WS dependency
 jest.mock('AppV2/Hooks/useContractsFor', () => ({
     __esModule: true,
@@ -51,6 +58,7 @@ describe('PositionsContent', () => {
 
     beforeEach(() => {
         mockAddSnackbar.mockClear();
+        mockUseIsPhoneLandscape.mockReturnValue(false);
         default_mock_store = mockStore({
             portfolio: {
                 all_positions: [
@@ -442,6 +450,29 @@ describe('PositionsContent', () => {
             [CONTRACT_TYPES.ACCUMULATOR]: { id: 5678, has_error: false },
         } as unknown as typeof default_mock_store.modules.trade.proposal_info;
     };
+
+    it('should show the selected growth rate on the Buy button in landscape', () => {
+        setAccuTradeType();
+        // No running accumulator, so the button is the Buy one rather than Close.
+        default_mock_store.portfolio.all_positions = [];
+        default_mock_store.modules.trade.growth_rate = 0.03;
+        mockUseIsPhoneLandscape.mockReturnValue(true);
+        mockPurchaseButton();
+
+        expect(screen.getByText('Growth')).toBeInTheDocument();
+        expect(screen.getByText('3%')).toBeInTheDocument();
+    });
+
+    it('should keep the growth rate off the Buy button outside landscape', () => {
+        // Only landscape asks for it — everywhere else the rate is read from the trade params.
+        setAccuTradeType();
+        // No running accumulator, so the button is the Buy one rather than Close.
+        default_mock_store.portfolio.all_positions = [];
+        default_mock_store.modules.trade.growth_rate = 0.03;
+        mockPurchaseButton();
+
+        expect(screen.queryByText('Growth')).not.toBeInTheDocument();
+    });
 
     it('should show a loading Buy button and not call onPurchaseV2 while an Accumulators contract is expired but not sold yet', async () => {
         setAccuTradeType();

@@ -9,9 +9,10 @@ import usePillDrag from '../use-pill-drag';
  * A real node so the hook's direct `style.transform` writes are observable, with the rects stubbed:
  * jsdom computes no layout, so `getBoundingClientRect` is all zeroes and `offsetParent` is null.
  *
- * Models the pill as the CSS does — left-anchored 72px in (clear of the chart toolbar) inside an 800px
- * container, so changing its width moves its right edge and leaves its left edge put. The rect reports
- * whatever transform is currently applied, as a real element would.
+ * Left-anchored inside an 800px container, so changing its width moves its right edge and leaves its
+ * left edge put. The rect reports whatever transform is currently applied, as a real element would.
+ * The 72px origin is deliberately deeper than the CSS's 16px inset, so there is leftward travel to
+ * observe before the clamp bites.
  */
 const buildRef = ({ origin_left = 72, width = 200, container_width = 800 } = {}) => {
     let current_width = width;
@@ -33,15 +34,6 @@ const buildRef = ({ origin_left = 72, width = 200, container_width = 800 } = {})
             current_width = next;
         },
     };
-};
-
-/** Stands in for SmartCharts' floating toolbar, which the pill must not be dragged over. */
-const mountToolbar = ({ left = 16, width = 40 } = {}) => {
-    const toolbar = document.createElement('div');
-    toolbar.className = 'sc-toolbar-widget';
-    toolbar.getBoundingClientRect = () => ({ left, right: left + width, width }) as DOMRect;
-    document.body.appendChild(toolbar);
-    return () => toolbar.remove();
 };
 
 const buildTargets = () => {
@@ -138,24 +130,6 @@ describe('usePillDrag', () => {
         act(() => result.current.onPointerMove(move));
 
         expect(move.currentTarget.setPointerCapture).toHaveBeenCalledWith(1);
-    });
-
-    it('[LPD-003] stops at the chart toolbar rather than covering its controls', () => {
-        // The toolbar ends at 56px, so the pill may come no closer than 72 — exactly where it rests.
-        const unmount_toolbar = mountToolbar();
-        try {
-            const { chrome } = buildTargets();
-            const { ref, wrapper } = buildRef();
-            const { result } = renderHook(() => usePillDrag({ offset_x: 0, onCommit: jest.fn(), wrapper_ref: ref }));
-
-            act(() => result.current.onPointerDown(pointer(700, chrome)));
-            act(() => result.current.onPointerMove(pointer(0, chrome)));
-
-            // Without the toolbar it could travel to the 16px container inset, 56px further left.
-            expect(wrapper).toHaveStyle({ transform: '' });
-        } finally {
-            unmount_toolbar();
-        }
     });
 
     it('[LPD-003] clamps at the container edge rather than sliding off', () => {

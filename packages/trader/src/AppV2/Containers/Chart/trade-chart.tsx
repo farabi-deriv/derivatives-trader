@@ -6,11 +6,12 @@ import { observer, useStore } from '@deriv/stores';
 import { useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
+import ChartGrowthRate from 'AppV2/Components/ChartGrowthRate';
+import useAccumulatorGrowthRatePicker from 'AppV2/Hooks/useAccumulatorGrowthRatePicker';
 import useActiveSymbols from 'AppV2/Hooks/useActiveSymbols';
 import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { filterPositionsBySymbolAndTradeType } from 'AppV2/Utils/positions-utils';
 import { SmartChart } from 'Modules/SmartChart';
-import AccumulatorsChartElements from 'Modules/SmartChart/Components/Markers/accumulators-chart-elements';
 import ToolbarWidgets from 'Modules/SmartChart/Components/toolbar-widgets';
 import useBarrierTouchDrag from 'Modules/SmartChart/Hooks/useBarrierTouchDrag';
 import { useSmartChartsAdapter } from 'Modules/SmartChart/Hooks/useSmartChartsAdapter';
@@ -46,7 +47,21 @@ const BottomWidgetsMobile = observer(({ digits, tick }: TBottomWidgetsParams) =>
     return null;
 });
 
-const TradeChart = observer(() => {
+type TTradeChart = {
+    /**
+     * Set when a gesture lands on the Accumulators band, so the landscape
+     * tap-to-maximize does not also act on it. Written on the press rather than
+     * the tap: see `useAutoHideChrome`'s `tap_claim_ref`.
+     */
+    tap_claim_ref?: React.MutableRefObject<boolean>;
+    /**
+     * Told when the growth-rate picker opens or closes, so the landscape surface
+     * can pause its tap-to-maximize while it is up.
+     */
+    onPickerOpenChange?: (is_open: boolean) => void;
+};
+
+const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange }: TTradeChart = {}) => {
     const { ui, common, contract_trade, portfolio, client } = useStore();
     const { isMobile } = useDevice();
     // Phone landscape reports isMobile false; use the phone-viewport predicate for the touch-modality
@@ -54,11 +69,9 @@ const TradeChart = observer(() => {
     const is_phone_viewport = useIsPhoneViewport();
     const { is_logged_in } = client;
     const {
-        accumulator_barriers_data,
-        accumulator_contract_barriers_data,
+        accumulator_barriers_payload,
         chart_type,
         granularity,
-        has_crossed_accu_barriers,
         markers_array,
         updateChartType,
         updateGranularity,
@@ -162,7 +175,33 @@ const TradeChart = observer(() => {
         [current_language, has_barrier, is_accumulator, is_dark_mode_on, is_phone_viewport]
     );
 
-    const { current_spot, current_spot_time } = accumulator_barriers_data || {};
+    // The payload names the market it was built for, and this compares it against
+    // the one on screen. The contract-trade store is told the active market by a
+    // reaction on the trade store, so for the frame between the symbol moving and
+    // that reaction running the payload still describes the market we just left —
+    // and a finished contract's band and profit label would follow us onto this
+    // chart. Handing the chart null for that frame is what stops it.
+    // Interactive barriers: the band is a tap target and this owns the picker it
+    // opens. The ladder and the enablement rules are the app's; the chart only
+    // draws the band at whatever rate the picker is showing.
+    const {
+        interaction_config: accumulator_interaction,
+        onBarrierTap,
+        onBarrierPress,
+        picker: growth_rate_picker,
+        is_open: is_growth_rate_picker_open,
+    } = useAccumulatorGrowthRatePicker({ tap_claim_ref });
+
+    React.useEffect(() => {
+        onPickerOpenChange?.(is_growth_rate_picker_open);
+    }, [is_growth_rate_picker_open, onPickerOpenChange]);
+
+    const accumulator_barriers = React.useMemo(() => {
+        if (accumulator_barriers_payload?.symbol !== symbol) return null;
+        return accumulator_interaction
+            ? { ...accumulator_barriers_payload, interaction: accumulator_interaction }
+            : accumulator_barriers_payload;
+    }, [accumulator_barriers_payload, symbol, accumulator_interaction]);
 
     // Use centralized SmartCharts adapter hook
     const { chartData, error, getQuotes, subscribeQuotes, unsubscribeQuotes, retryFetchChartData } =
@@ -280,6 +319,9 @@ const TradeChart = observer(() => {
                 ref={ref}
                 barriers={barriers}
                 contracts_array={markers_array}
+                accumulatorBarriers={accumulator_barriers}
+                onAccumulatorBarrierTap={onBarrierTap}
+                onAccumulatorBarrierPress={onBarrierPress}
                 bottomWidgets={BottomWidgetsMobile}
                 showLastDigitStats
                 // Digit trade types settle on the quote's last digit, so the
@@ -321,7 +363,9 @@ const TradeChart = observer(() => {
                 shouldFetchTradingTimes={false}
                 hasAlternativeSource={has_alternative_source}
                 getMarketsOrder={getMarketsOrder}
-                should_zoom_out_on_yaxis={is_accumulator}
+                verticalPaddingFraction={
+                    is_accumulator ? CHART_CONSTANTS.ACCUMULATOR_VERTICAL_PADDING_FRACTION : undefined
+                }
                 yAxisMargin={yAxisMargin}
                 isLive
                 leftMargin={
@@ -329,19 +373,8 @@ const TradeChart = observer(() => {
                         ? CHART_CONSTANTS.LEFT_MARGIN_WITH_DRAWER
                         : CHART_CONSTANTS.LEFT_MARGIN_DEFAULT
                 }
-            >
-                {is_accumulator && (
-                    <AccumulatorsChartElements
-                        all_positions={all_positions}
-                        current_spot={current_spot}
-                        current_spot_time={current_spot_time}
-                        has_crossed_accu_barriers={has_crossed_accu_barriers}
-                        should_show_profit_text={!!accumulator_contract_barriers_data.accumulators_high_barrier}
-                        symbol={symbol}
-                        is_mobile={is_phone_viewport}
-                    />
-                )}
-            </SmartChart>
+            />
+            <ChartGrowthRate picker={growth_rate_picker} />
         </>
     );
 });

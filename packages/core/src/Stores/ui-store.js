@@ -115,6 +115,12 @@ export default class UIStore extends BaseStore {
     has_seen_landscape_prompt = false;
     // The landscape "tap to show or hide controls" card. Persisted, like the prompt above.
     has_seen_landscape_onboarding = false;
+    // How many times the user has tapped the Accumulators barrier band on the chart to open the
+    // growth-rate picker. The hand that hints at the band rides on this: a count rather than a flag
+    // because doing something once is easy to forget by the next session, and three times is a habit
+    // — see the cap in `useAccumulatorGrowthRatePicker`. Persisted like the onboarding above, and for
+    // the same reason: without it the hand would pulse on every visit forever.
+    accumulator_barrier_guide_tap_count = 0;
     // How far the floating params pill has been dragged along the inline axis, px, signed against the
     // reading direction (negative = away from its anchored edge). Unlike the two flags above this one
     // IS persisted — the user places the pill to uncover part of the chart and expects it to stay put.
@@ -165,6 +171,7 @@ export default class UIStore extends BaseStore {
             'landscape_params_offset_x',
             'has_seen_landscape_prompt',
             'has_seen_landscape_onboarding',
+            'accumulator_barrier_guide_tap_count',
             // 'is_purchase_confirm_on',
             // 'is_purchase_lock_on',
             'should_show_cancellation_warning',
@@ -180,6 +187,7 @@ export default class UIStore extends BaseStore {
             landscape_params_offset_x: observable,
             has_seen_landscape_prompt: observable,
             has_seen_landscape_onboarding: observable,
+            accumulator_barrier_guide_tap_count: observable,
             screen_width: observable,
             screen_height: observable,
             is_onscreen_keyboard_active: observable,
@@ -235,6 +243,7 @@ export default class UIStore extends BaseStore {
             setLandscapeParamsOffsetX: action.bound,
             setHasSeenLandscapePrompt: action.bound,
             setHasSeenLandscapeOnboarding: action.bound,
+            markAccumulatorBarrierGuideTapped: action.bound,
             toggleChartMaximized: action.bound,
             setCurrentFocus: action.bound,
             setDarkMode: action.bound,
@@ -450,6 +459,12 @@ export default class UIStore extends BaseStore {
 
     setHasSeenLandscapeOnboarding(has_seen) {
         this.has_seen_landscape_onboarding = has_seen;
+    }
+
+    // Incremented rather than assigned so a caller never has to read the count back to raise it,
+    // which two charts sharing the store would get wrong.
+    markAccumulatorBarrierGuideTapped() {
+        this.accumulator_barrier_guide_tap_count += 1;
     }
 
     toggleChartMaximized() {

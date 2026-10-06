@@ -124,6 +124,57 @@ describe('TradeChart', () => {
         expect(mockSmartChartProps.isConnectionOpened).toBe(true);
     });
 
+    // The contract-trade store resolves the active market through sessionStorage, which mobx cannot
+    // observe, so switching market tabs leaves its accumulator payload describing the previous one.
+    // Handing that to the chart drags a finished contract's band and profit label onto the new market.
+    describe('accumulator barriers across a market switch', () => {
+        type TPayload = NonNullable<ReturnType<typeof mockStore>['contract_trade']['accumulator_barriers_payload']>;
+
+        const closedBandFor = (symbol: string): TPayload => ({
+            symbol,
+            closed: { highBarrier: '101', lowBarrier: '99', exitSpot: 100, exitEpoch: 1000 },
+        });
+
+        const proposalBandFor = (symbol: string): TPayload => ({
+            symbol,
+            live: { highBarrier: '101', lowBarrier: '99', barrierEpoch: 1000, spot: 100, spotEpoch: 1000 },
+        });
+
+        const renderWithPayload = (payload: TPayload) => {
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            store.contract_trade.accumulator_barriers_payload = payload;
+            mockedTradeChart(store);
+        };
+
+        it('passes the barriers through when they describe the symbol on screen', async () => {
+            const payload = closedBandFor('EURUSD');
+            renderWithPayload(payload);
+
+            expect(await screen.findByText(mock_chart)).toBeInTheDocument();
+            expect(mockSmartChartProps.accumulatorBarriers).toBe(payload);
+        });
+
+        it('withholds barriers left over from the market the user just left', async () => {
+            renderWithPayload(closedBandFor('R_50'));
+
+            expect(await screen.findByText(mock_chart)).toBeInTheDocument();
+            expect(mockSmartChartProps.accumulatorBarriers).toBeNull();
+        });
+
+        // Regression: an earlier fix resolved the market from a second computed whose
+        // dependencies differed from the payload's. With no contract open that one never
+        // re-ran, so a just-switched market's proposal band was rejected outright and only
+        // appeared once buying a contract finally invalidated it.
+        it('shows a proposal-only band for the new market right after a switch', async () => {
+            const payload = proposalBandFor('EURUSD');
+            renderWithPayload(payload);
+
+            expect(await screen.findByText(mock_chart)).toBeInTheDocument();
+            expect(mockSmartChartProps.accumulatorBarriers).toBe(payload);
+        });
+    });
+
     // The chart is a canvas: it reads nothing from the app's CSS, so `settings.theme` is the only
     // thing that keeps it in the same theme as the page.
     describe('chart theme', () => {
@@ -280,6 +331,34 @@ describe('TradeChart', () => {
             mockToolbarWidgetsProps.updateGranularity(60);
 
             expect(store.contract_trade.updateGranularity).not.toHaveBeenCalled();
+        });
+    });
+
+    // Not layout-dependent: the barriers are a control in every layout.
+    describe('Y-axis scale', () => {
+        it('opens fully zoomed in for accumulators', async () => {
+            // Zoomed out the band collapses to a few pixels and is neither
+            // readable nor draggable.
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            // is_accumulator is derived from contract_type via isAccumulatorContract.
+            store.modules.trade.contract_type = TRADE_TYPES.ACCUMULATOR;
+            mockedTradeChart(store);
+
+            await screen.findByText(mock_chart);
+
+            expect(mockSmartChartProps.verticalPaddingFraction).toBe(0.05);
+        });
+
+        it('leaves the scale to the chart for every other trade type', async () => {
+            const store = mockStore({});
+            store.modules.trade.symbol = 'EURUSD';
+            store.modules.trade.contract_type = TRADE_TYPES.RISE_FALL;
+            mockedTradeChart(store);
+
+            await screen.findByText(mock_chart);
+
+            expect(mockSmartChartProps.verticalPaddingFraction).toBeUndefined();
         });
     });
 

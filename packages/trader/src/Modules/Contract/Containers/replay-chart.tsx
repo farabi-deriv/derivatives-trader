@@ -9,6 +9,7 @@ import { SmartChart } from 'Modules/SmartChart';
 import ChartMarker from 'Modules/SmartChart/Components/Markers/marker';
 import ResetContractChartElements from 'Modules/SmartChart/Components/Markers/reset-contract-chart-elements';
 import { useSmartChartsAdapter } from 'Modules/SmartChart/Hooks/useSmartChartsAdapter';
+import { CHART_CONSTANTS } from 'Modules/SmartChart/Utils/chart-utils';
 
 import { ChartBottomWidgets, ChartTopWidgets } from './contract-replay-widget';
 
@@ -27,8 +28,14 @@ const ReplayChart = observer(
         const { contract_replay, common, ui } = useStore();
         const { isMobile } = useDevice();
         const { contract_store, chart_state, chartStateChange, margin } = contract_replay;
-        const { contract_config, is_digit_contract, barriers_array, getContractsArray, markers_array, contract_info } =
-            contract_store;
+        const {
+            contract_config,
+            is_digit_contract,
+            barriers_array,
+            accumulator_barriers_payload,
+            markers_array,
+            contract_info,
+        } = contract_store;
         const symbol = contract_info.underlying_symbol;
         const { audit_details, barrier_count } = contract_info;
         const allow_scroll_to_epoch = chart_state === 'READY' || chart_state === 'SCROLL_TO_LEFT';
@@ -171,7 +178,12 @@ const ReplayChart = observer(
                     !!is_accumulator_contract && !!end_epoch && Number(start_epoch) < Number(prev_start_epoch)
                 }
                 shouldFetchTradingTimes={false}
-                should_zoom_out_on_yaxis={is_accumulator_contract}
+                // Matches the trade chart. `should_zoom_out_on_yaxis` did the
+                // opposite — 25-33% margins and a 0.8 height factor — which
+                // leaves an Accumulators band too small to read.
+                verticalPaddingFraction={
+                    is_accumulator_contract ? CHART_CONSTANTS.ACCUMULATOR_VERTICAL_PADDING_FRACTION : undefined
+                }
                 yAxisMargin={getChartYAxisMargin()}
                 anchorChartToLeft={isMobile}
                 shouldFetchTickHistory={
@@ -179,7 +191,7 @@ const ReplayChart = observer(
                     contract_info.status === 'open'
                 }
                 contractInfo={contract_info}
-                contracts_array={getContractsArray()}
+                accumulatorBarriers={accumulator_barriers_payload}
                 isLive={!has_ended}
                 isVerticalScrollEnabled={!is_vertical_scroll_disabled}
                 startWithDataFitMode={true}

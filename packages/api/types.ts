@@ -109,6 +109,12 @@ type ContractsForSymbolResponse = Omit<BaseContractsForSymbolResponse, 'contract
                 underlying_symbol?: string;
                 default_stake?: number;
                 payout_choices?: number[];
+                /**
+                 * [Accumulators] Barrier offset per growth rate, parallel-indexed with
+                 * `growth_rate_range`. The barrier distance from the spot is
+                 * `current_spot * offset`.
+                 */
+                growth_rate_barrier_offsets?: number[];
             }
         >;
     };

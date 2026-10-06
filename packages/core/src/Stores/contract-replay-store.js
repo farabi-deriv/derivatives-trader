@@ -121,7 +121,7 @@ export default class ContractReplayStore extends BaseStore {
             this.reconnectHandler = null;
         }
 
-        this.root_store.contract_trade.clearAccumulatorBarriersData(true, true);
+        this.root_store.contract_trade.clearAccumulatorBarriersData(true);
     }
 
     populateConfig(response) {
@@ -251,7 +251,7 @@ export default class ContractReplayStore extends BaseStore {
 
             // Clear accumulator barriers data when contract is sold from contract details
             // This prevents stale barriers from being displayed when navigating back to trade page
-            this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
+            this.root_store.contract_trade.clearAccumulatorBarriersData(false);
 
             this.root_store.notifications.addNotificationMessage(
                 contractSold(this.root_store.client.currency, response.sell.sold_for, Money)

@@ -1,5 +1,11 @@
 import { TContractInfo, CONTRACT_TYPES } from '@deriv/shared';
-import { createTickMarkers, getMarkerContractType, getStartText } from '../chart-markers';
+import {
+    calculateMarker,
+    createTickMarkers,
+    getMarkerContractType,
+    getPriorTickEpoch,
+    getStartText,
+} from '../chart-markers';
 
 describe('createTickMarkers', () => {
     const previous_spot_classname = 'chart-spot__spot chart-spot__spot--accumulator-middle';
@@ -134,5 +140,69 @@ describe('createTickMarkers', () => {
     it('should keep showing the tick counter of a tick contract after it is sold', () => {
         Object.assign(contract_info, { tick_passed: 10, is_sold: 1 });
         expect(getStartText(contract_info)).toBe('10/10');
+    });
+});
+
+describe('getPriorTickEpoch', () => {
+    const tick_stream = [
+        { epoch: 10, tick: 1.1, tick_display_value: '1.1' },
+        { epoch: 20, tick: 1.2, tick_display_value: '1.2' },
+        { epoch: 30, tick: 1.3, tick_display_value: '1.3' },
+    ];
+
+    it('should return the last tick before the exit', () => {
+        expect(getPriorTickEpoch(tick_stream, 30)).toBe(20);
+    });
+
+    it('should return the same tick whether or not the exit tick has landed in the stream yet', () => {
+        // The exit tick is appended a beat after exit_spot_time arrives. Both
+        // shapes must resolve to the same barrier epoch, otherwise the finished
+        // contract's band shifts after it has already rendered.
+        const without_exit_tick = tick_stream.slice(0, -1);
+        expect(getPriorTickEpoch(without_exit_tick, 30)).toBe(getPriorTickEpoch(tick_stream, 30));
+    });
+
+    it('should ignore ticks at or after the exit', () => {
+        expect(getPriorTickEpoch(tick_stream, 10)).toBeUndefined();
+    });
+
+    it('should return undefined for an empty or missing tick stream', () => {
+        expect(getPriorTickEpoch([], 30)).toBeUndefined();
+        expect(getPriorTickEpoch(undefined, 30)).toBeUndefined();
+    });
+});
+
+describe('calculateMarker exit spot for accumulators', () => {
+    const finished_accumulator = {
+        contract_type: CONTRACT_TYPES.ACCUMULATOR,
+        status: 'sold',
+        is_sold: 1,
+        // calculateMarker returns an empty group until the first POC lands.
+        transaction_ids: { buy: 1, sell: 2 },
+        date_start: 100,
+        entry_spot: '1.2',
+        entry_spot_time: 101,
+        exit_spot: '1.25',
+        exit_spot_time: 110,
+        profit: '5',
+        currency: 'USD',
+        tick_stream: [
+            { epoch: 105, tick: 1.24, tick_display_value: '1.24' },
+            { epoch: 110, tick: 1.25, tick_display_value: '1.25' },
+        ],
+    } as unknown as TContractInfo;
+
+    const markerTypes = (contract_info: TContractInfo) =>
+        (calculateMarker(contract_info, false, true)?.markers ?? []).map(({ type }: { type: string }) => type);
+
+    it('should not push an exitSpot marker for a finished accumulator', () => {
+        // The closed-band annotation already paints the exit dot and its
+        // Won/Loss callout; a marker would stack a second dot on the same point.
+        expect(markerTypes(finished_accumulator)).not.toContain('exitSpot');
+    });
+
+    it('should still push an exitSpot marker for a finished non-accumulator', () => {
+        const finished_call = { ...finished_accumulator, contract_type: CONTRACT_TYPES.CALL };
+        expect(markerTypes(finished_call)).toContain('exitSpot');
     });
 });

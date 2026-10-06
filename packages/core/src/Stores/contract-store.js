@@ -1,4 +1,4 @@
-import { action, extendObservable, makeObservable, observable, runInAction } from 'mobx';
+import { action, computed, extendObservable, makeObservable, observable, runInAction } from 'mobx';
 
 import {
     BARRIER_COLORS,
@@ -7,7 +7,6 @@ import {
     DEFAULT_SHADES,
     getAccuBarriersDefaultTimeout,
     getAccuBarriersForContractDetails,
-    getContractStatus,
     getContractUpdateConfig,
     getContractValidationRules,
     getDigitInfo,
@@ -29,7 +28,7 @@ import {
 } from '@deriv/shared';
 import { BaseStore } from '@deriv/stores';
 
-import { calculateMarker, createChartMarkers, getAccumulatorMarkers } from './Helpers/chart-markers';
+import { calculateMarker, createChartMarkers, getPriorTickEpoch } from './Helpers/chart-markers';
 import { getChartConfig } from './Helpers/logic';
 
 export default class ContractStore extends BaseStore {
@@ -60,14 +59,13 @@ export default class ContractStore extends BaseStore {
             barriers_array: observable.shallow,
             markers_array: observable.shallow,
             marker: observable.ref,
-            accumulator_marker: observable.ref,
+            accumulator_barriers_payload: computed,
             populateConfig: action.bound,
             populateContractUpdateConfig: action.bound,
             populateContractUpdateHistory: action.bound,
             clearContractUpdateConfigValues: action.bound,
             onChange: action.bound,
             updateLimitOrder: action.bound,
-            getContractsArray: action.bound,
         });
 
         this.root_store = root_store;
@@ -107,7 +105,6 @@ export default class ContractStore extends BaseStore {
     barriers_array = [];
     markers_array = [];
     marker = null;
-    accumulator_marker = null;
 
     // ---- Normal properties ---
     is_ongoing_contract = false;
@@ -134,7 +131,7 @@ export default class ContractStore extends BaseStore {
         this.is_ended = isEnded(this.contract_info);
 
         if (this.is_ended && isAccumulatorContract(this.contract_info.contract_type)) {
-            this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
+            this.root_store.contract_trade.clearAccumulatorBarriersData(false);
         }
 
         this.is_digit_contract = isDigitContract(this.contract_info.contract_type);
@@ -189,9 +186,7 @@ export default class ContractStore extends BaseStore {
             high_barrier,
             low_barrier,
             status,
-            current_spot_time,
             underlying,
-            tick_stream: ticks = [],
         } = contract_info || {};
         const main_barrier = this.barriers_array?.[0];
         if (isAccumulatorContract(contract_info.contract_type)) {
@@ -205,23 +200,6 @@ export default class ContractStore extends BaseStore {
                 this.cached_barriers_data.status === status
             ) {
                 return;
-            }
-
-            const contract_status = getContractStatus(contract_info);
-            const is_accu_contract_ended = contract_status !== 'open';
-            const prev_epoch = is_accu_contract_ended
-                ? ticks[ticks.length - 2]?.epoch || ticks[ticks.length - 1]?.epoch
-                : current_spot_time;
-
-            if (is_accu_contract_ended) {
-                this.accumulator_marker = getAccumulatorMarkers({
-                    high_barrier,
-                    low_barrier,
-                    prev_epoch,
-                    is_dark_mode_on: is_dark_mode,
-                    contract_info,
-                    in_contract_details: true,
-                });
             }
 
             if (!this.barriers_array.length) {
@@ -247,15 +225,6 @@ export default class ContractStore extends BaseStore {
                             }
                             // this.markers_array contains tick markers & start/end vertical lines in C.Details page
                             this.markers_array = createChartMarkers(contract_info, true);
-
-                            this.accumulator_marker = getAccumulatorMarkers({
-                                high_barrier: this.accu_high_barrier,
-                                low_barrier: this.accu_low_barrier,
-                                prev_epoch,
-                                is_dark_mode_on: this.root_store.ui.is_dark_mode_on,
-                                contract_info: this.contract_info,
-                                in_contract_details: true,
-                            });
                         }
                     }),
                 isOpen(contract_info) ? getAccuBarriersDefaultTimeout(underlying) : 0
@@ -420,8 +389,70 @@ export default class ContractStore extends BaseStore {
             });
     }
 
-    getContractsArray() {
-        if (!this.accumulator_marker) return [];
-        return [this.accumulator_marker];
+    /**
+     * The Accumulators barrier band for the contract-details / replay chart, in
+     * the shape SmartCharts' `accumulatorBarriers` prop expects. Null for any
+     * other contract type.
+     *
+     * Same annotation the trade chart and the Deriv mobile app use — it keeps
+     * itself inside the Y-axis range, which is what the old marker-based band
+     * needed `hasPersistentBorders` for.
+     */
+    get accumulator_barriers_payload() {
+        const contract_info = this.contract_info || {};
+
+        if (!isAccumulatorContract(contract_info.contract_type)) return null;
+
+        const {
+            barrier_spot_distance,
+            currency,
+            current_spot,
+            current_spot_time,
+            exit_spot,
+            exit_spot_time,
+            is_sold,
+            profit,
+            tick_stream = [],
+        } = contract_info;
+
+        const high_barrier = this.accu_high_barrier;
+        const low_barrier = this.accu_low_barrier;
+
+        if (!high_barrier || !low_barrier) return null;
+
+        const profit_fields = profit == null ? {} : { profit: +profit, currency };
+
+        // A finished contract gets the frozen band, bounded by its exit tick.
+        if (exit_spot && exit_spot_time) {
+            return {
+                closed: {
+                    highBarrier: String(high_barrier),
+                    lowBarrier: String(low_barrier),
+                    // The tick before the exit — where the band starts.
+                    barrierEpoch: getPriorTickEpoch(tick_stream, exit_spot_time),
+                    // No barrierSpotDistance: the contract's is measured against
+                    // the live spot, so the chart recomputes it against the exit
+                    // spot — same as the mobile app's closed-band builder.
+                    exitSpot: +exit_spot,
+                    exitEpoch: exit_spot_time,
+                    ...profit_fields,
+                },
+            };
+        }
+
+        if (!current_spot || !current_spot_time) return null;
+
+        return {
+            live: {
+                highBarrier: String(high_barrier),
+                lowBarrier: String(low_barrier),
+                barrierEpoch: current_spot_time,
+                barrierSpotDistance: barrier_spot_distance || undefined,
+                spot: +current_spot,
+                spotEpoch: current_spot_time,
+                ...profit_fields,
+                ...(is_sold ? { isSold: true } : {}),
+            },
+        };
     }
 }

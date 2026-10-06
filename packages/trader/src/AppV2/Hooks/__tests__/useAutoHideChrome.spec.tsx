@@ -152,6 +152,85 @@ describe('useAutoHideChrome', () => {
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
     });
 
+    describe('a gesture claimed by what it landed on', () => {
+        // The Accumulators band is the case: tapping it opens the chart's own growth-rate
+        // control, and that tap is not also a request to maximize the view. The claim is
+        // written between this hook's pointerdown and its pointerup, because the hook
+        // listens in the capture phase and so decides before the event reaches the chart.
+        const claimDuringGesture = (claim: React.MutableRefObject<boolean>) => {
+            document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            claim.current = true;
+            document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+        };
+
+        it('does not collapse visible chrome', () => {
+            const { store, wrapper } = buildWrapper({ is_hidden: false });
+            const tap_claim_ref = { current: false };
+            renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
+
+            act(() => claimDuringGesture(tap_claim_ref));
+
+            expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+        });
+
+        it('does not restore hidden chrome either', () => {
+            const { store, wrapper } = buildWrapper({ is_hidden: true });
+            const tap_claim_ref = { current: false };
+            renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
+
+            act(() => claimDuringGesture(tap_claim_ref));
+
+            expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+        });
+
+        it('still counts as activity, so the countdown restarts', () => {
+            const { store, wrapper } = buildWrapper({ is_hidden: false });
+            const tap_claim_ref = { current: false };
+            renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
+
+            act(() => jest.advanceTimersByTime(DEFAULT_DELAY_MS - 1000));
+            act(() => claimDuringGesture(tap_claim_ref));
+
+            // Would have hidden by now had the claim not re-armed the timer.
+            act(() => jest.advanceTimersByTime(1000));
+            expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+
+            act(() => jest.advanceTimersByTime(DEFAULT_DELAY_MS));
+            expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
+        });
+
+        it('cannot leak into the next gesture', () => {
+            const { store, wrapper } = buildWrapper({ is_hidden: false });
+            const tap_claim_ref = { current: false };
+            renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
+
+            act(() => claimDuringGesture(tap_claim_ref));
+            expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+
+            // A plain tap on the screen afterwards toggles as it always did: the claim is
+            // cleared at the start of every gesture, not when it is honoured.
+            act(() => {
+                document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+                document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            });
+
+            expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
+        });
+
+        it('leaves the toggle alone when nothing claims the gesture', () => {
+            const { store, wrapper } = buildWrapper({ is_hidden: false });
+            const tap_claim_ref = { current: false };
+            renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
+
+            act(() => {
+                document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+                document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            });
+
+            expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
+        });
+    });
+
     it('[LAH-006] a cancelled gesture does not toggle', () => {
         const { store, wrapper } = buildWrapper({ is_hidden: false });
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });

@@ -206,6 +206,11 @@ describe('LandscapeTradeParams', () => {
         pointer(chip, 'pointerdown', { clientX: 700, clientY: 300 });
         pointer(chip, 'pointermove', { clientX: 640, clientY: 228 });
 
+        // Asserted on the attribute, like the stepping assertions above. The chip is a
+        // `div` with `role='spinbutton'`, not a form control, so `toHaveValue` reads
+        // `aria-valuenow` back as a number and never matches the string `getAttribute`
+        // returns — which is exactly how these three assertions came to be broken.
+        // eslint-disable-next-line jest-dom/prefer-to-have-value
         expect(chip).toHaveAttribute('aria-valuenow', before);
         expect(screen.getByTestId('dt_landscape_params')).toHaveStyle({ transform: 'translateX(-60px)' });
     });
@@ -234,6 +239,8 @@ describe('LandscapeTradeParams', () => {
         pointer(pill, 'pointermove', { clientX: 640, clientY: 300 });
 
         expect(wrapper).toHaveStyle({ transform: 'translateX(-60px)' });
+        // Not `toHaveValue` — see the note in the chip-drag case above.
+        // eslint-disable-next-line jest-dom/prefer-to-have-value
         expect(chip).toHaveAttribute('aria-valuenow', before);
     });
 
@@ -319,6 +326,8 @@ describe('LandscapeTradeParams', () => {
         pointer(panel, 'pointerdown', { clientY: 128 });
 
         expect(screen.getByTestId('dt_landscape_value_panel')).toBe(panel);
+        // Not `toHaveValue` — see the note in the chip-drag case above.
+        // eslint-disable-next-line jest-dom/prefer-to-have-value
         expect(chip).toHaveAttribute('aria-valuenow', value_after_first_drag);
     });
 

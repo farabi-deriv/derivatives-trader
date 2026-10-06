@@ -67,7 +67,7 @@ describe('<ReplayChart>', () => {
                     },
                     is_digit_contract: false,
                     barriers_array: [],
-                    getContractsArray: () => [],
+                    accumulator_barriers_payload: null,
                     markers_array: [],
                     contract_info: {
                         underlying_symbol: 'R_50',

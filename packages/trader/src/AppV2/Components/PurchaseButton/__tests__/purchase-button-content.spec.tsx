@@ -120,6 +120,32 @@ describe('PurchaseButtonContent', () => {
         expect(screen.getByText(/19.23/)).toBeInTheDocument();
     });
 
+    it('should render the growth rate for a fresh accumulator when one is passed', () => {
+        render(<PurchaseButtonContent {...mock_props} is_accumulator growth_rate={0.03} max_payout={6000} />);
+
+        expect(screen.getByText('Growth')).toBeInTheDocument();
+        expect(screen.getByText('3%')).toBeInTheDocument();
+        // It replaces the caption rather than joining it.
+        expect(screen.queryByText(localized_basis.max_payout)).not.toBeInTheDocument();
+    });
+
+    it('should render the growth rate even where the button would otherwise be label-only', () => {
+        // Landscape is exactly that case: `has_no_button_content` is what empties the row, and the
+        // growth rate is what the spec puts back into it.
+        render(<PurchaseButtonContent {...mock_props} is_accumulator has_no_button_content growth_rate={0.01} />);
+
+        expect(screen.getByText('Growth')).toBeInTheDocument();
+        expect(screen.getByText('1%')).toBeInTheDocument();
+    });
+
+    it('should not wait on the proposal to show the growth rate', () => {
+        // It is picked locally, not priced, so it must never fall back to the skeleton or the dash.
+        render(<PurchaseButtonContent {...mock_props} is_accumulator growth_rate={0.05} info={{} as TInfo} />);
+
+        expect(screen.getByText('5%')).toBeInTheDocument();
+        expect(screen.queryByTestId('square-skeleton')).not.toBeInTheDocument();
+    });
+
     it('[SEC-002] quotes the priced payout with no client-side balance withholding', () => {
         render(<PurchaseButtonContent {...mock_props} />);
 

@@ -816,7 +816,7 @@ describe('TradeStore', () => {
         describe('resetAccumulatorData', () => {
             it('should call clearAccumulatorBarriersData', () => {
                 tradeStore.resetAccumulatorData();
-                expect(mockRootStore.contract_trade.clearAccumulatorBarriersData).toHaveBeenCalledWith(false, true);
+                expect(mockRootStore.contract_trade.clearAccumulatorBarriersData).toHaveBeenCalledWith(false);
             });
         });
     });

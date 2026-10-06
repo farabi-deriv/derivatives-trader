@@ -157,6 +157,7 @@ export type TConfig = ReturnType<typeof getContractTypesConfig>[string]['config'
     trade_types?: { [key: string]: string };
     barriers?: ReturnType<typeof buildBarriersConfig>;
     growth_rate_range?: number[];
+    growth_rate_barrier_offsets?: number[];
     multiplier_range?: number[];
     cancellation_range?: string[];
     barrier_choices?: string[];

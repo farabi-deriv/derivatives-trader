@@ -280,6 +280,7 @@ type TUiStore = {
     landscape_params_offset_x: number;
     has_seen_landscape_prompt: boolean;
     has_seen_landscape_onboarding: boolean;
+    accumulator_barrier_guide_tap_count: number;
     is_dark_mode_on: boolean;
     theme_preference: 'light' | 'dark' | 'system';
     is_loading: boolean;
@@ -309,6 +310,7 @@ type TUiStore = {
     setLandscapeParamsOffsetX: (value: number) => void;
     setHasSeenLandscapePrompt: (value: boolean) => void;
     setHasSeenLandscapeOnboarding: (value: boolean) => void;
+    markAccumulatorBarrierGuideTapped: () => void;
     toggleChartMaximized: () => void;
     resetPurchaseStates: () => void;
     setAppContentsScrollRef: (ref: React.MutableRefObject<null | HTMLDivElement>) => void;
@@ -422,9 +424,44 @@ type TBarriers = Array<{
     default_shade: string;
     updateColor: ({ barrier_color, shade_color }: { barrier_color?: string; shade_color?: string }) => void;
 }>;
+/**
+ * Accumulators barrier bands, shaped for SmartCharts' `accumulatorBarriers` prop.
+ *
+ * The chart renders them as native annotations. `live` tracks the spot — a
+ * pre-trade proposal without `profit`, a running contract with it — and `closed`
+ * is the frozen band of a contract that has just finished; both can show at once.
+ */
+type TAccumulatorBarriersPayload = {
+    /** The market these bands describe. Host bookkeeping; the chart ignores it. */
+    symbol: string | null;
+    live?: {
+        highBarrier: string;
+        lowBarrier: string;
+        barrierEpoch: number;
+        barrierSpotDistance?: string;
+        spot: number;
+        spotEpoch: number;
+        profit?: number;
+        currency?: string;
+        isSold?: boolean;
+    } | null;
+    closed?: {
+        highBarrier: string;
+        lowBarrier: string;
+        barrierEpoch?: number;
+        barrierSpotDistance?: string;
+        exitSpot: number;
+        exitEpoch: number;
+        profit?: number;
+        currency?: string;
+        retentionMs?: number;
+    } | null;
+    barrierDelayMs?: number;
+};
+
 type TContractTradeStore = {
-    accu_barriers_timeout_id: NodeJS.Timeout | null;
     accumulator_barriers_data: Partial<TAccumulatorBarriersData>;
+    accumulator_barriers_payload: TAccumulatorBarriersPayload | null;
     accumulator_contract_barriers_data: Partial<TAccumulatorContractBarriersData>;
     previous_accumulator_barriers_data: Partial<TAccumulatorBarriersData>;
     addContract: ({
@@ -438,8 +475,10 @@ type TContractTradeStore = {
         limit_order,
     }: TAddContractParams) => void;
     chart_type: string;
-    clearAccumulatorBarriersData: (should_clear_contract_data_only?: boolean, should_clear_timeout?: boolean) => void;
+    clearAccumulatorBarriersData: (should_clear_contract_data_only?: boolean) => void;
     clearError: () => void;
+    /** Records the market the user is on. This store cannot reach the trade store to ask. */
+    setActiveMarket: (market: { symbol?: string; contract_type?: string }) => void;
     contracts: TContractStore[];
     error_message: string;
     filtered_contracts: TPortfolioPosition[];
@@ -554,19 +593,7 @@ type TContractReplay = {
         contract_update_history: TContractStore['contract_update_history'];
         digits_info: { [key: number]: { digit: number; spot: string } };
         display_status: string;
-        getContractsArray: () => {
-            type: string;
-            markers: Array<{
-                color: string;
-                epoch: number;
-                quote?: number;
-                text?: string;
-                type: string;
-            }>;
-            props: {
-                hasPersistentBorders: boolean;
-            };
-        }[];
+        accumulator_barriers_payload: TAccumulatorBarriersPayload | null;
         is_digit_contract: boolean;
         is_ended: boolean;
         marker: {

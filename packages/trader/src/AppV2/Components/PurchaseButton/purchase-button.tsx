@@ -25,6 +25,7 @@ import { useDevice } from '@deriv-com/ui';
 import RiskDisclosureModal from 'AppV2/Components/RiskDisclosureModal';
 import useContractsFor from 'AppV2/Hooks/useContractsFor';
 import useErrorSnackbar from 'AppV2/Hooks/useErrorSnackbar';
+import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
 import { useRiskDisclosure } from 'AppV2/Hooks/useRiskDisclosure';
 import { getCurrencySymbol } from 'AppV2/Utils/currency-utils';
 import { getErrorSnackbarBottomOffset, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
@@ -65,6 +66,7 @@ const PurchaseButton = observer(() => {
         contract_type,
         currency,
         has_cancellation,
+        growth_rate,
         is_accumulator,
         is_chart_loading,
         is_multiplier,
@@ -123,8 +125,17 @@ const PurchaseButton = observer(() => {
         [basis_list]
     );
 
+    // Landscape leaves the button label-only for a fresh accumulator (see below),
+    // and the spec fills that empty row with the growth rate being bought at.
+    // Only while choosing: once a contract is running the rate is locked and the
+    // button switches to its own state.
+    const is_phone_landscape = useIsPhoneLandscape();
+    const landscape_growth_rate =
+        is_accumulator && !has_open_accu_contract && is_phone_landscape ? growth_rate : undefined;
+
     const purchase_button_content_props = {
         currency,
+        growth_rate: landscape_growth_rate,
         has_cancellation,
         has_open_accu_contract,
         is_accumulator,

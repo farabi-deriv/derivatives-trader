@@ -1,0 +1,103 @@
+// The growth-rate picker the Accumulators band opens.
+//
+// Positioned against `.trade__chart`, the same context ChartProfitLoss uses.
+// Unlike the old read-only readout this one IS the control, so it takes pointer
+// events — the band underneath is only what opened it.
+.chart-growth-rate {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%);
+    // Above the landscape params pill (z-index 10), which floats over the same
+    // chart area and otherwise paints on top of this. `.trade__chart` is
+    // `position: relative` with no z-index, so it opens no stacking context and
+    // this value is compared against that pill directly rather than being scoped
+    // inside the chart. Still well under the sidebar (100), the market drawer
+    // (150) and quill's snackbars (999).
+    z-index: 20;
+    // Hosts the drag — the browser must never claim it for a page pan.
+    touch-action: none;
+    user-select: none;
+    cursor: ns-resize;
+
+    // Label beside the wheel, not above it. That is the whole point of the
+    // layout: it halves the card's height, so it stops covering the band it was
+    // opened from.
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--core-spacing-400);
+
+    // The design's 198x128 is the outer box. There is no global reset in this
+    // repo — components opt in individually (see ChartProfitLoss) — so without
+    // this the padding is added on top and the card comes out 230 wide.
+    box-sizing: border-box;
+    inline-size: 19.8rem;
+    // 16 padding + the wheel's 24+4+40+4+24 + 16 padding. A floor, not a fixed
+    // height: a taller translation of the label should grow the card rather than
+    // spill out of it.
+    min-block-size: 12.8rem;
+    padding: var(--core-spacing-800);
+    border-radius: var(--core-borderRadius-800);
+
+    background: var(--semantic-color-monochrome-surface-normal-lowest);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    // One declaration, four inset layers — separate box-shadow lines would override each other.
+    box-shadow:
+        0 4px 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+        0 -4px 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+        4px 0 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset,
+        -4px 0 4px 0 var(--semantic-color-monochrome-surface-normal-low) inset;
+
+    @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+        background: var(--semantic-color-slate-solid-surface-frame-low);
+    }
+
+    // `--component-textIcon-*` rather than the `--semantic-color-typography-*` pair:
+    // those exist only in quill-tokens' Tailwind build, which this app does not load,
+    // so naming them leaves the colour inheriting.
+    &__label {
+        color: var(--component-textIcon-normal-subtle);
+        // Takes whatever width the wheel leaves. `min-inline-size: 0` because a
+        // flex item's default floor is its content, so without it a long
+        // translation would push the wheel out of the card instead of wrapping.
+        flex: 1 0 0;
+        min-inline-size: 0;
+        overflow-wrap: break-word;
+    }
+
+    // The same three rows as the landscape params panel — neighbour, current,
+    // neighbour. Its own copy of the sizing because that one is scoped under
+    // `.landscape-params`, which this is not inside.
+    &__rows {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        // 4px here, where the params panel uses 8px: this card is the shorter
+        // variant, and the tighter wheel is what brings it to 128.
+        gap: var(--core-spacing-200);
+        // Natural width, so the label gets the rest rather than the two sharing.
+        flex-shrink: 0;
+        white-space: nowrap;
+
+        // `min-block-size` because an out-of-range neighbour has no line box, so
+        // without it the rows shift at either end of the ladder.
+        .landscape-value-rows__row {
+            color: var(--component-textIcon-normal-prominent);
+            opacity: 0.32;
+            font-size: var(--text-size-s);
+            font-weight: var(--core-fontWeight-regular);
+            line-height: 2.4rem;
+            min-block-size: 2.4rem;
+        }
+
+        .landscape-value-rows__row--current {
+            opacity: 1;
+            min-block-size: 4rem;
+            font-size: var(--text-size-l);
+            font-weight: 800;
+            line-height: 4rem;
+        }
+    }
+}

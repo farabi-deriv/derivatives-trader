@@ -368,7 +368,7 @@ export default class PortfolioStore extends BaseStore {
                 );
             }
         } else if (!response.error && response.sell) {
-            this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
+            this.root_store.contract_trade.clearAccumulatorBarriersData(false);
             if (window.location.pathname !== routes.index || !(this.root_store.ui.is_mobile || isPhoneLandscape())) {
                 this.root_store.notifications.addNotificationMessage(
                     contractSold(this.root_store.client.currency, response.sell.sold_for, Money)

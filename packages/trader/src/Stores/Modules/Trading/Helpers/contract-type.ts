@@ -149,6 +149,8 @@ export const ContractType = (() => {
             config.barrier_choices = contract.barrier_choices as TConfig['barrier_choices'];
             config.payout_choices = contract.payout_choices as TConfig['payout_choices'];
             config.growth_rate_range = contract.growth_rate_range as TConfig['growth_rate_range'];
+            config.growth_rate_barrier_offsets =
+                contract.growth_rate_barrier_offsets as TConfig['growth_rate_barrier_offsets'];
             config.multiplier_range = contract.multiplier_range as TConfig['multiplier_range'];
             config.cancellation_range = contract.cancellation_range as TConfig['cancellation_range'];
 
@@ -731,6 +733,14 @@ export const ContractType = (() => {
                 contract_type,
                 'config',
                 'growth_rate_range',
+            ]) as number[]) || [],
+        // Parallel-indexed with accumulator_range_list: the barrier distance for a rate
+        // is `current_spot * accumulator_barrier_offsets[index of that rate]`.
+        accumulator_barrier_offsets:
+            (getPropertyValue(configFor(symbol).available_contract_types, [
+                contract_type,
+                'config',
+                'growth_rate_barrier_offsets',
             ]) as number[]) || [],
     });
 

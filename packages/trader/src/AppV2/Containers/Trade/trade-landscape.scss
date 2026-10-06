@@ -12,6 +12,20 @@
     &--animating .chartContainer {
         transition: none;
     }
+
+    // Landscape has no room for the chart tools, so the whole cluster goes —
+    // the collapsed ellipsis and the interval badge pinned to it, which would
+    // otherwise be left anchored to nothing.
+    //
+    // Hidden here rather than by returning null from the `toolbarWidget` prop:
+    // SmartCharts memoises that render prop on first render
+    // (`useCallback(toolbarWidget, [t.lang])`), so an orientation-dependent
+    // prop would go stale the moment the device is rotated. Reaching for the
+    // class is the established way to address this element from here — see
+    // `useAutoHideChrome`, which names it in its ignore list.
+    .sc-toolbar-widget {
+        display: none;
+    }
 }
 
 // The nav rail's width (sidebar.scss). The landscape toast is inset from the content area, not the
@@ -141,6 +155,21 @@ $LANDSCAPE_RAIL_WIDTH: 7.2rem;
         flex-shrink: 0;
     }
 
+    // Showing the header does not push the chart down by its own height: the
+    // chart both starts 72px lower and loses 72px of height, so its midpoint —
+    // and with it anything centred on the chart — moves by half that. The
+    // floating pill is anchored to the viewport bottom and does not move at
+    // all, so the growth-rate card's clearance over it closes by 36px and the
+    // card lands on the Buy button. Giving that half back leaves the card in
+    // the same place on screen whichever way the chrome is.
+    //
+    // Expressed against the header's own height so the two cannot drift apart,
+    // and keyed off `:not(--collapsed)` rather than a modifier on the root so
+    // the rule lives next to the height it is compensating for.
+    &__header:not(&__header--collapsed) ~ &__chart-tooltip .chart-growth-rate {
+        margin-block-start: calc(var(--core-size-3600) / -2);
+    }
+
     &__chart-tooltip {
         flex: 1;
         min-height: 0;
@@ -152,14 +181,14 @@ $LANDSCAPE_RAIL_WIDTH: 7.2rem;
             height: 100%;
         }
 
-        // Floating params pill, bottom-left over the chart, clear of SmartCharts' own toolbar: that
-        // sits at `left: 16px` with `width: 40px`, so it ends at 56px and the pill starts a 16px gap
-        // after it. Logical inset, so in RTL the pill moves to the opposite side from the toolbar
-        // (which is pinned `direction: ltr`) and the clearance is moot there. Draggable from here.
+        // Floating params pill, bottom-left over the chart, inset equally from both edges it hugs.
+        // It used to start 72px in to clear SmartCharts' own toolbar; that cluster is hidden in
+        // landscape (above), so the pill takes the plain inset. Logical, so it follows the reading
+        // direction. Draggable from here.
         .landscape-params {
             position: absolute;
             inset-block-end: 1.6rem;
-            inset-inline-start: 7.2rem;
+            inset-inline-start: 1.6rem;
             z-index: 10;
         }
 

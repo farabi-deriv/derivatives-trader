@@ -507,6 +507,12 @@ export default class TradeStore extends BaseStore<TRootStore> {
 
     // Accumulator trade params
     accumulator_range_list: number[] = [];
+    /**
+     * Barrier offset per growth rate from `contracts_for`, parallel-indexed with
+     * `accumulator_range_list`. The barrier distance from the spot for a rate is
+     * `current_spot * offset`.
+     */
+    accumulator_barrier_offsets: number[] = [];
     growth_rate = 0.03;
     maximum_payout = 0;
     maximum_ticks = 0;
@@ -636,6 +642,7 @@ export default class TradeStore extends BaseStore<TRootStore> {
 
         makeObservable(this, {
             accumulator_range_list: observable,
+            accumulator_barrier_offsets: observable,
             active_symbols: observable.ref, // Only react to reference changes
             amount: observable,
             barrier_1: observable,
@@ -882,6 +889,23 @@ export default class TradeStore extends BaseStore<TRootStore> {
             () => this.persistActiveTabTradeParams(),
             { equals: comparer.structural }
         );
+        // The core contract-trade store derives the Accumulators barriers and the chart
+        // markers against the active market, and it cannot reach this store to ask:
+        // the trader root store wraps core, not the other way round, and core's own
+        // `modules` is never populated. It used to read the market back out of
+        // BaseStore's sessionStorage snapshot, which mobx cannot observe — so a
+        // `computed` cached while the user sat on another trade type never invalidated
+        // when they switched back, and the barriers stayed gone until a page reload.
+        // Pushing it in keeps it observable on that side.
+        reaction(
+            () => [this.symbol, this.contract_type] as const,
+            ([symbol, contract_type]) =>
+                // Optional: the trader root store builds its modules before it copies
+                // `contract_trade` across, so this is undefined for the first tick of
+                // the store's life.
+                this.root_store.contract_trade?.setActiveMarket?.({ symbol, contract_type }),
+            { fireImmediately: true, equals: comparer.structural }
+        );
         reaction(
             () => [this.contract_expiry_type, this.duration_min_max, this.duration_unit, this.expiry_type],
             () => {
@@ -1063,7 +1087,7 @@ export default class TradeStore extends BaseStore<TRootStore> {
     }
 
     resetAccumulatorData() {
-        this.root_store.contract_trade.clearAccumulatorBarriersData(false, true);
+        this.root_store.contract_trade.clearAccumulatorBarriersData(false);
     }
 
     setV2ParamsInitialValues({

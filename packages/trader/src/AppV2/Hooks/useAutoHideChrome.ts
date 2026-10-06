@@ -19,6 +19,17 @@ type TUseAutoHideChrome = {
     /** While true the timer never hides chrome (a parameter editor / virtual keyboard is open). */
     is_paused?: boolean;
     delay_ms?: number;
+    /**
+     * Set by something that owns the gesture already, to stop it also toggling the chrome.
+     *
+     * A ref rather than a prop because of when it has to be written. This hook decides what a
+     * gesture means from a document listener in the CAPTURE phase, so it runs before the event
+     * reaches whatever it is actually over — a React handler, or the chart's canvas. Anything that
+     * wants to claim a gesture therefore has to do it between this hook's pointerdown and its
+     * pointerup, which no amount of re-rendering can express. Cleared here at the start of every
+     * gesture, so a claim can never outlive the one it was made for.
+     */
+    tap_claim_ref?: React.MutableRefObject<boolean>;
 };
 
 /**
@@ -26,7 +37,11 @@ type TUseAutoHideChrome = {
  * toggles it either way; the event still reaches its real target.
  * @returns `is_animating`, true for the ~300ms flip so the chart transition can be neutralised.
  */
-const useAutoHideChrome = ({ is_paused = false, delay_ms = DEFAULT_DELAY_MS }: TUseAutoHideChrome = {}) => {
+const useAutoHideChrome = ({
+    is_paused = false,
+    delay_ms = DEFAULT_DELAY_MS,
+    tap_claim_ref,
+}: TUseAutoHideChrome = {}) => {
     const { ui } = useStore();
     const { is_landscape_chrome_hidden, setLandscapeChromeHidden } = ui;
     const [is_animating, setIsAnimating] = React.useState(false);
@@ -44,6 +59,8 @@ const useAutoHideChrome = ({ is_paused = false, delay_ms = DEFAULT_DELAY_MS }: T
     const is_hidden_ref = React.useRef(is_landscape_chrome_hidden);
     is_paused_ref.current = is_paused;
     is_hidden_ref.current = is_landscape_chrome_hidden;
+    const tap_claim = React.useRef(tap_claim_ref);
+    tap_claim.current = tap_claim_ref;
 
     const armAnimation = React.useCallback(() => {
         setIsAnimating(true);
@@ -72,6 +89,9 @@ const useAutoHideChrome = ({ is_paused = false, delay_ms = DEFAULT_DELAY_MS }: T
             // under a nav tap, or drop the take-profit chip mid-scroll.
             // Cleared per gesture, so a restore whose click never arrived cannot eat a later one.
             swallow_click.current = false;
+            // Cleared here, in the capture phase, so whatever claims this gesture does so after —
+            // and so last gesture's claim cannot leak into this one.
+            if (tap_claim.current) tap_claim.current.current = false;
             tap.current = {
                 x: event.clientX,
                 y: event.clientY,
@@ -96,6 +116,13 @@ const useAutoHideChrome = ({ is_paused = false, delay_ms = DEFAULT_DELAY_MS }: T
 
             // Spent on dismissing what was open: no toggle either way, but still activity.
             if (start.was_paused) {
+                armTimer();
+                return;
+            }
+
+            // Claimed by whatever it landed on — the Accumulators band, say, which opens its own
+            // control. Still the user being active, so the countdown restarts; just not a toggle.
+            if (tap_claim.current?.current) {
                 armTimer();
                 return;
             }

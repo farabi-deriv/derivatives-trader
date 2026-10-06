@@ -251,6 +251,7 @@
         "types packages/trader/src/AppV2/Utils/market-selection-utils.ts TListSection",
         "types packages/trader/src/AppV2/Utils/market-selection-utils.ts TSubmarketGroup",
         "types packages/trader/src/AppV2/Utils/symbol-categories-utils.ts MarketGroup",
+        "types packages/trader/src/Stores/Modules/Trading/Helpers/accumulator-growth-rate-ladder.ts TAccumulatorGrowthRateStep",
         "types packages/trader/src/Stores/Modules/Trading/trade-store.ts TChartLayout",
         "types packages/trader/src/Stores/Modules/Trading/trade-store.ts TChartStateChangeOption",
         "types packages/trader/src/Stores/Modules/Trading/trade-store.ts TV2ParamsInitialValues",

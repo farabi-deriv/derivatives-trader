@@ -4,11 +4,6 @@ import React from 'react';
 const DRAG_THRESHOLD_PX = 8;
 // Gap kept between the pill and the chart's edges, matching its anchored inset.
 const EDGE_INSET_PX = 16;
-// SmartCharts' own floating toolbar, which shares the chart's bottom band with the pill. It is pinned
-// `direction: ltr`, so it stays physically left whatever the reading direction — hence measuring it
-// rather than reserving a leading inset.
-const CHART_TOOLBAR_SELECTOR = '.sc-toolbar-widget';
-const TOOLBAR_GAP_PX = 16;
 
 type TBounds = { min: number; max: number };
 
@@ -76,12 +71,7 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
         const box = wrapper.getBoundingClientRect();
         const edges = container.getBoundingClientRect();
 
-        // The chart toolbar is an obstacle, not just an inset: the pill's resting place already clears
-        // it, and a drag must not put the pill back over its controls.
-        const toolbar = document.querySelector(CHART_TOOLBAR_SELECTOR)?.getBoundingClientRect();
-        const left_limit = Math.max(edges.left + EDGE_INSET_PX, toolbar ? toolbar.right + TOOLBAR_GAP_PX : -Infinity);
-
-        const min = left_limit - (box.left - painted.current);
+        const min = edges.left + EDGE_INSET_PX - (box.left - painted.current);
         const max = edges.right - EDGE_INSET_PX - (box.right - painted.current);
         // Too wide to sit between the limits: any clamp would fight itself, so leave it anchored.
         return min > max ? null : { min, max };

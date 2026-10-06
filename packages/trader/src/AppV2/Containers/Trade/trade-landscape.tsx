@@ -31,8 +31,17 @@ const TradeLandscape = observer(() => {
     // Pause the auto-hide while a parameter editor is open so the pill can't collapse mid-edit, while
     // the account dropdown is open — it hangs off the header, so collapsing strands it — and while
     // PortraitPrompt blocks the page: it listens on the document, so the overlay cannot absorb taps.
+    // Claimed by the chart when a gesture starts on the Accumulators band, which opens its own
+    // growth-rate control — that tap is not also a request to maximize the view.
+    const tap_claim_ref = React.useRef(false);
+
+    // Paused while the growth-rate picker is up for the same reason as a param editor: a tap
+    // anywhere is spent dismissing it, and must not also maximize the view.
+    const [is_growth_rate_picker_open, setIsGrowthRatePickerOpen] = React.useState(false);
+
     const { is_animating } = useAutoHideChrome({
-        is_paused: is_overlay_open || is_account_dropdown_open || is_prompt_blocking,
+        is_paused: is_overlay_open || is_account_dropdown_open || is_prompt_blocking || is_growth_rate_picker_open,
+        tap_claim_ref,
     });
 
     // A param sheet / market selector open at rotate leaves quill's portal `body` overflow set, and the
@@ -63,7 +72,7 @@ const TradeLandscape = observer(() => {
             </div>
             <div className='trade-landscape__chart-tooltip'>
                 <section className='trade__chart'>
-                    <TradeChart />
+                    <TradeChart tap_claim_ref={tap_claim_ref} onPickerOpenChange={setIsGrowthRatePickerOpen} />
                 </section>
                 <LandscapeTradeParams onOverlayOpenChange={setIsOverlayOpen} />
                 <LandscapeFullscreenButton />

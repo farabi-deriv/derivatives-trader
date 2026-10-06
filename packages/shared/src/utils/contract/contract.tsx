@@ -8,13 +8,6 @@ import { capitalizeFirstLetter } from '../string/string_util';
 
 import { TContractInfo, TContractStore, TDigitsInfo, TLimitOrder, TTickItem } from './contract-types';
 
-type TGetAccuBarriersDTraderTimeout = (params: {
-    barriers_update_timestamp: number;
-    has_default_timeout: boolean;
-    tick_update_timestamp: number | null;
-    underlying: string;
-}) => number;
-
 // Trade types that are considered as vanilla financials
 export const VANILLA_FX_SYMBOLS = [
     'frxAUDUSD',
@@ -26,8 +19,6 @@ export const VANILLA_FX_SYMBOLS = [
     'frxXAGUSD',
 ] as const;
 
-// animation correction time is an interval in ms between ticks receival from API and their actual visual update on the chart
-export const ANIMATION_CORRECTION_TIME = 200;
 export const DELAY_TIME_1S_SYMBOL = 500;
 // generation_interval will be provided via API later to help us distinguish between 1-second and 2-second symbols
 export const symbols_2s = ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'];
@@ -223,21 +214,18 @@ export const isResetContract = (contract_type = '') => /RESET/i.test(contract_ty
 
 export const isCryptoContract = (underlying = '') => underlying.startsWith('cry');
 
+/**
+ * How long an Accumulators barrier update should be held back, in ms.
+ *
+ * Barriers and the tick they belong to arrive on separate messages, so applying
+ * them immediately makes the band jump ahead of the spot. 2-second symbols need
+ * twice the hold of 1-second ones.
+ *
+ * The hold itself is applied by the chart (it knows when the tick actually
+ * rendered); this only supplies the duration, via `accumulatorBarriers.barrierDelayMs`.
+ */
 export const getAccuBarriersDefaultTimeout = (symbol: string) => {
     return symbols_2s.includes(symbol) ? DELAY_TIME_1S_SYMBOL * 2 : DELAY_TIME_1S_SYMBOL;
-};
-
-export const getAccuBarriersDTraderTimeout: TGetAccuBarriersDTraderTimeout = ({
-    barriers_update_timestamp,
-    has_default_timeout,
-    tick_update_timestamp,
-    underlying,
-}) => {
-    if (has_default_timeout || !tick_update_timestamp) return getAccuBarriersDefaultTimeout(underlying);
-    const target_update_time =
-        tick_update_timestamp + getAccuBarriersDefaultTimeout(underlying) + ANIMATION_CORRECTION_TIME;
-    const difference = target_update_time - barriers_update_timestamp;
-    return difference < 0 ? 0 : difference;
 };
 
 export const getAccuBarriersForContractDetails = (contract_info: TContractInfo) => {

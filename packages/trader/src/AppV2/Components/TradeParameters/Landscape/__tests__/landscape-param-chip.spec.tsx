@@ -37,6 +37,10 @@ describe('LandscapeParamChip', () => {
         renderChip();
         const chip = screen.getByRole('spinbutton');
 
+        // The chip is a `div` with `role='spinbutton'`, not a form control, so
+        // `toHaveValue` reads `aria-valuenow` back as a number and never matches
+        // this string. Asserted on the attribute, like the lines below.
+        // eslint-disable-next-line jest-dom/prefer-to-have-value
         expect(chip).toHaveAttribute('aria-valuenow', '50');
         expect(chip).toHaveAttribute('aria-valuemin', '0');
         expect(chip).toHaveAttribute('aria-valuemax', '100');

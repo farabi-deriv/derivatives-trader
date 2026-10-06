@@ -17,7 +17,13 @@ import usePillDrag from './use-pill-drag';
 
 import './landscape-trade-params.scss';
 
-const IDLE_CLOSE_MS = 2000;
+/**
+ * How long a value picker stays up after the last interaction.
+ *
+ * Exported so the Accumulators growth-rate picker, which is the same control in
+ * a different place, closes on the same beat rather than on a number of its own.
+ */
+export const IDLE_CLOSE_MS = 2000;
 
 type TLandscapeTradeParams = {
     /** Fired when a parameter editor opens/closes, so the caller can pause the chrome auto-hide. */
