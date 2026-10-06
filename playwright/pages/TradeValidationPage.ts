@@ -837,7 +837,7 @@ export class TradeValidationPage extends TradeParametersPage {
      */
     private async fillBarrierDraftAndExpectMessage(
         value: string,
-        expectedMessage: string,
+        expectedMessage: string | RegExp,
         description: string,
         timeout = 20_000
     ): Promise<void> {
@@ -2462,10 +2462,10 @@ export class TradeValidationPage extends TradeParametersPage {
                 `${type}: empty barrier should show required validation`
             );
 
-            // Too-far copy comes from the proposal/API path after local validation passes.
+            // Too-far: friendly rewrite (no range args) or generic BarrierOutOfRange mapped copy.
             await this.fillBarrierDraftAndExpectMessage(
                 '123456',
-                'Your barrier is too far from the current spot. Enter a smaller distance.',
+                /Your barrier is too far from the current spot\. Enter a smaller distance\.|Barrier is out of acceptable range\./,
                 `${type}: a distance far from spot should show the too-far validation`
             );
 

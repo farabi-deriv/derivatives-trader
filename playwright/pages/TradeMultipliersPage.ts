@@ -667,15 +667,15 @@ export class TradeMultipliersPage extends TradeParametersPage {
      * Capture the absolute numeric amount so `toContainText` matches either surface.
      *
      * Waits until the mobile sheet shows `committedStake` and Stop out equals `expectedStopOutAmount`
-     * (stake when there is no SL; the Stop-loss amount when SL is set). A stale proposal can flash
+     * (the automatic `limit_order.stop_out` amount — 100% of stake on VOL indices). User Stop loss is
+     * a separate `limit_order.stop_loss` and does **not** rewrite this row. A stale proposal can flash
      * `$2.00` and stay there long enough to fool a stability-only check.
      *
      * The "Stop out level" (price) and "Commission" rows are asserted present (#1413) but their
      * values are not captured here — closed-contract Commission still comes from the open details API copy.
      *
      * @param committedStake - Stake already saved on the trade form (e.g. `'5.40'`).
-     * @param expectedStopOutAmount - Amount Order Details will show under "Stop out level"
-     *   (`stopLoss` when set, otherwise `committedStake`).
+     * @param expectedStopOutAmount - Automatic stop-out amount (committed stake on 100% markets).
      */
     private async readStopOut(committedStake: string, expectedStopOutAmount: string): Promise<{ stopOut: string }> {
         if (this.isMobile) {
@@ -994,7 +994,9 @@ export class TradeMultipliersPage extends TradeParametersPage {
         if (riskManagement) {
             await this.setRiskManagement(riskManagement);
         }
-        const { stopOut } = await this.readStopOut(stake, riskManagement?.stopLoss ?? stake);
+        // Automatic stop-out equals committed stake on these VOL 1s indices — user Stop-loss
+        // (riskManagement?.stopLoss) is a separate limit_order.stop_loss and never rewrites this row.
+        const { stopOut } = await this.readStopOut(stake, stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();
@@ -1132,7 +1134,9 @@ export class TradeMultipliersPage extends TradeParametersPage {
         if (riskManagement) {
             await this.setRiskManagement(riskManagement);
         }
-        const { stopOut } = await this.readStopOut(stake, riskManagement?.stopLoss ?? stake);
+        // Automatic stop-out equals committed stake on these VOL 1s indices — user Stop-loss
+        // (riskManagement?.stopLoss) is a separate limit_order.stop_loss and never rewrites this row.
+        const { stopOut } = await this.readStopOut(stake, stake);
         const balanceBefore = await this.getBalance();
         const buyDate = this.getCurrentDate();
         await this.clickMultipliersBuy();

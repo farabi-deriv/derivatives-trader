@@ -1162,6 +1162,13 @@ export class ContractDetailsPage extends TradeBasePage {
     }
 
     private async verifyOpenContractTickProgress(): Promise<void> {
+        // Short tick contracts (e.g. Differs 9 ticks) can settle between Positions and details.
+        // Fail fast so verifyAutomateOpenPositionAndContractDetails can retry the next open card
+        // instead of burning ~45s waiting for a caption that only exists while the contract is live.
+        await this.throwIfAutomationContractSettled();
+        if (!(await this.contractDetailsTickProgressCaption.isVisible().catch(() => false))) {
+            throw new Error(ContractDetailsPage.AUTOMATION_CONTRACT_SETTLED_RETRY);
+        }
         await expect(
             this.contractDetailsTickProgressCaption,
             'Tick progress caption should show the current tick'
