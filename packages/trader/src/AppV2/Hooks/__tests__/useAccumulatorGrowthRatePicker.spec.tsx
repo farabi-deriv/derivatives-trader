@@ -52,7 +52,9 @@ const buildStore = (trade_overrides: TTradeOverrides = {}, ui_overrides: TUiOver
                 is_market_closed: false,
                 is_automation_params_locked: false,
                 onChange,
-                proposal_info: { ACCU: { barrier_spot_distance: '0.5484' } },
+                // Shaped like the real ACCU proposal: the distance, the rate it was
+                // priced for, and the spot it was measured from, all from one message.
+                proposal_info: { ACCU: { barrier_spot_distance: '0.5484', growth_rate: 0.03, spot: 9629.08 } },
                 tick_data: { quote: 9629.08, pip_size: 3 },
                 ...trade_overrides,
             },
@@ -131,6 +133,37 @@ describe('useAccumulatorGrowthRatePicker', () => {
         ]);
     });
 
+    it('measures the ladder from the spot the proposal was priced against', () => {
+        // The tick stream and the proposal stream are separate subscriptions and run a
+        // tick apart, which at these magnitudes is a whole unit in the label's last
+        // decimal. Measuring from the newer of the two made the `±` label change as the
+        // band was tapped open and shut, because the chart draws it from this ladder
+        // while a rate is previewed and from the proposal when it is not.
+        const { result } = renderPicker({ tick_data: { quote: 9634.2, pip_size: 3 } });
+
+        expect(result.current.interaction_config?.steps.map(step => step.barrierSpotDistanceDisplay)).toEqual([
+            '0.6256',
+            '0.5847',
+            '0.5484',
+            '0.5218',
+            '0.4966',
+        ]);
+    });
+
+    it('hands back the API number for the rate it priced, over its own arithmetic', () => {
+        // `spot * offset` would give 0.5484 here. We do not control the arithmetic behind
+        // the API's number and cannot see it — it quotes a decimal the symbol itself does
+        // not — so there is no replicating it, only deferring to it. The committed band is
+        // drawn from *its* number, and the previewed one has to read the same.
+        const { result } = renderPicker({
+            proposal_info: { ACCU: { barrier_spot_distance: '0.5485', growth_rate: 0.03, spot: 9629.08 } },
+        });
+        const priced = result.current.interaction_config?.steps.find(step => step.growthRate === 0.03);
+
+        expect(priced?.barrierSpotDistanceDisplay).toBe('0.5485');
+        expect(priced?.barrierSpotDistance).toBe(0.5485);
+    });
+
     it('builds the ladder from the backend offsets, not from the proposal', () => {
         const { result } = renderPicker();
 
@@ -154,11 +187,22 @@ describe('useAccumulatorGrowthRatePicker', () => {
             'there is only one growth rate to pick',
             { accumulator_range_list: [0.03], accumulator_barrier_offsets: [0.000056949789] },
         ],
-        ['no tick has arrived yet', { tick_data: null }],
+        [
+            'there is no spot to measure the ladder from',
+            { tick_data: null, proposal_info: { ACCU: { barrier_spot_distance: '0.5484', growth_rate: 0.03 } } },
+        ],
     ])('sends no ladder when %s', (_label, overrides) => {
         const { result } = renderPicker(overrides);
 
         expect(result.current.interaction_config).toBeNull();
+    });
+
+    it('still builds a ladder before the tick stream has caught up', () => {
+        // The proposal carries the spot it was priced against, so the band does not have
+        // to wait on a separate subscription to become interactive.
+        const { result } = renderPicker({ tick_data: null });
+
+        expect(result.current.interaction_config?.steps).toHaveLength(5);
     });
 
     it('stays closed until the band is tapped', () => {

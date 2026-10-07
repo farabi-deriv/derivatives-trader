@@ -5,6 +5,7 @@ const accumulator_range_list = [0.01, 0.02, 0.03, 0.04, 0.05];
 const accumulator_barrier_offsets = [0.000064970949, 0.000060725407, 0.000056949789, 0.000054185412, 0.000051575021];
 const current_spot = 9629.08;
 const barrier_spot_distance = '0.5484';
+const growth_rate = 0.03;
 
 const buildLadder = (overrides = {}) =>
     getAccumulatorGrowthRateLadder({
@@ -12,6 +13,7 @@ const buildLadder = (overrides = {}) =>
         accumulator_barrier_offsets,
         current_spot,
         barrier_spot_distance,
+        growth_rate,
         ...overrides,
     });
 
@@ -28,9 +30,60 @@ describe('getAccumulatorGrowthRateLadder', () => {
 
     it('agrees with the barrier the API priced for the selected rate', () => {
         // The chart rendered ±0.5484 while 3% was selected, so that rung must land on it.
-        const selected = buildLadder().find(step => step.growthRate === 0.03);
+        const selected = buildLadder().find(step => step.growthRate === growth_rate);
 
         expect(selected?.barrierSpotDistanceDisplay).toBe(barrier_spot_distance);
+    });
+
+    it('hands back the API number for the priced rate, whatever the spot has done since', () => {
+        // The band is drawn from this ladder while a rate is previewed and from the
+        // proposal when it is not. Recomputing the priced rung from a spot that had moved
+        // on — the tick stream runs ahead of the proposal — made the `±` label flicker by
+        // one in its last decimal every time the band was tapped open and shut.
+        const drifted = buildLadder({ current_spot: current_spot + 5 });
+        const selected = drifted.find(step => step.growthRate === growth_rate);
+
+        expect(selected?.barrierSpotDistanceDisplay).toBe(barrier_spot_distance);
+        expect(selected?.barrierSpotDistance).toBe(Number(barrier_spot_distance));
+    });
+
+    it('leaves the other rungs measured from the spot', () => {
+        // Only the priced rung is quoted; the rest are ours to compute.
+        const drifted = buildLadder({ current_spot: current_spot * 2 });
+
+        expect(drifted.map(step => step.barrierSpotDistanceDisplay)).toEqual([
+            '1.2512',
+            '1.1695',
+            // The priced rung, untouched by the move.
+            '0.5484',
+            '1.0435',
+            '0.9932',
+        ]);
+    });
+
+    it('computes every rung when the priced rate is not on the ladder', () => {
+        // Nothing to anchor on, so nothing is taken verbatim.
+        const ladder = buildLadder({ growth_rate: 0.99 });
+
+        expect(ladder.map(step => step.barrierSpotDistanceDisplay)).toEqual([
+            '0.6256',
+            '0.5847',
+            '0.5484',
+            '0.5218',
+            '0.4966',
+        ]);
+    });
+
+    it('computes every rung before a proposal has priced one', () => {
+        const ladder = buildLadder({ barrier_spot_distance: undefined, pip_size: 3 });
+
+        expect(ladder.map(step => step.barrierSpotDistanceDisplay)).toEqual([
+            '0.626',
+            '0.585',
+            '0.548',
+            '0.522',
+            '0.497',
+        ]);
     });
 
     it('keeps the rungs ordered widest-band-first', () => {
@@ -84,6 +137,7 @@ describe('getAccumulatorGrowthRateLadder', () => {
     });
 
     it('tracks the spot, so the band stays anchored as the market moves', () => {
+        // The first rung is 1%, which the proposal did not price, so it is computed.
         const doubled = buildLadder({ current_spot: current_spot * 2 });
 
         expect(doubled[0].barrierSpotDistance).toBeCloseTo(buildLadder()[0].barrierSpotDistance * 2, 10);

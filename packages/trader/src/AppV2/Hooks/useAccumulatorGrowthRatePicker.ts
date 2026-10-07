@@ -124,9 +124,17 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
     // Every rung comes from contracts_for, so the ladder does not need a proposal to be
     // exact. Enablement still waits for one, so the band only becomes interactive once
     // the committed barriers are on the chart.
-    const has_proposal = Boolean(proposal_info?.ACCU);
-    // Taken for its precision only — the rung values themselves come from contracts_for.
-    const barrier_spot_distance = proposal_info?.ACCU?.barrier_spot_distance;
+    //
+    // All four of these are read off the one `ACCU` snapshot, and the ladder relies on
+    // that: the distance belongs to the rate it was priced for, measured from the spot it
+    // was priced against. `tick_data` is the live tick stream and is routinely a tick
+    // ahead of the proposal, which is a whole unit in the label's last decimal — so it is
+    // a fallback for the anchor and nothing more.
+    const accu_proposal = proposal_info?.ACCU;
+    const has_proposal = Boolean(accu_proposal);
+    const barrier_spot_distance = accu_proposal?.barrier_spot_distance;
+    const priced_growth_rate = accu_proposal?.growth_rate;
+    const anchor_spot = accu_proposal?.spot ?? tick_data?.quote;
     const is_phone_landscape = useIsPhoneLandscape();
     const { ui } = useStore();
     const { accumulator_barrier_guide_tap_count, has_seen_landscape_onboarding, markAccumulatorBarrierGuideTapped } =
@@ -181,8 +189,9 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
                 ? getAccumulatorGrowthRateLadder({
                       accumulator_range_list,
                       accumulator_barrier_offsets,
-                      current_spot: tick_data?.quote,
+                      current_spot: anchor_spot,
                       barrier_spot_distance,
+                      growth_rate: priced_growth_rate,
                       pip_size: tick_data?.pip_size,
                   })
                 : [],
@@ -191,9 +200,10 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
             has_proposal,
             accumulator_range_list,
             accumulator_barrier_offsets,
-            tick_data?.quote,
+            anchor_spot,
             tick_data?.pip_size,
             barrier_spot_distance,
+            priced_growth_rate,
         ]
     );
 

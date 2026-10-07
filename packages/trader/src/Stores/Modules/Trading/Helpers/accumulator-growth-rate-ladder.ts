@@ -12,15 +12,28 @@ type TGetAccumulatorGrowthRateLadder = {
     accumulator_range_list?: number[];
     /** `growth_rate_barrier_offsets` from contracts_for, parallel-indexed with the rates. */
     accumulator_barrier_offsets?: number[];
-    /** Latest spot the barriers are measured from. */
+    /**
+     * The spot the barriers are measured from.
+     *
+     * The spot the live proposal was priced against, not the newest tick. The two are
+     * separate subscriptions and routinely a tick apart, and one tick is worth about a
+     * unit in the last decimal of the label — so measuring from the newer of the two
+     * produced a ladder that disagreed with the barriers the API had just quoted.
+     */
     current_spot?: number;
     /**
-     * `barrier_spot_distance` from the ACCU proposal, used only for its precision: it is
-     * what the committed band's `±` label is rendered with, and the API quotes it with
-     * more decimals than the symbol's pip size. Matching it keeps the preview label from
-     * changing precision the moment the drag commits.
+     * `barrier_spot_distance` from the ACCU proposal: the exact distance the API priced
+     * for [growth_rate], quoted with more decimals than the symbol's pip size. Used
+     * verbatim for that rung, and for its precision on every other one.
      */
     barrier_spot_distance?: string;
+    /**
+     * The rate [barrier_spot_distance] was priced for, so that rung can be recognised.
+     *
+     * Read off the same proposal message as the distance, so the two cannot be paired
+     * with each other wrongly.
+     */
+    growth_rate?: number;
     /** Decimals the symbol quotes with. Fallback when no proposal has arrived. */
     pip_size?: number;
 };
@@ -45,6 +58,7 @@ export const getAccumulatorGrowthRateLadder = ({
     accumulator_barrier_offsets = [],
     current_spot,
     barrier_spot_distance,
+    growth_rate,
     pip_size,
 }: TGetAccumulatorGrowthRateLadder): TAccumulatorGrowthRateStep[] => {
     if (!current_spot || !accumulator_range_list.length) {
@@ -58,17 +72,27 @@ export const getAccumulatorGrowthRateLadder = ({
     }
 
     const decimals = getDecimals(barrier_spot_distance) ?? pip_size ?? 0;
+    const priced_distance = Number(barrier_spot_distance);
+    const has_priced_distance = Number.isFinite(priced_distance) && priced_distance > 0;
 
     return accumulator_range_list
         .map((growthRate, index) => ({ growthRate, offset: accumulator_barrier_offsets[index] }))
         .filter(({ growthRate, offset }) => growthRate > 0 && offset > 0)
         .map(({ growthRate, offset }) => {
-            const distance = current_spot * offset;
+            // The rung the API already priced is handed back its own number rather than
+            // recomputed. The band is drawn from this ladder while a rate is previewed and
+            // from the proposal when it is not, so any disagreement between the two — a
+            // rounding path, a spot half a tick stale — showed up as the `±` label
+            // flickering by one in its last decimal as the band was tapped open and shut.
+            // Taken verbatim, the two states cannot disagree: it is the same string.
+            const is_priced_rung = has_priced_distance && growthRate === growth_rate;
+            const distance = is_priced_rung ? priced_distance : current_spot * offset;
 
             return {
                 growthRate,
                 barrierSpotDistance: distance,
-                barrierSpotDistanceDisplay: distance.toFixed(decimals),
+                barrierSpotDistanceDisplay:
+                    is_priced_rung && barrier_spot_distance ? barrier_spot_distance : distance.toFixed(decimals),
                 growthRateDisplay: `${getGrowthRatePercentage(growthRate)}%`,
             };
         });
