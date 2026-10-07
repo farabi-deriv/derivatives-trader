@@ -70,27 +70,22 @@ $solid-blue-700: #2c9aff;
             width: 16px;
             height: 16px;
         }
+        &--smarttrader-contract-middle {
+            width: 6px;
+            height: 6px;
+            top: -3px;
+            margin-left: -4px;
+            background-color: var(--color-text-secondary);
+
+            @include mobile {
+                width: 4px;
+                height: 4px;
+                top: -2px;
+                margin-left: -3px;
+            }
+        }
         &--accumulator,
         &--smarttrader-contract {
-            &-middle,
-            &-middle--preexit {
-                width: 6px;
-                height: 6px;
-                top: -3px;
-                margin-left: -4px;
-                background-color: var(--color-text-secondary);
-
-                &--preexit {
-                    background-color: $solid-blue-700;
-                    border: 2px solid $solid-blue-700;
-                }
-                @include mobile {
-                    width: 4px;
-                    height: 4px;
-                    top: -2px;
-                    margin-left: -3px;
-                }
-            }
             &-exit {
                 width: 2rem;
                 height: 2rem;

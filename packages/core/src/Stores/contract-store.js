@@ -224,7 +224,7 @@ export default class ContractStore extends BaseStore {
                                 main_barrier?.updateBarriers(this.accu_high_barrier, this.accu_low_barrier);
                             }
                             // this.markers_array contains tick markers & start/end vertical lines in C.Details page
-                            this.markers_array = createChartMarkers(contract_info, true);
+                            this.markers_array = createChartMarkers(contract_info);
                         }
                     }),
                 isOpen(contract_info) ? getAccuBarriersDefaultTimeout(underlying) : 0

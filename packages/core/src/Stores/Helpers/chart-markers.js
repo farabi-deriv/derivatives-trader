@@ -25,7 +25,7 @@ import {
 } from './chart-marker-helpers';
 import { getChartType } from './logic';
 
-export const createChartMarkers = (contract_info, is_delayed_markers_update) => {
+export const createChartMarkers = contract_info => {
     const { tick_stream } = contract_info;
     const should_show_10_last_ticks = isAccumulatorContractOpen(contract_info) && tick_stream.length === 10;
 
@@ -35,7 +35,7 @@ export const createChartMarkers = (contract_info, is_delayed_markers_update) => 
         const chart_type = getChartType(contract_info.date_start, end_time);
 
         if (contract_info.tick_count) {
-            const tick_markers = createTickMarkers(contract_info, is_delayed_markers_update);
+            const tick_markers = createTickMarkers(contract_info);
             markers.push(...tick_markers);
         } else if (chart_type !== 'candles') {
             const spot_markers = Object.keys(marker_spots).map(type => marker_spots[type](contract_info));
@@ -80,7 +80,7 @@ const addLabelAlignment = (tick, idx, arr) => {
     return tick;
 };
 
-export const createTickMarkers = (contract_info, is_delayed_markers_update) => {
+export const createTickMarkers = contract_info => {
     const is_accumulator = isAccumulatorContract(contract_info.contract_type);
     const is_smarttrader_contract = isSmartTraderContract(contract_info.contract_type);
     const is_ticks_contract = isTicksContract(contract_info.contract_type);
@@ -114,15 +114,16 @@ export const createTickMarkers = (contract_info, is_delayed_markers_update) => {
             +_tick.epoch === +exit_spot_time || getSpotCount(contract_info, _idx) === contract_info.tick_count;
         const is_exit_spot = isExitSpot(tick, idx);
         const is_current_last_spot = idx === tick_stream.length - 1;
-        const exit_spot_index = tick_stream.findIndex(isExitSpot);
         const is_accu_current_last_spot = is_accumulator && !is_exit_spot && is_current_last_spot;
-        const is_accu_preexit_spot =
-            is_accumulator && (is_accu_contract_closed ? idx === exit_spot_index - 1 : idx === tick_stream.length - 2);
 
         let marker_config;
         if (is_entry_spot && !isDigitContract(contract_info.contract_type)) {
             marker_config = createMarkerSpotEntry(contract_info);
-        } else if (is_middle_spot || (is_entry_spot && isDigitContract(contract_info.contract_type))) {
+        } else if (
+            // Accumulators get no per-tick dots: only their entry and exit spots are marked.
+            (is_middle_spot && !is_accumulator) ||
+            (is_entry_spot && isDigitContract(contract_info.contract_type))
+        ) {
             marker_config = createMarkerSpotMiddle(contract_info, tick, idx);
         } else if (is_exit_spot && !is_accu_current_last_spot) {
             tick.align_label = 'top'; // force exit spot label to be 'top' to avoid overlapping
@@ -148,13 +149,9 @@ export const createTickMarkers = (contract_info, is_delayed_markers_update) => {
         }
         if (is_accumulator) {
             if ((is_accu_current_last_spot || is_exit_spot) && !is_accu_contract_closed) return;
-            if (marker_config && (is_middle_spot || is_exit_spot)) {
-                const should_highlight_previous_spot =
-                    is_accu_preexit_spot && (!is_delayed_markers_update || is_accu_contract_closed);
+            if (marker_config && is_exit_spot) {
                 const spot_className = marker_config.content_config.spot_className;
-                marker_config.content_config.spot_className = `${spot_className} ${spot_className}--accumulator${
-                    is_exit_spot ? '-exit' : `-middle${should_highlight_previous_spot ? '--preexit' : ''}`
-                }`;
+                marker_config.content_config.spot_className = `${spot_className} ${spot_className}--accumulator-exit`;
             }
         }
         if (marker_config) {

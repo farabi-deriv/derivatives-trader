@@ -120,17 +120,16 @@ export const createMarkerSpotExit = (contract_info, tick, idx) => {
 };
 
 export const createMarkerSpotMiddle = (contract_info, tick, idx) => {
-    const is_accumulator = isAccumulatorContract(contract_info.contract_type);
     const is_ticks_contract = isTicksContract(contract_info.contract_type);
     const spot_count = getSpotCount(contract_info, idx);
     const spot = tick.tick_display_value;
-    const spot_epoch = is_accumulator ? '' : `${tick.epoch}`;
+    const spot_epoch = `${tick.epoch}`;
 
     const marker_config = createMarkerConfig(MARKER_TYPES_CONFIG.SPOT_MIDDLE.type, +tick.epoch, +spot, {
         spot_value: `${spot}`,
         spot_epoch,
         align_label: tick.align_label,
-        is_value_hidden: is_accumulator || (is_ticks_contract && idx + 1 !== contract_info.selected_tick),
+        is_value_hidden: is_ticks_contract && idx + 1 !== contract_info.selected_tick,
         spot_count,
         status: `${is_ticks_contract ? contract_info.status : ''}`,
     });
