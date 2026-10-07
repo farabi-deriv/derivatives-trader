@@ -1586,13 +1586,13 @@ export class TradeAutomatePage extends TradeParametersPage {
         maxStake?: string;
     }): Promise<void> {
         await expect(async () => {
+            // Contract details overlay covers Automate status — dismiss it before reading
+            // Status: Running, otherwise a settled card is misread as "bot stopped".
+            if (/\/contract\//.test(this.page.url())) {
+                await this.contractDetailsPage.closeContractDetails();
+            }
             if (!(await this.statusRunning.isVisible().catch(() => false))) {
                 throw new Error('Automation stopped before an open position could be verified');
-            }
-            if (/\/contract\//.test(this.page.url())) {
-                if (await this.contractDetailsPage.isAutomationContractDetailsClosed()) {
-                    await this.contractDetailsPage.closeContractDetails();
-                }
             }
             await this.positionsPage.verifyAutomationOpenPositionVisible(market, tradeType, currency, stake, {
                 allowStrategyAdjustedStake: true,
@@ -2029,12 +2029,12 @@ export class TradeAutomatePage extends TradeParametersPage {
     /**
      * Post-idle cleanup — close leftover open contracts, then assert Run is enabled and params unlock.
      * Accumulators keep Run disabled while an open accu contract exists (`has_open_accu_contract`).
+     * Always re-enter Automate after Positions cleanup so `waitForDerivApiSettled` can clear a
+     * blocking proposal before asserting Run (desktop used to skip this and flake with Run disabled).
      */
     private async verifyAutomatePostIdleState(tradeType: string): Promise<void> {
         await this.positionsPage.closeAllOpenContracts();
-        if (this.isMobile) {
-            await this.goToAutomatedTrading();
-        }
+        await this.goToAutomatedTrading();
         await expect(this.runButton, 'Run button should be enabled once the run is idle').toBeEnabled();
         await this.verifyTradeAndAutomationParamsState(tradeType, 'enabled');
     }
