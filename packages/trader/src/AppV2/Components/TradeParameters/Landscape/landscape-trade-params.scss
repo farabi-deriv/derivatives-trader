@@ -113,8 +113,10 @@ $chip-collapse-transition:
         margin-inline-end: calc(var(--core-spacing-800) * -1 + var(--core-spacing-400));
     }
 
-    // Figma wraps the two param chips in their own frame with an 8px gap, separate from the pill's
-    // 16px gap to the Buy button: 148 + 8 + 148 = 304, and 16 + 304 + 16 + 120 + 16 + 2 borders = 474.
+    // Figma wraps the param chips in their own frame with an 8px gap, separate from the pill's 16px gap
+    // to the Buy button. Three of them now — take profit, growth rate, stake — so the frame is
+    // 120 * 3 + 8 * 2 = 376, and the pill 16 + 376 + 16 + 120 + 16 + 2 borders = 546. That still clears
+    // the narrowest phone landscape we support; the chips are fixed-width, so a fourth would not.
     &__params {
         display: flex;
         align-items: center;

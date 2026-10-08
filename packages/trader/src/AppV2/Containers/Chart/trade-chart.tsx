@@ -59,9 +59,14 @@ type TTradeChart = {
      * can pause its tap-to-maximize while it is up.
      */
     onPickerOpenChange?: (is_open: boolean) => void;
+    /**
+     * A growth rate being scrolled on the params pill, which the band previews just as it previews
+     * this chart's own picker.
+     */
+    growth_rate_preview?: number | null;
 };
 
-const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange }: TTradeChart = {}) => {
+const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange, growth_rate_preview = null }: TTradeChart = {}) => {
     const { ui, common, contract_trade, portfolio, client } = useStore();
     const { isMobile } = useDevice();
     // Phone landscape reports isMobile false; use the phone-viewport predicate for the touch-modality
@@ -190,7 +195,7 @@ const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange }: TTradeChart 
         onBarrierPress,
         picker: growth_rate_picker,
         is_open: is_growth_rate_picker_open,
-    } = useAccumulatorGrowthRatePicker({ tap_claim_ref });
+    } = useAccumulatorGrowthRatePicker({ tap_claim_ref, external_preview_rate: growth_rate_preview });
 
     React.useEffect(() => {
         onPickerOpenChange?.(is_growth_rate_picker_open);

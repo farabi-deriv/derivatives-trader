@@ -451,7 +451,9 @@ describe('PositionsContent', () => {
         } as unknown as typeof default_mock_store.modules.trade.proposal_info;
     };
 
-    it('should show the selected growth rate on the Buy button in landscape', () => {
+    it('keeps the growth rate off the Buy button, landscape included', () => {
+        // It has its own chip on the params pill now, a few pixels away, and the button carried no
+        // other caption for a fresh accumulator — so the row it filled is empty again by design.
         setAccuTradeType();
         // No running accumulator, so the button is the Buy one rather than Close.
         default_mock_store.portfolio.all_positions = [];
@@ -459,19 +461,8 @@ describe('PositionsContent', () => {
         mockUseIsPhoneLandscape.mockReturnValue(true);
         mockPurchaseButton();
 
-        expect(screen.getByText('Growth')).toBeInTheDocument();
-        expect(screen.getByText('3%')).toBeInTheDocument();
-    });
-
-    it('should keep the growth rate off the Buy button outside landscape', () => {
-        // Only landscape asks for it — everywhere else the rate is read from the trade params.
-        setAccuTradeType();
-        // No running accumulator, so the button is the Buy one rather than Close.
-        default_mock_store.portfolio.all_positions = [];
-        default_mock_store.modules.trade.growth_rate = 0.03;
-        mockPurchaseButton();
-
         expect(screen.queryByText('Growth')).not.toBeInTheDocument();
+        expect(screen.queryByText('3%')).not.toBeInTheDocument();
     });
 
     it('should show a loading Buy button and not call onPurchaseV2 while an Accumulators contract is expired but not sold yet', async () => {

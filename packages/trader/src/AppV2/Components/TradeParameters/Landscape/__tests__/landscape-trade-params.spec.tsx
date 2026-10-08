@@ -16,6 +16,7 @@ const buildStore = ({
     has_take_profit = false,
     take_profit = 0,
     has_open_accu_contract = false,
+    accumulator_range_list = [0.01, 0.02, 0.03, 0.04, 0.05],
 } = {}) =>
     mockStore({
         client: { balance: '1000', currency: 'USD' },
@@ -24,6 +25,9 @@ const buildStore = ({
             trade: {
                 ...mockStore({}).modules.trade,
                 is_accumulator: true,
+                // The rates contracts_for offers; the growth-rate wheel is this list and nothing else.
+                accumulator_range_list,
+                growth_rate: 0.03,
                 currency: 'USD',
                 basis: 'stake',
                 amount: 5,
@@ -58,28 +62,56 @@ const rerenderWith = (rerender: (ui: React.ReactElement) => void, store: ReturnT
         </TraderProviders>
     );
 
-const renderPill = (store: ReturnType<typeof mockStore>) =>
-    render(
+const renderPill = (
+    store: ReturnType<typeof mockStore>,
+    props: Partial<React.ComponentProps<typeof LandscapeTradeParams>> = {}
+) => {
+    const ui = (next: Partial<React.ComponentProps<typeof LandscapeTradeParams>>) => (
         <TraderProviders store={store}>
             <ModulesProvider store={store}>
-                <LandscapeTradeParams />
+                <LandscapeTradeParams {...props} {...next} />
             </ModulesProvider>
         </TraderProviders>
     );
+    const view = render(ui({}));
+    return {
+        ...view,
+        setProps: (next: Partial<React.ComponentProps<typeof LandscapeTradeParams>>) => view.rerender(ui(next)),
+    };
+};
 
 describe('LandscapeTradeParams', () => {
-    it('[LTP-001] renders the take-profit chip, the stake chip and Buy when chrome is visible', () => {
+    it('[LTP-001] renders the three chips and Buy when chrome is visible', () => {
         renderPill(buildStore());
 
-        expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
+        // Growth rate sits between take profit and stake, so the two terms of the trade a user
+        // changes most often end up next to the button that commits them.
+        expect(screen.getAllByRole('spinbutton').map(chip => chip.getAttribute('aria-label'))).toEqual([
+            'Take profit',
+            'Growth rate',
+            'Stake',
+        ]);
         expect(screen.getByTestId('purchase-button')).toBeInTheDocument();
+    });
+
+    it('[LTP-022] shows the committed growth rate on its chip', () => {
+        renderPill(buildStore());
+
+        expect(within(screen.getByTestId('dt_landscape_chip_growth_rate')).getByText('3%')).toBeInTheDocument();
+    });
+
+    it('[LTP-023] leaves the growth-rate chip inert when there is only one rate to pick', () => {
+        renderPill(buildStore({ accumulator_range_list: [0.03] }));
+
+        // A wheel holding a single rung is worse than a chip that does not open.
+        expect(screen.getByTestId('dt_landscape_chip_growth_rate')).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('[LTP-019] locks every param once an accumulator contract is open, as portrait and desktop do', () => {
         renderPill(buildStore({ has_open_accu_contract: true, has_take_profit: true, take_profit: 10 }));
         const chips = screen.getAllByRole('spinbutton');
 
-        expect(chips).toHaveLength(2);
+        expect(chips).toHaveLength(3);
         chips.forEach(chip => {
             expect(chip).toHaveAttribute('aria-disabled', 'true');
             expect(chip).toHaveClass('landscape-params__chip--disabled');
@@ -400,5 +432,57 @@ describe('LandscapeTradeParams', () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+
+    describe('growth rate, the value the chart also owns', () => {
+        it('[LGR-010] reports what the wheel is showing, so the band can follow it', () => {
+            const onGrowthRateDraftChange = jest.fn();
+            renderPill(buildStore(), { onGrowthRateDraftChange });
+            onGrowthRateDraftChange.mockClear();
+
+            const chip = screen.getByTestId('dt_landscape_chip_growth_rate');
+            fireEvent.click(chip);
+            fireEvent.keyDown(chip, { key: 'ArrowUp' });
+
+            // The raw rate, not the label: the chart draws the band at it.
+            expect(onGrowthRateDraftChange).toHaveBeenLastCalledWith(0.04);
+        });
+
+        it('[LGR-011] hands the band back when the wheel closes', () => {
+            const onGrowthRateDraftChange = jest.fn();
+            renderPill(buildStore(), { onGrowthRateDraftChange });
+
+            const chip = screen.getByTestId('dt_landscape_chip_growth_rate');
+            fireEvent.click(chip);
+            act(() => {
+                pointer(document.body, 'pointerdown', {});
+            });
+
+            expect(onGrowthRateDraftChange).toHaveBeenLastCalledWith(null);
+        });
+
+        it('[LGR-012] says nothing while another parameter is being edited', () => {
+            const onGrowthRateDraftChange = jest.fn();
+            renderPill(buildStore(), { onGrowthRateDraftChange });
+            onGrowthRateDraftChange.mockClear();
+
+            fireEvent.click(screen.getByTestId('dt_landscape_chip_stake'));
+
+            // Stake moves no barriers, so the band stays on its own.
+            expect(onGrowthRateDraftChange).not.toHaveBeenCalledWith(expect.any(Number));
+        });
+
+        it('[LGR-013] closes when the band on the chart opens its own picker', () => {
+            const { setProps } = renderPill(buildStore());
+
+            fireEvent.click(screen.getByTestId('dt_landscape_chip_growth_rate'));
+            expect(screen.getByTestId('dt_landscape_value_panel')).toBeInTheDocument();
+
+            // The user reached for the band instead. Both drive the same rate, so this gets out
+            // of the way rather than leaving two editors open on one value.
+            setProps({ is_superseded: true });
+
+            expect(screen.queryByTestId('dt_landscape_value_panel')).not.toBeInTheDocument();
+        });
     });
 });

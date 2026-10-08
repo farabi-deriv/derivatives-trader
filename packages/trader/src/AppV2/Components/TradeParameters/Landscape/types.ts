@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TLandscapeParamKey = 'stake' | 'take_profit';
+export type TLandscapeParamKey = 'stake' | 'growth_rate' | 'take_profit';
 
 /**
  * One shape per parameter, produced by an adapter hook. The pill/chip/panel deal only in ladder
@@ -35,4 +35,11 @@ export type TLandscapeParamAdapter = {
     getHint: (index: number) => React.ReactNode;
     /** Whether the commit is suppressed for the value at an index (stake unaffordable; else false). */
     shouldBlockCommit: (index: number) => boolean;
+    /**
+     * The raw value at an index, for a caller that needs the number rather than the label.
+     *
+     * Supplied by growth rate alone: it is the one parameter another surface mirrors live, because the
+     * chart previews the Accumulators band at whatever rate the wheel is showing.
+     */
+    valueAt?: (index: number) => number;
 };

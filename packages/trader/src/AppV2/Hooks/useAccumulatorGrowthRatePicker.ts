@@ -2,6 +2,7 @@ import React from 'react';
 
 import { isAccumulatorContract } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
+import { useTranslations } from '@deriv-com/translations';
 
 import { ONBOARDING_DELAY_MS } from 'AppV2/Components/LandscapeOnboarding/landscape-onboarding';
 import { IDLE_CLOSE_MS } from 'AppV2/Components/TradeParameters/Landscape/landscape-trade-params';
@@ -47,12 +48,13 @@ const isEnabledForLayout = (is_phone_landscape: boolean) => is_phone_landscape;
 /**
  * How many times the band has to be tapped open before the hint retires.
  *
- * Doing something once is easy to forget by the next session, so the hand stays
- * until the user has actually used the band three times — at which point it is a
- * habit rather than a discovery. Counted on the tap rather than on the showing
- * because only the tap proves the hint was read.
+ * Counted on the tap rather than on the showing, because only the tap proves the
+ * hint was read — a hand shown to someone looking elsewhere has taught nothing.
+ * One is enough now that the hint says what it wants in words; it stays a count
+ * rather than a flag so the number is the only thing to change if that turns out
+ * to be optimistic.
  */
-export const GUIDE_TAPS = 3;
+export const GUIDE_TAPS = 1;
 
 /**
  * Whether the landscape onboarding has had its turn.
@@ -105,9 +107,21 @@ type TUseAccumulatorGrowthRatePicker = {
      * fire for the very press that is toggling the picker.
      */
     tap_claim_ref?: React.MutableRefObject<boolean>;
+    /**
+     * A rate being previewed from somewhere other than this picker — the growth-rate wheel on the
+     * params pill.
+     *
+     * The band follows it exactly as it follows this picker's own draft, so the barriers come forward
+     * and glide to the new width whichever control the user reached for. Opening it also puts this
+     * picker away: one value does not get two live editors.
+     */
+    external_preview_rate?: number | null;
 };
 
-const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowthRatePicker = {}) => {
+const useAccumulatorGrowthRatePicker = ({
+    tap_claim_ref,
+    external_preview_rate = null,
+}: TUseAccumulatorGrowthRatePicker = {}) => {
     const {
         accumulator_range_list,
         accumulator_barrier_offsets,
@@ -136,6 +150,7 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
     const priced_growth_rate = accu_proposal?.growth_rate;
     const anchor_spot = accu_proposal?.spot ?? tick_data?.quote;
     const is_phone_landscape = useIsPhoneLandscape();
+    const { localize } = useTranslations();
     const { ui } = useStore();
     const { accumulator_barrier_guide_tap_count, has_seen_landscape_onboarding, markAccumulatorBarrierGuideTapped } =
         ui;
@@ -345,6 +360,12 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
         close();
     }, [is_available, is_interactive, close]);
 
+    // The pill's wheel took over. It is the control the user is touching, so this gets out of the way
+    // rather than leaving two editors open on one value.
+    React.useEffect(() => {
+        if (external_preview_rate != null) close();
+    }, [external_preview_rate, close]);
+
     React.useEffect(() => () => clearTimeout(idle_timer.current), []);
 
     const is_open = draft_index != null && is_available && is_interactive;
@@ -408,17 +429,29 @@ const useAccumulatorGrowthRatePicker = ({ tap_claim_ref }: TUseAccumulatorGrowth
                     ? {
                           enabled: true,
                           steps,
-                          // Stays until the band has been used three times, so
-                          // a user who taps it once and forgets by tomorrow is
-                          // reminded again. Never while the picker is up, where
-                          // it would sit over the control the tap just opened.
+                          // Never while the picker is up, where it would sit
+                          // over the control the tap just opened.
                           showTapGuide: accumulator_barrier_guide_tap_count < GUIDE_TAPS && !is_open,
+                          // The chart has no locale, so the copy is ours.
+                          tapGuideLabel: localize('Tap to adjust'),
                           // The band follows the wheel instead of waiting a
                           // proposal round-trip for the committed barriers.
-                          previewGrowthRate: is_open && draft_index != null ? rates[draft_index] : null,
+                          // This picker's own draft first, then the pill's: both move the band, and
+                          // only one of them can be live at a time.
+                          previewGrowthRate:
+                              is_open && draft_index != null ? rates[draft_index] : external_preview_rate,
                       }
                     : null,
-            [is_interactive, steps, is_open, draft_index, rates, accumulator_barrier_guide_tap_count]
+            [
+                is_interactive,
+                steps,
+                is_open,
+                draft_index,
+                rates,
+                accumulator_barrier_guide_tap_count,
+                localize,
+                external_preview_rate,
+            ]
         ),
         onBarrierTap,
         onBarrierPress,

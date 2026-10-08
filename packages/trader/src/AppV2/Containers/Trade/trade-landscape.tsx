@@ -39,6 +39,10 @@ const TradeLandscape = observer(() => {
     // anywhere is spent dismissing it, and must not also maximize the view.
     const [is_growth_rate_picker_open, setIsGrowthRatePickerOpen] = React.useState(false);
 
+    // The growth rate has two controls — the band on the chart and the chip on the pill — and they sit
+    // in different subtrees, so what the pill's wheel is showing passes through here to reach the band.
+    const [growth_rate_preview, setGrowthRatePreview] = React.useState<number | null>(null);
+
     const { is_animating } = useAutoHideChrome({
         is_paused: is_overlay_open || is_account_dropdown_open || is_prompt_blocking || is_growth_rate_picker_open,
         tap_claim_ref,
@@ -72,9 +76,17 @@ const TradeLandscape = observer(() => {
             </div>
             <div className='trade-landscape__chart-tooltip'>
                 <section className='trade__chart'>
-                    <TradeChart tap_claim_ref={tap_claim_ref} onPickerOpenChange={setIsGrowthRatePickerOpen} />
+                    <TradeChart
+                        tap_claim_ref={tap_claim_ref}
+                        onPickerOpenChange={setIsGrowthRatePickerOpen}
+                        growth_rate_preview={growth_rate_preview}
+                    />
                 </section>
-                <LandscapeTradeParams onOverlayOpenChange={setIsOverlayOpen} />
+                <LandscapeTradeParams
+                    onOverlayOpenChange={setIsOverlayOpen}
+                    onGrowthRateDraftChange={setGrowthRatePreview}
+                    is_superseded={is_growth_rate_picker_open}
+                />
                 <LandscapeFullscreenButton />
             </div>
             {/* PortraitPrompt covers the page; the card would teach a tap it blocks. */}

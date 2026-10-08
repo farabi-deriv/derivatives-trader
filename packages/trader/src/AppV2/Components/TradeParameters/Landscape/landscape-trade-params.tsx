@@ -7,6 +7,7 @@ import { useStore } from '@deriv/stores';
 
 import PurchaseButton from 'AppV2/Components/PurchaseButton';
 
+import useLandscapeGrowthRate from './adapters/use-landscape-growth-rate';
 import useLandscapeStake from './adapters/use-landscape-stake';
 import useLandscapeTakeProfit from './adapters/use-landscape-take-profit';
 import LandscapeParamChip from './landscape-param-chip';
@@ -28,18 +29,34 @@ export const IDLE_CLOSE_MS = 2000;
 type TLandscapeTradeParams = {
     /** Fired when a parameter editor opens/closes, so the caller can pause the chrome auto-hide. */
     onOverlayOpenChange?: (is_open: boolean) => void;
+    /**
+     * The growth rate the wheel is showing, or null when it is not the parameter being edited.
+     *
+     * The chart previews the Accumulators band at it, so the band moves and its labels come forward
+     * exactly as they do when the band itself is tapped — one value, the same feedback whichever
+     * control the user reached for.
+     */
+    onGrowthRateDraftChange?: (rate: number | null) => void;
+    /**
+     * Whether the on-chart growth-rate picker is up, in which case this closes.
+     *
+     * The two are the same value, and one value does not get two live editors.
+     */
+    is_superseded?: boolean;
 };
 
 // The floating pill: an observer that owns `active_param` (one wheel open at a time), renders the
 // chips + the passive glass panel (a sibling of the pill, never a child) + the reused PurchaseButton.
 // It never imports client.balance / the balance hint / useProposal — only the stake adapter may.
-const LandscapeTradeParams = observer(({ onOverlayOpenChange }: TLandscapeTradeParams) => {
+const LandscapeTradeParams = observer((props: TLandscapeTradeParams) => {
+    const { onOverlayOpenChange, onGrowthRateDraftChange, is_superseded } = props;
     const { ui } = useStore();
     const { is_landscape_chrome_hidden, landscape_params_offset_x, setLandscapeParamsOffsetX } = ui;
 
     const stake = useLandscapeStake();
     const take_profit = useLandscapeTakeProfit();
-    const adapters = { stake, take_profit } as const;
+    const growth_rate = useLandscapeGrowthRate();
+    const adapters = { stake, growth_rate, take_profit } as const;
 
     const [active_param, setActiveParam] = React.useState<TLandscapeParamKey | null>(null);
     const active_adapter = active_param ? adapters[active_param] : null;
@@ -57,6 +74,7 @@ const LandscapeTradeParams = observer(({ onOverlayOpenChange }: TLandscapeTradeP
 
     const { is_disabled: stake_disabled } = stake;
     const { is_disabled: tp_disabled, is_on: tp_is_on } = take_profit;
+    const { is_disabled: growth_rate_disabled } = growth_rate;
 
     // Latched at collapse, not read live: switching take profit off on the collapsed pill must not
     // pull the chip out under the finger. It goes on the next collapse.
@@ -130,7 +148,24 @@ const LandscapeTradeParams = observer(({ onOverlayOpenChange }: TLandscapeTradeP
     React.useEffect(() => {
         if (active_param && adapters[active_param].is_disabled) close();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [active_param, stake_disabled, tp_disabled]);
+    }, [active_param, stake_disabled, tp_disabled, growth_rate_disabled]);
+
+    // The band was tapped while a wheel was up here. Both drive the same rate, so the one the user just
+    // reached for wins and this gets out of the way.
+    React.useEffect(() => {
+        if (is_superseded) close();
+    }, [is_superseded, close]);
+
+    // What the growth-rate wheel is showing, reported up so the chart can draw the band at it. Null
+    // whenever growth rate is not the parameter being edited, which hands the band back to its own
+    // barriers — the same thing closing the on-chart picker does.
+    const growth_rate_draft = active_param === 'growth_rate' ? (growth_rate.valueAt?.(draft_index) ?? null) : null;
+    React.useEffect(() => {
+        onGrowthRateDraftChange?.(growth_rate_draft);
+    }, [growth_rate_draft, onGrowthRateDraftChange]);
+
+    // Leaving the pill mounted with a stale preview would strand the band mid-edit.
+    React.useEffect(() => () => onGrowthRateDraftChange?.(null), [onGrowthRateDraftChange]);
 
     // A press anywhere outside the pill dismisses the panel, rather than making the user wait out the
     // idle timer. Scoped to the whole wrapper, not the panel: a press on a chip is switching params or
@@ -227,6 +262,9 @@ const LandscapeTradeParams = observer(({ onOverlayOpenChange }: TLandscapeTradeP
                     {/* An enabled take profit stays on the collapsed pill — it is a live contract term. Kept
                         mounted either way so it can animate out. */}
                     {renderChip('take_profit', clsx({ 'landscape-params__chip--collapsed': !show_take_profit }))}
+                    {/* Always on the pill, collapsed or not: unlike take profit it is never off, and it
+                        is the term the Accumulators band itself is showing. */}
+                    {renderChip('growth_rate')}
                     {renderChip('stake', 'landscape-params__chip--stake')}
                 </div>
                 <PurchaseButton />

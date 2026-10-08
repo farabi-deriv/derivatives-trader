@@ -71,15 +71,27 @@ const buildStore = (trade_overrides: TTradeOverrides = {}, ui_overrides: TUiOver
 // Owned by `useAutoHideChrome` in the app; set here by `onBarrierPress`.
 const tap_claim_ref = { current: false };
 
-const renderPicker = (trade_overrides: TTradeOverrides = {}, ui_overrides: TUiOverrides = {}) => {
+/** The options the hook takes beyond the store, so a test can drive them across a rerender. */
+type THookOptions = { external_preview_rate?: number | null };
+
+const renderPicker = (
+    trade_overrides: TTradeOverrides = {},
+    ui_overrides: TUiOverrides = {},
+    hook_options: THookOptions = {}
+) => {
     const store = buildStore(trade_overrides, ui_overrides);
-    const wrapper = ({ children }: { children: JSX.Element }) => (
-        <TraderProviders store={store}>{children}</TraderProviders>
+    // Typed against the hook's own props as well as children: `renderHook` passes its `initialProps`
+    // straight through to the wrapper, so a wrapper that only admits children does not satisfy it.
+    const wrapper = ({ children }: React.PropsWithChildren<THookOptions>) => (
+        <TraderProviders store={store}>{children as JSX.Element}</TraderProviders>
     );
 
     return {
         store,
-        ...renderHook(() => useAccumulatorGrowthRatePicker({ tap_claim_ref }), { wrapper }),
+        ...renderHook(
+            (props: THookOptions = hook_options) => useAccumulatorGrowthRatePicker({ tap_claim_ref, ...props }),
+            { wrapper, initialProps: hook_options }
+        ),
     };
 };
 
@@ -447,6 +459,12 @@ describe('useAccumulatorGrowthRatePicker', () => {
             expect(result.current.interaction_config?.showTapGuide).toBe(true);
         });
 
+        it('carries the copy for its label, which the chart cannot translate', () => {
+            const { result } = renderPicker();
+
+            expect(result.current.interaction_config?.tapGuideLabel).toBe('Tap to adjust');
+        });
+
         it('is hidden while the picker it asked for is up', () => {
             const { result } = renderPicker();
 
@@ -456,15 +474,14 @@ describe('useAccumulatorGrowthRatePicker', () => {
             expect(result.current.interaction_config?.showTapGuide).toBe(false);
         });
 
-        it('comes back when the picker closes', () => {
+        it('does not come back once the taps it is owed are spent', () => {
             const { result } = renderPicker();
 
             act(() => result.current.onBarrierTap());
             act(() => tapElsewhere());
 
-            // One use is not a habit. The hand is owed two more.
             expect(result.current.picker).toBeNull();
-            expect(result.current.interaction_config?.showTapGuide).toBe(true);
+            expect(result.current.interaction_config?.showTapGuide).toBe(false);
         });
 
         it('counts the tap that opens the picker', () => {
@@ -497,14 +514,15 @@ describe('useAccumulatorGrowthRatePicker', () => {
             expect(result.current.interaction_config?.showTapGuide).toBe(false);
         });
 
-        it('goes after the third tap and does not return', () => {
+        it('runs until the taps it is owed are spent, then stops', () => {
             const { result, store } = renderPicker();
 
-            tapOpenThenShut(result);
-            expect(result.current.interaction_config?.showTapGuide).toBe(true);
-            tapOpenThenShut(result);
-            expect(result.current.interaction_config?.showTapGuide).toBe(true);
-            tapOpenThenShut(result);
+            // Written against the cap rather than a literal, so the loop still
+            // describes the rule if the number is ever raised again.
+            for (let tap = 0; tap < GUIDE_TAPS; tap++) {
+                expect(result.current.interaction_config?.showTapGuide).toBe(true);
+                tapOpenThenShut(result);
+            }
 
             expect(store.ui.accumulator_barrier_guide_tap_count).toBe(GUIDE_TAPS);
             expect(result.current.interaction_config?.showTapGuide).toBe(false);
@@ -519,6 +537,45 @@ describe('useAccumulatorGrowthRatePicker', () => {
             // cap means anything.
             expect(markAccumulatorBarrierGuideTapped).not.toHaveBeenCalled();
             expect(store.ui.accumulator_barrier_guide_tap_count).toBe(GUIDE_TAPS);
+        });
+    });
+
+    describe('a rate previewed from the params pill', () => {
+        it('moves the band, so the barriers behave as if the band had been tapped', () => {
+            const { result } = renderPicker({}, {}, { external_preview_rate: 0.05 });
+
+            // The chart brings the labels forward off `previewGrowthRate` alone, so one value
+            // reaching it is the whole of making the two controls feel the same.
+            expect(result.current.interaction_config?.previewGrowthRate).toBe(0.05);
+        });
+
+        it('hands the band back when the wheel is let go', () => {
+            const { result, rerender } = renderPicker({}, {}, { external_preview_rate: 0.05 });
+
+            rerender({ external_preview_rate: null });
+
+            expect(result.current.interaction_config?.previewGrowthRate).toBeNull();
+        });
+
+        it('puts this picker away, so one value never has two live editors', () => {
+            const { result, rerender } = renderPicker();
+
+            act(() => result.current.onBarrierTap());
+            expect(result.current.picker).not.toBeNull();
+
+            rerender({ external_preview_rate: 0.05 });
+
+            expect(result.current.picker).toBeNull();
+        });
+
+        it('yields to this picker while it is open', () => {
+            const { result, rerender } = renderPicker();
+
+            rerender({ external_preview_rate: 0.05 });
+            act(() => result.current.onBarrierTap());
+
+            // The tap on the band is the later gesture, and the pill is closing itself in answer.
+            expect(result.current.interaction_config?.previewGrowthRate).toBe(0.03);
         });
     });
 
