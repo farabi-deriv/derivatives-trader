@@ -71,6 +71,12 @@ const setThemeColorMeta = color => {
     meta.setAttribute('content', color);
 };
 
+// iOS 26 Safari can leave `100dvh` stale after a rotation (a gap under the page until a tab switch),
+// so landscape layouts size from this instead: `height: var(--viewport-height, 100dvh)`.
+const syncViewportHeight = () => {
+    document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+};
+
 export default class UIStore extends BaseStore {
     is_reports_visible = false;
     reports_route_tab_index = 0;
@@ -268,6 +274,7 @@ export default class UIStore extends BaseStore {
         });
 
         window.addEventListener('resize', this.handleResize);
+        syncViewportHeight();
 
         this.system_theme_query = window?.matchMedia?.(DARK_SCHEME_QUERY) ?? null;
         if (this.system_theme_query?.addEventListener) {
@@ -376,6 +383,7 @@ export default class UIStore extends BaseStore {
     handleResize() {
         this.screen_width = window.innerWidth;
         this.screen_height = window.innerHeight;
+        syncViewportHeight();
     }
 
     setPromptHandler(condition, cb = () => {}) {

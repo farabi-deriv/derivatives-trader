@@ -133,6 +133,16 @@ const TooltipPortal = ({ message, children, className, position = 'top', anchorR
         }
     }, [isVisible, calculatePosition, debouncedCalculatePosition]);
 
+    // A touch tap elsewhere may give neither blur nor mouseleave (a canvas suppresses both), so close on it.
+    React.useEffect(() => {
+        if (!isVisible) return undefined;
+        const onPointerDown = (e: PointerEvent) => {
+            if (!triggerRef.current?.contains(e.target as Node)) setIsVisible(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown, true);
+        return () => document.removeEventListener('pointerdown', onPointerDown, true);
+    }, [isVisible]);
+
     const handleMouseEnter = React.useCallback(() => {
         setIsVisible(true);
     }, []);

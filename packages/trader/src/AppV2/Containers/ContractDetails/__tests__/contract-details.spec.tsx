@@ -22,6 +22,8 @@ import TraderProviders from '../../../../trader-providers';
 import ContractDetails from '../contract-details';
 
 jest.mock('AppV2/Hooks/useContractDetails', () => jest.fn());
+let mock_is_rtl = false;
+jest.mock('@deriv/api', () => ({ ...jest.requireActual('@deriv/api'), useIsRtl: () => mock_is_rtl }));
 const mockIsPhoneLandscape = jest.fn(() => false);
 jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
     __esModule: true,
@@ -198,6 +200,7 @@ describe('ContractDetails', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+        mock_is_rtl = false;
     });
 
     const renderContractDetails = () =>
@@ -214,6 +217,25 @@ describe('ContractDetails', () => {
         await screen.findByText('ContractCard');
 
         expect(screen.getAllByTestId('dt_contract_details_pane')).toHaveLength(2);
+    });
+
+    it('[CDL-003] reads right-to-left in Arabic landscape, while the app behind stays left-to-right', async () => {
+        mockIsPhoneLandscape.mockReturnValue(true);
+        mock_is_rtl = true;
+        renderContractDetails();
+
+        await screen.findByText('ContractCard');
+
+        expect(screen.getByTestId('dt_contract_details_landscape')).toHaveAttribute('dir', 'rtl');
+    });
+
+    it('[CDL-003] sets no direction otherwise, inheriting the app', async () => {
+        mockIsPhoneLandscape.mockReturnValue(true);
+        renderContractDetails();
+
+        await screen.findByText('ContractCard');
+
+        expect(screen.getByTestId('dt_contract_details_landscape')).not.toHaveAttribute('dir');
     });
 
     it('[CDL-001] stays a single column in portrait', async () => {

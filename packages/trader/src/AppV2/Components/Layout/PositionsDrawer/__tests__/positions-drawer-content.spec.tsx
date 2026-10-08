@@ -8,6 +8,9 @@ jest.mock('@deriv/components', () => ({
     Money: ({ amount }: { amount: number }) => <span data-testid='dt_money'>{amount}</span>,
 }));
 
+let mock_is_phone_landscape = false;
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => () => mock_is_phone_landscape);
+
 type TMockPosition = { profit_loss: number };
 
 const renderFooter = (store: ReturnType<typeof mockStore>) =>
@@ -58,5 +61,25 @@ describe('PositionsDrawerFooter', () => {
         );
 
         expect(container).toBeEmptyDOMElement();
+    });
+
+    describe('[PDF-001] P/L label', () => {
+        afterEach(() => {
+            mock_is_phone_landscape = false;
+        });
+
+        it('reads "Current P/L" in the landscape summary, in regular weight', () => {
+            mock_is_phone_landscape = true;
+            renderFooter(buildStore({ active_positions: [{ profit_loss: 5 }] }));
+
+            expect(screen.getByText('Current P/L')).toHaveStyle('--text-weight: var(--text-weight-normal)');
+            expect(screen.queryByText('Total P/L:')).not.toBeInTheDocument();
+        });
+
+        it('keeps "Total P/L:" in the desktop footer', () => {
+            renderFooter(buildStore({ active_positions: [{ profit_loss: 5 }] }));
+
+            expect(screen.getByText('Total P/L:')).toBeInTheDocument();
+        });
     });
 });

@@ -244,16 +244,17 @@
     // under the filters.
     .positions-drawer-closed-tab__filters {
         border-block-end: none;
+        padding: var(--core-spacing-400) var(--core-spacing-600);
     }
 
     .contract-cards-section__title {
-        padding: var(--core-spacing-200) var(--core-spacing-800);
+        padding: 0 var(--core-spacing-800) var(--core-spacing-200);
     }
 
     .positions-drawer-tabs__summary .positions-drawer-footer--summary {
         // The footer slot carried this padding; out of it the row sat flush against the panel edge.
         // Matches the card list's own `padding-inline`, so the label lines up with the cards below.
-        padding: var(--core-spacing-200) var(--core-spacing-800);
+        padding: var(--core-spacing-400) var(--core-spacing-800);
 
         // The design's row is a single label/value pair — no position count.
         .positions-drawer-footer--count {
@@ -286,6 +287,8 @@
         text-align: center;
 
         .portfolio-empty__landscape-icon {
+            // A flex box, so the SVG sits without an inline baseline gap beneath it.
+            display: flex;
             margin-block-end: var(--core-spacing-400);
         }
 

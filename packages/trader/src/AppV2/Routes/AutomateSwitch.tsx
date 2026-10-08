@@ -4,18 +4,19 @@ import { useHistory } from 'react-router-dom';
 import { SmartFallbackLoader } from '@deriv/components';
 import { routes } from '@deriv/shared';
 import { observer } from '@deriv/stores';
-import { useDevice } from '@deriv-com/ui';
 
 import { TRADE_PANEL_TABS } from 'AppV2/Components/AutomationPanel/automation-config';
 import useIsAutomationEnabled from 'AppV2/Hooks/useIsAutomationEnabled';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { useTraderStore } from 'Stores/useTraderStores';
 
 const Automate = lazy(() => import(/* webpackChunkName: "trader-automate" */ 'AppV2/Containers/Automate'));
 
 // Guards the mobile-only `/automate` route: redirects to the trade page when the
 // feature is off or on desktop (where automation is a panel tab). Mirrors `PositionsSwitch`.
+// A rotated phone stays here behind core's rotate prompt, rather than taking the desktop path.
 const AutomateSwitch = observer(() => {
-    const { isMobile } = useDevice();
+    const isMobile = useIsPhoneViewport();
     const { setActiveTradePanelTab } = useTraderStore();
     const history = useHistory();
     const { is_enabled: is_automation_enabled, is_ready: is_eu_status_ready } = useIsAutomationEnabled();

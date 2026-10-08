@@ -44,7 +44,7 @@ const LandscapeOnboarding = observer(() => {
         >
             <div className='landscape-onboarding__header'>
                 <Text id={TITLE_ID} bold size='md'>
-                    <Localize i18n_default_text='Tap to show or hide controls' />
+                    <Localize i18n_default_text='More room for your chart' />
                 </Text>
                 <IconButton
                     icon={<LabelPairedXmarkSmBoldIcon fill='var(--component-textIcon-normal-prominent)' />}
@@ -62,8 +62,8 @@ const LandscapeOnboarding = observer(() => {
             <Button
                 color='black-white'
                 size='sm'
-                label={<Localize i18n_default_text='Done' />}
-                data-testid='dt_landscape_onboarding_done'
+                label={<Localize i18n_default_text='Got it' />}
+                data-testid='dt_landscape_onboarding_got_it'
                 onClick={finish}
             />
         </div>

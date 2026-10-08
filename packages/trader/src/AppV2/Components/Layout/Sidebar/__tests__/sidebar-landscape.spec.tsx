@@ -6,6 +6,7 @@ import { mockStore, StoreProvider } from '@deriv/stores';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
+import { cancelPortraitRedirect, redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
 
 import Sidebar from '../sidebar';
 
@@ -23,7 +24,7 @@ jest.mock('@deriv/quill-icons', () => ({
 }));
 
 // The global svg stub renders an opaque element, so name it here to assert what it is given.
-jest.mock('Assets/SvgComponents/settings/ic-manual-trading.svg', () => {
+jest.mock('Assets/SvgComponents/settings/ic-manual-trading-fill.svg', () => {
     const IcManualTradingStub = ({ className }: { className?: string }) => (
         <span data-testid='dt_trade_icon' className={className} />
     );
@@ -31,6 +32,12 @@ jest.mock('Assets/SvgComponents/settings/ic-manual-trading.svg', () => {
 });
 
 jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => jest.fn(() => true));
+jest.mock('AppV2/Utils/portrait-redirect-utils', () => ({
+    cancelPortraitRedirect: jest.fn(),
+    redirectOnPortrait: jest.fn(),
+}));
+let mock_is_rtl = false;
+jest.mock('@deriv/api', () => ({ ...jest.requireActual('@deriv/api'), useIsRtl: () => mock_is_rtl }));
 jest.mock('../language-selector', () => jest.fn(() => <div>LanguageSelector</div>));
 jest.mock('../../PositionsDrawer/positions-drawer-tabs', () => jest.fn(() => <div>PositionsDrawerTabs</div>));
 
@@ -187,6 +194,31 @@ describe('Sidebar — landscape rail', () => {
         expect(store.ui.closeSidebarFlyout).not.toHaveBeenCalled();
     });
 
+    describe('[LNV-016] side sheet direction in Arabic', () => {
+        afterEach(() => {
+            mock_is_rtl = false;
+        });
+
+        // The wrapper carries the direction, since Flyout takes no `dir` of its own.
+        // eslint-disable-next-line testing-library/no-node-access
+        const sheetDir = () => screen.getByRole('dialog', { hidden: true }).closest('[dir]')?.getAttribute('dir');
+
+        it('reads right-to-left in landscape, while the page behind stays left-to-right', () => {
+            mock_is_rtl = true;
+            renderSidebar(buildStore({ active_sidebar_flyout: 'menu' }));
+
+            expect(sheetDir()).toBe('rtl');
+        });
+
+        it('leaves desktop Arabic as it is, left-to-right', () => {
+            mock_is_rtl = true;
+            mockUseIsPhoneLandscape.mockReturnValue(false);
+            renderSidebar(buildStore({ active_sidebar_flyout: 'menu' }));
+
+            expect(sheetDir()).toBeUndefined();
+        });
+    });
+
     it('[LNV-003] Menu opens its drawer', () => {
         const { store } = renderSidebar();
 
@@ -221,6 +253,50 @@ describe('Sidebar — landscape rail', () => {
         // Already there, so it only dismisses whatever drawer is over the chart.
         expect(store.ui.closeSidebarFlyout).toHaveBeenCalled();
         expect(history.location.pathname).toBe(routes.index);
+    });
+
+    describe('[LNV-006] Home', () => {
+        const ROTATE_MESSAGE = 'Please rotate your device to portrait view.';
+        const original_location = window.location;
+
+        beforeEach(() => {
+            // Navigation is the thing under test, and jsdom cannot perform it.
+            Object.defineProperty(window, 'location', { value: { href: '' }, writable: true, configurable: true });
+        });
+
+        afterEach(() => {
+            Object.defineProperty(window, 'location', { value: original_location, writable: true, configurable: true });
+        });
+
+        it('asks to rotate instead of leaving for the portrait-only home page', () => {
+            renderSidebar();
+
+            fireEvent.click(screen.getByTestId('dt_sidebar_home'));
+
+            expect(screen.getByRole('dialog', { name: ROTATE_MESSAGE })).toBeInTheDocument();
+            expect(window.location.href).toBe('');
+            expect(redirectOnPortrait).toHaveBeenCalledWith(expect.stringContaining('https://deriv.com/home?'));
+        });
+
+        it('closes the prompt on dismiss and drops the queued redirect', () => {
+            renderSidebar();
+            fireEvent.click(screen.getByTestId('dt_sidebar_home'));
+
+            fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+            expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+            expect(cancelPortraitRedirect).toHaveBeenCalled();
+        });
+
+        it('navigates home as usual in portrait', () => {
+            mockUseIsPhoneLandscape.mockReturnValue(false);
+            renderSidebar();
+
+            fireEvent.click(screen.getByTestId('dt_sidebar_home'));
+
+            expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+            expect(window.location.href).toContain('https://deriv.com/home?');
+        });
     });
 
     it('[LNV-005] the Menu drawer carries the rows the rail gave up', () => {

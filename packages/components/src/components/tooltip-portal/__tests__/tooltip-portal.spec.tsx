@@ -81,6 +81,25 @@ describe('TooltipPortal', () => {
                 expect(screen.queryByText('Test tooltip')).not.toBeInTheDocument();
             });
         });
+
+        it('should hide tooltip on a pointerdown outside the trigger', async () => {
+            render(
+                <TooltipPortal message='Test tooltip'>
+                    <span>Hover me</span>
+                </TooltipPortal>
+            );
+
+            const trigger = screen.getByText('Hover me');
+            fireEvent.mouseEnter(trigger);
+            fireEvent.pointerDown(trigger);
+            expect(screen.getByText('Test tooltip')).toBeInTheDocument();
+
+            fireEvent.pointerDown(document.body);
+
+            await waitFor(() => {
+                expect(screen.queryByText('Test tooltip')).not.toBeInTheDocument();
+            });
+        });
     });
 
     describe('Keyboard Accessibility', () => {

@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 
+import { useIsRtl } from '@deriv/api';
 import { observer } from '@deriv/stores';
 import { Localize, localize } from '@deriv-com/translations';
 
@@ -77,6 +78,7 @@ const MarketSelectionMobile = observer(
             handleSelectSymbolForTradeType,
             handleSelectTradeType,
         } = useMarketSelection({ is_open: isOpen, onClose: () => setIsOpen(false) });
+        const is_rtl = useIsRtl();
 
         const favourites_content =
             favourites.length === 0 ? (
@@ -188,6 +190,9 @@ const MarketSelectionMobile = observer(
         return createPortal(
             <SlideUpPresence
                 is_open={isOpen}
+                // Arabic landscape keeps the page left-to-right (see AppContent); the selector reads
+                // right-to-left, as in portrait.
+                dir={is_rtl ? 'rtl' : undefined}
                 className='market-selection__modal'
                 role='dialog'
                 aria-modal='true'

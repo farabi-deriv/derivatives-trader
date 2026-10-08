@@ -7,7 +7,7 @@ $menu-max-height: 44rem;
     flex-direction: column;
     // Own the viewport (100vh fallback): PageOverlay no longer supplies the box.
     height: 100vh;
-    height: 100dvh;
+    height: var(--viewport-height, 100dvh);
     overflow: hidden;
 
     .reports__landscape-header {

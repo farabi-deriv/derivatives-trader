@@ -25,7 +25,7 @@ describe('LandscapeOnboarding', () => {
 
         waitForDelay();
 
-        expect(screen.getByRole('dialog', { name: 'Tap to show or hide controls' })).toBeInTheDocument();
+        expect(screen.getByRole('dialog', { name: 'More room for your chart' })).toBeInTheDocument();
         expect(screen.getByText('Tap on the chart to hide or reveal the controls.')).toBeInTheDocument();
     });
 
@@ -38,7 +38,7 @@ describe('LandscapeOnboarding', () => {
 
     it.each([
         ['Close', 'dt_landscape_onboarding_close'],
-        ['Done', 'dt_landscape_onboarding_done'],
+        ['Got it', 'dt_landscape_onboarding_got_it'],
     ])('[LON-003] %s marks it seen', (_name, test_id) => {
         const store = mountCard();
         waitForDelay();

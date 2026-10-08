@@ -5,6 +5,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
+import { cancelPortraitRedirect, redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
 
 import AccountHeader from '../account-header';
 
@@ -34,7 +35,15 @@ jest.mock('@deriv/api', () => ({
 
 jest.mock('@deriv-com/ui', () => ({ useDevice: jest.fn(() => ({ isMobile: false })) }));
 jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => jest.fn(() => false));
-jest.mock('@deriv/quill-icons', () => ({ LegacyChevronDown1pxIcon: () => <div /> }));
+jest.mock('AppV2/Utils/portrait-redirect-utils', () => ({
+    cancelPortraitRedirect: jest.fn(),
+    redirectOnPortrait: jest.fn(),
+}));
+jest.mock('@deriv/quill-icons', () => ({
+    LegacyChevronDown1pxIcon: () => <div />,
+    StandaloneRotateDeviceFillIcon: () => <div />,
+    StandaloneXmarkRegularIcon: () => <div />,
+}));
 jest.mock('@deriv-com/quill-ui', () => ({
     ActionSheet: {
         Root: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -115,5 +124,68 @@ describe('AccountHeader in landscape', () => {
 
         // A rotate or navigation away would otherwise leave the chrome pinned open for good.
         expect(onDropdownOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    describe('[AHL-004] Deposit', () => {
+        const ROTATE_MESSAGE = 'Please rotate your device to portrait view.';
+        const original_location = window.location;
+
+        beforeEach(() => {
+            // Navigation is the thing under test, and jsdom cannot perform it.
+            Object.defineProperty(window, 'location', { value: { href: '' }, writable: true, configurable: true });
+        });
+
+        afterEach(() => {
+            Object.defineProperty(window, 'location', { value: original_location, writable: true, configurable: true });
+        });
+
+        it('asks to rotate instead of opening the portrait-only deposit page', async () => {
+            renderHeader();
+
+            await userEvent.click(screen.getByRole('button', { name: 'Deposit' }));
+
+            expect(screen.getByRole('dialog', { name: ROTATE_MESSAGE })).toBeInTheDocument();
+            expect(window.location.href).toBe('');
+            expect(redirectOnPortrait).toHaveBeenCalledWith(expect.stringContaining('/transfer?'));
+        });
+
+        it('closes the prompt on dismiss and drops the queued redirect', async () => {
+            renderHeader();
+            await userEvent.click(screen.getByRole('button', { name: 'Deposit' }));
+
+            await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+
+            expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+            expect(cancelPortraitRedirect).toHaveBeenCalled();
+        });
+
+        it('closes the prompt once the phone is rotated to portrait', async () => {
+            const { rerender } = renderHeader();
+            await userEvent.click(screen.getByRole('button', { name: 'Deposit' }));
+
+            mockUseIsPhoneLandscape.mockReturnValue(false);
+            rerender(
+                <StoreProvider
+                    store={mockStore({
+                        client: { balance: '10000.00', currency: 'USD', is_logged_in: true, is_virtual: false },
+                        ui: { is_switching_account: false, setIsSwitchingAccount: jest.fn() },
+                    })}
+                >
+                    <AccountHeader />
+                </StoreProvider>
+            );
+
+            expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+        });
+
+        it('opens the deposit page as before outside landscape', async () => {
+            mockUseIsPhoneLandscape.mockReturnValue(false);
+            renderHeader();
+
+            await userEvent.click(screen.getByRole('button', { name: 'Deposit' }));
+
+            expect(window.location.href).toContain('/transfer');
+            expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+        });
     });
 });

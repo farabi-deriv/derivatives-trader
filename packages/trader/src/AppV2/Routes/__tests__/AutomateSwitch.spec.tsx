@@ -11,6 +11,8 @@ import useIsAutomationEnabled from 'AppV2/Hooks/useIsAutomationEnabled';
 import AutomateSwitch from '../AutomateSwitch';
 
 const mockSetActiveTradePanelTab = jest.fn();
+let mockIsPhoneLandscape = false;
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => () => mockIsPhoneLandscape);
 
 jest.mock('AppV2/Hooks/useIsAutomationEnabled', () => ({
     __esModule: true,
@@ -56,6 +58,18 @@ describe('AutomateSwitch', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+        mockIsPhoneLandscape = false;
+    });
+
+    it('[AUT-001] keeps a phone rotated to landscape on /automate, rather than taking the desktop path', async () => {
+        // `isMobile` is width-only, so a rotated phone read as desktop: it switched on the desktop panel
+        // tab and redirected, landing the automation pair on the trade page.
+        mockIsPhoneLandscape = true;
+        const { history } = renderComponent(false);
+
+        expect(await screen.findByTestId('automate-page')).toBeInTheDocument();
+        expect(history.location.pathname).toBe('/automate');
+        expect(mockSetActiveTradePanelTab).not.toHaveBeenCalled();
     });
 
     it('should render Automate page on mobile when enabled', async () => {

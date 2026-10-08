@@ -22,6 +22,9 @@ jest.mock('@deriv-com/ui', () => ({
     useDevice: jest.fn(() => ({ isMobile: mockIsMobile })),
 }));
 
+let mockIsPhoneLandscape = false;
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => () => mockIsPhoneLandscape);
+
 let mockCurrentLang = 'EN';
 jest.mock('@deriv-com/translations', () => ({
     ...jest.requireActual('@deriv-com/translations'),
@@ -339,12 +342,28 @@ describe('ContractCard', () => {
         history.push('/');
         mockCurrentLang = 'EN';
         mockIsMobile = true;
+        mockIsPhoneLandscape = false;
     });
     it('should not render component if contractInfo prop is empty/missing contract_type', () => {
         const { container } = render(mockedContractCard({ ...mockProps, contractInfo: {} }));
 
         expect(container).toBeEmptyDOMElement();
     });
+    it("[CCL-001] gives a phone in landscape portrait's swipe-revealed Close, not the desktop button", () => {
+        mockIsMobile = false;
+        mockIsPhoneLandscape = true;
+        render(mockedContractCard());
+
+        expect(screen.getByRole('button', { name: CLOSE })).not.toHaveClass('contract-card__sell-btn');
+    });
+
+    it('[CCL-001] keeps the desktop Close button on desktop', () => {
+        mockIsMobile = false;
+        render(mockedContractCard());
+
+        expect(screen.getByRole('button', { name: CLOSE })).toHaveClass('contract-card__sell-btn');
+    });
+
     it('should render a card for an open Rise position with a Close button only and with remaining time', () => {
         render(mockedContractCard());
         expect(screen.getByText('Rise')).toBeInTheDocument();

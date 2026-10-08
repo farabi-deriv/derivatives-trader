@@ -3552,7 +3552,10 @@ export default class TradeStore extends BaseStore<TRootStore> {
     // assigns `this.ui`). Both branches are already accurate there, so the desktop fallback cannot
     // mis-resolve a cold load — a mobile cold load is never on the automation route anyway.
     get is_automation_mode() {
-        return this.root_store.ui?.is_mobile ? this.is_automation_page : this.is_automation_tab;
+        // A phone in landscape is still a phone (`is_mobile` is width-only): it never reads the desktop
+        // panel tab, which is persisted and so can be stale. Rotating flips `is_mobile`, re-running this.
+        const is_phone = this.root_store.ui?.is_mobile || isPhoneLandscape();
+        return is_phone ? this.is_automation_page : this.is_automation_tab;
     }
 
     // The active mode's open-market tabs. Consumers read this; mutations go through

@@ -585,3 +585,24 @@ describe('UIStore landscape trade flags', () => {
         expect(ui.local_storage_properties).not.toContain('is_landscape_chrome_hidden');
     });
 });
+
+describe('UIStore viewport height', () => {
+    const original_height = window.innerHeight;
+
+    afterEach(() => {
+        Object.defineProperty(window, 'innerHeight', { value: original_height, configurable: true });
+        document.documentElement.style.removeProperty('--viewport-height');
+    });
+
+    it('publishes the viewport height on construction and on every resize', () => {
+        Object.defineProperty(window, 'innerHeight', { value: 390, configurable: true });
+        const ui = new UIStore({ common: {}, client: {} } as never);
+        expect(document.documentElement.style.getPropertyValue('--viewport-height')).toBe('390px');
+
+        Object.defineProperty(window, 'innerHeight', { value: 430, configurable: true });
+        window.dispatchEvent(new Event('resize'));
+
+        expect(ui.screen_height).toBe(430);
+        expect(document.documentElement.style.getPropertyValue('--viewport-height')).toBe('430px');
+    });
+});

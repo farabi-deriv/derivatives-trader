@@ -2,7 +2,11 @@ module.exports = {
     parser: 'postcss-scss',
     plugins: [
         {
-            'postcss-preset-env': {},
+            'postcss-preset-env': {
+                // Keep logical properties native. Converted, they become paired [dir="ltr"]/[dir="rtl"] rules, and Arabic
+                // on desktop and phone landscape (html rtl, body ltr — see AppContent) matches both: left and right at once.
+                features: { 'logical-properties-and-values': false },
+            },
         },
         // Custom PostCSS plugin to remove external @import statements
         {

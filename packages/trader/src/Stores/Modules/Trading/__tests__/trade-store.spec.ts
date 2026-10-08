@@ -1,7 +1,7 @@
 import { configure, reaction, runInAction } from 'mobx';
 
 import { TActiveSymbolsResponse } from '@deriv/api';
-import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, TRADE_TYPES, WS } from '@deriv/shared';
+import { CONTRACT_TYPES, dayjs, findSymbolForTradeType, isPhoneLandscape, TRADE_TYPES, WS } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 
 import { TRADE_PANEL_TABS } from 'AppV2/Components/AutomationPanel/automation-config';
@@ -34,6 +34,7 @@ jest.mock('_common/base/server_time', () => {
 // Mock shared utilities
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
+    isPhoneLandscape: jest.fn(() => false),
     pickDefaultSymbol: jest.fn(() => Promise.resolve('1HZ100V')),
     isMarketClosed: jest.fn(() => false),
     findSymbolForTradeType: jest.fn(() => Promise.resolve('')),
@@ -3221,6 +3222,19 @@ describe('TradeStore', () => {
             expect(store.is_automation_mode).toBe(false);
             store.active_trade_panel_tab = TRADE_PANEL_TABS.AUTOMATION;
             expect(store.is_automation_mode).toBe(true);
+        });
+
+        it('treats a phone in landscape as a phone, ignoring a stale desktop panel tab', () => {
+            const store = buildStoreWithoutUi();
+            (store.root_store as unknown as { ui: { is_mobile: boolean } }).ui = { is_mobile: false };
+            (isPhoneLandscape as jest.Mock).mockReturnValue(true);
+            store.active_trade_panel_tab = TRADE_PANEL_TABS.AUTOMATION;
+            store.is_automation_page = false;
+
+            expect(store.is_automation_mode).toBe(false);
+            store.is_automation_page = true;
+            expect(store.is_automation_mode).toBe(true);
+            (isPhoneLandscape as jest.Mock).mockReturnValue(false);
         });
 
         it('still reads is_mobile once ui is attached', () => {

@@ -5,12 +5,16 @@ import { useStore } from '@deriv/stores';
 import { CHART_MAXIMIZE_ANIMATION_MS } from 'AppV2/Utils/layout-utils';
 
 const DEFAULT_DELAY_MS = 8000;
-// A tap on chrome is an interaction with it, not with "the screen", so it must not toggle. Includes
-// the chart's dialogs (`sc-dialog` sits on every one, nested or portalled) and the overlays that
-// portal to <body> — the market selector and any quill sheet — which sit outside every surface here
-// and so read as the screen, costing a second tap to whatever the click guard below then ate.
-const CHROME_SELECTOR =
-    '.landscape-params, .trade-landscape__header, .sidebar, .dc-flyout, .sc-toolbar-widget, .sc-dialog, .accumulators-stats-v2, .dc-tooltip-portal, .scroll_to_recent, .market-selection__modal, .quill-action-sheet--portal, .landscape-fullscreen-button, .landscape-onboarding, .modal-player';
+// Only a tap on the chart toggles the chrome ("Tap on the chart to hide or reveal the controls").
+// Everything else — the chrome, and any overlay portalled to <body> (toasts, sheets, the selector) —
+// is its own interaction, so a new overlay can never have its first tap eaten by the click guard.
+const CHART_SELECTOR = '.trade-landscape__chart-tooltip';
+// Controls over the chart that own their taps (`sc-dialog` sits on every chart dialog).
+const CHART_CONTROLS_SELECTOR =
+    '.landscape-params, .landscape-fullscreen-button, .sc-toolbar-widget, .sc-dialog, .scroll_to_recent';
+
+const isChartTap = (target: Element | null) =>
+    !!target?.closest?.(CHART_SELECTOR) && !target.closest(CHART_CONTROLS_SELECTOR);
 // Travel above which a press is a pan, not a tap. Matches the ~10px slop browsers use to separate a
 // click from a drag — tight enough to reject a chart pan, loose enough for a wobbly thumb.
 const TAP_SLOP_PX = 10;
@@ -33,8 +37,8 @@ type TUseAutoHideChrome = {
 };
 
 /**
- * Auto-hides the landscape chrome (nav rail, header, pill) after `delay_ms` of inactivity. A tap
- * toggles it either way; the event still reaches its real target.
+ * Auto-hides the landscape chrome (nav rail, header, pill) after `delay_ms` of inactivity. A tap on
+ * the chart toggles it either way; the event still reaches its real target.
  * @returns `is_animating`, true for the ~300ms flip so the chart transition can be neutralised.
  */
 const useAutoHideChrome = ({
@@ -84,9 +88,6 @@ const useAutoHideChrome = ({
         // Capture + passive, never preventDefault, so the gesture still reaches its target. Decided on
         // pointerUP so travel can be measured — a chart pan emits the same pointerdown as a tap.
         const onPointerDown = (event: PointerEvent) => {
-            const target = event.target as Element | null;
-            // Gestures on the chrome are its own — collapsing on them would yank the rail out from
-            // under a nav tap, or drop the take-profit chip mid-scroll.
             // Cleared per gesture, so a restore whose click never arrived cannot eat a later one.
             swallow_click.current = false;
             // Cleared here, in the capture phase, so whatever claims this gesture does so after —
@@ -95,7 +96,7 @@ const useAutoHideChrome = ({
             tap.current = {
                 x: event.clientX,
                 y: event.clientY,
-                is_candidate: !target?.closest?.(CHROME_SELECTOR),
+                is_candidate: isChartTap(event.target as Element | null),
                 // Read the pause HERE: dismissing a panel releases it on this same pointerdown, so by
                 // pointerup the gesture would look like a plain chart tap.
                 was_paused: is_paused_ref.current,

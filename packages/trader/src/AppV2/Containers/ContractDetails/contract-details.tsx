@@ -1,6 +1,7 @@
 import React from 'react';
 import classNames from 'classnames';
 
+import { useIsRtl } from '@deriv/api';
 import { Loading } from '@deriv/components';
 import {
     hasContractEntered,
@@ -35,6 +36,7 @@ import ContractDetailsChart from '../Chart/contract-details-chart';
 const ContractDetails = observer(() => {
     const { contract_info, is_loading } = useContractDetails();
     const is_phone_landscape = useIsPhoneLandscape();
+    const is_rtl = useIsRtl();
     const { contract_id, currency, contract_type, limit_order } = contract_info;
     const { take_profit, stop_loss } = limit_order ?? { take_profit: {}, stop_loss: {} };
     const [update_history, setUpdateHistory] = React.useState<TContractUpdateHistory>([]);
@@ -118,7 +120,13 @@ const ContractDetails = observer(() => {
     // Portrait keeps the single column, in the same DOM order as before.
     if (is_phone_landscape) {
         return (
-            <div className='contract-details-landscape'>
+            // Arabic landscape keeps the app left-to-right (see AppContent); this page reads right-to-left,
+            // as in portrait.
+            <div
+                className='contract-details-landscape'
+                dir={is_rtl ? 'rtl' : undefined}
+                data-testid='dt_contract_details_landscape'
+            >
                 <ContractDetailsHeader />
                 <div className='contract-details contract-details--landscape'>
                     <div className='contract-details__pane' data-testid='dt_contract_details_pane'>

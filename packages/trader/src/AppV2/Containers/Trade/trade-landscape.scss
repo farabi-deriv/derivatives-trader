@@ -1,9 +1,9 @@
 .trade--landscape {
     display: flex;
     flex-direction: column;
-    // Fallback first: 100dvh handles the iOS Safari landscape toolbar that 100vh overstates.
+    // Fallback first: --viewport-height (ui-store) handles the iOS Safari landscape toolbar that 100vh overstates.
     height: 100vh;
-    height: 100dvh;
+    height: var(--viewport-height, 100dvh);
     overflow: hidden;
 
     // Armed for CHART_MAXIMIZE_ANIMATION_MS on each auto-hide flip: SmartCharts' own

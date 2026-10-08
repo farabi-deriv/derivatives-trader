@@ -53,9 +53,11 @@ const renderLandscape = (store = buildStore()) => {
     );
 };
 
-const tapTheScreen = () => {
-    fireEvent.pointerDown(document.body, { clientX: 100, clientY: 100 });
-    fireEvent.pointerUp(document.body, { clientX: 100, clientY: 100 });
+// Only a tap on the chart toggles the chrome.
+const tapTheChart = () => {
+    const chart = screen.getByTestId('trade-chart');
+    fireEvent.pointerDown(chart, { clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(chart, { clientX: 100, clientY: 100 });
 };
 
 describe('TradeLandscape', () => {
@@ -98,7 +100,7 @@ describe('TradeLandscape', () => {
         const store = buildStore();
         renderLandscape(store);
 
-        tapTheScreen();
+        tapTheChart();
 
         expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
     });
@@ -109,7 +111,7 @@ describe('TradeLandscape', () => {
         store.modules.trade.pending_landscape_selection = { contract_type: 'CALL', symbol: 'R_100' };
         renderLandscape(store);
 
-        tapTheScreen();
+        tapTheChart();
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalledWith(true);
     });

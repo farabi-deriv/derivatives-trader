@@ -75,4 +75,18 @@ describe('useIsPhoneLandscape', () => {
         unmount();
         expect(media.listenerCount(PHONE_LANDSCAPE_MEDIA_QUERY)).toBe(0);
     });
+
+    it('[LTM-001] reads the live value on any re-render, before the change event has fired', () => {
+        // On a rotate `useDevice` can re-render first. A value cached until the change event briefly said
+        // "not a phone", long enough for AutomateSwitch to redirect off /automate.
+        const media = createMatchMediaMock();
+        stubUserAgent(IPHONE_UA);
+        const { result, rerender } = renderHook(() => useIsPhoneLandscape());
+        expect(result.current).toBe(false);
+
+        media.setMatches(PHONE_LANDSCAPE_MEDIA_QUERY, true);
+        rerender();
+
+        expect(result.current).toBe(true);
+    });
 });

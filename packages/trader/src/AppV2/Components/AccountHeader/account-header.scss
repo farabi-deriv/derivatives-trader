@@ -55,6 +55,10 @@
         min-width: 14.25rem;
         padding: 0.7rem 1.6rem;
         border-radius: 8px;
+
+        @include phone-landscape {
+            padding-inline: var(--core-spacing-400);
+        }
     }
 
     &__content-header {

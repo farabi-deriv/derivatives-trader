@@ -20,9 +20,9 @@ import {
 import { isHigherLowerContractInfo } from '@deriv/shared/src/utils/helpers/market-underlying';
 import { Button, CaptionText, Tag, Text } from '@deriv-com/quill-ui';
 import { useTranslations } from '@deriv-com/translations';
-import { useDevice } from '@deriv-com/ui';
 
 import { TClosedPosition } from 'AppV2/Containers/Positions/positions-content';
+import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
 import { getProfit } from 'AppV2/Utils/positions-utils';
 import IcAutomationTrading from 'Assets/SvgComponents/settings/ic-automation-trading.svg';
 import IcManualTrading from 'Assets/SvgComponents/settings/ic-manual-trading.svg';
@@ -68,7 +68,8 @@ const ContractCard = ({
     serverTime,
 }: TContractCardProps) => {
     const { currentLang } = useTranslations();
-    const { isMobile } = useDevice();
+    // Phone in either orientation: landscape swipes to reveal Close/Cancel, as portrait does.
+    const isMobile = useIsPhoneViewport();
     const is_rtl = currentLang === 'AR';
     const [isDeleted, setIsDeleted] = React.useState(false);
     const [isClosing, setIsClosing] = React.useState(false);

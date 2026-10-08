@@ -1,7 +1,9 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 
+import { useIsRtl } from '@deriv/api';
 import { Button, Flyout, Text } from '@deriv/components';
 import {
     DerivProductBrandLightDerivTraderLogoIcon,
@@ -21,8 +23,10 @@ import { getBrandUrl, getHelpCentreUrl, routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Localize, localize, useTranslations } from '@deriv-com/translations';
 
+import RotatePrompt from 'AppV2/Components/RotatePrompt';
 import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
-import IcManualTrading from 'Assets/SvgComponents/settings/ic-manual-trading.svg';
+import { cancelPortraitRedirect, redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
+import IcManualTradingFill from 'Assets/SvgComponents/settings/ic-manual-trading-fill.svg';
 
 import PositionsDrawerTabs from '../PositionsDrawer/positions-drawer-tabs';
 
@@ -46,6 +50,7 @@ const Sidebar = observer(() => {
     const { currentLang } = useTranslations();
     const { is_dark_mode_on, active_sidebar_flyout, setSidebarFlyout, closeSidebarFlyout } = ui;
     const is_phone_landscape = useIsPhoneLandscape();
+    const is_rtl = useIsRtl();
     const { is_logged_in, logout } = client;
     const { current_language } = common;
     const { active_positions_count, onMount, onUnmount } = portfolio;
@@ -53,6 +58,11 @@ const Sidebar = observer(() => {
     const history = useHistory();
     const sidebar_ref = React.useRef<HTMLElement>(null);
     const is_on_index = location.pathname === routes.index;
+    const [is_rotate_prompt_open, setIsRotatePromptOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!is_phone_landscape) setIsRotatePromptOpen(false);
+    }, [is_phone_landscape]);
 
     React.useEffect(() => {
         onMount();
@@ -113,7 +123,14 @@ const Sidebar = observer(() => {
         const brandUrl = getBrandUrl();
         const lang_param = current_language ? `&lang=${current_language}` : '';
         const currency = client.currency || '';
-        window.location.href = `${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`;
+        const home_url = `${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`;
+        // Home is portrait-only, like Deposit: ask to rotate, then go there once rotated.
+        if (is_phone_landscape) {
+            setIsRotatePromptOpen(true);
+            redirectOnPortrait(home_url);
+            return;
+        }
+        window.location.href = home_url;
     };
 
     const closeFlyout = () => {
@@ -182,7 +199,7 @@ const Sidebar = observer(() => {
             id: 'trade',
             // Native 14: unlike the quill glyphs beside it, this asset fills its viewBox, so 24 read a
             // third larger. Colour comes from the class — it paints with `currentColor`, not a prop.
-            icon: <IcManualTrading className='sidebar__trade-icon' width={14} height={14} />,
+            icon: <IcManualTradingFill className='sidebar__trade-icon' width={14} height={14} />,
             label: localize('Trade'),
             onClick: handleTradeClick,
             // The rail's only page; a drawer opens over it rather than leaving it.
@@ -384,16 +401,32 @@ const Sidebar = observer(() => {
                 is persisted, so a value with no case in getFlyoutContent (e.g. 'theme' from a build
                 that had a theme flyout) must not rehydrate into an open-but-empty panel. */}
             {is_on_index && (
-                <Flyout
-                    className={active_sidebar_flyout ? `dc-flyout--${active_sidebar_flyout}` : undefined}
-                    is_open={flyoutContent !== null}
-                    onClose={closeFlyout}
-                    title={flyoutContent?.title}
-                    footer_content={flyoutContent?.footer}
-                >
-                    {flyoutContent?.content}
-                </Flyout>
+                // Arabic landscape keeps the page left-to-right (see AppContent); its side sheets read
+                // right-to-left, as in portrait.
+                <div dir={is_phone_landscape && is_rtl ? 'rtl' : undefined}>
+                    <Flyout
+                        className={active_sidebar_flyout ? `dc-flyout--${active_sidebar_flyout}` : undefined}
+                        is_open={flyoutContent !== null}
+                        onClose={closeFlyout}
+                        title={flyoutContent?.title}
+                        footer_content={flyoutContent?.footer}
+                    >
+                        {flyoutContent?.content}
+                    </Flyout>
+                </div>
             )}
+
+            {is_rotate_prompt_open &&
+                createPortal(
+                    <RotatePrompt
+                        message={<Localize i18n_default_text='Please rotate your device to portrait view.' />}
+                        onDismiss={() => {
+                            setIsRotatePromptOpen(false);
+                            cancelPortraitRedirect();
+                        }}
+                    />,
+                    document.body
+                )}
         </React.Fragment>
     );
 });

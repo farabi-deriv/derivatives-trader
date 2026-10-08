@@ -75,7 +75,7 @@ $TWO_BUTTONS_FOOTER_HEIGHT: 17.6rem; // 5.6rem (bottom nav) + 4.8rem * 2 (two bu
     // A bounded height, not `min-height`: the box has to be smaller than its content for its own
     // `overflow-y` to engage, and the ancestors clip rather than scroll.
     block-size: 100vh;
-    block-size: 100dvh;
+    block-size: var(--viewport-height, 100dvh);
     overflow-y: auto;
 }
 

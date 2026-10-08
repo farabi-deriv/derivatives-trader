@@ -13,6 +13,19 @@ const DEFAULT_DELAY_MS = 8000;
 const pointerEvent = (type: string, x: number, y: number) =>
     Object.assign(new Event(type, { bubbles: true, cancelable: true }), { clientX: x, clientY: y });
 
+// The only surface whose taps toggle the chrome.
+const CHART_CLASS = 'trade-landscape__chart-tooltip';
+// A plain node, created on first use: taps happen inside `act`, where a render would not commit in time.
+const chart = () => {
+    const existing = screen.queryByTestId('chart');
+    if (existing) return existing;
+    const node = document.createElement('div');
+    node.className = CHART_CLASS;
+    node.dataset.testid = 'chart';
+    document.body.appendChild(node);
+    return node;
+};
+
 const buildWrapper = ({ is_hidden = false }: { is_hidden?: boolean } = {}) => {
     const store = mockStore({ ui: { is_landscape_chrome_hidden: is_hidden } });
     // `is_paused` is declared (optional) so the wrapper also satisfies the typed-props `renderHook`
@@ -27,6 +40,7 @@ const buildWrapper = ({ is_hidden = false }: { is_hidden?: boolean } = {}) => {
 describe('useAutoHideChrome', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => {
+        screen.queryByTestId('chart')?.remove();
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
         jest.clearAllMocks();
@@ -49,7 +63,11 @@ describe('useAutoHideChrome', () => {
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
         const inner_handler = jest.fn();
-        render(<button onPointerDown={inner_handler}>buy</button>);
+        render(
+            <div className={CHART_CLASS}>
+                <button onPointerDown={inner_handler}>chart</button>
+            </div>
+        );
         const button = screen.getByRole('button');
 
         const down = pointerEvent('pointerdown', 100, 100);
@@ -73,9 +91,10 @@ describe('useAutoHideChrome', () => {
         render(<button onClick={nav_item}>positions</button>);
         const button = screen.getByRole('button');
 
+        // Pressed on the chart; by the time the click is hit-tested the rail is back under the finger.
         act(() => {
-            button.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-            button.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
             button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         });
 
@@ -91,8 +110,8 @@ describe('useAutoHideChrome', () => {
         const button = screen.getByRole('button');
 
         act(() => {
-            button.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-            button.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
             button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         });
 
@@ -103,9 +122,35 @@ describe('useAutoHideChrome', () => {
         expect(nav_item).toHaveBeenCalledTimes(1);
     });
 
+    it.each([
+        ['the market selector', 'market-selection__modal'],
+        // The contract-result toast is a link to the contract; quill gives it only the --mobile class.
+        ['a notification toast', 'quill-notification__banners--mobile'],
+    ])('[LAH-002] a tap on %s, portalled outside the chart, acts on the first tap', (_name, class_name) => {
+        // Read as a chart tap, it restored the chrome and the guard above ate its click.
+        const { store, wrapper } = buildWrapper({ is_hidden: true });
+        renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
+
+        const onTap = jest.fn();
+        render(
+            <div className={class_name}>
+                <button onClick={onTap}>target</button>
+            </div>
+        );
+        const target = screen.getByRole('button', { name: 'target' });
+
+        act(() => {
+            target.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            target.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        });
+
+        expect(onTap).toHaveBeenCalled();
+        expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+    });
+
     it('[LAH-002] a tap inside the market selector picks on the first tap, not the second', () => {
-        // It portals to <body>, so it sat outside every chrome surface and read as a tap on the screen:
-        // the tap restored the chrome and the guard above ate its click, costing a second tap.
+        // It portals to <body>, outside the chart, so it is not a chart tap.
         const { wrapper } = buildWrapper({ is_hidden: true });
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
@@ -131,8 +176,8 @@ describe('useAutoHideChrome', () => {
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
         act(() => {
-            document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-            document.dispatchEvent(pointerEvent('pointerup', 104, 102));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 104, 102));
         });
 
         expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
@@ -145,8 +190,8 @@ describe('useAutoHideChrome', () => {
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
         act(() => {
-            document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-            document.dispatchEvent(pointerEvent('pointerup', 260, 104));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 260, 104));
         });
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
@@ -158,9 +203,9 @@ describe('useAutoHideChrome', () => {
         // written between this hook's pointerdown and its pointerup, because the hook
         // listens in the capture phase and so decides before the event reaches the chart.
         const claimDuringGesture = (claim: React.MutableRefObject<boolean>) => {
-            document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
             claim.current = true;
-            document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
         };
 
         it('does not collapse visible chrome', () => {
@@ -210,8 +255,8 @@ describe('useAutoHideChrome', () => {
             // A plain tap on the screen afterwards toggles as it always did: the claim is
             // cleared at the start of every gesture, not when it is honoured.
             act(() => {
-                document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-                document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+                chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+                chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
             });
 
             expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
@@ -223,8 +268,8 @@ describe('useAutoHideChrome', () => {
             renderHook(() => useAutoHideChrome({ is_paused: false, tap_claim_ref }), { wrapper });
 
             act(() => {
-                document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-                document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+                chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+                chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
             });
 
             expect(store.ui.setLandscapeChromeHidden).toHaveBeenCalledWith(true);
@@ -236,37 +281,31 @@ describe('useAutoHideChrome', () => {
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
         act(() => {
-            document.dispatchEvent(pointerEvent('pointerdown', 100, 100));
-            document.dispatchEvent(pointerEvent('pointercancel', 100, 100));
-            document.dispatchEvent(pointerEvent('pointerup', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointercancel', 100, 100));
+            chart().dispatchEvent(pointerEvent('pointerup', 100, 100));
         });
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
     });
 
-    // Collapsing on a control tap would yank the rail out from under a nav tap, drop the take-profit
-    // chip mid-scroll, or — for the chart's own toolbar — flip the chrome while picking an indicator.
+    // Collapsing on a control tap would drop the take-profit chip mid-scroll or, for the chart's own
+    // toolbar, flip the chrome while picking an indicator.
     it.each([
         ['the params pill', 'landscape-params'],
-        ['the landscape header', 'trade-landscape__header'],
-        ['the nav rail', 'sidebar'],
         ['the chart toolbar', 'sc-toolbar-widget'],
         ['a chart dialog', 'sc-dialog'],
-        ['the accumulator stats strip', 'accumulators-stats-v2'],
-        ['a tooltip it opened', 'dc-tooltip-portal'],
-        // Both portal to <body>, so they are outside every surface above and were read as the screen.
-        ['the market selector', 'market-selection__modal'],
-        ['an action sheet', 'quill-action-sheet--portal'],
         ['the fullscreen button', 'landscape-fullscreen-button'],
-        ['the onboarding card', 'landscape-onboarding'],
-        ['the guide video player', 'modal-player'],
-    ])('[LAH-005] a tap on %s does not toggle', (_name, class_name) => {
+        ['scroll to recent', 'scroll_to_recent'],
+    ])('[LAH-005] a tap on %s, over the chart, does not toggle', (_name, class_name) => {
         const { store, wrapper } = buildWrapper({ is_hidden: false });
         renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
 
         render(
-            <div className={class_name}>
-                <button>control</button>
+            <div className={CHART_CLASS}>
+                <div className={class_name}>
+                    <button>control</button>
+                </div>
             </div>
         );
         const control = screen.getByRole('button');
@@ -280,12 +319,40 @@ describe('useAutoHideChrome', () => {
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
     });
 
+    // Not a chart tap, so nothing to list per surface: anything new is excluded by default.
+    it.each([
+        ['the landscape header', 'trade-landscape__header'],
+        ['the nav rail', 'sidebar'],
+        ['the accumulator stats strip', 'accumulators-stats-v2'],
+        ['an action sheet', 'quill-action-sheet--portal'],
+        ['the onboarding card', 'landscape-onboarding'],
+        ['the guide video player', 'modal-player'],
+        ['a snackbar', 'quill-snackbar'],
+    ])('[LAH-005] a tap on %s, outside the chart, does not toggle', (_name, class_name) => {
+        const { store, wrapper } = buildWrapper({ is_hidden: false });
+        renderHook(() => useAutoHideChrome({ is_paused: false }), { wrapper });
+
+        render(
+            <div className={class_name}>
+                <button>control</button>
+            </div>
+        );
+        const control = screen.getByRole('button');
+
+        act(() => {
+            control.dispatchEvent(pointerEvent('pointerdown', 100, 100));
+            control.dispatchEvent(pointerEvent('pointerup', 100, 100));
+        });
+
+        expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
+    });
+
     it('[LAH-005] a pointerdown while paused does not collapse', () => {
         const { store, wrapper } = buildWrapper({ is_hidden: false });
         renderHook(() => useAutoHideChrome({ is_paused: true }), { wrapper });
 
         act(() => {
-            document.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
+            chart().dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
         });
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalledWith(true);
@@ -298,10 +365,10 @@ describe('useAutoHideChrome', () => {
             initialProps: { is_paused: true },
         });
 
-        act(() => document.dispatchEvent(pointerEvent('pointerdown', 100, 100)));
+        act(() => chart().dispatchEvent(pointerEvent('pointerdown', 100, 100)));
         // Closing the panel releases the pause on that same pointerdown, so pointerup arrives unpaused.
         rerender({ is_paused: false });
-        act(() => document.dispatchEvent(pointerEvent('pointerup', 100, 100)));
+        act(() => chart().dispatchEvent(pointerEvent('pointerup', 100, 100)));
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
     });
@@ -314,9 +381,9 @@ describe('useAutoHideChrome', () => {
         });
         (store.ui.setLandscapeChromeHidden as jest.Mock).mockClear();
 
-        act(() => document.dispatchEvent(pointerEvent('pointerdown', 100, 100)));
+        act(() => chart().dispatchEvent(pointerEvent('pointerdown', 100, 100)));
         rerender({ is_paused: false });
-        act(() => document.dispatchEvent(pointerEvent('pointerup', 100, 100)));
+        act(() => chart().dispatchEvent(pointerEvent('pointerup', 100, 100)));
 
         expect(store.ui.setLandscapeChromeHidden).not.toHaveBeenCalled();
     });

@@ -72,10 +72,10 @@
     background-color: var(--color-surface-primary);
 
     // Phone landscape reports !isMobile, so the layout keeps the hardcoded 100vh above and wraps the
-    // page in ThemedScrollbars. 100dvh handles the iOS Safari landscape toolbar 100vh overstates, and
-    // pinning the scroll wrapper lets the trade-landscape 100dvh flex layout own the viewport.
+    // page in ThemedScrollbars. --viewport-height (ui-store) handles the iOS Safari landscape toolbar
+    // 100vh overstates, and pinning the scroll wrapper lets the trade-landscape flex layout own the viewport.
     @include phone-landscape {
-        height: 100dvh;
+        height: var(--viewport-height, 100dvh);
 
         // Direct child only: as a descendant it also froze DataTable's row scroller.
         > .dc-themed-scrollbars {

@@ -11,9 +11,11 @@ type TEmptyPortfolioMessage = {
     /** Landscape's two-line empty state; the tab supplies its own wording. */
     title?: React.ReactNode;
     description?: React.ReactNode;
+    /** Landscape's glyph above the title; the briefcase unless the tab has its own (e.g. no matches). */
+    icon?: React.ReactNode;
 };
 
-const EmptyPortfolioMessage = ({ error, title, description }: TEmptyPortfolioMessage) => {
+const EmptyPortfolioMessage = ({ error, title, description, icon }: TEmptyPortfolioMessage) => {
     const is_phone_landscape = useIsPhoneLandscape();
 
     if (error) {
@@ -33,11 +35,9 @@ const EmptyPortfolioMessage = ({ error, title, description }: TEmptyPortfolioMes
     if (is_phone_landscape) {
         return (
             <div className='portfolio-empty portfolio-empty--landscape'>
-                <StandaloneBriefcaseRegularIcon
-                    className='portfolio-empty__landscape-icon'
-                    iconSize='xl'
-                    fill='var(--color-text-primary)'
-                />
+                <span className='portfolio-empty__landscape-icon'>
+                    {icon ?? <StandaloneBriefcaseRegularIcon iconSize='xl' fill='var(--color-text-primary)' />}
+                </span>
                 <span className='portfolio-empty__landscape-title'>
                     {title ?? <Localize i18n_default_text='No open positions yet' />}
                 </span>
@@ -57,7 +57,7 @@ const EmptyPortfolioMessage = ({ error, title, description }: TEmptyPortfolioMes
                     fill='var(--color-text-disabled)'
                 />
                 <Text align='center' className='portfolio-empty__text' color='disabled' size='xs'>
-                    <Localize i18n_default_text='You have no open positions.' />
+                    {title ?? <Localize i18n_default_text='You have no open positions.' />}
                 </Text>
             </div>
         </div>

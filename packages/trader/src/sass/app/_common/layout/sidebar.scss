@@ -1,7 +1,7 @@
 /** @define sidebar */
 .sidebar {
     height: 100vh;
-    height: 100dvh;
+    height: var(--viewport-height, 100dvh);
     width: 7.2rem;
     min-width: 7.2rem;
     z-index: 100;
@@ -129,7 +129,7 @@
         }
     }
 
-    // Always brand: Trade is the rail's only page, so it is permanently the active item.
+    // Filled brand, as the bottom nav's active Trade: the rail's only page is always the active item.
     &__trade-icon {
         color: var(--brand-primary);
     }

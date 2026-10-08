@@ -52,6 +52,7 @@ export const PositionsDrawerFooter = observer(() => {
     const { currency } = client;
     const { active_positions } = portfolio;
     const { is_switching_account } = ui;
+    const is_phone_landscape = useIsPhoneLandscape();
 
     const getTotalProfit = (positions: TPortfolioPosition[]) =>
         positions.reduce((total: number, position: TPortfolioPosition) => {
@@ -68,9 +69,16 @@ export const PositionsDrawerFooter = observer(() => {
                 {`${active_positions.length === 1 ? localize('open position') : localize('open positions')}`}
             </Text>
             <div className='positions-drawer-footer--total'>
-                <Text size='xs' weight='bold'>
-                    <Localize i18n_default_text='Total P/L:' />
-                </Text>
+                {/* Landscape's summary sits above the list (Figma): a quiet label, as the amount carries it. */}
+                {is_phone_landscape ? (
+                    <Text size='xs' color='less-prominent'>
+                        <Localize i18n_default_text='Current P/L' />
+                    </Text>
+                ) : (
+                    <Text size='xs' weight='bold'>
+                        <Localize i18n_default_text='Total P/L:' />
+                    </Text>
+                )}
                 <Text size='xs' weight='bold' color={getTotalProfit(active_positions) > 0 ? 'success' : 'danger'}>
                     <React.Fragment>
                         <Money amount={getTotalProfit(active_positions)} currency={currency} has_sign /> {currency}

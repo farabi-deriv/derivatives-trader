@@ -1,12 +1,14 @@
 import React from 'react';
 
 import { Loading, Money, Text } from '@deriv/components';
+import { StandaloneSearchFillIcon } from '@deriv/quill-icons';
 import { TReportsStore, useReportsStore } from '@deriv/reports/src/Stores/useReportsStores';
 import { observer, useStore } from '@deriv/stores';
 import { Localize, localize } from '@deriv-com/translations';
 
 import { ContractCardsSections } from 'AppV2/Components/ContractCard';
 import useIsAutomationEnabled from 'AppV2/Hooks/useIsAutomationEnabled';
+import useTimeFilter from 'AppV2/Hooks/useTimeFilter';
 import useTradeModeFilter from 'AppV2/Hooks/useTradeModeFilter';
 import { filterByTradeMode } from 'AppV2/Utils/positions-utils';
 
@@ -24,9 +26,12 @@ type TClosedPosition = {
 export const PositionsDrawerClosedContent = observer(() => {
     const { client } = useStore();
     const { currency } = client;
-    const { data, handleDateChange, handleScroll, is_empty, is_loading, onMount, onUnmount, clearTable } =
+    const { data, handleDateChange, handleScroll, is_loading, onMount, onUnmount, clearTable } =
         useReportsStore().profit_table;
     const { tradeModeFilter } = useTradeModeFilter();
+    const { timeFilter, customTimeRangeFilter } = useTimeFilter();
+    // Same rule as the portrait Positions page: an empty list under a filter is "no matches".
+    const has_active_filter = !!(timeFilter || customTimeRangeFilter || tradeModeFilter);
     const { is_enabled: is_automation_enabled } = useIsAutomationEnabled();
 
     const closedPositions: TClosedPosition[] = React.useMemo(
@@ -59,7 +64,19 @@ export const PositionsDrawerClosedContent = observer(() => {
         if (is_loading && !closedPositions.length) {
             return <Loading.DTraderV2 is_positions is_closed_tab />;
         }
-        if (is_empty && !closedPositions.length) {
+        // Not `is_empty` alone: the trade-mode filter runs here, so loaded rows can all be filtered out.
+        if (!is_loading && !closedPositions.length) {
+            if (has_active_filter) {
+                return (
+                    <EmptyPortfolioMessage
+                        icon={<StandaloneSearchFillIcon iconSize='xl' fill='var(--color-text-primary)' />}
+                        title={<Localize i18n_default_text='No matches found' />}
+                        description={
+                            <Localize i18n_default_text='Try changing or removing filters to view available positions.' />
+                        }
+                    />
+                );
+            }
             return (
                 <EmptyPortfolioMessage
                     // Mirrors the open tab's wording; Figma only specifies the open-positions state.

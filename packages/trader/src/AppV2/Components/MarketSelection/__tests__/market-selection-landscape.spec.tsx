@@ -5,6 +5,8 @@ import MarketSelectionHeader from '../market-selection-header';
 import MarketSelectionMobile from '../market-selection-mobile';
 import MarketSelectionSidebar from '../market-selection-sidebar';
 
+let mock_is_rtl = false;
+jest.mock('@deriv/api', () => ({ ...jest.requireActual('@deriv/api'), useIsRtl: () => mock_is_rtl }));
 jest.mock('../market-selection-sidebar', () => jest.fn(() => <div data-testid='sidebar' />));
 jest.mock('../trade-type-tabs', () => jest.fn(() => <div data-testid='trade-type-tabs' />));
 jest.mock('../market-category-chips', () => jest.fn(() => <div data-testid='chips' />));
@@ -71,6 +73,7 @@ const headerProps = () => (MarketSelectionHeader as jest.Mock).mock.lastCall[0];
 
 describe('Market selection landscape layout', () => {
     beforeEach(() => {
+        mock_is_rtl = false;
         mock_is_guide_open = false;
         mock_info_item = null;
     });
@@ -159,5 +162,18 @@ describe('Market selection landscape layout', () => {
         expect(screen.getByTestId('header')).toBeInTheDocument();
         expect(screen.getByTestId('chips')).toBeInTheDocument();
         expect(screen.getByTestId('list')).toBeInTheDocument();
+    });
+
+    it('[MSL-004] reads right-to-left in Arabic, while the landscape page behind stays left-to-right', () => {
+        mock_is_rtl = true;
+        renderShell(true);
+
+        expect(screen.getByRole('dialog', { name: 'Market selection' })).toHaveAttribute('dir', 'rtl');
+    });
+
+    it('[MSL-004] sets no direction otherwise, inheriting the page', () => {
+        renderShell(true);
+
+        expect(screen.getByRole('dialog', { name: 'Market selection' })).not.toHaveAttribute('dir');
     });
 });

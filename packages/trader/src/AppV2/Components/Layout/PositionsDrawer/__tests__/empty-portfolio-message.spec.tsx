@@ -51,4 +51,19 @@ describe('EmptyPortfolioMessage', () => {
         expect(screen.getByText('Something went wrong')).toBeInTheDocument();
         expect(screen.queryByTestId('briefcase-icon')).not.toBeInTheDocument();
     });
+
+    it('[EPM-004] lets the tab swap the landscape glyph, as the no-matches state does', () => {
+        mockUseIsPhoneLandscape.mockReturnValue(true);
+        render(<EmptyPortfolioMessage icon={<div data-testid='search-icon' />} title='No matches found' />);
+
+        expect(screen.getByTestId('search-icon')).toBeInTheDocument();
+        expect(screen.queryByTestId('briefcase-icon')).not.toBeInTheDocument();
+    });
+
+    it("[EPM-004] shows the tab's title outside landscape too, not the open-positions default", () => {
+        render(<EmptyPortfolioMessage title='No matches found' />);
+
+        expect(screen.getByText('No matches found')).toBeInTheDocument();
+        expect(screen.queryByText('You have no open positions.')).not.toBeInTheDocument();
+    });
 });
