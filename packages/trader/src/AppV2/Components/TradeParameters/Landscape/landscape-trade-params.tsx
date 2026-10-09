@@ -43,13 +43,20 @@ type TLandscapeTradeParams = {
      * The two are the same value, and one value does not get two live editors.
      */
     is_superseded?: boolean;
+    /**
+     * Reports the pill's height, so the growth-rate card can sit on its shoulder.
+     *
+     * The card is portalled to the page root to escape the chart's clipping, which puts it in a
+     * different subtree — CSS there has no way to ask how tall this is.
+     */
+    onPillHeightChange?: (height: number) => void;
 };
 
 // The floating pill: an observer that owns `active_param` (one wheel open at a time), renders the
 // chips + the passive glass panel (a sibling of the pill, never a child) + the reused PurchaseButton.
 // It never imports client.balance / the balance hint / useProposal — only the stake adapter may.
 const LandscapeTradeParams = observer((props: TLandscapeTradeParams) => {
-    const { onOverlayOpenChange, onGrowthRateDraftChange, is_superseded } = props;
+    const { onOverlayOpenChange, onGrowthRateDraftChange, is_superseded, onPillHeightChange } = props;
     const { ui } = useStore();
     const { is_landscape_chrome_hidden, landscape_params_offset_x, setLandscapeParamsOffsetX } = ui;
 
@@ -166,6 +173,21 @@ const LandscapeTradeParams = observer((props: TLandscapeTradeParams) => {
 
     // Leaving the pill mounted with a stale preview would strand the band mid-edit.
     React.useEffect(() => () => onGrowthRateDraftChange?.(null), [onGrowthRateDraftChange]);
+
+    // Observed rather than measured per render. The height is set by the Buy button, whose content
+    // changes with the contract state, so there is no list of values to depend on that is provably
+    // complete — and this is an observer that re-renders on every proposal, which for Accumulators is
+    // every tick. Reading `offsetHeight` on each of those would flush layout before the setter could
+    // bail on an unchanged number. A ResizeObserver asks the question the right way round: it fires
+    // only when the box actually changes, and after layout, so the read costs nothing.
+    React.useEffect(() => {
+        const node = container_ref.current;
+        if (!node || !onPillHeightChange) return undefined;
+
+        const observer = new ResizeObserver(() => onPillHeightChange(node.offsetHeight));
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [onPillHeightChange]);
 
     // A press anywhere outside the pill dismisses the panel, rather than making the user wait out the
     // idle timer. Scoped to the whole wrapper, not the panel: a press on a chip is switching params or

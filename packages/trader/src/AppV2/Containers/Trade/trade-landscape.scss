@@ -1,6 +1,9 @@
 .trade--landscape {
     display: flex;
     flex-direction: column;
+    // Positioning context for the growth-rate card, which portals here to escape
+    // `.trade__chart`'s clipping. `overflow: hidden` below bounds it to the viewport.
+    position: relative;
     // Fallback first: --viewport-height (ui-store) handles the iOS Safari landscape toolbar that 100vh overstates.
     height: 100vh;
     height: var(--viewport-height, 100dvh);
@@ -153,21 +156,6 @@ $LANDSCAPE_RAIL_WIDTH: 7.2rem;
 
     &__stats {
         flex-shrink: 0;
-    }
-
-    // Showing the header does not push the chart down by its own height: the
-    // chart both starts 72px lower and loses 72px of height, so its midpoint —
-    // and with it anything centred on the chart — moves by half that. The
-    // floating pill is anchored to the viewport bottom and does not move at
-    // all, so the growth-rate card's clearance over it closes by 36px and the
-    // card lands on the Buy button. Giving that half back leaves the card in
-    // the same place on screen whichever way the chrome is.
-    //
-    // Expressed against the header's own height so the two cannot drift apart,
-    // and keyed off `:not(--collapsed)` rather than a modifier on the root so
-    // the rule lives next to the height it is compensating for.
-    &__header:not(&__header--collapsed) ~ &__chart-tooltip .chart-growth-rate {
-        margin-block-start: calc(var(--core-size-3600) / -2);
     }
 
     &__chart-tooltip {

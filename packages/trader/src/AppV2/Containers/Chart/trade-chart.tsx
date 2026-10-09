@@ -64,9 +64,12 @@ type TTradeChart = {
      * this chart's own picker.
      */
     growth_rate_preview?: number | null;
+    /** Where the growth-rate card should render, to escape this chart's clipped box. */
+    growth_rate_portal_container?: React.RefObject<HTMLElement | null>;
 };
 
-const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange, growth_rate_preview = null }: TTradeChart = {}) => {
+const TradeChart = observer((props: TTradeChart = {}) => {
+    const { tap_claim_ref, onPickerOpenChange, growth_rate_preview = null, growth_rate_portal_container } = props;
     const { ui, common, contract_trade, portfolio, client } = useStore();
     const { isMobile } = useDevice();
     // Phone landscape reports isMobile false; use the phone-viewport predicate for the touch-modality
@@ -379,7 +382,7 @@ const TradeChart = observer(({ tap_claim_ref, onPickerOpenChange, growth_rate_pr
                         : CHART_CONSTANTS.LEFT_MARGIN_DEFAULT
                 }
             />
-            <ChartGrowthRate picker={growth_rate_picker} />
+            <ChartGrowthRate picker={growth_rate_picker} portal_container={growth_rate_portal_container} />
         </>
     );
 });

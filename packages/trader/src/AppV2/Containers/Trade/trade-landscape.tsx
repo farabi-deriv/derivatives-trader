@@ -43,6 +43,14 @@ const TradeLandscape = observer(() => {
     // in different subtrees, so what the pill's wheel is showing passes through here to reach the band.
     const [growth_rate_preview, setGrowthRatePreview] = React.useState<number | null>(null);
 
+    // The card is portalled here rather than left inside `.trade__chart`, which clips its overflow:
+    // lifted clear of the pill it would be cut off at the top instead of drawn over the stats strip.
+    const root_ref = React.useRef<HTMLDivElement>(null);
+    // How tall the pill is, so the card can sit on its shoulder. Different subtrees once portalled,
+    // so this is the only way the card can know — and the pill's height follows the Buy button,
+    // whose content changes with the contract state, so it is measured rather than assumed.
+    const [pill_block_size, setPillBlockSize] = React.useState<number | null>(null);
+
     const { is_animating } = useAutoHideChrome({
         is_paused: is_overlay_open || is_account_dropdown_open || is_prompt_blocking || is_growth_rate_picker_open,
         tap_claim_ref,
@@ -60,8 +68,14 @@ const TradeLandscape = observer(() => {
 
     return (
         <div
+            ref={root_ref}
             className={clsx('trade--landscape', { 'trade--landscape--animating': is_animating })}
             data-testid='dt_trade_landscape'
+            style={
+                pill_block_size == null
+                    ? undefined
+                    : ({ '--landscape-pill-block-size': `${pill_block_size}px` } as React.CSSProperties)
+            }
         >
             <header
                 className={clsx('trade-landscape__header', {
@@ -80,12 +94,14 @@ const TradeLandscape = observer(() => {
                         tap_claim_ref={tap_claim_ref}
                         onPickerOpenChange={setIsGrowthRatePickerOpen}
                         growth_rate_preview={growth_rate_preview}
+                        growth_rate_portal_container={root_ref}
                     />
                 </section>
                 <LandscapeTradeParams
                     onOverlayOpenChange={setIsOverlayOpen}
                     onGrowthRateDraftChange={setGrowthRatePreview}
                     is_superseded={is_growth_rate_picker_open}
+                    onPillHeightChange={setPillBlockSize}
                 />
                 <LandscapeFullscreenButton />
             </div>

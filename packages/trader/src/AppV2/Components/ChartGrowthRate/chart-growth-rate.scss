@@ -1,19 +1,32 @@
 // The growth-rate picker the Accumulators band opens.
 //
-// Positioned against `.trade__chart`, the same context ChartProfitLoss uses.
-// Unlike the old read-only readout this one IS the control, so it takes pointer
-// events — the band underneath is only what opened it.
+// Positioned against `.trade--landscape`, the page root it is portalled into.
+// NOT against `.trade__chart`, where it is rendered from: that clips its
+// overflow, so a card lifted clear of the params pill would be cut off at the
+// top rather than drawn over the stats strip. Unlike the old read-only readout
+// this one IS the control, so it takes pointer events — the band underneath is
+// only what opened it.
 .chart-growth-rate {
     position: absolute;
-    inset-block-start: 50%;
+
+    // Sits on the pill's shoulder rather than in the middle of the chart. Centred,
+    // it collided with the pill on any short landscape viewport — the pill is
+    // anchored to the bottom and the card to the centre, so nothing kept them
+    // apart. The `0.8rem` is the gap the stake and take-profit panels already keep
+    // from the pill (`.landscape-params__panel`'s `calc(100% + 0.8rem)`), and the
+    // `1.6rem` is the pill's own inset from the bottom edge.
+    //
+    // The pill's height cannot be read in CSS — the two are in different subtrees —
+    // so `TradeLandscape` measures it and publishes it here. The fallback is the
+    // pill at its natural size (48px chip + 2x12px padding + 2x1px border), used
+    // only for the first paint before the measurement lands.
+    inset-block-end: calc(var(--landscape-pill-block-size, 7.4rem) + 1.6rem + 0.8rem);
     inset-inline-start: 50%;
-    transform: translate(-50%, -50%);
-    // Above the landscape params pill (z-index 10), which floats over the same
-    // chart area and otherwise paints on top of this. `.trade__chart` is
-    // `position: relative` with no z-index, so it opens no stacking context and
-    // this value is compared against that pill directly rather than being scoped
-    // inside the chart. Still well under the sidebar (100), the market drawer
-    // (150) and quill's snackbars (999).
+    transform: translateX(-50%);
+    // Above the landscape params pill (z-index 10). The page root opens no stacking
+    // context of its own, and the stats strip and header carry no z-index and come
+    // earlier in the DOM, so this paints over all three. Still well under the
+    // sidebar (100), the market drawer (150) and quill's snackbars (999).
     z-index: 20;
     // Hosts the drag — the browser must never claim it for a page pan.
     touch-action: none;

@@ -81,4 +81,51 @@ describe('ChartGrowthRate', () => {
 
         expect(onStep.mock.calls[0][0]).toBeLessThan(0);
     });
+
+    describe('where it renders', () => {
+        it('renders in place when given nowhere else to go', () => {
+            const { container } = render(<ChartGrowthRate picker={buildPicker()} />);
+
+            expect(container).toContainElement(screen.getByTestId('dt_chart_growth_rate'));
+        });
+
+        it('portals into the container it is given', () => {
+            const host = document.createElement('div');
+            document.body.appendChild(host);
+            const host_ref = { current: host };
+
+            const { container } = render(<ChartGrowthRate picker={buildPicker()} portal_container={host_ref} />);
+
+            // `.trade__chart` clips its overflow, so a card lifted clear of the params pill would be
+            // cut off at the top rather than drawn over the stats strip. Rendering into the page root
+            // is what lets it be bounded by the viewport instead.
+            expect(host).toContainElement(screen.getByTestId('dt_chart_growth_rate'));
+            expect(container).toBeEmptyDOMElement();
+
+            host.remove();
+        });
+
+        it('falls back to rendering in place when the container is not mounted', () => {
+            const { container } = render(
+                <ChartGrowthRate picker={buildPicker()} portal_container={{ current: null }} />
+            );
+
+            expect(container).toContainElement(screen.getByTestId('dt_chart_growth_rate'));
+        });
+
+        it('still scrolls once portalled', () => {
+            const host = document.createElement('div');
+            document.body.appendChild(host);
+
+            render(<ChartGrowthRate picker={buildPicker()} portal_container={{ current: host }} />);
+            dragBy(screen.getByTestId('dt_chart_growth_rate'), 40);
+
+            // React events cross a portal, but the drag listens on the node itself — worth pinning,
+            // since moving the card out of the chart is exactly the kind of change that could
+            // silently cost it its gestures.
+            expect(onStep).toHaveBeenCalled();
+
+            host.remove();
+        });
+    });
 });

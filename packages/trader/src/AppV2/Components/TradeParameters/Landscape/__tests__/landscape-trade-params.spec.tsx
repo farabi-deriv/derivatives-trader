@@ -80,6 +80,9 @@ const renderPill = (
     };
 };
 
+/** Stands in for the pill's box changing size. See the ResizeObserver stub in `__mocks__/globals`. */
+const resizeObserved = () => (global.ResizeObserver as unknown as { resizeAll: () => void }).resizeAll();
+
 describe('LandscapeTradeParams', () => {
     it('[LTP-001] renders the three chips and Buy when chrome is visible', () => {
         renderPill(buildStore());
@@ -483,6 +486,52 @@ describe('LandscapeTradeParams', () => {
             setProps({ is_superseded: true });
 
             expect(screen.queryByTestId('dt_landscape_value_panel')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('its height, which the growth-rate card sits above', () => {
+        it('[LTP-024] reports the pill height on mount', () => {
+            const offset_height = jest.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(74);
+            const onPillHeightChange = jest.fn();
+
+            renderPill(buildStore(), { onPillHeightChange });
+
+            // The card is portalled to the page root to escape the chart's clipping, which puts the
+            // two in different subtrees — CSS there cannot ask how tall this is.
+            expect(onPillHeightChange).toHaveBeenCalledWith(74);
+
+            offset_height.mockRestore();
+        });
+
+        it('[LTP-025] reports it again when the pill is resized', () => {
+            const offset_height = jest.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(74);
+            const onPillHeightChange = jest.fn();
+            renderPill(buildStore(), { onPillHeightChange });
+
+            // The height follows the Buy button, whose content changes with the contract state —
+            // which is why the box itself is watched rather than a list of values guessed to affect it.
+            offset_height.mockReturnValue(90);
+            act(() => resizeObserved());
+
+            expect(onPillHeightChange).toHaveBeenLastCalledWith(90);
+
+            offset_height.mockRestore();
+        });
+
+        it('[LTP-026] does not re-measure on a render that left the box alone', () => {
+            const offset_height = jest.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(74);
+            const onPillHeightChange = jest.fn();
+            const { setProps } = renderPill(buildStore(), { onPillHeightChange });
+            onPillHeightChange.mockClear();
+
+            // This is an observer that re-renders on every proposal — every tick, for Accumulators.
+            // Measuring on each of those would flush layout for an answer that has not changed.
+            setProps({ is_superseded: true });
+            setProps({ is_superseded: false });
+
+            expect(onPillHeightChange).not.toHaveBeenCalled();
+
+            offset_height.mockRestore();
         });
     });
 });

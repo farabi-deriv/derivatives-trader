@@ -56,9 +56,22 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
     thresholds: [],
 }));
 
-// Mock ResizeObserver for tests
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
-}));
+// Mock ResizeObserver for tests. `observe` fires an initial observation, as the real API does — a
+// component that measures its element on observation sees nothing otherwise — and `resizeAll` lets a
+// test stand in for a later resize.
+class ResizeObserverStub {
+    constructor(callback) {
+        this.callback = callback;
+        ResizeObserverStub.observers.add(this);
+    }
+    observe() {
+        this.callback([], this);
+    }
+    unobserve() {}
+    disconnect() {
+        ResizeObserverStub.observers.delete(this);
+    }
+}
+ResizeObserverStub.observers = new Set();
+ResizeObserverStub.resizeAll = () => ResizeObserverStub.observers.forEach(observer => observer.callback([], observer));
+global.ResizeObserver = ResizeObserverStub;

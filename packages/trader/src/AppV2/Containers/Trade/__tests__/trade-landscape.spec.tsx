@@ -1,5 +1,5 @@
 import { mockStore } from '@deriv/stores';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { getChartHeight } from 'AppV2/Utils/layout-utils';
 import ModulesProvider from 'Stores/Providers/modules-providers';
@@ -19,12 +19,23 @@ jest.mock('AppV2/Components/AccumulatorStats', () => {
     const AccumulatorStatsStub = () => <div data-testid='accumulator-stats' />;
     return { __esModule: true, default: AccumulatorStatsStub };
 });
+// The stubs capture their props: the growth-rate card's placement is a conversation between these
+// two — the pill says how tall it is, the chart is told where to portal the card to — and the
+// container is the only place either end can be checked.
+const trade_chart_props: Record<string, unknown>[] = [];
 jest.mock('../../Chart', () => {
-    const TradeChartStub = () => <div data-testid='trade-chart' />;
+    const TradeChartStub = (props: Record<string, unknown>) => {
+        trade_chart_props.push(props);
+        return <div data-testid='trade-chart' />;
+    };
     return { TradeChart: TradeChartStub };
 });
+let reportPillHeight: ((height: number) => void) | undefined;
 jest.mock('AppV2/Components/TradeParameters/Landscape/landscape-trade-params', () => {
-    const LandscapeTradeParamsStub = () => <div data-testid='landscape-trade-params' />;
+    const LandscapeTradeParamsStub = ({ onPillHeightChange }: { onPillHeightChange?: (h: number) => void }) => {
+        reportPillHeight = onPillHeightChange;
+        return <div data-testid='landscape-trade-params' />;
+    };
     return { __esModule: true, default: LandscapeTradeParamsStub };
 });
 jest.mock('AppV2/Components/LandscapeOnboarding', () => {
@@ -61,6 +72,10 @@ const tapTheChart = () => {
 };
 
 describe('TradeLandscape', () => {
+    beforeEach(() => {
+        trade_chart_props.length = 0;
+        reportPillHeight = undefined;
+    });
     afterEach(() => jest.clearAllMocks());
 
     it('[LTM-006] renders MarketTabs, AccountHeader, AccumulatorStats, the chart and the params slot', () => {
@@ -127,5 +142,36 @@ describe('TradeLandscape', () => {
         renderLandscape(store);
 
         expect(screen.queryByTestId('landscape-onboarding')).not.toBeInTheDocument();
+    });
+
+    describe('the growth-rate card', () => {
+        it('hands the chart the page root to portal the card into', () => {
+            renderLandscape();
+
+            // `.trade__chart` clips its overflow, so a card lifted clear of the params pill would be
+            // cut off at the top rather than drawn over the stats strip.
+            const container = trade_chart_props.at(-1)?.growth_rate_portal_container as React.RefObject<HTMLElement>;
+            expect(container.current).toBe(screen.getByTestId('dt_trade_landscape'));
+        });
+
+        it('publishes the pill height the card sits above', () => {
+            renderLandscape();
+
+            act(() => reportPillHeight?.(74));
+
+            // The two are in different subtrees once the card is portalled, so a custom property is
+            // the only way the measurement reaches it.
+            expect(screen.getByTestId('dt_trade_landscape')).toHaveStyle({ '--landscape-pill-block-size': '74px' });
+        });
+
+        it('says nothing until the pill has been measured', () => {
+            renderLandscape();
+
+            // Absent rather than zero: the card's own fallback is the pill at its natural size, and a
+            // 0 here would drop it onto the pill for the first paint.
+            expect(screen.getByTestId('dt_trade_landscape').style.getPropertyValue('--landscape-pill-block-size')).toBe(
+                ''
+            );
+        });
     });
 });
