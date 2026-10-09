@@ -37,6 +37,25 @@
         &-title {
             color: var(--component-textIcon-normal-prominent, #181c25);
         }
+
+        // Bordered, not filled, like the other action sheets.
+        .market-changes-dropdown__option {
+            border: var(--core-borderWidth-75) solid transparent;
+            border-radius: var(--core-borderRadius-400, 8px);
+
+            &:hover,
+            &--selected {
+                background: transparent;
+
+                .quill-typography {
+                    color: var(--color-text-primary);
+                }
+            }
+
+            &--selected {
+                border-color: var(--color-text-primary);
+            }
+        }
     }
 
     &__option {

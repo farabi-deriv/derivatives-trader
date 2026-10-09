@@ -173,6 +173,10 @@ $chip-collapse-transition:
             font-weight: var(--core-fontWeight-regular);
             line-height: 1.5;
             white-space: nowrap;
+            // Long translations; full text is in aria-label.
+            max-inline-size: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         &-value {

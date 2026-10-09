@@ -246,12 +246,7 @@ const LandscapeTradeParams = observer((props: TLandscapeTradeParams) => {
     );
 
     return (
-        <div
-            className='landscape-params'
-            data-testid='dt_landscape_params'
-            ref={container_ref}
-            style={landscape_params_offset_x ? { transform: `translateX(${landscape_params_offset_x}px)` } : undefined}
-        >
+        <div className='landscape-params' data-testid='dt_landscape_params' ref={container_ref}>
             {active_adapter && (
                 <LandscapeValuePanel
                     adapter={active_adapter}

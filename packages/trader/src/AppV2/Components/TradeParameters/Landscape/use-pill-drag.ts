@@ -4,6 +4,9 @@ import React from 'react';
 const DRAG_THRESHOLD_PX = 8;
 // Gap kept between the pill and the chart's edges, matching its anchored inset.
 const EDGE_INSET_PX = 16;
+// The drag stops short of the fullscreen button.
+const OBSTACLE_SELECTOR = '.landscape-fullscreen-button';
+const OBSTACLE_GAP_PX = 8;
 
 type TBounds = { min: number; max: number };
 
@@ -35,6 +38,8 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
         active: false,
         is_moving: false,
         start_x: 0,
+        // Painted offset at the press; starting from the stored one left a dead zone when clamped.
+        origin: 0,
         offset: 0,
         bounds: null as TBounds | null,
     });
@@ -71,10 +76,23 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
         const box = wrapper.getBoundingClientRect();
         const edges = container.getBoundingClientRect();
 
-        const min = edges.left + EDGE_INSET_PX - (box.left - painted.current);
-        const max = edges.right - EDGE_INSET_PX - (box.right - painted.current);
+        const origin_left = box.left - painted.current;
+        const origin_right = box.right - painted.current;
+        let min = edges.left + EDGE_INSET_PX - origin_left;
+        let max = edges.right - EDGE_INSET_PX - origin_right;
         // Too wide to sit between the limits: any clamp would fight itself, so leave it anchored.
-        return min > max ? null : { min, max };
+        if (min > max) return null;
+
+        // Fullscreen button: never past it, and no closer if it already leaves no room.
+        const obstacle = container.querySelector(OBSTACLE_SELECTOR)?.getBoundingClientRect();
+        if (obstacle && obstacle.top < box.bottom && obstacle.bottom > box.top) {
+            if (obstacle.left + obstacle.width / 2 > edges.left + edges.width / 2) {
+                max = Math.max(min, Math.min(max, obstacle.left - OBSTACLE_GAP_PX - origin_right));
+            } else {
+                min = Math.min(max, Math.max(min, obstacle.right + OBSTACLE_GAP_PX - origin_left));
+            }
+        }
+        return { min, max };
     }, [wrapper_ref]);
 
     const onPointerDown = React.useCallback(
@@ -85,13 +103,14 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
                 active: true,
                 is_moving: false,
                 start_x: event.clientX,
-                offset: offset_x,
+                origin: painted.current,
+                offset: painted.current,
                 // Measured once per gesture: the pill's size cannot change mid-drag, and re-measuring
                 // per move would read back the transform this drag is applying.
                 bounds: measureBounds(),
             };
         },
-        [offset_x, measureBounds]
+        [measureBounds]
     );
 
     const onPointerMove = React.useCallback(
@@ -112,11 +131,11 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
                     // no capture available
                 }
             }
-            const next = offset_x + dx;
+            const next = d.origin + dx;
             d.offset = d.bounds ? clamp(next, d.bounds) : next;
             applyTransform(d.offset);
         },
-        [offset_x, applyTransform]
+        [applyTransform]
     );
 
     const end = React.useCallback(
@@ -145,23 +164,26 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
         event.stopPropagation();
     }, []);
 
-    // Runs on every render, deliberately undeped. While dragging, the node's transform is ours alone —
-    // any re-render (a proposal tick, a chrome toggle) would otherwise repaint it at the committed
-    // offset and snap the pill back under the finger.
-    //
-    // Otherwise the stored offset may not currently fit: the pill is right-anchored, so re-inserting
-    // the take-profit chip grows it leftwards and can push a left-edge position out of bounds. Correct
-    // the PAINT only — never write the correction back. `offset_x` is where the user put the pill, and
-    // committing a transient squeeze over it loses that for good: the pill stayed mid-screen after the
-    // chrome collapsed again, instead of returning to the edge it was dragged to.
-    React.useLayoutEffect(() => {
-        if (drag.current.active) {
-            if (drag.current.is_moving) applyTransform(drag.current.offset);
-            return;
-        }
+    // Clamps the paint only, never the stored offset, so the pill returns there once it fits again.
+    const offset_ref = React.useRef(offset_x);
+    offset_ref.current = offset_x;
+    const reclamp = React.useCallback(() => {
+        if (drag.current.active) return;
         const bounds = measureBounds();
-        applyTransform(bounds ? clamp(offset_x, bounds) : offset_x);
-    });
+        applyTransform(bounds ? clamp(offset_ref.current, bounds) : offset_ref.current);
+    }, [applyTransform, measureBounds]);
+
+    React.useLayoutEffect(reclamp, [reclamp, offset_x]);
+
+    // Expand/collapse transitions and chart resizes; fires before paint, every frame.
+    React.useEffect(() => {
+        const wrapper = wrapper_ref.current;
+        if (!wrapper || typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(reclamp);
+        observer.observe(wrapper);
+        if (wrapper.offsetParent) observer.observe(wrapper.offsetParent);
+        return () => observer.disconnect();
+    }, [wrapper_ref, reclamp]);
 
     return {
         is_dragging,
@@ -170,8 +192,6 @@ const usePillDrag = ({ offset_x, onCommit, wrapper_ref }: TUsePillDrag) => {
         onPointerUp: end,
         onPointerCancel: end,
         onClickCapture,
-        // Test seam: the live offset during a gesture, which the DOM already reflects.
-        getOffset: () => drag.current.offset,
     };
 };
 

@@ -14,7 +14,17 @@ import usePillDrag from '../use-pill-drag';
  * The 72px origin is deliberately deeper than the CSS's 16px inset, so there is leftward travel to
  * observe before the clamp bites.
  */
-const buildRef = ({ origin_left = 72, width = 200, container_width = 800 } = {}) => {
+const buildRef = ({
+    origin_left = 72,
+    width = 200,
+    container_width = 800,
+    button,
+}: {
+    origin_left?: number;
+    width?: number;
+    container_width?: number;
+    button?: { left: number; top?: number };
+} = {}) => {
     let current_width = width;
     const wrapper = document.createElement('div');
     const container = document.createElement('div');
@@ -23,8 +33,16 @@ const buildRef = ({ origin_left = 72, width = 200, container_width = 800 } = {})
     wrapper.getBoundingClientRect = () => {
         const applied = Number(/-?\d+(\.\d+)?/.exec(wrapper.style.transform)?.[0] ?? 0);
         const left = origin_left + applied;
-        return { left, right: left + current_width, width: current_width } as DOMRect;
+        return { left, right: left + current_width, width: current_width, top: 300, bottom: 374 } as DOMRect;
     };
+    if (button) {
+        const node = document.createElement('button');
+        node.className = 'landscape-fullscreen-button';
+        const top = button.top ?? 326;
+        node.getBoundingClientRect = () =>
+            ({ left: button.left, right: button.left + 40, width: 40, top, bottom: top + 40 }) as DOMRect;
+        container.appendChild(node);
+    }
     Object.defineProperty(wrapper, 'offsetParent', { get: () => container });
     return {
         ref: { current: wrapper } as React.RefObject<HTMLElement>,
@@ -55,6 +73,19 @@ const pointer = (x: number, target: Element) =>
         pointerId: 1,
         currentTarget: { setPointerCapture: jest.fn(), releasePointerCapture: jest.fn() },
     }) as unknown as React.PointerEvent<HTMLElement>;
+
+// jsdom has no ResizeObserver; `fireResize` stands in for a size change.
+let fireResize: () => void = () => undefined;
+const original_resize_observer = window.ResizeObserver;
+beforeEach(() => {
+    window.ResizeObserver = jest.fn(callback => {
+        fireResize = () => act(() => callback([], {} as ResizeObserver));
+        return { observe: jest.fn(), disconnect: jest.fn(), unobserve: jest.fn() };
+    }) as unknown as typeof ResizeObserver;
+});
+afterEach(() => {
+    window.ResizeObserver = original_resize_observer;
+});
 
 const clickEvent = () =>
     ({ preventDefault: jest.fn(), stopPropagation: jest.fn() }) as unknown as React.MouseEvent<HTMLElement>;
@@ -158,6 +189,44 @@ describe('usePillDrag', () => {
         expect(wrapper).toHaveStyle({ transform: 'translateX(-20px)' });
     });
 
+    describe('[LPD-007] the fullscreen button', () => {
+        const BUTTON_LEFT = 744;
+
+        it('stops the drag 8px short of it instead of sliding over it', () => {
+            const { chrome } = buildTargets();
+            const { ref, wrapper } = buildRef({ button: { left: BUTTON_LEFT } });
+            const { result } = renderHook(() => usePillDrag({ offset_x: 0, onCommit: jest.fn(), wrapper_ref: ref }));
+
+            act(() => result.current.onPointerDown(pointer(0, chrome)));
+            act(() => result.current.onPointerMove(pointer(800, chrome)));
+
+            // 744 - 8 - 272, not the container's 512.
+            expect(wrapper).toHaveStyle({ transform: 'translateX(464px)' });
+        });
+
+        it('cannot be pushed towards it when it already leaves no room', () => {
+            const { chrome } = buildTargets();
+            const { ref, wrapper } = buildRef({ origin_left: 16, width: 740, button: { left: BUTTON_LEFT } });
+            const { result } = renderHook(() => usePillDrag({ offset_x: 0, onCommit: jest.fn(), wrapper_ref: ref }));
+
+            act(() => result.current.onPointerDown(pointer(0, chrome)));
+            act(() => result.current.onPointerMove(pointer(100, chrome)));
+
+            expect(wrapper).toHaveStyle({ transform: '' });
+        });
+
+        it('is ignored when it is not level with the pill', () => {
+            const { chrome } = buildTargets();
+            const { ref, wrapper } = buildRef({ button: { left: BUTTON_LEFT, top: 100 } });
+            const { result } = renderHook(() => usePillDrag({ offset_x: 0, onCommit: jest.fn(), wrapper_ref: ref }));
+
+            act(() => result.current.onPointerDown(pointer(0, chrome)));
+            act(() => result.current.onPointerMove(pointer(800, chrome)));
+
+            expect(wrapper).toHaveStyle({ transform: 'translateX(512px)' });
+        });
+    });
+
     it('[LPD-004] a press that never crosses the threshold commits nothing', () => {
         const onCommit = jest.fn();
         const { chrome } = buildTargets();
@@ -237,16 +306,57 @@ describe('usePillDrag', () => {
     it('[LPD-006] restores the dragged position once the pill fits again', () => {
         const onCommit = jest.fn();
         const { ref, wrapper, setWidth } = buildRef({ width: 300 });
-        const { rerender } = renderHook(() => usePillDrag({ offset_x: 500, onCommit, wrapper_ref: ref }));
+        renderHook(() => usePillDrag({ offset_x: 500, onCommit, wrapper_ref: ref }));
 
         expect(wrapper).toHaveStyle({ transform: 'translateX(412px)' });
 
         // The take-profit chip drops out: the pill narrows and +500 fits again.
         setWidth(100);
-        rerender();
+        fireResize();
 
         expect(wrapper).toHaveStyle({ transform: 'translateX(500px)' });
         expect(onCommit).not.toHaveBeenCalled();
+    });
+
+    it('[LPD-006] re-clamps as the pill grows mid-transition, with no React render to trigger it', () => {
+        const { ref, wrapper, setWidth } = buildRef({ width: 100 });
+        renderHook(() => usePillDrag({ offset_x: 500, onCommit: jest.fn(), wrapper_ref: ref }));
+        expect(wrapper).toHaveStyle({ transform: 'translateX(500px)' });
+
+        setWidth(300);
+        fireResize();
+
+        expect(wrapper).toHaveStyle({ transform: 'translateX(412px)' });
+    });
+
+    it('[LPD-006] a drag from a squeezed position moves from where the pill is painted, with no dead zone', () => {
+        const onCommit = jest.fn();
+        const { chrome } = buildTargets();
+        const { ref, wrapper } = buildRef({ width: 300 });
+        const { result } = renderHook(() => usePillDrag({ offset_x: 500, onCommit, wrapper_ref: ref }));
+        expect(wrapper).toHaveStyle({ transform: 'translateX(412px)' });
+
+        act(() => result.current.onPointerDown(pointer(700, chrome)));
+        act(() => result.current.onPointerMove(pointer(670, chrome)));
+        expect(wrapper).toHaveStyle({ transform: 'translateX(382px)' });
+
+        act(() => result.current.onPointerUp(pointer(670, chrome)));
+        expect(onCommit).toHaveBeenCalledWith(382);
+    });
+
+    it('[LPD-006] a re-render mid-drag leaves the pill under the finger', () => {
+        const { chrome } = buildTargets();
+        const { ref, wrapper } = buildRef();
+        const { result, rerender } = renderHook(() =>
+            usePillDrag({ offset_x: 0, onCommit: jest.fn(), wrapper_ref: ref })
+        );
+
+        act(() => result.current.onPointerDown(pointer(700, chrome)));
+        act(() => result.current.onPointerMove(pointer(660, chrome)));
+        rerender(); // a proposal tick
+        fireResize(); // or the chrome toggling under it
+
+        expect(wrapper).toHaveStyle({ transform: 'translateX(-40px)' });
     });
 
     it('[LPD-006] leaves an offset that still fits alone', () => {
