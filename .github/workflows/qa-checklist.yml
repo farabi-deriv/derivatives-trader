@@ -8,6 +8,7 @@ jobs:
   generate-checklist:
     if: |
       github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       contains(github.event.comment.body, '@checkmaite')
     uses: deriv-com/shared-actions/.github/workflows/qa-checklist.yml@master
     permissions:
@@ -16,5 +17,7 @@ jobs:
       issues: write
       id-token: write
       actions: read
+    with:
+      anthropic_base_url: https://litellmsa.deriv.ai
     secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.FORGE_API_KEY }}
