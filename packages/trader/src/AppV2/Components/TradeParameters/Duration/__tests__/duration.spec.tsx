@@ -2,10 +2,11 @@ import { dayjs } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { TCoreStores } from '@deriv/stores/types';
 import { useSnackbar } from '@deriv-com/quill-ui';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import TraderProviders from '../../../../../trader-providers';
+import { resetErrorSnackbarDedupe } from '../../../../Hooks/useErrorSnackbar';
 import DurationDesktop from '../duration-desktop';
 import Duration from '../index';
 
@@ -599,6 +600,62 @@ describe('Duration - Mobile', () => {
 
         expect(mockOnChangeMultiple).toHaveBeenCalledWith(expect.objectContaining({ expiry_type: 'endtime' }));
     });
+
+    describe('tapping a ticks wheel row', () => {
+        const original_scroll_into_view = HTMLElement.prototype.scrollIntoView;
+        let scrollIntoView: jest.Mock;
+
+        beforeEach(() => {
+            scrollIntoView = jest.fn();
+            HTMLElement.prototype.scrollIntoView = scrollIntoView;
+            default_trade_store.modules.trade.duration = 2;
+            default_trade_store.modules.trade.duration_unit = 't';
+        });
+
+        afterEach(() => {
+            HTMLElement.prototype.scrollIntoView = original_scroll_into_view;
+        });
+
+        const tapOneTick = async () => {
+            mockDurationMobile();
+            await userEvent.click(screen.getByLabelText('Duration'));
+
+            const ticks_wheel = screen.getByTestId('dt_duration_ticks_wheel');
+            const one_tick = await within(ticks_wheel).findByRole('option', { name: '1 tick' });
+            fireEvent.pointerDown(one_tick);
+            fireEvent.pointerUp(one_tick);
+
+            expect(scrollIntoView.mock.contexts).toContain(one_tick);
+
+            // Emulate the resulting scroll: index 0 centred, which quill reads as floor(scrollTop / 48)
+            const list = within(ticks_wheel).getByRole('listbox');
+            Object.defineProperty(list, 'scrollTop', { value: 24, configurable: true });
+            fireEvent.scroll(list);
+        };
+
+        it('[WPT-001] selects the tapped "1 tick" row and commits it on Save (mobile)', async () => {
+            await tapOneTick();
+
+            const save_button = screen.getByRole('button', { name: 'Save' });
+            expect(save_button).toBeEnabled();
+
+            await userEvent.click(save_button);
+
+            expect(mockOnChangeMultiple).toHaveBeenCalledWith({
+                duration: 1,
+                duration_unit: 't',
+                expiry_type: 'duration',
+            });
+        });
+
+        it('[WPT-001] commits nothing when the sheet is dismissed after the tap (mobile)', async () => {
+            await tapOneTick();
+
+            await userEvent.click(screen.getByTestId('dt-actionsheet-overlay'));
+
+            expect(mockOnChangeMultiple).not.toHaveBeenCalled();
+        });
+    });
 });
 
 describe('DurationDesktop language switch', () => {
@@ -866,5 +923,96 @@ describe('Duration default on trade-type switch', () => {
         act(() => jest.advanceTimersByTime(10));
 
         expect(mockApplyDefaultDuration).not.toHaveBeenCalled();
+    });
+});
+
+describe('Duration sub-minimum end time message', () => {
+    const END_TIME_MESSAGE = 'Select an end time at least 15 minutes after the contract starts.';
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { isMobile } = require('@deriv/shared');
+    const mockAddSnackbar = jest.fn();
+
+    // The error state is a class only — quill exposes no role/testid/aria for it.
+    // eslint-disable-next-line testing-library/no-node-access
+    const erroredField = () => document.querySelector('.quill-input__wrapper__variant--fill--error');
+
+    const buildStore = (endtime_minimum_error: string) =>
+        mockStore({
+            modules: {
+                trade: {
+                    onChange: jest.fn(),
+                    onChangeMultiple: jest.fn(),
+                    validation_errors: { duration: [] },
+                    proposal_info: {},
+                    duration: 30,
+                    duration_unit: 'm',
+                    duration_units_list: [
+                        { value: 'm', text: 'minutes' },
+                        { value: 'h', text: 'hours' },
+                    ],
+                    duration_min_max: { intraday: { min: 900, max: 3600 } },
+                    expiry_type: 'endtime',
+                    expiry_date: '2024-10-10',
+                    expiry_time: '11:30:00',
+                    endtime_minimum_error,
+                    start_time: null,
+                    symbol: 'frxEURUSD',
+                    contract_type: 'rise_fall',
+                    active_symbols: [],
+                    saved_expiry_date_v2: '',
+                    setSavedExpiryDateV2: jest.fn(),
+                    setUnsavedExpiryDateV2: jest.fn(),
+                    unsaved_expiry_date_v2: '',
+                },
+            },
+            common: { server_time: dayjs('2024-10-10T11:23:10.895Z') },
+        });
+
+    const renderDuration = (endtime_minimum_error: string) =>
+        render(
+            <TraderProviders store={buildStore(endtime_minimum_error)}>
+                <Duration />
+            </TraderProviders>
+        );
+
+    beforeEach(() => {
+        // The dedupe record is module scope, so it outlives a single render.
+        resetErrorSnackbarDedupe();
+        mockAddSnackbar.mockClear();
+        (useSnackbar as jest.Mock).mockReturnValue({ addSnackbar: mockAddSnackbar });
+    });
+
+    afterEach(() => {
+        (isMobile as jest.Mock).mockReturnValue(false);
+    });
+
+    it('[FEET-008] announces the message and marks the Duration field (mobile)', () => {
+        (isMobile as jest.Mock).mockReturnValue(true);
+
+        renderDuration(END_TIME_MESSAGE);
+
+        expect(mockAddSnackbar).toHaveBeenCalledWith(expect.objectContaining({ message: END_TIME_MESSAGE }));
+        expect(erroredField()).toBeInTheDocument();
+    });
+
+    it('[FEET-008] announces the message and marks the Duration field (desktop)', () => {
+        (isMobile as jest.Mock).mockReturnValue(false);
+
+        renderDuration(END_TIME_MESSAGE);
+
+        expect(mockAddSnackbar).toHaveBeenCalledWith(expect.objectContaining({ message: END_TIME_MESSAGE }));
+        expect(erroredField()).toBeInTheDocument();
+    });
+
+    it.each([
+        ['mobile', true],
+        ['desktop', false],
+    ])('[FEET-008] stays silent and unmarked while the end time is valid (%s)', (_label, is_mobile) => {
+        (isMobile as jest.Mock).mockReturnValue(is_mobile);
+
+        renderDuration('');
+
+        expect(mockAddSnackbar).not.toHaveBeenCalled();
+        expect(erroredField()).not.toBeInTheDocument();
     });
 });

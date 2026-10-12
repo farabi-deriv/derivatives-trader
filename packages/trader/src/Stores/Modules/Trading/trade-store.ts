@@ -121,6 +121,7 @@ import {
     getProposalInfo,
     getStakeLimitsFromResponse,
     hasResolvableExpiry,
+    isEndtimeBelowIntradayMin,
 } from './Helpers/proposal';
 
 import ServerTime from '_common/base/server_time';
@@ -465,6 +466,17 @@ export default class TradeStore extends BaseStore<TRootStore> {
     expiry_type: string | null = 'duration';
     saved_expiry_date_v2: string = '';
     unsaved_expiry_date_v2: string = '';
+    /**
+     * The End time guidance while the committed end time sits below the contract's intraday
+     * minimum, or `''`. Derived so it cannot be wiped by another writer of `validation_errors`.
+     */
+    get endtime_minimum_error() {
+        if (!isEndtimeBelowIntradayMin(this)) return '';
+        const minutes = Math.ceil(Number(this.duration_min_max?.intraday?.min) / 60);
+        return minutes === 1
+            ? localize('Select an end time at least 1 minute after the contract starts.')
+            : localize('Select an end time at least {{minutes}} minutes after the contract starts.', { minutes });
+    }
 
     // Barrier
     barrier = '';
@@ -679,6 +691,7 @@ export default class TradeStore extends BaseStore<TRootStore> {
             expiry_epoch: observable,
             expiry_time: observable,
             expiry_type: observable,
+            endtime_minimum_error: computed,
             form_components: observable,
             growth_rate: observable,
             has_cancellation: observable,

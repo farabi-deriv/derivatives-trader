@@ -14,7 +14,7 @@ const useLandscapeParamEditor = (live_adapter: TLandscapeParamAdapter | null) =>
     const adapter_ref = React.useRef<TLandscapeParamAdapter | null>(null);
     const last_committed_ref = React.useRef<number | null>(null);
 
-    // The caller rebuilds its adapter every render from live bounds and balance, so step and commit
+    // The caller rebuilds its adapter every render from live bounds, so step and commit
     // against that, not the one captured by `open()`. A ref, because a keypress opens, steps and settles
     // in one handler, before the caller's state has re-rendered.
     React.useLayoutEffect(() => {
@@ -49,7 +49,7 @@ const useLandscapeParamEditor = (live_adapter: TLandscapeParamAdapter | null) =>
         const adapter = adapter_ref.current;
         if (!adapter) return;
         const idx = index_ref.current;
-        if (idx !== last_committed_ref.current && !adapter.shouldBlockCommit(idx)) {
+        if (idx !== last_committed_ref.current) {
             adapter.commit(idx);
             last_committed_ref.current = idx;
         }

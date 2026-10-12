@@ -93,9 +93,9 @@ export default defineConfig({
         permissions: ['geolocation'],
         geolocation: { latitude: 0, longitude: 0 },
         headless: !!process.env.CI,
-        trace: 'retain-on-failure',
-        screenshot: 'only-on-failure',
-        video: 'retain-on-failure',
+        trace: 'on',
+        screenshot: 'on',
+        video: 'on',
         launchOptions: {
             slowMo: 0,
         },

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { APIProvider } from '@deriv/api';
 import AccountSwitcherMock from '@deriv/core/src/App/Components/Layout/Header/account-switcher';
-import { redirectToLogin, trackAnalyticsEvent } from '@deriv/shared';
+import { trackAnalyticsEvent } from '@deriv/shared';
 import { mockStore, StoreProvider } from '@deriv/stores';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -12,7 +12,7 @@ import AccountHeader from '../account-header';
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
     getCurrencyDisplayCode: jest.fn((currency: string) => currency),
-    redirectToLogin: jest.fn(),
+    getLoginUrl: jest.fn(() => 'https://deriv.com/login'),
     trackAnalyticsEvent: jest.fn(),
     getApiCoreBaseUrl: jest.fn(() => 'https://api.deriv.com'),
     addComma: jest.fn((num: number | string, decimals?: number) => {
@@ -555,23 +555,33 @@ describe('AccountHeader', () => {
             expect(loginButton).toHaveClass('account-header__login');
         });
 
-        it('should call redirectToLogin when login button is clicked', async () => {
-            const logged_out_store = mockStore({
-                client: {
-                    balance: '',
-                    currency: '',
-                    is_logged_in: false,
-                    is_virtual: false,
-                    logout: jest.fn(),
-                },
-            });
+        it('should go to the login page when login button is clicked', async () => {
+            const original_location = window.location;
+            Object.defineProperty(window, 'location', { value: { href: '' }, writable: true, configurable: true });
+            try {
+                const logged_out_store = mockStore({
+                    client: {
+                        balance: '',
+                        currency: '',
+                        is_logged_in: false,
+                        is_virtual: false,
+                        logout: jest.fn(),
+                    },
+                });
 
-            renderComponent(logged_out_store);
+                renderComponent(logged_out_store);
 
-            const loginButton = screen.getByRole('button', { name: /log in/i });
-            await userEvent.click(loginButton);
+                const loginButton = screen.getByRole('button', { name: /log in/i });
+                await userEvent.click(loginButton);
 
-            expect(redirectToLogin).toHaveBeenCalledTimes(1);
+                expect(window.location.href).toBe('https://deriv.com/login');
+            } finally {
+                Object.defineProperty(window, 'location', {
+                    value: original_location,
+                    writable: true,
+                    configurable: true,
+                });
+            }
         });
     });
 

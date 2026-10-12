@@ -11,8 +11,8 @@ jest.mock('AppV2/Components/PurchaseButton', () => {
     return { __esModule: true, default: () => <MockPurchaseButton /> };
 });
 
-// Contract spec (CLAUDE.md balance contract): an unaffordable stake informs but never disables Buy,
-// never commits, and never reddens the chip.
+// Balance contract (CLAUDE.md): landscape has no client-side balance check. An unaffordable stake
+// commits; Buy stays pressable and the server-reported sheet explains the shortfall.
 const buildStore = () => {
     const onChange = jest.fn();
     const store = mockStore({
@@ -39,7 +39,7 @@ const buildStore = () => {
 };
 
 describe('Landscape stake balance contract', () => {
-    it('[LTP-008] an unaffordable stake shows a hint, does not commit, and leaves Buy pressable and the chip neutral', () => {
+    it('[LTP-008] an unaffordable stake commits with no hint, leaving Buy pressable and the chip neutral', () => {
         const { store, onChange } = buildStore();
 
         render(
@@ -55,10 +55,8 @@ describe('Landscape stake balance contract', () => {
         // The arrow key both opens the panel and steps: $5.00 (affordable) up to $5.25 (> balance 5).
         fireEvent.keyDown(stake_chip, { key: 'ArrowUp' });
 
-        // Hint renders inside the glass panel.
-        expect(screen.getByText(/Try a lower stake/)).toBeInTheDocument();
-        // The commit is suppressed.
-        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.queryByText(/Try a lower stake/)).not.toBeInTheDocument();
+        expect(onChange).toHaveBeenCalledWith({ target: { name: 'amount', value: 5.25 } });
         // Buy stays present and is not disabled by any client-side balance check.
         const buy = screen.getByTestId('purchase-button');
         expect(buy).toBeInTheDocument();

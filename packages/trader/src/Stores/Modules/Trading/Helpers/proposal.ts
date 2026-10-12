@@ -1,12 +1,14 @@
 import { TPriceProposalResponse, TSocketError } from '@deriv/api';
 import {
     convertToUnix,
+    type Dayjs,
     getDecimalPlaces,
     getLocalizedBasis,
     getPropertyValue,
     isAccumulatorContract,
     isTurbosContract,
     mapErrorMessage,
+    setTime,
     toMoment,
     TRADE_TYPES,
 } from '@deriv/shared';
@@ -178,6 +180,33 @@ const resolveDateExpiry = (store: TTradeStore) => {
     return convertToUnix(toMoment(store.expiry_date).unix(), store.expiry_time);
 };
 
+/**
+ * The moment the contract's duration starts counting: the later of the server time and today's
+ * market open, matching the floor the End time picker offers.
+ */
+const resolveIntradayStart = (store: TTradeStore, server_time: Dayjs) => {
+    const market_open = store.market_open_times?.[0];
+    if (!market_open || market_open === '--') return server_time;
+    const market_open_today = setTime(toMoment(server_time), market_open);
+    return market_open_today.isAfter(server_time) ? market_open_today : server_time;
+};
+
+/**
+ * Whether the store's `endtime` expiry is a same-day end time below the contract's intraday
+ * minimum duration — a state a committed End time decays into as the clock advances, and the
+ * backend only rejects at proposal/buy time.
+ */
+export const isEndtimeBelowIntradayMin = (store: TTradeStore) => {
+    if (store.expiry_type !== 'endtime' || !store.expiry_time) return false;
+    const intraday_min = Number(store.duration_min_max?.intraday?.min);
+    if (!intraday_min) return false;
+    const server_time = store.root_store?.common?.server_time;
+    if (!server_time?.isValid?.()) return false;
+    if (!toMoment(store.expiry_date).isSame(toMoment(server_time), 'day')) return false;
+    const date_expiry = resolveDateExpiry(store);
+    return !!date_expiry && date_expiry < resolveIntradayStart(store, server_time).unix() + intraday_min;
+};
+
 /** The duration the store still holds, when it is usable as a proposal expiry. */
 const resolveDuration = (store: TTradeStore) => {
     const duration = parseInt(store.duration.toString());
@@ -192,6 +221,9 @@ const resolveDuration = (store: TTradeStore) => {
  */
 export const hasResolvableExpiry = (store: TTradeStore) => {
     if (takesNoExpiry(store.contract_type)) return true;
+    // A below-minimum End time must not fall back to the dormant duration: that would send a
+    // contract different from what the user picked. Withhold the request instead.
+    if (isEndtimeBelowIntradayMin(store)) return false;
     return !!resolveDateExpiry(store) || !!resolveDuration(store);
 };
 

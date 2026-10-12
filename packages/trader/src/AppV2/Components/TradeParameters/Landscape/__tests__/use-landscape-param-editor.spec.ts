@@ -8,14 +8,13 @@ const makeAdapter = (overrides: Partial<TLandscapeParamAdapter> = {}) =>
         selected_index: 0,
         last_index: 10,
         commit: jest.fn(),
-        shouldBlockCommit: () => false,
         ...overrides,
     }) as unknown as TLandscapeParamAdapter;
 
 describe('useLandscapeParamEditor', () => {
     it('[LTP-021] commits against the live adapter, not the one captured when the panel opened', () => {
-        // Opened while the stake was unaffordable; the balance then arrives with the panel still open.
-        const opened = makeAdapter({ shouldBlockCommit: () => true });
+        // The caller rebuilds its adapter every render, e.g. as new bounds arrive with the panel open.
+        const opened = makeAdapter();
         const live = makeAdapter();
         const { result, rerender } = renderHook(({ adapter }) => useLandscapeParamEditor(adapter), {
             initialProps: { adapter: opened },

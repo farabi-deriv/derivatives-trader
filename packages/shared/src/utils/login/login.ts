@@ -1,6 +1,6 @@
 import { getBrandUrl, getRedirectHostname } from '../brand';
 
-export const redirectToLogin = (language?: string) => {
+export const getLoginUrl = (language?: string) => {
     const brandUrl = getBrandUrl();
     // getRedirectHostname() returns the hostname only when it is a known brand domain,
     const platformHostname = getRedirectHostname();
@@ -9,12 +9,19 @@ export const redirectToLogin = (language?: string) => {
         ? `${lang_param ? '&' : '?'}redirect=${encodeURIComponent(platformHostname)}`
         : '';
 
-    window.location.href = `${brandUrl}/login${lang_param}${redirect_param}`;
+    return `${brandUrl}/login${lang_param}${redirect_param}`;
+};
+
+export const getSignUpUrl = (language?: string) => {
+    const lang_param = language ? `?lang=${encodeURIComponent(language)}` : '';
+
+    return `${getBrandUrl()}/signup${lang_param}`;
+};
+
+export const redirectToLogin = (language?: string) => {
+    window.location.href = getLoginUrl(language);
 };
 
 export const redirectToSignUp = (language?: string) => {
-    const brandUrl = getBrandUrl();
-    const lang_param = language ? `?lang=${encodeURIComponent(language)}` : '';
-
-    window.location.href = `${brandUrl}/signup${lang_param}`;
+    window.location.href = getSignUpUrl(language);
 };

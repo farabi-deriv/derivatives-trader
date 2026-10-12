@@ -18,6 +18,7 @@ import {
     getDerivedDefaultStake,
     getDurationFromTimeWheelSelection,
     getDurationTab,
+    getEarliestEndTime,
     getPayoutInfo,
     getProposalRequestObject,
     getSmallestDuration,
@@ -497,6 +498,94 @@ describe('getDatePickerStartDate', () => {
         const result = getDatePickerStartDate(nonIntradayUnits, dayjs(), null, duration_min_max);
         expect(result).toBeInstanceOf(Date);
         expect(result.toISOString()).toContain('2024-10-09');
+    });
+});
+
+describe('getEarliestEndTime', () => {
+    const forex_rise_fall_min = { intraday: { min: 900, max: 3600 } };
+
+    it('[FEET-001] computes on full-precision seconds: 10:00:20 resolves to 10:20, not 10:15', () => {
+        // 10:00:20 + 15min + 1min = 10:16:20 → ceil to the 5-minute grid is 10:20; a
+        // minute-truncated now would wrongly offer 10:15, only 14m40s out.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:00:20Z'), forex_rise_fall_min)).toBe('10:20');
+    });
+
+    it('[FEET-001] snaps the default up to a selectable 5-minute grid slot', () => {
+        // 10:13:50 + 15min + 1min = 10:29:50 → 10:30, 1m10s above the minimum.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:13:50Z'), forex_rise_fall_min)).toBe('10:30');
+    });
+
+    it('[FEET-001] keeps the 1-minute buffer when the server time is on an exact minute', () => {
+        // 10:00:00 + 15min + 1min = 10:16:00 → 10:20, not the exactly-at-minimum 10:15.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:00:00Z'), forex_rise_fall_min)).toBe('10:20');
+    });
+
+    it('[FEET-001] rolls into the next grid slot when the buffered time crosses one', () => {
+        // 10:14:01 + 15min + 1min = 10:30:01 → 10:35.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:14:01Z'), forex_rise_fall_min)).toBe('10:35');
+    });
+
+    it('[FEET-001] derives the floor from the contract minimum rather than a hardcoded 15 minutes', () => {
+        // A 5-minute minimum: 10:00:20 + 5min + 1min = 10:06:20 → 10:10.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:00:20Z'), { intraday: { min: 300 } })).toBe('10:10');
+    });
+
+    it('[FEET-001] rolls across the hour when the snapped minute is 60', () => {
+        // 10:44:30 + 15min + 1min = 11:00:30 → 11:05.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:44:30Z'), forex_rise_fall_min)).toBe('11:05');
+    });
+
+    it('[FEET-001] falls back to the contract start when there is no intraday minimum', () => {
+        const contract_start = dayjs.utc('2026-09-30T10:00:00Z');
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:00:20Z'), { daily: { min: 86400 } }, contract_start)).toBe(
+            '10:05'
+        );
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T10:00:20Z'), {}, contract_start)).toBe('10:05');
+    });
+
+    it('[FEET-005] measures the minimum from a contract start that is later than now', () => {
+        // Market opens at 12:00 while it is 08:00: the floor is 12:00 + 15min + 1min → 12:20,
+        // not the 12:05 the contract start alone would give.
+        expect(
+            getEarliestEndTime(
+                dayjs.utc('2026-09-30T08:00:00Z'),
+                forex_rise_fall_min,
+                dayjs.utc('2026-09-30T12:00:00Z')
+            )
+        ).toBe('12:20');
+    });
+
+    it('[FEET-005] keeps the contract start when it is later than the minimum-derived floor', () => {
+        // A 1-minute minimum floors at 12:02 → 12:05, which the contract start's +5 minutes matches;
+        // a contract start already past now must never be undercut.
+        expect(
+            getEarliestEndTime(
+                dayjs.utc('2026-09-30T11:59:00Z'),
+                { intraday: { min: 60 } },
+                dayjs.utc('2026-09-30T12:05:00Z')
+            )
+        ).toBe('12:10');
+    });
+
+    it('[FEET-006] clamps to the last slot of the day when the floor crosses midnight', () => {
+        // 23:50 + 15min + 1min = 00:06 tomorrow: no same-day slot satisfies the minimum, so the
+        // floor must not silently fall back to a sub-minimum time.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T23:50:00Z'), forex_rise_fall_min)).toBe('23:55');
+    });
+
+    it('[FEET-006] clamps to the last slot of the day when the floor lands exactly on midnight', () => {
+        // 23:44 + 15min + 1min = 00:00 tomorrow — the boundary case a lexicographic comparison hid.
+        expect(getEarliestEndTime(dayjs.utc('2026-09-30T23:44:00Z'), forex_rise_fall_min)).toBe('23:55');
+    });
+
+    it('[FEET-006] never lets a market-boundary start outrank a next-day floor', () => {
+        expect(
+            getEarliestEndTime(
+                dayjs.utc('2026-09-30T23:50:00Z'),
+                forex_rise_fall_min,
+                dayjs.utc('2026-09-30T23:50:00Z')
+            )
+        ).toBe('23:55');
     });
 });
 

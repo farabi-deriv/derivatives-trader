@@ -10,7 +10,7 @@ import { Localize, useTranslations } from '@deriv-com/translations';
 import { useBlockSheetSwipe } from 'AppV2/Hooks/useBlockSheetSwipe';
 import { useProposal } from 'AppV2/Hooks/useProposal';
 import { ERROR_SNACKBAR_DURATION, getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
-import { getClosestTimeToCurrentGMT, getDatePickerStartDate, toExpiryDateString } from 'AppV2/Utils/trade-params-utils';
+import { getDatePickerStartDate, getEarliestEndTime, toExpiryDateString } from 'AppV2/Utils/trade-params-utils';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { getBoundaries } from 'Stores/Modules/Trading/Helpers/end-time';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -160,13 +160,13 @@ const DayInput = ({
         }
     }, [response, setSelectedExpiryDate, invalidate]);
 
-    // Always calculate adjusted_start_time based on TODAY, not the selected expiry_date
+    // Always calculate adjusted_start_time based on TODAY, not the selected expiry_date.
+    // The contract's intraday minimum raises the floor above the legacy +5-minute boundary start.
     const today_moment = toMoment(server_time);
     const market_open_datetimes = market_open_times.map(open_time => setTime(today_moment.clone(), open_time));
     const market_close_datetimes = market_close_times.map(close_time => setTime(today_moment.clone(), close_time));
     const boundaries = getBoundaries(today_moment.clone(), market_open_datetimes, market_close_datetimes);
-    const adjusted_start_time =
-        boundaries.start[0]?.clone().add(5, 'minutes').format('HH:mm') || getClosestTimeToCurrentGMT(5);
+    const adjusted_start_time = getEarliestEndTime(today_moment, duration_min_max, boundaries.start[0]);
 
     const formatted_date = new Date(selected_expiry_date).toLocaleDateString('en-GB', {
         day: 'numeric',
@@ -199,6 +199,16 @@ const DayInput = ({
         setSelectedExpiryTime(time_to_set);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selected_expiry_date]);
+
+    // Mirrors desktop: a same-day selection the advancing clock has dropped below the floor is
+    // bumped back onto it, so the held time never leaves the offered range.
+    useEffect(() => {
+        if (!is_selected_date_today || !browsing_expiry_time) return;
+        if (browsing_expiry_time.substring(0, 5) >= adjusted_start_time) return;
+        setBrowsingExpiryTime(adjusted_start_time);
+        setSelectedExpiryTime(adjusted_start_time);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [adjusted_start_time, is_selected_date_today, browsing_expiry_time]);
 
     let is_24_hours_contract = false;
 

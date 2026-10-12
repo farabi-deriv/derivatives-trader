@@ -1,4 +1,4 @@
-import { TRADE_TYPES } from '@deriv/shared';
+import { dayjs, TRADE_TYPES } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 
 import {
@@ -645,6 +645,93 @@ describe('Proposal Helper Functions', () => {
                         duration_unit: '',
                     })
                 ).toBe(true);
+            });
+
+            describe('intraday minimum floor', () => {
+                // frx Rise/Fall: 15-minute intraday minimum. Server time is fixed so the
+                // same-day comparisons are deterministic.
+                const intraday_store = {
+                    ...base_store,
+                    expiry_type: 'endtime' as const,
+                    expiry_date: '2026-09-30',
+                    duration_min_max: {
+                        intraday: { min: 900, max: 3600 },
+                        daily: { min: 86400, max: 31536000 },
+                    },
+                    root_store: {
+                        common: { server_time: dayjs.utc('2026-09-30T10:00:00Z') },
+                    },
+                };
+
+                it('[FEET-004] returns false for a same-day end time below the intraday minimum, without falling back to the dormant duration', () => {
+                    // 10:10 is 10 minutes out — under the 15-minute minimum. base_store still holds
+                    // a usable 15m duration, so only the below-minimum guard can withhold this.
+                    const store = { ...intraday_store, expiry_time: '10:10:00' };
+
+                    expect(hasResolvableExpiry(store)).toBe(false);
+                });
+
+                it('[FEET-004] returns false for a same-day end time that decayed below the minimum as the clock advanced', () => {
+                    // 10:20 was valid when picked; at 10:06 server time it is 14 minutes out.
+                    const store = {
+                        ...intraday_store,
+                        expiry_time: '10:20:00',
+                        root_store: {
+                            common: { server_time: dayjs.utc('2026-09-30T10:06:00Z') },
+                        },
+                    };
+
+                    expect(hasResolvableExpiry(store)).toBe(false);
+                });
+
+                it('[FEET-004] returns true for a same-day end time at or above the intraday minimum', () => {
+                    const store = { ...intraday_store, expiry_time: '10:15:00' };
+
+                    expect(hasResolvableExpiry(store)).toBe(true);
+                });
+
+                it('[FEET-004] returns true for a future-day end time regardless of the intraday minimum', () => {
+                    const store = {
+                        ...intraday_store,
+                        expiry_date: '2026-10-01',
+                        expiry_time: '00:05:00',
+                    };
+
+                    expect(hasResolvableExpiry(store)).toBe(true);
+                });
+
+                // The picker measures the minimum from `max(now, today's market open)`, so the
+                // guard has to as well or it rejects the very slots the picker offers.
+                const pre_open_store = {
+                    ...intraday_store,
+                    market_open_times: ['12:00:00'],
+                    root_store: {
+                        common: { server_time: dayjs.utc('2026-09-30T08:00:00Z') },
+                    },
+                };
+
+                it('[FEET-005] accepts an end time a minimum past a market that opens later today', () => {
+                    const store = { ...pre_open_store, expiry_time: '12:20:00' };
+
+                    expect(hasResolvableExpiry(store)).toBe(true);
+                });
+
+                it('[FEET-005] rejects an end time below the minimum measured from the market open', () => {
+                    // 12:05 is four hours from now, so a from-now measurement would wave it through.
+                    const store = { ...pre_open_store, expiry_time: '12:05:00' };
+
+                    expect(hasResolvableExpiry(store)).toBe(false);
+                });
+
+                it('[FEET-004] is untouched when the contract carries no intraday minimum', () => {
+                    const store = {
+                        ...intraday_store,
+                        expiry_time: '10:01:00',
+                        duration_min_max: { daily: { min: 86400, max: 31536000 } },
+                    };
+
+                    expect(hasResolvableExpiry(store)).toBe(true);
+                });
             });
         });
     });

@@ -7,7 +7,7 @@ import { Button, DatePicker, TextField } from '@deriv-com/quill-ui';
 import { Localize, useTranslations } from '@deriv-com/translations';
 
 import { InputPopover } from 'AppV2/Components/InputPopover';
-import { getClosestTimeToCurrentGMT, getDatePickerStartDate } from 'AppV2/Utils/trade-params-utils';
+import { getDatePickerStartDate, getEarliestEndTime } from 'AppV2/Utils/trade-params-utils';
 import { ContractType } from 'Stores/Modules/Trading/Helpers/contract-type';
 import { getBoundaries } from 'Stores/Modules/Trading/Helpers/end-time';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -43,7 +43,8 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
     } = useTraderStore();
     const isMounted = useIsMounted();
 
-    // Calculate adjusted_start_time based on TODAY's market boundaries (like mobile)
+    // Calculate adjusted_start_time based on TODAY's market boundaries (like mobile); the
+    // contract's intraday minimum raises the floor above the legacy +5-minute boundary start.
     const adjusted_start_time = useMemo(() => {
         const today_moment = toMoment(server_time);
         const market_open_datetimes = market_open_times.map((open_time: string) =>
@@ -53,8 +54,8 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
             setTime(today_moment.clone(), close_time)
         );
         const boundaries = getBoundaries(today_moment.clone(), market_open_datetimes, market_close_datetimes);
-        return boundaries.start[0]?.clone().add(5, 'minutes').format('HH:mm') || getClosestTimeToCurrentGMT(5);
-    }, [server_time, market_open_times, market_close_times]);
+        return getEarliestEndTime(today_moment, duration_min_max, boundaries.start[0]);
+    }, [server_time, market_open_times, market_close_times, duration_min_max]);
 
     // Daily-only contracts (no t/s/m/h units) keep full HH:mm:ss precision through the picker;
     // intraday contracts stay on the HH:mm time-grid they've always used.
@@ -147,9 +148,13 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
         return selectedTime;
     }, [selectedTime]);
 
-    // Update time when adjusted_start_time changes (for today's date)
+    // Update time when adjusted_start_time changes (for today's date): an unpicked placeholder or
+    // a same-day time that has dropped below the floor tracks the floor; a valid user pick is kept.
     useEffect(() => {
-        if (isToday(selectedDate) && (selectedTime === '23:59' || selectedTime === '23:59:59')) {
+        if (!isToday(selectedDate)) return;
+        const is_unset = selectedTime === '23:59' || selectedTime === '23:59:59';
+        const is_below_floor = selectedTime.substring(0, 5) < adjusted_start_time;
+        if (is_unset || is_below_floor) {
             setSelectedTime(adjusted_start_time);
         }
     }, [adjusted_start_time, isToday, selectedDate, selectedTime]);
@@ -204,7 +209,7 @@ const DurationEndTimeDesktop: React.FC<DurationEndTimeDesktopProps> = observer((
     // Market times for time picker (only used when is_24_hours_contract is true)
     const start_times = useMemo(() => {
         if (is_24_hours_contract) {
-            // For today, earliest selectable time is adjusted_start_time (server time + 5 min)
+            // For today, earliest selectable time is the contract's end-time floor
             return [dayjs(adjusted_start_time, 'HH:mm')];
         }
         if (market_open_times?.length > 0) {

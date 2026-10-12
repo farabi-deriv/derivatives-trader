@@ -1,5 +1,4 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 
@@ -11,8 +10,8 @@ import {
     addComma,
     getBrandUrl,
     getCurrencyDisplayCode,
+    getLoginUrl,
     isDemoAccountId,
-    redirectToLogin,
     trackAnalyticsEvent,
 } from '@deriv/shared';
 import { useStore } from '@deriv/stores';
@@ -20,9 +19,8 @@ import { Localize, useTranslations } from '@deriv-com/translations';
 import { useDevice } from '@deriv-com/ui';
 
 import { InputPopover } from 'AppV2/Components/InputPopover';
-import RotatePrompt from 'AppV2/Components/RotatePrompt';
 import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
-import { cancelPortraitRedirect, redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
+import usePortraitOnlyRedirect from 'AppV2/Hooks/usePortraitOnlyRedirect';
 
 import '@deriv/core/src/sass/app/_common/components/account-switcher.scss';
 
@@ -52,11 +50,7 @@ const AccountHeader = observer(
 
         const { isMobile } = useDevice();
         const is_phone_landscape = useIsPhoneLandscape();
-        // Deposit opens a portrait-only page, so landscape asks the user to rotate first.
-        const [is_rotate_prompt_open, setIsRotatePromptOpen] = React.useState(false);
-        React.useEffect(() => {
-            if (!is_phone_landscape) setIsRotatePromptOpen(false);
-        }, [is_phone_landscape]);
+        const { redirect, rotate_prompt } = usePortraitOnlyRedirect();
         const trigger_ref = React.useRef<HTMLDivElement>(null);
 
         // Use props if provided, otherwise fall back to store
@@ -157,14 +151,7 @@ const AccountHeader = observer(
             // Transfer button (for both account types or real-only accounts)
             const brandUrl = getBrandUrl();
             const lang_param = common.current_language ? `&lang=${common.current_language}` : '';
-            const transfer_url = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
-            if (is_phone_landscape) {
-                // Ask to rotate, then go there once rotated.
-                setIsRotatePromptOpen(true);
-                redirectOnPortrait(transfer_url);
-            } else {
-                window.location.href = transfer_url;
-            }
+            redirect(`${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`);
         };
 
         const switcher = (
@@ -268,7 +255,7 @@ const AccountHeader = observer(
 
         if (!is_logged_in) {
             const handleLoginClick = () => {
-                redirectToLogin(common.current_language);
+                redirect(getLoginUrl(common.current_language));
             };
 
             return (
@@ -283,6 +270,7 @@ const AccountHeader = observer(
                             <Localize i18n_default_text='Log in' />
                         </Text>
                     </Button>
+                    {rotate_prompt}
                 </div>
             );
         }
@@ -301,18 +289,7 @@ const AccountHeader = observer(
         return (
             <div className='account-header' ref={dropdown_ref}>
                 {renderAccountInfo()}
-                {/* Portalled: the header is its own stacking context and would cap the prompt under the chart. */}
-                {is_rotate_prompt_open &&
-                    createPortal(
-                        <RotatePrompt
-                            message={<Localize i18n_default_text='Please rotate your device to portrait view.' />}
-                            onDismiss={() => {
-                                setIsRotatePromptOpen(false);
-                                cancelPortraitRedirect();
-                            }}
-                        />,
-                        document.body
-                    )}
+                {rotate_prompt}
             </div>
         );
     }

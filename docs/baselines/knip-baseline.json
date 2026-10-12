@@ -188,7 +188,6 @@
         "exports packages/trader/src/AppV2/Components/TradeParameters/Shared/TradeParameterPopover.tsx TradeParameterPopoverContext",
         "exports packages/trader/src/AppV2/Components/TradeParameters/TakeProfit/index.ts TakeProfitDesktop",
         "exports packages/trader/src/AppV2/Components/TradeParameters/TakeProfit/index.ts TakeProfitInputDesktop",
-        "exports packages/trader/src/AppV2/Hooks/useBlockSheetSwipe.ts default",
         "exports packages/trader/src/AppV2/Hooks/useRiskDisclosure.tsx default",
         "exports packages/trader/src/AppV2/Utils/video-config.ts getAccumulatorManualVideoId",
         "exports packages/trader/src/Modules/SmartChart/Hooks/useSmartChartsAdapter.ts default",

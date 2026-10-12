@@ -82,8 +82,6 @@ const useLandscapeTakeProfit = (): TLandscapeParamAdapter => {
         commit,
         is_on: has_take_profit,
         toggle,
-        getHint: () => null,
-        shouldBlockCommit: () => false,
     };
 };
 

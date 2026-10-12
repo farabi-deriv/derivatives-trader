@@ -1,5 +1,4 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 
@@ -23,9 +22,8 @@ import { getBrandUrl, getHelpCentreUrl, routes } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { Localize, localize, useTranslations } from '@deriv-com/translations';
 
-import RotatePrompt from 'AppV2/Components/RotatePrompt';
 import useIsPhoneLandscape from 'AppV2/Hooks/useIsPhoneLandscape';
-import { cancelPortraitRedirect, redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
+import usePortraitOnlyRedirect from 'AppV2/Hooks/usePortraitOnlyRedirect';
 import IcManualTradingFill from 'Assets/SvgComponents/settings/ic-manual-trading-fill.svg';
 
 import PositionsDrawerTabs from '../PositionsDrawer/positions-drawer-tabs';
@@ -58,11 +56,7 @@ const Sidebar = observer(() => {
     const history = useHistory();
     const sidebar_ref = React.useRef<HTMLElement>(null);
     const is_on_index = location.pathname === routes.index;
-    const [is_rotate_prompt_open, setIsRotatePromptOpen] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!is_phone_landscape) setIsRotatePromptOpen(false);
-    }, [is_phone_landscape]);
+    const { redirect, rotate_prompt } = usePortraitOnlyRedirect();
 
     React.useEffect(() => {
         onMount();
@@ -123,14 +117,7 @@ const Sidebar = observer(() => {
         const brandUrl = getBrandUrl();
         const lang_param = current_language ? `&lang=${current_language}` : '';
         const currency = client.currency || '';
-        const home_url = `${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`;
-        // Home is portrait-only, like Deposit: ask to rotate, then go there once rotated.
-        if (is_phone_landscape) {
-            setIsRotatePromptOpen(true);
-            redirectOnPortrait(home_url);
-            return;
-        }
-        window.location.href = home_url;
+        redirect(`${brandUrl}/home?source=options&acc=options&curr=${currency}${lang_param}`);
     };
 
     const closeFlyout = () => {
@@ -416,17 +403,7 @@ const Sidebar = observer(() => {
                 </div>
             )}
 
-            {is_rotate_prompt_open &&
-                createPortal(
-                    <RotatePrompt
-                        message={<Localize i18n_default_text='Please rotate your device to portrait view.' />}
-                        onDismiss={() => {
-                            setIsRotatePromptOpen(false);
-                            cancelPortraitRedirect();
-                        }}
-                    />,
-                    document.body
-                )}
+            {rotate_prompt}
         </React.Fragment>
     );
 });

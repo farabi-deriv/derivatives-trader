@@ -681,6 +681,43 @@ describe('TradeStore', () => {
             });
         });
 
+        // Withholding leaves no price and no server error, so the state has to explain itself.
+        // Derived, never stored: `validateAllProperties`/`changeDurationValidationRules` own
+        // `validation_errors.duration` and would wipe a copy parked there.
+        describe('endtime_minimum_error', () => {
+            const END_TIME_MESSAGE = 'Select an end time at least 15 minutes after the contract starts.';
+
+            // Server time is 11:59:59.488 on 2024-02-26, so a 15-minute minimum puts the
+            // earliest valid end time just after 12:14:59.
+            const setEndtimeState = (expiry_time: string) => {
+                tradeStore.duration_min_max = { intraday: { min: 900, max: 3600 } };
+                tradeStore.expiry_type = 'endtime';
+                tradeStore.expiry_date = '2024-02-26';
+                tradeStore.expiry_time = expiry_time;
+            };
+
+            it('[FEET-008] states the minimum while the end time is below it', () => {
+                setEndtimeState('12:05:00');
+
+                expect(tradeStore.endtime_minimum_error).toBe(END_TIME_MESSAGE);
+            });
+
+            it('[FEET-008] is empty once the end time is valid again', () => {
+                setEndtimeState('12:20:00');
+
+                expect(tradeStore.endtime_minimum_error).toBe('');
+            });
+
+            it('[FEET-008] leaves a duration error owned by another writer standing', () => {
+                setEndtimeState('12:05:00');
+                tradeStore.validation_errors.duration = ['Invalid duration'];
+
+                tradeStore.requestProposal();
+
+                expect(tradeStore.validation_errors.duration).toEqual(['Invalid duration']);
+            });
+        });
+
         describe('symbol switch', () => {
             it('invalidates a pending attempt still waiting on a proposal', () => {
                 tradeStore.is_purchase_pending = true;

@@ -63,3 +63,68 @@ describe('AnalyticsInitializer app_version registration', () => {
         expect(initialise).toHaveBeenCalledWith(expect.objectContaining({ app_version: '0.0.0' }));
     });
 });
+
+describe('AnalyticsInitializer PostHog options', () => {
+    const OLD_ENV = process.env;
+
+    beforeEach(() => {
+        process.env = {
+            ...OLD_ENV,
+            REMOTE_CONFIG_URL: 'https://example.com/remote-config.json',
+            POSTHOG_KEY: 'posthog-key',
+            POSTHOG_HOST: 'https://posthog.example.com',
+        };
+        delete process.env.RUDDERSTACK_KEY;
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ tracking_rudderstack: false, tracking_posthog: true }),
+        }) as unknown as typeof fetch;
+    });
+
+    afterAll(() => {
+        process.env = OLD_ENV;
+    });
+
+    const loadInitializer = () => {
+        let AnalyticsInitializer!: () => Promise<void>, initialise!: jest.Mock;
+        jest.isolateModules(() => {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires -- isolateModules needs a fresh require per env
+            AnalyticsInitializer = require('../index').AnalyticsInitializer;
+            // eslint-disable-next-line @typescript-eslint/no-var-requires -- re-require the spy in the same isolated scope
+            initialise = require('@deriv-com/analytics').Analytics.initialise as jest.Mock;
+        });
+        return { AnalyticsInitializer, initialise };
+    };
+
+    const getPosthogConfig = async () => {
+        const { AnalyticsInitializer, initialise } = loadInitializer();
+
+        await AnalyticsInitializer();
+        await flushMicrotasks();
+
+        return initialise.mock.calls[initialise.mock.calls.length - 1][0].posthogOptions.config;
+    };
+
+    it('[PHCFG-001] disables PostHog autocapture', async () => {
+        expect(await getPosthogConfig()).toEqual(expect.objectContaining({ autocapture: false }));
+    });
+
+    it('[PHCFG-002] disables PostHog feature-flag evaluation without skipping the /flags request', async () => {
+        const posthog_config = await getPosthogConfig();
+
+        expect(posthog_config).toEqual(expect.objectContaining({ advanced_disable_feature_flags: true }));
+        expect(posthog_config).not.toHaveProperty('advanced_disable_flags');
+    });
+
+    it('[PHCFG-003] keeps exception capture and the api_host override, and never sets capture_performance', async () => {
+        const posthog_config = await getPosthogConfig();
+
+        expect(posthog_config).toEqual(
+            expect.objectContaining({
+                capture_exceptions: true,
+                api_host: 'https://posthog.example.com',
+            })
+        );
+        expect(posthog_config).not.toHaveProperty('capture_performance');
+    });
+});

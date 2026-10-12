@@ -11,18 +11,12 @@ type TStakeBalanceHintArgs = {
 };
 
 /**
- * Single source of the insufficient-balance hint, shared by the portrait stake editors and the
- * landscape adapter. Silent on a `payout` basis — the drafted amount is only the sum charged when
- * `basis` is `stake`. Returns the hint node, or null.
+ * The insufficient-balance hint for the portrait stake editors. Silent on a `payout` basis — the
+ * drafted amount is only the sum charged when `basis` is `stake`. Returns the hint node, or null.
  */
-export const getStakeBalanceHint = ({ stake, basis, balance, currency }: TStakeBalanceHintArgs): React.ReactNode => {
-    const parsed_balance = parseAmount(balance);
-    return basis === 'stake' && Number.isFinite(parsed_balance)
+const useStakeBalanceHint = ({ stake, basis, balance, currency }: TStakeBalanceHintArgs): React.ReactNode =>
+    basis === 'stake' && Number.isFinite(parseAmount(balance))
         ? getInsufficientBalanceMessage({ balance, stake, currency, fallback: null })
         : null;
-};
-
-/** Hook form for the portrait stake editors; the landscape stake adapter uses the pure function above. */
-const useStakeBalanceHint = (args: TStakeBalanceHintArgs): React.ReactNode => getStakeBalanceHint(args);
 
 export default useStakeBalanceHint;

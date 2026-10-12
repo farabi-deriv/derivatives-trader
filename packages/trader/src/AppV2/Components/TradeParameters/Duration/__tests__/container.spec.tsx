@@ -269,6 +269,22 @@ describe('DurationActionSheetContainer', () => {
         expect(selections[selections.length - 1]).toEqual([0, 6, 30]);
     });
 
+    it('[WPT-001] centres a tapped minutes row and makes it the minutes draft', async () => {
+        const setSelectedTime = jest.fn();
+        renderDurationContainer(default_trade_store, { tab: 'time', selected_time: [0, 30, 0], setSelectedTime });
+
+        const minutes_list = within(screen.getByTestId('dt_duration_time_wheel')).getAllByRole('listbox')[1];
+        const row = await within(minutes_list).findByRole('option', { name: '31 min' });
+        fireEvent.pointerDown(row);
+        fireEvent.pointerUp(row);
+
+        expect(jest.mocked(HTMLElement.prototype.scrollIntoView).mock.contexts).toContain(row);
+
+        scrollWheelColumn(1, within(minutes_list).getAllByRole('option').indexOf(row));
+
+        expect(setSelectedTime).toHaveBeenCalledWith([0, 31, 0]);
+    });
+
     it('[DTW-001] does not render a seconds wheel and floors minutes at the intraday minimum when seconds are not available', () => {
         default_trade_store.modules.trade.duration_units_list = [
             { value: 'm', text: 'minutes' },

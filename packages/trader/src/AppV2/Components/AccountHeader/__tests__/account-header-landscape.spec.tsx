@@ -12,7 +12,6 @@ import AccountHeader from '../account-header';
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
     getCurrencyDisplayCode: jest.fn((currency: string) => currency),
-    redirectToLogin: jest.fn(),
     trackAnalyticsEvent: jest.fn(),
     getApiCoreBaseUrl: jest.fn(() => 'https://api.deriv.com'),
     addComma: jest.fn((num: number | string) => String(num)),
@@ -176,6 +175,16 @@ describe('AccountHeader in landscape', () => {
             );
 
             expect(screen.queryByRole('dialog', { name: ROTATE_MESSAGE })).not.toBeInTheDocument();
+        });
+
+        it('asks to rotate before opening the login page from Log in', async () => {
+            renderHeader({ is_logged_in: false });
+
+            await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
+
+            expect(screen.getByRole('dialog', { name: ROTATE_MESSAGE })).toBeInTheDocument();
+            expect(window.location.href).toBe('');
+            expect(redirectOnPortrait).toHaveBeenCalledWith(expect.stringContaining('/login'));
         });
 
         it('opens the deposit page as before outside landscape', async () => {

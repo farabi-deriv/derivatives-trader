@@ -16,8 +16,6 @@ const makeAdapter = (overrides: Partial<TLandscapeParamAdapter> = {}): TLandscap
     selected_index: 50,
     labelAt: (index: number) => `$${index}`,
     commit: jest.fn(),
-    getHint: () => null,
-    shouldBlockCommit: () => false,
     ...overrides,
 });
 
@@ -55,22 +53,6 @@ describe('useLandscapeParamEditor', () => {
 
         expect(adapter.commit).not.toHaveBeenCalled();
     });
-
-    it('[LTP-008] suppresses the commit while blocked, then commits after stepping back to an affordable value', () => {
-        const adapter = makeAdapter({ shouldBlockCommit: (index: number) => index > 50 });
-        const { result } = renderHook(() => useLandscapeParamEditor(adapter));
-
-        act(() => result.current.open(adapter));
-        act(() => result.current.stepBy(3)); // 53, blocked
-        act(() => result.current.settle());
-        expect(adapter.commit).not.toHaveBeenCalled();
-
-        act(() => result.current.stepBy(-2)); // 51, blocked
-        act(() => result.current.stepBy(-2)); // 49, affordable
-        act(() => result.current.settle());
-        expect(adapter.commit).toHaveBeenCalledTimes(1);
-        expect(adapter.commit).toHaveBeenCalledWith(49);
-    });
 });
 
 describe('LandscapeValuePanel', () => {
@@ -79,17 +61,6 @@ describe('LandscapeValuePanel', () => {
         render(<LandscapeValuePanel adapter={adapter} index={500000} onStep={jest.fn()} onSettle={jest.fn()} />);
 
         expect(screen.getAllByTestId(/^dt_landscape_value_row_/)).toHaveLength(3);
-    });
-
-    it('[LTP-008] renders the balance hint and an error-coloured row while blocked', () => {
-        const adapter = makeAdapter({
-            getHint: () => 'You only have 5.00 USD left. Try a lower stake.',
-            shouldBlockCommit: () => true,
-        });
-        render(<LandscapeValuePanel adapter={adapter} index={50} onStep={jest.fn()} onSettle={jest.fn()} />);
-
-        expect(screen.getByText('You only have 5.00 USD left. Try a lower stake.')).toBeInTheDocument();
-        expect(screen.getByTestId('dt_landscape_value_rows')).toHaveClass('landscape-value-rows--error');
     });
 });
 
