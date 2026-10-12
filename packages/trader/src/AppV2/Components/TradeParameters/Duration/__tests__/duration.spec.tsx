@@ -2,7 +2,7 @@ import { dayjs } from '@deriv/shared';
 import { mockStore } from '@deriv/stores';
 import { TCoreStores } from '@deriv/stores/types';
 import { useSnackbar } from '@deriv-com/quill-ui';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import TraderProviders from '../../../../../trader-providers';
@@ -599,6 +599,62 @@ describe('Duration - Mobile', () => {
         await userEvent.click(save_button);
 
         expect(mockOnChangeMultiple).toHaveBeenCalledWith(expect.objectContaining({ expiry_type: 'endtime' }));
+    });
+
+    describe('tapping a ticks wheel row', () => {
+        const original_scroll_into_view = HTMLElement.prototype.scrollIntoView;
+        let scrollIntoView: jest.Mock;
+
+        beforeEach(() => {
+            scrollIntoView = jest.fn();
+            HTMLElement.prototype.scrollIntoView = scrollIntoView;
+            default_trade_store.modules.trade.duration = 2;
+            default_trade_store.modules.trade.duration_unit = 't';
+        });
+
+        afterEach(() => {
+            HTMLElement.prototype.scrollIntoView = original_scroll_into_view;
+        });
+
+        const tapOneTick = async () => {
+            mockDurationMobile();
+            await userEvent.click(screen.getByLabelText('Duration'));
+
+            const ticks_wheel = screen.getByTestId('dt_duration_ticks_wheel');
+            const one_tick = await within(ticks_wheel).findByRole('option', { name: '1 tick' });
+            fireEvent.pointerDown(one_tick);
+            fireEvent.pointerUp(one_tick);
+
+            expect(scrollIntoView.mock.contexts).toContain(one_tick);
+
+            // Emulate the resulting scroll: index 0 centred, which quill reads as floor(scrollTop / 48)
+            const list = within(ticks_wheel).getByRole('listbox');
+            Object.defineProperty(list, 'scrollTop', { value: 24, configurable: true });
+            fireEvent.scroll(list);
+        };
+
+        it('[WPT-001] selects the tapped "1 tick" row and commits it on Save (mobile)', async () => {
+            await tapOneTick();
+
+            const save_button = screen.getByRole('button', { name: 'Save' });
+            expect(save_button).toBeEnabled();
+
+            await userEvent.click(save_button);
+
+            expect(mockOnChangeMultiple).toHaveBeenCalledWith({
+                duration: 1,
+                duration_unit: 't',
+                expiry_type: 'duration',
+            });
+        });
+
+        it('[WPT-001] commits nothing when the sheet is dismissed after the tap (mobile)', async () => {
+            await tapOneTick();
+
+            await userEvent.click(screen.getByTestId('dt-actionsheet-overlay'));
+
+            expect(mockOnChangeMultiple).not.toHaveBeenCalled();
+        });
     });
 });
 

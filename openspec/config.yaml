@@ -18,3 +18,9 @@ schema: spec-driven
 #       - Always include a "Non-goals" section
 #     tasks:
 #       - Break tasks into chunks of max 2 hours
+
+# Enforced by spec-to-pr (spec-lint): stable requirement IDs.
+rules:
+  specs:
+    - 'Every `### Requirement:` heading carries a stable ID: `### Requirement: [<PREFIX>-NNN] <title>`'
+    - 'The ID is the identity: never reused, and a renamed requirement keeps its ID'
