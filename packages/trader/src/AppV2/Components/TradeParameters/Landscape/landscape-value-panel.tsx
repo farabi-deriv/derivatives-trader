@@ -21,8 +21,6 @@ type TLandscapeValuePanel = {
 // Frosted-glass value picker: three rows around the draft index, and the host of the drag/wheel
 // gesture. A SIBLING of the pill, never a child — nested, the pill's box would clip it. Never commits.
 const LandscapeValuePanel = ({ adapter, index, offset_x, onStep, onSettle }: TLandscapeValuePanel) => {
-    const hint = adapter.getHint(index);
-    const is_blocked = adapter.shouldBlockCommit(index);
     const drag = useParamDrag({ onStep, onSettle });
     const is_switchable = typeof adapter.toggle === 'function';
     const is_off = is_switchable && !adapter.is_on;
@@ -57,12 +55,8 @@ const LandscapeValuePanel = ({ adapter, index, offset_x, onStep, onSettle }: TLa
                 last_index={adapter.last_index}
                 index={index}
                 labelAt={adapter.labelAt}
-                className={clsx('landscape-value-rows--panel', {
-                    'landscape-value-rows--error': is_blocked,
-                    'landscape-value-rows--off': is_off,
-                })}
+                className={clsx('landscape-value-rows--panel', { 'landscape-value-rows--off': is_off })}
             />
-            {hint && <div className='landscape-params__panel-hint'>{hint}</div>}
         </div>
     );
 };

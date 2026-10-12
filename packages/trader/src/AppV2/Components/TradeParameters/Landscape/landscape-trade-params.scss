@@ -46,12 +46,6 @@ $chip-collapse-transition:
             background: var(--semantic-color-slate-solid-surface-frame-low);
         }
 
-        &-hint {
-            color: var(--semantic-color-status-light-danger);
-            font-size: var(--text-size-xxxs);
-            text-align: center;
-        }
-
         // Figma `363-2711`: take profit's panel adds a 24px title row with the switch — 24 + 8 + 96
         // of wheel + 32 padding = 160.
         &--switchable {
@@ -219,10 +213,6 @@ $chip-collapse-transition:
             font-size: var(--text-size-l);
             font-weight: 800;
             line-height: 4rem;
-        }
-
-        &.landscape-value-rows--error .landscape-value-rows__row--current {
-            color: var(--semantic-color-status-light-danger);
         }
     }
 

@@ -7,6 +7,8 @@ import { mockStore } from '@deriv/stores';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { redirectOnPortrait } from 'AppV2/Utils/portrait-redirect-utils';
+
 import TraderProviders from '../../../../trader-providers';
 import ServiceErrorSheet from '../service-error-sheet';
 
@@ -18,8 +20,8 @@ jest.mock('react-router-dom', () => ({
 }));
 jest.mock('@deriv/shared', () => ({
     ...jest.requireActual('@deriv/shared'),
-    redirectToLogin: jest.fn(),
-    redirectToSignUp: jest.fn(),
+    getLoginUrl: jest.fn(() => 'https://home.deriv.com/dashboard/login'),
+    getSignUpUrl: jest.fn(() => 'https://home.deriv.com/dashboard/signup'),
     getBrandUrl: jest.fn(() => 'https://home.deriv.com/dashboard'),
 }));
 
@@ -27,6 +29,16 @@ const mockIsPhoneViewport = jest.fn(() => false);
 jest.mock('AppV2/Hooks/useIsPhoneViewport', () => ({
     __esModule: true,
     default: () => mockIsPhoneViewport(),
+}));
+
+const mockIsPhoneLandscape = jest.fn(() => false);
+jest.mock('AppV2/Hooks/useIsPhoneLandscape', () => ({
+    __esModule: true,
+    default: () => mockIsPhoneLandscape(),
+}));
+jest.mock('AppV2/Utils/portrait-redirect-utils', () => ({
+    cancelPortraitRedirect: jest.fn(),
+    redirectOnPortrait: jest.fn(),
 }));
 
 // Mock window.location.href
@@ -53,6 +65,7 @@ describe('ServiceErrorSheet', () => {
         // Reset window.location.href before each test
         window.location.href = '';
         mockIsPhoneViewport.mockReturnValue(false);
+        mockIsPhoneLandscape.mockReturnValue(false);
     });
 
     describe('surface', () => {
@@ -95,7 +108,6 @@ describe('ServiceErrorSheet', () => {
     });
 
     it('renders the Action Sheet with appropriate message and actions for AuthorizationRequired error', async () => {
-        const spyRedirectToLogin = jest.spyOn(fileUtils, 'redirectToLogin');
         default_mock_store.common.services_error.code = 'AuthorizationRequired';
         render(mockTrade());
 
@@ -103,9 +115,30 @@ describe('ServiceErrorSheet', () => {
 
         await userEvent.click(screen.getByText('Create free account'));
         expect(default_mock_store.common.resetServicesError).toBeCalled();
+        expect(window.location.href).toBe('https://home.deriv.com/dashboard/signup');
 
         await userEvent.click(screen.getByText('Login'));
-        expect(spyRedirectToLogin).toBeCalled();
+        expect(window.location.href).toBe('https://home.deriv.com/dashboard/login');
+    });
+
+    it.each([
+        ['Create free account', '/signup'],
+        ['Login', '/login'],
+    ])('"%s" asks to rotate in landscape and redirects once rotated', async (label, path) => {
+        mockIsPhoneViewport.mockReturnValue(true);
+        mockIsPhoneLandscape.mockReturnValue(true);
+        default_mock_store.common.services_error.code = 'AuthorizationRequired';
+        render(mockTrade());
+        const { common } = default_mock_store;
+        (common.resetServicesError as jest.Mock).mockImplementation(() => {
+            common.services_error = {};
+        });
+
+        await userEvent.click(screen.getByText(label));
+
+        expect(window.location.href).toBe('');
+        expect(screen.getByText('Please rotate your device to portrait view.')).toBeInTheDocument();
+        expect(redirectOnPortrait).toHaveBeenCalledWith(expect.stringContaining(path));
     });
 
     it('does not render the Action Sheet if there is no services_error', () => {
@@ -202,6 +235,23 @@ describe('ServiceErrorSheet', () => {
 
             expect(window.location.href).toContain('home.deriv.com/dashboard/transfer');
             expect(window.location.href).toContain('curr=USD');
+        });
+
+        it('asks to rotate in landscape, like the header Deposit, and redirects once rotated', async () => {
+            mockIsPhoneViewport.mockReturnValue(true);
+            mockIsPhoneLandscape.mockReturnValue(true);
+            render(mockTrade());
+            // As the real store does: clearing the error closes the sheet.
+            const { common } = default_mock_store;
+            (common.resetServicesError as jest.Mock).mockImplementation(() => {
+                common.services_error = {};
+            });
+
+            await userEvent.click(screen.getByText(/Deposit now/i));
+
+            expect(window.location.href).toBe('');
+            expect(screen.getByText('Please rotate your device to portrait view.')).toBeInTheDocument();
+            expect(redirectOnPortrait).toHaveBeenCalledWith(expect.stringContaining('/transfer?'));
         });
 
         it('should not redirect when the "OK" button is clicked for virtual accounts', async () => {

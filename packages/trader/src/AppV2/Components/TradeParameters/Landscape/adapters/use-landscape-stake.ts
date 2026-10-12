@@ -1,10 +1,8 @@
 import React from 'react';
 
 import { CONTRACT_TYPES } from '@deriv/shared';
-import { useStore } from '@deriv/stores';
 import { localize } from '@deriv-com/translations';
 
-import { getStakeBalanceHint } from 'AppV2/Hooks/useStakeBalanceHint';
 import { formatAmountWithSymbol } from 'AppV2/Utils/currency-utils';
 import { buildLadder, STAKE_FINE_LIMIT } from 'AppV2/Utils/landscape-wheel-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
@@ -15,12 +13,9 @@ import useRetainedBounds from './use-retained-bounds';
 
 const MIN_STAKE_FALLBACK = 0.4;
 
-// The only adapter that may touch client.balance and the stake balance hint (LTP-008).
+// No client-side balance check: an unaffordable stake commits, and Buy's server error reports it.
 const useLandscapeStake = (): TLandscapeParamAdapter => {
-    const {
-        client: { balance },
-    } = useStore();
-    const { amount, basis, currency, validation_params, onChange, is_market_closed, has_open_accu_contract } =
+    const { amount, currency, validation_params, onChange, is_market_closed, has_open_accu_contract } =
         useTraderStore();
 
     const bounds = validation_params?.[CONTRACT_TYPES.ACCUMULATOR]?.stake;
@@ -43,13 +38,6 @@ const useLandscapeStake = (): TLandscapeParamAdapter => {
         [onChange, ladder]
     );
 
-    const getHint = React.useCallback(
-        (index: number) => getStakeBalanceHint({ stake: ladder.valueAt(index), basis, balance, currency }),
-        [ladder, basis, balance, currency]
-    );
-
-    const shouldBlockCommit = React.useCallback((index: number) => !!getHint(index), [getHint]);
-
     return {
         key: 'stake',
         label: localize('Stake'),
@@ -59,8 +47,6 @@ const useLandscapeStake = (): TLandscapeParamAdapter => {
         selected_index: ladder.indexOf(Number(amount)),
         labelAt,
         commit,
-        getHint,
-        shouldBlockCommit,
     };
 };
 

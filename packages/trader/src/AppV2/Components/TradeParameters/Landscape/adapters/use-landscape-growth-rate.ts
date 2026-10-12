@@ -53,8 +53,6 @@ const useLandscapeGrowthRate = (): TLandscapeParamAdapter => {
         labelAt,
         valueAt,
         commit,
-        getHint: () => null,
-        shouldBlockCommit: () => false,
     };
 };
 

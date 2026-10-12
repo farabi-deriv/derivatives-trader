@@ -12,8 +12,6 @@ const makeAdapter = (overrides: Partial<TLandscapeParamAdapter> = {}): TLandscap
     selected_index: 50,
     labelAt: (index: number) => `$${index}`,
     commit: jest.fn(),
-    getHint: () => null,
-    shouldBlockCommit: () => false,
     ...overrides,
 });
 

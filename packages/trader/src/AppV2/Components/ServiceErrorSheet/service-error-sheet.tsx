@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { getBrandUrl, isEmptyObject, mapErrorMessage, redirectToLogin, redirectToSignUp } from '@deriv/shared';
+import { getBrandUrl, getLoginUrl, getSignUpUrl, isEmptyObject, mapErrorMessage } from '@deriv/shared';
 import { observer, useStore } from '@deriv/stores';
 import { ActionSheet, Modal, Text } from '@deriv-com/quill-ui';
 import { Localize } from '@deriv-com/translations';
 
 import useIsPhoneViewport from 'AppV2/Hooks/useIsPhoneViewport';
+import usePortraitOnlyRedirect from 'AppV2/Hooks/usePortraitOnlyRedirect';
 import { checkIsServiceModalError, SERVICE_ERROR } from 'AppV2/Utils/layout-utils';
 import { useTraderStore } from 'Stores/useTraderStores';
 
@@ -15,6 +16,7 @@ const ServiceErrorSheet = observer(() => {
     const [is_open, setIsOpen] = useState(false);
     const { common, client } = useStore();
     const is_phone_viewport = useIsPhoneViewport();
+    const { redirect, rotate_prompt } = usePortraitOnlyRedirect();
     const { is_virtual, currency } = client;
     const { services_error, resetServicesError, current_language } = common;
     const { clearPurchaseInfo, requestProposal: resetPurchase } = useTraderStore();
@@ -63,7 +65,9 @@ const ServiceErrorSheet = observer(() => {
                         resetServicesError();
                         const brandUrl = getBrandUrl();
                         const lang_param = current_language ? `&lang=${current_language}` : '';
-                        window.location.href = `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`;
+                        redirect(
+                            `${brandUrl}/transfer?from=dtrader&source=options&acc=options&curr=${currency}${lang_param}`
+                        );
                     },
                 },
             };
@@ -74,14 +78,14 @@ const ServiceErrorSheet = observer(() => {
                     content: <Localize i18n_default_text='Create free account' />,
                     onAction: () => {
                         resetServicesError();
-                        redirectToSignUp(current_language);
+                        redirect(getSignUpUrl(current_language));
                     },
                 },
                 secondaryAction: {
                     content: <Localize i18n_default_text='Login' />,
                     onAction: () => {
                         resetServicesError();
-                        redirectToLogin(current_language);
+                        redirect(getLoginUrl(current_language));
                     },
                 },
             };
@@ -138,7 +142,8 @@ const ServiceErrorSheet = observer(() => {
         return props;
     };
 
-    if (!should_show_error_modal) return null;
+    // Deposit now closes the sheet, so the prompt renders on its own.
+    if (!should_show_error_modal) return rotate_prompt;
 
     if (is_phone_viewport) {
         return (

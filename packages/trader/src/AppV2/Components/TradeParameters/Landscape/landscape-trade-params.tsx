@@ -54,7 +54,6 @@ type TLandscapeTradeParams = {
 
 // The floating pill: an observer that owns `active_param` (one wheel open at a time), renders the
 // chips + the passive glass panel (a sibling of the pill, never a child) + the reused PurchaseButton.
-// It never imports client.balance / the balance hint / useProposal — only the stake adapter may.
 const LandscapeTradeParams = observer((props: TLandscapeTradeParams) => {
     const { onOverlayOpenChange, onGrowthRateDraftChange, is_superseded, onPillHeightChange } = props;
     const { ui } = useStore();

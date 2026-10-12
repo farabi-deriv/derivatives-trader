@@ -1,11 +1,9 @@
-import React from 'react';
-
 export type TLandscapeParamKey = 'stake' | 'growth_rate' | 'take_profit';
 
 /**
  * One shape per parameter, produced by an adapter hook. The pill/chip/panel deal only in ladder
  * indices; the adapter owns the mapping to a stake amount or a take-profit value (with its "off"
- * sentinel), the store commit, and — for stake alone — the balance hint and commit suppression.
+ * sentinel), and the store commit.
  */
 export type TLandscapeParamAdapter = {
     key: TLandscapeParamKey;
@@ -31,10 +29,6 @@ export type TLandscapeParamAdapter = {
     labelAt: (index: number) => string;
     /** Commits the value at an index to the store. */
     commit: (index: number) => void;
-    /** Balance hint for the value at an index (stake only; take profit returns null). */
-    getHint: (index: number) => React.ReactNode;
-    /** Whether the commit is suppressed for the value at an index (stake unaffordable; else false). */
-    shouldBlockCommit: (index: number) => boolean;
     /**
      * The raw value at an index, for a caller that needs the number rather than the label.
      *

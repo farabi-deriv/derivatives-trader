@@ -135,24 +135,24 @@ A sentinel "Off" rung was rejected: it would make "off" reachable by scrolling, 
 
 ### Requirement: [LTP-008] The insufficient-balance contract is honoured without capping or disabling Buy
 
-Landscape SHALL honour the balance contract: insufficient balance has exactly one authority — the server-reported path; Buy stays pressable; the stake is never capped; the hint belongs to the stake editor. Because landscape has no Save button, the analogue is: while the balance hint shows, the drag still steps and the panel still displays the value, the hint renders inside the glass and the selected row takes the error colour, but the **commit is suppressed**. Stepping back to an affordable value commits immediately. The hint logic SHALL be extracted from `stake-input.tsx` into a shared `AppV2/Hooks/useStakeBalanceHint.ts` used by all three editors (so the contract has one implementation), preserving portrait behaviour.
+Landscape SHALL honour the balance contract: insufficient balance has exactly one authority — the server-reported path; Buy stays pressable; the stake is never capped. Landscape SHALL run **no client-side balance check**: the stake panel shows no balance hint and never suppresses a commit, so an unaffordable stake commits like any other and pressing Buy surfaces the server-reported `ServiceErrorSheet` (**Deposit now** / **OK**). The portrait stake editors keep their own balance hint and Save gating via `AppV2/Hooks/useStakeBalanceHint.ts`, unchanged.
 
-Invariants: `landscape-trade-params.tsx` and `landscape-param-chip.tsx` MUST NOT import `client.balance`, `getInsufficientBalanceMessage`, or the hint hook — only `use-landscape-stake.ts` may. The stake chip takes no error/status prop, so no code path can make it red. `PurchaseButton` is rendered unmodified, so "Buy is never disabled by a client-side balance check" holds by construction. Clamping the ladder maximum to the balance is explicitly rejected.
+Invariants: no landscape param file reads `client.balance` or the balance hint. The stake chip takes no error/status prop, so no code path can make it red. `PurchaseButton` is rendered unmodified, so "Buy is never disabled by a client-side balance check" holds by construction. Clamping the ladder maximum to the balance is explicitly rejected.
 
-#### Scenario: Unaffordable stake shows a hint but does not commit or disable Buy
+#### Scenario: Unaffordable stake commits with no hint and Buy stays pressable
 
-- **WHEN** the balance is 5 and the stake drag reaches 50
-- **THEN** the hint renders in the glass, the stake `onChange` is **not** called, Buy is present and **not** disabled, and the stake chip carries no error class
+- **WHEN** the balance is 5 and the stake is stepped to 5.25
+- **THEN** no balance hint renders, the stake `onChange` is called with 5.25, Buy is present and **not** disabled, and the stake chip carries no error class
 
-#### Scenario: Stepping back to an affordable value commits
+#### Scenario: Buy reports the shortfall
 
-- **WHEN** the drag steps from an unaffordable value back to an affordable one
-- **THEN** the affordable value commits immediately
+- **WHEN** an unaffordable stake is committed and Buy is pressed
+- **THEN** the server-reported insufficient-balance sheet opens, as on every other surface
 
-#### Scenario: Portrait balance-hint behaviour is unchanged after extraction
+#### Scenario: Portrait balance-hint behaviour is unchanged
 
-- **WHEN** the shared `useStakeBalanceHint` is used by the portrait stake editors
-- **THEN** the portrait hint, input error status and Save gating behave exactly as before the extraction
+- **WHEN** the portrait stake editors use `useStakeBalanceHint`
+- **THEN** the portrait hint, input error status and Save gating behave as before
 
 ### Requirement: [LTP-009] The Buy button is reused verbatim and shows no payout caption in landscape
 
