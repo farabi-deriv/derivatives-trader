@@ -1,0 +1,7 @@
+{
+  "name": "@semantic-release/npm",
+  "version": "13.1.4",
+  "description": "Security stub: replaces @semantic-release/npm so the full npm CLI (and its unoverridable bundled vulnerable deps) is not installed. Not used by the trading app at runtime.",
+  "private": true,
+  "main": "index.js"
+}
