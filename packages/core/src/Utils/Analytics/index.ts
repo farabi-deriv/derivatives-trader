@@ -64,6 +64,8 @@ export const AnalyticsInitializer = async () => {
                 allowedDomains?: string[];
                 config?: {
                     api_host?: string;
+                    autocapture?: boolean;
+                    advanced_disable_feature_flags?: boolean;
                     capture_exceptions?: boolean;
                 };
             };
@@ -77,6 +79,9 @@ export const AnalyticsInitializer = async () => {
             config.posthogOptions = {
                 apiKey: process.env.POSTHOG_KEY!,
                 config: {
+                    autocapture: false,
+                    // Keeps the /flags request (PostHog remote config drives web vitals) but stops flag evaluation.
+                    advanced_disable_feature_flags: true,
                     // Capture uncaught runtime errors automatically, replacing DataDog RUM's error collection.
                     capture_exceptions: true,
                     ...(process.env.POSTHOG_HOST && {
