@@ -269,6 +269,7 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
         duration,
         duration_unit,
         duration_units_list,
+        endtime_minimum_error,
         onChangeMultiple,
         is_market_closed,
         is_automation_params_locked,
@@ -607,6 +608,7 @@ const DurationDesktop: React.FC<DurationDesktopProps> = observer(({ is_minimized
             is_minimized={is_minimized}
             disabled={is_market_closed}
             is_locked={is_automation_params_locked}
+            has_error={!!endtime_minimum_error}
             popover_classname='duration-popover'
             value={getDisplayValue()}
             onOpen={handleOpenPopover}

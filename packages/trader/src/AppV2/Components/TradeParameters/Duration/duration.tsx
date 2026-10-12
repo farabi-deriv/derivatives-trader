@@ -40,6 +40,7 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
         duration_unit,
         duration_units_list,
         duration,
+        endtime_minimum_error,
         expiry_date,
         expiry_epoch,
         expiry_time,
@@ -73,7 +74,8 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
     const has_error =
         (proposal_info[contract_type_object[0]]?.has_error &&
             proposal_info[contract_type_object[0]]?.error_field === 'duration') ||
-        (validation_errors.duration?.length ?? 0) > 0;
+        (validation_errors.duration?.length ?? 0) > 0 ||
+        !!endtime_minimum_error;
     const isInitialMount = useRef(true);
     const prevExpiryEpoch = useRef<string | number | null>(null);
     const { common, ui } = useStore();
@@ -279,25 +281,26 @@ const Duration = observer(({ is_minimized }: TTradeParametersProps) => {
     // now make the toast unreachable on mobile. The collapsed chip only turns red and truncates, so
     // without this a blocked trade gives no reason. No sibling param gates its snackbar this way.
     useEffect(() => {
-        if (has_error) {
-            const error_obj = proposal_info[contract_type_object[0]] || validation_errors?.duration?.[0];
-            if (error_obj?.error_field === 'duration') {
-                // Deduped app-wide: `PurchaseButton` reports this same sentence off the same
-                // proposal response, and quill plays two enqueues as two toasts (issue #1319).
-                announceError({
-                    message: mapErrorMessage(error_obj),
-                    style: {
-                        marginBottom: getErrorSnackbarBottomOffset({
-                            pathname: routes.index,
-                            is_chart_maximized,
-                        }),
-                        width: 'calc(100% - var(--core-spacing-800)',
-                    },
-                });
-            }
-        }
+        const error_obj = proposal_info[contract_type_object[0]] || validation_errors?.duration?.[0];
+        // The store-derived message is a plain string, so it needs its own branch: reading
+        // `error_field` off it yields undefined and the toast never played.
+        const message = error_obj?.error_field === 'duration' ? mapErrorMessage(error_obj) : endtime_minimum_error;
+        if (!message) return;
+
+        // Deduped app-wide: `PurchaseButton` reports this same sentence off the same
+        // proposal response, and quill plays two enqueues as two toasts (issue #1319).
+        announceError({
+            message,
+            style: {
+                marginBottom: getErrorSnackbarBottomOffset({
+                    pathname: routes.index,
+                    is_chart_maximized,
+                }),
+                width: 'calc(100% - var(--core-spacing-800)',
+            },
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [has_error, contract_type_object[0]]);
+    }, [has_error, contract_type_object[0], endtime_minimum_error]);
 
     useEffect(() => {
         if (is_open) {

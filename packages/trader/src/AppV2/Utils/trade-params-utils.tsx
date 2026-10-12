@@ -708,6 +708,53 @@ export const getDatePickerStartDate = (
 export const toExpiryDateString = (date: Date) =>
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
+const END_TIME_GRID_INTERVAL_MINUTES = 5;
+// Keeps a just-opened sheet's default above the minimum while the user reaches Save/Buy.
+const END_TIME_DEFAULT_BUFFER_MINUTES = 1;
+// The day's last 5-minute slot, used when the floor would land on the next day.
+const LAST_END_TIME_SLOT_OF_DAY = '23:55';
+
+/** The grid slot that holds the whole moment: 10:30:01 belongs in the 10:35 slot, not 10:30. */
+const ceilToEndTimeGrid = (time: Dayjs) => {
+    const slot_index = Math.ceil((time.minute() * 60 + time.second()) / (END_TIME_GRID_INTERVAL_MINUTES * 60));
+    return time
+        .minute(slot_index * END_TIME_GRID_INTERVAL_MINUTES)
+        .second(0)
+        .millisecond(0);
+};
+
+/**
+ * Earliest end time today's 5-minute picker may offer, `HH:mm`: the later of the contract's
+ * intraday floor — `ceil_to_5min(max(now, contract_start) + intraday.min + 1min)`, computed on the
+ * full-precision timestamp — and the legacy `contract_start + 5min`. When the floor lands on the
+ * next day no same-day slot is valid, so it clamps to the day's last slot and the proposal guard
+ * reports the state (the clamp-vs-roll product decision is tracked in #1557).
+ */
+export const getEarliestEndTime = (
+    server_time: Dayjs,
+    duration_min_max: Record<string, { min: number | string } | undefined>,
+    contract_start?: Dayjs
+): string => {
+    if (!server_time?.isValid?.()) return getClosestTimeToCurrentGMT(END_TIME_GRID_INTERVAL_MINUTES);
+
+    const start = contract_start?.isValid?.() ? contract_start.clone() : undefined;
+    let floor = start?.add(END_TIME_GRID_INTERVAL_MINUTES, 'minutes');
+
+    const min_seconds = Number(duration_min_max?.intraday?.min);
+    if (min_seconds) {
+        // The minimum runs from the contract's own start, which a late-opening market or a
+        // forward-starting contract puts after now.
+        const effective_start = start?.isAfter(server_time) ? start : server_time;
+        const intraday_floor = ceilToEndTimeGrid(
+            effective_start.clone().add(min_seconds, 'seconds').add(END_TIME_DEFAULT_BUFFER_MINUTES, 'minutes')
+        );
+        if (!floor || intraday_floor.isAfter(floor)) floor = intraday_floor;
+    }
+
+    if (!floor) return getClosestTimeToCurrentGMT(END_TIME_GRID_INTERVAL_MINUTES);
+    return floor.isSame(server_time, 'day') ? floor.format('HH:mm') : LAST_END_TIME_SLOT_OF_DAY;
+};
+
 export const getProposalRequestObject = ({
     new_values = {},
     should_subscribe = false,

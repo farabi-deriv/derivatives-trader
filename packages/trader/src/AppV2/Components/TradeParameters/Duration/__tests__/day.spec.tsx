@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 
 import { useProposal } from 'AppV2/Hooks/useProposal';
 import { getErrorSnackbarBottomOffset } from 'AppV2/Utils/layout-utils';
+import { toExpiryDateString } from 'AppV2/Utils/trade-params-utils';
 
 import TraderProviders from '../../../../../trader-providers';
 import DayInput from '../day';
@@ -39,12 +40,13 @@ jest.mock('../datepicker', () => ({
     default: () => <div>Mocked DaysDatepicker</div>,
 }));
 
-// Interactive so a test can browse to a new end time (the real picker just calls setEndTime)
+// Interactive so a test can browse to a new end time (the real picker just calls setEndTime);
+// a jest.fn so tests can read the adjusted_start_time prop the picker is handed.
 jest.mock('../timepicker', () => ({
     __esModule: true,
-    default: ({ setEndTime }: { setEndTime: (t: string) => void }) => (
+    default: jest.fn(({ setEndTime }: { setEndTime: (t: string) => void }) => (
         <button onClick={() => setEndTime('10:30:00')}>browse-time</button>
-    ),
+    )),
 }));
 
 describe('DayInput', () => {
@@ -90,6 +92,7 @@ describe('DayInput', () => {
     afterEach(() => {
         // Reset the proposal hook so an error stubbed in one test does not leak into the next
         (useProposal as jest.Mock).mockReturnValue({ data: undefined, error: undefined });
+        jest.requireMock('../timepicker').default.mockClear();
     });
 
     const mockDayInput = (props: Partial<React.ComponentProps<typeof DayInput>> = {}) =>
@@ -218,5 +221,98 @@ describe('DayInput', () => {
                 }),
             })
         );
+    });
+
+    describe('intraday minimum end-time floor', () => {
+        // DayInput's "today" is local-machine today; the mock server_time (11:23:10 UTC) drives
+        // the floor, so the seeded default is deterministic regardless of the wall clock.
+        const local_today = () => toExpiryDateString(new Date());
+
+        it('[FEET-002] defaults a same-day end time to at least the contract minimum, never the legacy +5 minutes', async () => {
+            // frx Rise/Fall: 15-minute minimum. 11:23:10 + 15min + 1min = 11:39:10 → ceil → 11:40.
+            default_trade_store.modules.trade.duration_min_max = {
+                intraday: { min: 900, max: 3600 },
+                daily: { min: 86400, max: 172800 },
+            };
+
+            mockDayInput({ selected_expiry_date: local_today() });
+
+            expect(await screen.findByDisplayValue('11:40 GMT')).toBeInTheDocument();
+        });
+
+        it('[FEET-002] hands the floor to the time picker as its earliest offered time', async () => {
+            default_trade_store.modules.trade.duration_min_max = {
+                intraday: { min: 900, max: 3600 },
+                daily: { min: 86400, max: 172800 },
+            };
+
+            mockDayInput({ selected_expiry_date: local_today() });
+            await userEvent.click(await screen.findByDisplayValue('11:40 GMT'));
+
+            const EndTimePicker = jest.requireMock('../timepicker').default;
+            expect(EndTimePicker.mock.calls.at(-1)?.[0]).toEqual(
+                expect.objectContaining({ adjusted_start_time: '11:40' })
+            );
+        });
+
+        it('[FEET-002] re-derives the floor from a different contract minimum', async () => {
+            // A 5-minute minimum: 11:23:10 + 5min + 1min = 11:29:10 → ceil → 11:30 (the legacy
+            // boundary start at this server time is 11:25, so the minimum-derived floor wins).
+            default_trade_store.modules.trade.duration_min_max = {
+                intraday: { min: 300, max: 3600 },
+                daily: { min: 86400, max: 172800 },
+            };
+
+            mockDayInput({ selected_expiry_date: local_today() });
+
+            expect(await screen.findByDisplayValue('11:30 GMT')).toBeInTheDocument();
+        });
+
+        it('[FEET-005] measures the minimum from a market open that is later than now', async () => {
+            // Market opens at 12:00 today: the minimum runs from the open, so the floor is
+            // 12:00 + 15min + 1min → 12:20, not the 12:05 the open's +5 minutes alone would give.
+            default_trade_store.modules.trade.duration_min_max = {
+                intraday: { min: 900, max: 3600 },
+                daily: { min: 86400, max: 172800 },
+            };
+            default_trade_store.modules.trade.market_open_times = ['12:00:00'];
+            default_trade_store.modules.trade.market_close_times = ['23:59:59'];
+
+            mockDayInput({ selected_expiry_date: local_today() });
+
+            expect(await screen.findByDisplayValue('12:20 GMT')).toBeInTheDocument();
+        });
+
+        it('[FEET-007] bumps a same-day selection the advancing clock has dropped below the floor', async () => {
+            default_trade_store.modules.trade.duration_min_max = {
+                intraday: { min: 900, max: 3600 },
+                daily: { min: 86400, max: 172800 },
+            };
+            const setSelectedExpiryTime = jest.fn();
+            const props = {
+                selected_expiry_date: local_today(),
+                selected_expiry_time: '23:59:59',
+                setSelectedExpiryDate: jest.fn(),
+                setSelectedExpiryTime,
+            };
+
+            const { rerender } = render(
+                <TraderProviders store={default_trade_store}>
+                    <DayInput {...props} />
+                </TraderProviders>
+            );
+            await screen.findByDisplayValue('11:40 GMT');
+
+            // 11:30:00 + 15min + 1min = 11:46 → ceil → 11:50, so the held 11:40 is now sub-floor.
+            default_trade_store.common.server_time = dayjs('2024-10-10T11:30:00.000Z');
+            rerender(
+                <TraderProviders store={default_trade_store}>
+                    <DayInput {...props} />
+                </TraderProviders>
+            );
+
+            expect(await screen.findByDisplayValue('11:50 GMT')).toBeInTheDocument();
+            expect(setSelectedExpiryTime).toHaveBeenLastCalledWith('11:50');
+        });
     });
 });
